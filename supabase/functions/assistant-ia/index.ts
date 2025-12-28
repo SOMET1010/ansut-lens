@@ -20,7 +20,14 @@ Contexte :
 - L'ARTCI est l'autorité de régulation
 - Les enjeux actuels incluent : connectivité rurale, déploiement 5G, satellites LEO (Starlink), cybersécurité, transformation digitale
 
-Réponds toujours en français, de manière concise et professionnelle. Utilise des listes à puces quand approprié. Cite tes sources si tu en as.`;
+IMPORTANT - Citation des sources :
+Quand tu fais référence à une actualité ou un dossier du contexte, tu DOIS utiliser ce format de citation :
+- Pour une actualité : [[ACTU:id_de_actualite|titre_court]]
+- Pour un dossier : [[DOSSIER:id_du_dossier|titre_court]]
+
+Exemple : "Selon [[ACTU:abc123|article sur la 5G]], le déploiement avance."
+
+Réponds toujours en français, de manière concise et professionnelle. Utilise des listes à puces quand approprié.`;
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -34,7 +41,7 @@ serve(async (req) => {
     // Build contextual system prompt
     let contextualPrompt = SYSTEM_PROMPT;
     if (context) {
-      contextualPrompt = `${SYSTEM_PROMPT}\n\n${context}\n\nUtilise ces informations contextuelles pour personnaliser et enrichir tes réponses. Cite les sources (actualités, dossiers) quand c'est pertinent.`;
+      contextualPrompt = `${SYSTEM_PROMPT}\n\n${context}\n\nUtilise ces informations contextuelles pour personnaliser et enrichir tes réponses. CITE OBLIGATOIREMENT les sources avec le format [[ACTU:id|titre]] ou [[DOSSIER:id|titre]] quand tu fais référence à une actualité ou un dossier du contexte.`;
     }
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
