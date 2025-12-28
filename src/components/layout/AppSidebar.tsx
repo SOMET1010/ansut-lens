@@ -5,7 +5,8 @@ import {
   Users, 
   Bot, 
   Settings,
-  LogOut
+  LogOut,
+  Activity
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
@@ -48,6 +49,12 @@ const menuItems = [
     url: '/personnalites', 
     icon: Users,
     description: 'Suivi influenceurs'
+  },
+  { 
+    title: 'Présence Digitale', 
+    url: '/presence-digitale', 
+    icon: Activity,
+    description: 'Score SPDI'
   },
   { 
     title: 'Assistant IA', 
