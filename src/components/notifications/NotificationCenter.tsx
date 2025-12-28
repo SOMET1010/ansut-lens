@@ -1,4 +1,5 @@
 import { Bell, Check, CheckCheck, AlertTriangle, Info, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -34,6 +35,7 @@ const NIVEAU_CONFIG = {
 
 export function NotificationCenter() {
   const { unreadCount, recentAlerts, markAsRead, markAllAsRead } = useRealtimeAlerts();
+  const navigate = useNavigate();
 
   return (
     <Popover>
@@ -124,7 +126,12 @@ export function NotificationCenter() {
         
         <Separator />
         <div className="p-2">
-          <Button variant="ghost" size="sm" className="w-full text-xs">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="w-full text-xs"
+            onClick={() => navigate('/alertes')}
+          >
             Voir toutes les alertes
           </Button>
         </div>
