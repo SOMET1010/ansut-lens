@@ -2,3 +2,9 @@ project_id = "lpkfwxisranmetbtgxrv"
 
 [functions.assistant-ia]
 verify_jwt = false
+
+[functions.collecte-veille]
+verify_jwt = false
+
+[functions.enrichir-actualite]
+verify_jwt = false
