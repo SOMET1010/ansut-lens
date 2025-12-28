@@ -5,13 +5,21 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { 
   Building2, MapPin, Star, AlertTriangle, Bell, 
   Twitter, Linkedin, Newspaper, ExternalLink,
-  Wifi, Wallet, Landmark, GraduationCap
+  Wifi, Wallet, Landmark, GraduationCap, Activity
 } from 'lucide-react';
 import { CERCLE_LABELS, SOUS_CATEGORIE_LABELS } from '@/hooks/usePersonnalites';
-import type { Personnalite, CercleStrategique } from '@/types';
+import { 
+  useDerniereMetriqueSPDI, 
+  useRecommandationsSPDI, 
+  useToggleSuiviSPDI,
+  INTERPRETATION_LABELS,
+} from '@/hooks/usePresenceDigitale';
+import { SPDIGaugeCard, SPDIRecommandations } from '@/components/spdi';
+import type { Personnalite, CercleStrategique, Tendance } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface ActeurDetailProps {
@@ -41,6 +49,16 @@ const getCategorieIcon = (categorie?: string) => {
 };
 
 export function ActeurDetail({ personnalite, open, onOpenChange }: ActeurDetailProps) {
+  const toggleSuivi = useToggleSuiviSPDI();
+  
+  // Récupérer les données SPDI si le suivi est actif
+  const { data: metriqueSPDI } = useDerniereMetriqueSPDI(
+    (personnalite as any)?.suivi_spdi_actif ? personnalite?.id : undefined
+  );
+  const { data: recommandationsSPDI } = useRecommandationsSPDI(
+    (personnalite as any)?.suivi_spdi_actif ? personnalite?.id : undefined
+  );
+  
   if (!personnalite) return null;
 
   const cercleColors = getCercleColors(personnalite.cercle);
@@ -48,6 +66,19 @@ export function ActeurDetail({ personnalite, open, onOpenChange }: ActeurDetailP
   const initials = `${personnalite.prenom?.[0] || ''}${personnalite.nom[0]}`.toUpperCase();
   const stars = Math.round((personnalite.score_influence / 100) * 5);
   const cercleInfo = CERCLE_LABELS[personnalite.cercle];
+  
+  // Cast pour accéder aux nouveaux champs SPDI
+  const acteurAvecSPDI = personnalite as any;
+  const suiviSPDIActif = acteurAvecSPDI.suivi_spdi_actif ?? false;
+  const scoreSPDI = acteurAvecSPDI.score_spdi_actuel ?? 0;
+  const tendanceSPDI = (acteurAvecSPDI.tendance_spdi ?? 'stable') as Tendance;
+  
+  const handleToggleSuivi = () => {
+    toggleSuivi.mutate({ 
+      personnaliteId: personnalite.id, 
+      actif: !suiviSPDIActif 
+    });
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -177,6 +208,53 @@ export function ActeurDetail({ personnalite, open, onOpenChange }: ActeurDetailP
               </div>
             </div>
           )}
+
+          <Separator className="my-4" />
+
+          {/* Section SPDI - Présence Digitale Institutionnelle */}
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Présence Digitale Institutionnelle
+            </h3>
+            
+            {/* Toggle suivi SPDI */}
+            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg mb-3">
+              <div>
+                <Label className="text-sm font-medium">Suivi SPDI</Label>
+                <p className="text-xs text-muted-foreground">Activer le suivi de présence digitale</p>
+              </div>
+              <Switch 
+                checked={suiviSPDIActif} 
+                onCheckedChange={handleToggleSuivi}
+                disabled={toggleSuivi.isPending}
+              />
+            </div>
+            
+            {/* Afficher les métriques si suivi actif */}
+            {suiviSPDIActif && metriqueSPDI && (
+              <div className="space-y-3">
+                <SPDIGaugeCard 
+                  score={metriqueSPDI.score_final}
+                  tendance={tendanceSPDI}
+                  compact
+                />
+                
+                {recommandationsSPDI && recommandationsSPDI.length > 0 && (
+                  <SPDIRecommandations 
+                    recommandations={recommandationsSPDI.slice(0, 2)} 
+                    compact 
+                  />
+                )}
+              </div>
+            )}
+            
+            {suiviSPDIActif && !metriqueSPDI && (
+              <p className="text-xs text-muted-foreground text-center py-4">
+                Aucune métrique disponible. Les données seront collectées prochainement.
+              </p>
+            )}
+          </div>
 
           <Separator className="my-4" />
 
