@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RefreshCw, Search, Filter, TrendingUp, AlertTriangle, Newspaper, Clock } from 'lucide-react';
+import { RefreshCw, Search, TrendingUp, AlertTriangle, Newspaper, Clock, Sparkles, Loader2 } from 'lucide-react';
 import { useActualites, useLastCollecte, useTriggerCollecte, useEnrichActualite, calculateFreshness } from '@/hooks/useActualites';
 import { FreshnessIndicator, CollecteStatus } from '@/components/actualites/FreshnessIndicator';
 import { useCategoriesVeille } from '@/hooks/useMotsClesVeille';
@@ -23,6 +23,7 @@ export default function ActualitesPage() {
   const [selectedCategorie, setSelectedCategorie] = useState<string>('all');
   const [freshnessFilter, setFreshnessFilter] = useState<string>('all');
   const [importanceFilter, setImportanceFilter] = useState<string>('all');
+  const [enrichingId, setEnrichingId] = useState<string | null>(null);
 
   const { data: categories } = useCategoriesVeille();
   const { data: lastCollecte, isLoading: isLoadingCollecte } = useLastCollecte();
@@ -55,8 +56,17 @@ export default function ActualitesPage() {
     triggerCollecte.mutate('critique');
   };
 
-  const handleEnrich = (id: string) => {
-    enrichActualite.mutate(id);
+  const handleEnrich = async (id: string) => {
+    setEnrichingId(id);
+    try {
+      await enrichActualite.mutateAsync(id);
+    } finally {
+      setEnrichingId(null);
+    }
+  };
+
+  const needsEnrichment = (actu: { importance: number | null; analyse_ia: string | null }) => {
+    return actu.importance === null || actu.importance === 0;
   };
 
   const parseAnalyseIA = (analyseIA: string | null) => {
@@ -278,21 +288,40 @@ export default function ActualitesPage() {
                         {actu.resume}
                       </p>
                     )}
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm text-muted-foreground">{actu.source_nom}</span>
-                      {actu.categorie && (
-                        <Badge variant="outline">{actu.categorie}</Badge>
-                      )}
-                      {actu.tags?.slice(0, 4).map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                      {actu.tags && actu.tags.length > 4 && (
-                        <Badge variant="secondary" className="text-xs">
-                          +{actu.tags.length - 4}
-                        </Badge>
-                      )}
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm text-muted-foreground">{actu.source_nom}</span>
+                        {actu.categorie && (
+                          <Badge variant="outline">{actu.categorie}</Badge>
+                        )}
+                        {actu.tags?.slice(0, 4).map((tag) => (
+                          <Badge key={tag} variant="secondary" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                        {actu.tags && actu.tags.length > 4 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{actu.tags.length - 4}
+                          </Badge>
+                        )}
+                      </div>
+                      <Button
+                        variant={needsEnrichment(actu) ? "default" : "ghost"}
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEnrich(actu.id);
+                        }}
+                        disabled={enrichingId === actu.id}
+                        className={needsEnrichment(actu) ? "animate-pulse" : ""}
+                      >
+                        {enrichingId === actu.id ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4 mr-2" />
+                        )}
+                        {needsEnrichment(actu) ? "Enrichir" : "Ré-enrichir"}
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -337,12 +366,30 @@ export default function ActualitesPage() {
                         {actu.resume}
                       </p>
                     )}
-                    <div className="flex flex-wrap gap-1">
-                      {actu.tags?.slice(0, 3).map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
+                    <div className="flex justify-between items-center mt-3 pt-2 border-t border-border/50">
+                      <div className="flex flex-wrap gap-1">
+                        {actu.tags?.slice(0, 3).map((tag) => (
+                          <Badge key={tag} variant="secondary" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEnrich(actu.id);
+                        }}
+                        disabled={enrichingId === actu.id}
+                        title={needsEnrichment(actu) ? "Enrichir cette actualité" : "Ré-enrichir"}
+                      >
+                        {enrichingId === actu.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Sparkles className={`h-4 w-4 ${needsEnrichment(actu) ? "text-primary" : ""}`} />
+                        )}
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
