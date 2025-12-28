@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, Signal, Brain, Users, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,12 +11,67 @@ interface Message {
   content: string;
 }
 
-const quickPrompts = [
-  'Résume les actualités du jour',
-  'Quels sont les risques actuels ?',
-  'Analyse la couverture média ANSUT',
-  'Génère un briefing DG',
-  'Tendances 5G en Afrique',
+interface PromptCategory {
+  category: string;
+  icon: React.ElementType;
+  colorClass: string;
+  bgClass: string;
+  prompts: string[];
+}
+
+const promptCategories: PromptCategory[] = [
+  {
+    category: 'Service Universel',
+    icon: Signal,
+    colorClass: 'text-blue-500',
+    bgClass: 'bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20',
+    prompts: [
+      'Résume les dernières actualités SUT',
+      'Quels sont les projets de connectivité rurale en cours ?',
+      'Analyse les tendances de couverture réseau',
+    ]
+  },
+  {
+    category: 'Intelligence Artificielle',
+    icon: Brain,
+    colorClass: 'text-orange-500',
+    bgClass: 'bg-orange-500/10 hover:bg-orange-500/20 border-orange-500/20',
+    prompts: [
+      'Génère une note de synthèse sur l\'IA en Afrique',
+      'Quelles régulations IA sont en discussion ?',
+      'Quels pays africains avancent sur l\'IA ?',
+    ]
+  },
+  {
+    category: 'Acteurs clés',
+    icon: Users,
+    colorClass: 'text-green-500',
+    bgClass: 'bg-green-500/10 hover:bg-green-500/20 border-green-500/20',
+    prompts: [
+      'Quels acteurs clés surveiller cette semaine ?',
+      'Y a-t-il des nominations récentes dans le secteur ?',
+      'Résume l\'activité des opérateurs télécoms',
+    ]
+  },
+  {
+    category: 'Synthèses & Notes',
+    icon: FileText,
+    colorClass: 'text-purple-500',
+    bgClass: 'bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/20',
+    prompts: [
+      'Génère un briefing DG pour aujourd\'hui',
+      'Prépare une note pour le Conseil sur le SUT',
+      'Résume les 5 signaux faibles de la semaine',
+    ]
+  }
+];
+
+// Quick inline suggestions for empty state
+const inlineSuggestions = [
+  { text: 'Actualités SUT', prompt: 'Résume les dernières actualités SUT' },
+  { text: 'Briefing DG', prompt: 'Génère un briefing DG pour aujourd\'hui' },
+  { text: 'Acteurs à surveiller', prompt: 'Quels acteurs clés surveiller cette semaine ?' },
+  { text: 'Note IA', prompt: 'Génère une note de synthèse sur l\'IA en Afrique' },
 ];
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/assistant-ia`;
@@ -186,6 +241,12 @@ export default function AssistantPage() {
     setInput(prompt);
   };
 
+  const isEmptyConversation = messages.length === 1 && messages[0].role === 'assistant';
+
+  const handleSuggestionClick = (prompt: string) => {
+    setInput(prompt);
+  };
+
   return (
     <div className="h-[calc(100vh-8rem)] flex gap-4 animate-fade-in">
       <Card className="flex-1 glass flex flex-col">
@@ -199,20 +260,40 @@ export default function AssistantPage() {
           <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
             <div className="space-y-4 pb-4">
               {messages.map((msg, i) => (
-                <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                  <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
-                    msg.role === 'assistant' ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'
-                  }`}>
-                    {msg.role === 'assistant' ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
+                <div key={i}>
+                  <div className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                    <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
+                      msg.role === 'assistant' ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'
+                    }`}>
+                      {msg.role === 'assistant' ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
+                    </div>
+                    <div className={`max-w-[80%] p-3 rounded-lg whitespace-pre-wrap ${
+                      msg.role === 'assistant' ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'
+                    }`}>
+                      {msg.content}
+                      {isLoading && i === messages.length - 1 && msg.role === 'assistant' && (
+                        <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
+                      )}
+                    </div>
                   </div>
-                  <div className={`max-w-[80%] p-3 rounded-lg whitespace-pre-wrap ${
-                    msg.role === 'assistant' ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'
-                  }`}>
-                    {msg.content}
-                    {isLoading && i === messages.length - 1 && msg.role === 'assistant' && (
-                      <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
-                    )}
-                  </div>
+                  
+                  {/* Inline suggestions after welcome message */}
+                  {isEmptyConversation && i === 0 && msg.role === 'assistant' && (
+                    <div className="mt-4 ml-11 grid grid-cols-2 gap-2 max-w-md">
+                      {inlineSuggestions.map((suggestion, idx) => (
+                        <Button
+                          key={idx}
+                          variant="outline"
+                          size="sm"
+                          className="justify-start text-xs h-auto py-2.5 px-3 border-dashed hover:border-primary hover:bg-primary/5 transition-colors"
+                          onClick={() => handleSuggestionClick(suggestion.prompt)}
+                          disabled={isLoading}
+                        >
+                          {suggestion.text}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
               {isLoading && messages[messages.length - 1]?.role === 'user' && (
@@ -227,7 +308,24 @@ export default function AssistantPage() {
               )}
             </div>
           </ScrollArea>
-          <div className="flex gap-2 mt-4 pt-4 border-t border-border">
+          
+          {/* Mobile suggestions (visible only on mobile) */}
+          <div className="flex gap-2 overflow-x-auto py-2 lg:hidden">
+            {inlineSuggestions.map((suggestion, idx) => (
+              <Button
+                key={idx}
+                variant="outline"
+                size="sm"
+                className="shrink-0 text-xs h-8 px-3 border-dashed"
+                onClick={() => handleSuggestionClick(suggestion.prompt)}
+                disabled={isLoading}
+              >
+                {suggestion.text}
+              </Button>
+            ))}
+          </div>
+          
+          <div className="flex gap-2 mt-2 pt-4 border-t border-border">
             <Input 
               value={input} 
               onChange={(e) => setInput(e.target.value)} 
@@ -242,23 +340,42 @@ export default function AssistantPage() {
           </div>
         </CardContent>
       </Card>
-      <Card className="w-72 glass hidden lg:block">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Prompts rapides</CardTitle>
+      
+      {/* Sidebar with categorized prompts */}
+      <Card className="w-80 glass hidden lg:flex lg:flex-col">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Suggestions par thème</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          {quickPrompts.map((p, i) => (
-            <Button 
-              key={i} 
-              variant="outline" 
-              size="sm" 
-              className="w-full justify-start text-xs h-auto py-2 whitespace-normal text-left" 
-              onClick={() => handleQuickPrompt(p)}
-              disabled={isLoading}
-            >
-              {p}
-            </Button>
-          ))}
+        <CardContent className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full pr-2">
+            <div className="space-y-4">
+              {promptCategories.map((cat, catIdx) => {
+                const IconComponent = cat.icon;
+                return (
+                  <div key={catIdx} className="space-y-2">
+                    <div className={`flex items-center gap-2 text-xs font-medium ${cat.colorClass}`}>
+                      <IconComponent className="h-3.5 w-3.5" />
+                      {cat.category}
+                    </div>
+                    <div className="space-y-1.5">
+                      {cat.prompts.map((prompt, promptIdx) => (
+                        <Button
+                          key={promptIdx}
+                          variant="outline"
+                          size="sm"
+                          className={`w-full justify-start text-xs h-auto py-2 px-3 whitespace-normal text-left border ${cat.bgClass} transition-colors`}
+                          onClick={() => handleQuickPrompt(prompt)}
+                          disabled={isLoading}
+                        >
+                          {prompt}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
         </CardContent>
       </Card>
     </div>
