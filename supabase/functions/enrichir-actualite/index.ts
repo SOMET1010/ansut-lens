@@ -16,8 +16,15 @@ interface MotCleVeille {
   categories_veille?: {
     nom: string;
     code: string;
-  } | null;
+  } | { nom: string; code: string; }[] | null;
 }
+
+// Helper to get category name from joined data
+const getCategoryName = (cat: MotCleVeille['categories_veille']): string | undefined => {
+  if (!cat) return undefined;
+  if (Array.isArray(cat)) return cat[0]?.nom;
+  return cat.nom;
+};
 
 interface EnrichmentResult {
   tags: string[];
@@ -107,8 +114,9 @@ serve(async (req) => {
     const quadrantScores: Record<string, number> = { tech: 0, regulation: 0, market: 0, reputation: 0 };
     const categoryScores: Record<string, number> = {};
 
-    for (const motCle of motsCles as MotCleVeille[]) {
-      const allTerms = [motCle.mot_cle, ...(motCle.variantes || [])];
+    for (const motCle of motsCles) {
+      const mc = motCle as MotCleVeille;
+      const allTerms = [mc.mot_cle, ...(mc.variantes || [])];
       let matched = false;
 
       for (const term of allTerms) {
@@ -119,21 +127,21 @@ serve(async (req) => {
       }
 
       if (matched) {
-        matchedKeywords.push(motCle.mot_cle);
-        const score = motCle.score_criticite || 50;
+        matchedKeywords.push(mc.mot_cle);
+        const score = mc.score_criticite || 50;
         totalScore += score;
 
-        if (motCle.quadrant) {
-          quadrantScores[motCle.quadrant] = (quadrantScores[motCle.quadrant] || 0) + score;
+        if (mc.quadrant) {
+          quadrantScores[mc.quadrant] = (quadrantScores[mc.quadrant] || 0) + score;
         }
 
-        if (motCle.categories_veille?.nom) {
-          categoryScores[motCle.categories_veille.nom] = 
-            (categoryScores[motCle.categories_veille.nom] || 0) + score;
+        const catName = getCategoryName(mc.categories_veille);
+        if (catName) {
+          categoryScores[catName] = (categoryScores[catName] || 0) + score;
         }
 
-        if (motCle.alerte_auto) {
-          alertKeywords.push(motCle.mot_cle);
+        if (mc.alerte_auto) {
+          alertKeywords.push(mc.mot_cle);
         }
       }
     }

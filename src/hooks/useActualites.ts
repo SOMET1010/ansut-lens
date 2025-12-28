@@ -108,36 +108,26 @@ export const useActualites = (filters?: {
   });
 };
 
+// Note: Ces hooks seront activés après création de la table collectes_log
 export const useLastCollecte = () => {
   return useQuery({
     queryKey: ['last-collecte'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('collectes_log')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data as CollecteLog | null;
+    queryFn: async (): Promise<CollecteLog | null> => {
+      // La table collectes_log n'existe pas encore - retourner null
+      // Sera activé après la migration
+      return null;
     },
-    refetchInterval: 60000, // Rafraîchir toutes les minutes
+    refetchInterval: 60000,
   });
 };
 
 export const useCollectesHistory = () => {
   return useQuery({
     queryKey: ['collectes-history'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('collectes_log')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      if (error) throw error;
-      return data as CollecteLog[];
+    queryFn: async (): Promise<CollecteLog[]> => {
+      // La table collectes_log n'existe pas encore - retourner tableau vide
+      // Sera activé après la migration
+      return [];
     },
   });
 };
