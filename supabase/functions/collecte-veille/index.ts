@@ -13,12 +13,19 @@ interface MotCleVeille {
   quadrant: string | null;
   score_criticite: number | null;
   alerte_auto: boolean | null;
-  categorie_id: string | null;
+  categorie_id?: string | null;
   categories_veille?: {
     nom: string;
     code: string;
-  } | null;
+  } | { nom: string; code: string; }[] | null;
 }
+
+// Helper to get category name from joined data
+const getCategoryName = (cat: MotCleVeille['categories_veille']): string | undefined => {
+  if (!cat) return undefined;
+  if (Array.isArray(cat)) return cat[0]?.nom;
+  return cat.nom;
+};
 
 interface PerplexityResult {
   titre: string;
@@ -91,7 +98,7 @@ serve(async (req) => {
     console.log(`[collecte-veille] ${motsCles.length} mots-clés à traiter`);
 
     // 2. Construire la requête Perplexity
-    const topKeywords = motsCles.slice(0, 10).map((m: MotCleVeille) => m.mot_cle);
+    const topKeywords = motsCles.slice(0, 10).map((m) => m.mot_cle);
     const keywordsString = topKeywords.join(', ');
 
     const perplexityPrompt = `Collecte les informations les plus récentes (moins de ${recency}h) concernant les télécommunications et le numérique en Côte d'Ivoire, particulièrement sur ces sujets : ${keywordsString}.
@@ -192,7 +199,7 @@ Retourne un tableau JSON valide avec 5 à 10 actualités maximum. Si aucune actu
       let dominantCategory = '';
       let hasAlertKeyword = false;
 
-      for (const motCle of motsCles as MotCleVeille[]) {
+      for (const motCle of motsCles) {
         const allTerms = [motCle.mot_cle, ...(motCle.variantes || [])];
         for (const term of allTerms) {
           if (fullContent.includes(term.toLowerCase())) {
@@ -201,8 +208,9 @@ Retourne un tableau JSON valide avec 5 à 10 actualités maximum. Si aucune actu
             if (motCle.quadrant) {
               quadrantScores[motCle.quadrant] = (quadrantScores[motCle.quadrant] || 0) + (motCle.score_criticite || 50);
             }
-            if (!dominantCategory && motCle.categories_veille?.nom) {
-              dominantCategory = motCle.categories_veille.nom;
+            const catName = getCategoryName(motCle.categories_veille as MotCleVeille['categories_veille']);
+            if (!dominantCategory && catName) {
+              dominantCategory = catName;
             }
             if (motCle.alerte_auto) {
               hasAlertKeyword = true;
