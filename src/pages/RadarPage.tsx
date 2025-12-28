@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Target, Newspaper, TrendingUp, AlertTriangle, Clock, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { Target, Newspaper, TrendingUp, AlertTriangle, Clock, RefreshCw, Wifi, WifiOff, Radio, Brain, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -36,6 +37,7 @@ const periodLabels: Record<PeriodFilter, string> = {
 };
 
 export default function RadarPage() {
+  const navigate = useNavigate();
   const [period, setPeriod] = useState<PeriodFilter>('24h');
   
   const { data: kpis, isLoading: kpisLoading, isFetching: kpisFetching } = useRadarKPIs(period);
@@ -128,6 +130,55 @@ export default function RadarPage() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Mégatendances SUT & IA */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="glass border-blue-500/30 bg-blue-500/5 cursor-pointer hover:bg-blue-500/10 transition-colors" onClick={() => navigate('/dossiers?cat=sut')}>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                <Radio className="h-5 w-5 text-blue-500" />
+              </div>
+              <div>
+                <span className="text-blue-500">Service Universel des Télécommunications</span>
+                <p className="text-xs font-normal text-muted-foreground mt-0.5">Socle de l'inclusion numérique</p>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">
+              Connectivité rurale, accès universel au numérique, réduction des fractures territoriales et sociales.
+            </p>
+            <div className="flex items-center justify-between">
+              <Badge variant="outline" className="text-blue-500 border-blue-500/30">Axe prioritaire</Badge>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="glass border-orange-500/30 bg-orange-500/5 cursor-pointer hover:bg-orange-500/10 transition-colors" onClick={() => navigate('/dossiers?cat=ia')}>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                <Brain className="h-5 w-5 text-orange-500" />
+              </div>
+              <div>
+                <span className="text-orange-500">Intelligence Artificielle</span>
+                <p className="text-xs font-normal text-muted-foreground mt-0.5">Accélérateur des services publics</p>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">
+              IA souveraine, éthique, régulation et démocratisation pour éviter l'exclusion numérique.
+            </p>
+            <div className="flex items-center justify-between">
+              <Badge variant="outline" className="text-orange-500 border-orange-500/30">Axe prioritaire</Badge>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Radar Visuel */}
