@@ -1,10 +1,11 @@
-import { Bell, Search, Moon, Sun } from 'lucide-react';
+import { Search, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { useTheme } from 'next-themes';
+import { NotificationCenter } from '@/components/notifications';
 import type { ViewMode } from '@/types';
 
 const modeLabels: Record<ViewMode, string> = {
@@ -78,12 +79,7 @@ export function AppHeader() {
           </Button>
 
           {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-4 w-4" />
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
-              3
-            </span>
-          </Button>
+          <NotificationCenter />
         </div>
       </div>
     </header>

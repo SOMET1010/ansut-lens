@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ViewModeProvider } from "@/contexts/ViewModeContext";
+import { AlertNotificationProvider } from "@/components/notifications";
 import { AppLayout } from "@/components/layout/AppLayout";
 import AuthPage from "@/pages/AuthPage";
 import RadarPage from "@/pages/RadarPage";
@@ -26,28 +27,30 @@ const App = () => (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <AuthProvider>
         <ViewModeProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/auth" element={<AuthPage />} />
-                <Route path="/" element={<Navigate to="/radar" replace />} />
-                <Route element={<AppLayout />}>
-                  <Route path="/radar" element={<RadarPage />} />
-                  <Route path="/actualites" element={<ActualitesPage />} />
-                  <Route path="/medias" element={<MediasPage />} />
-                  <Route path="/personnalites" element={<PersonnalitesPage />} />
-                  <Route path="/presence-digitale" element={<PresenceDigitalePage />} />
-                  <Route path="/assistant" element={<AssistantPage />} />
-                  <Route path="/admin" element={<AdminPage />} />
-                  <Route path="/admin/mots-cles" element={<MotsClesPage />} />
-                  <Route path="/admin/import-acteurs" element={<ImportActeursPage />} />
-                </Route>
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
+          <AlertNotificationProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/" element={<Navigate to="/radar" replace />} />
+                  <Route element={<AppLayout />}>
+                    <Route path="/radar" element={<RadarPage />} />
+                    <Route path="/actualites" element={<ActualitesPage />} />
+                    <Route path="/medias" element={<MediasPage />} />
+                    <Route path="/personnalites" element={<PersonnalitesPage />} />
+                    <Route path="/presence-digitale" element={<PresenceDigitalePage />} />
+                    <Route path="/assistant" element={<AssistantPage />} />
+                    <Route path="/admin" element={<AdminPage />} />
+                    <Route path="/admin/mots-cles" element={<MotsClesPage />} />
+                    <Route path="/admin/import-acteurs" element={<ImportActeursPage />} />
+                  </Route>
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </AlertNotificationProvider>
         </ViewModeProvider>
       </AuthProvider>
     </ThemeProvider>
