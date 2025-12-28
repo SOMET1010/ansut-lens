@@ -1,15 +1,17 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { Send, Bot, User, Loader2, Signal, Brain, Users, FileText, Database, RefreshCw } from 'lucide-react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { Send, Bot, User, Loader2, Signal, Brain, Users, FileText, Database, RefreshCw, Settings2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { useActualites } from '@/hooks/useActualites';
 import { useDossiers } from '@/hooks/useDossiers';
 import { MessageContent } from '@/components/assistant/MessageContent';
+import { ContextSelector } from '@/components/assistant/ContextSelector';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -195,8 +197,75 @@ export default function AssistantPage() {
   // Fetch context data
   const { data: actualites, isLoading: loadingActualites } = useActualites({ maxAgeHours: 72 });
   const { data: dossiers, isLoading: loadingDossiers } = useDossiers();
+  
+  // Available items for selection
+  const availableActualites = useMemo(() => actualites?.slice(0, 10) || [], [actualites]);
+  const availableDossiers = useMemo(() => dossiers?.filter(d => d.statut === 'publie').slice(0, 10) || [], [dossiers]);
 
-  // Build context string for the AI
+  // Selection state - default to first 5 actualites and first 3 dossiers
+  const [selectedActualites, setSelectedActualites] = useState<Set<string>>(new Set());
+  const [selectedDossiers, setSelectedDossiers] = useState<Set<string>>(new Set());
+  
+  // Initialize selections when data loads
+  useEffect(() => {
+    if (availableActualites.length > 0 && selectedActualites.size === 0) {
+      setSelectedActualites(new Set(availableActualites.slice(0, 5).map(a => a.id)));
+    }
+  }, [availableActualites]);
+  
+  useEffect(() => {
+    if (availableDossiers.length > 0 && selectedDossiers.size === 0) {
+      setSelectedDossiers(new Set(availableDossiers.slice(0, 3).map(d => d.id)));
+    }
+  }, [availableDossiers]);
+
+  // Selection handlers
+  const handleToggleActualite = useCallback((id: string) => {
+    setSelectedActualites(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleToggleDossier = useCallback((id: string) => {
+    setSelectedDossiers(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSelectAllActualites = useCallback(() => {
+    if (selectedActualites.size === availableActualites.length) {
+      setSelectedActualites(new Set());
+    } else {
+      setSelectedActualites(new Set(availableActualites.map(a => a.id)));
+    }
+  }, [availableActualites, selectedActualites.size]);
+
+  const handleSelectAllDossiers = useCallback(() => {
+    if (selectedDossiers.size === availableDossiers.length) {
+      setSelectedDossiers(new Set());
+    } else {
+      setSelectedDossiers(new Set(availableDossiers.map(d => d.id)));
+    }
+  }, [availableDossiers, selectedDossiers.size]);
+
+  const handleClearAll = useCallback(() => {
+    setSelectedActualites(new Set());
+    setSelectedDossiers(new Set());
+  }, []);
+
+  // Build context string for the AI based on selection
   const context = useMemo(() => {
     const now = new Date().toLocaleDateString('fr-FR', { 
       weekday: 'long', 
@@ -206,10 +275,10 @@ export default function AssistantPage() {
     });
     let contextStr = `=== CONTEXTE ACTUALISÉ (${now}) ===\n\n`;
     
-    const recentActualites = actualites?.slice(0, 5) || [];
-    if (recentActualites.length > 0) {
-      contextStr += "📰 ACTUALITÉS RÉCENTES (utilise le format [[ACTU:id|titre]] pour citer) :\n";
-      recentActualites.forEach(a => {
+    const selectedActus = availableActualites.filter(a => selectedActualites.has(a.id));
+    if (selectedActus.length > 0) {
+      contextStr += "📰 ACTUALITÉS SÉLECTIONNÉES (utilise le format [[ACTU:id|titre]] pour citer) :\n";
+      selectedActus.forEach(a => {
         const date = a.date_publication 
           ? new Date(a.date_publication).toLocaleDateString('fr-FR') 
           : '';
@@ -218,22 +287,23 @@ export default function AssistantPage() {
       });
     }
     
-    const publishedDossiers = dossiers?.filter(d => d.statut === 'publie').slice(0, 3) || [];
-    if (publishedDossiers.length > 0) {
-      contextStr += "📋 DOSSIERS STRATÉGIQUES (utilise le format [[DOSSIER:id|titre]] pour citer) :\n";
-      publishedDossiers.forEach(d => {
+    const selectedDoss = availableDossiers.filter(d => selectedDossiers.has(d.id));
+    if (selectedDoss.length > 0) {
+      contextStr += "📋 DOSSIERS SÉLECTIONNÉS (utilise le format [[DOSSIER:id|titre]] pour citer) :\n";
+      selectedDoss.forEach(d => {
         contextStr += `- ID: ${d.id} | Titre: "${d.titre}" [${d.categorie}]\n  Résumé: ${d.resume || 'Non disponible'}\n\n`;
       });
     }
     
     return contextStr;
-  }, [actualites, dossiers]);
+  }, [availableActualites, availableDossiers, selectedActualites, selectedDossiers]);
 
   const contextStats = useMemo(() => ({
-    actualites: actualites?.slice(0, 5).length || 0,
-    dossiers: dossiers?.filter(d => d.statut === 'publie').slice(0, 3).length || 0,
+    actualites: selectedActualites.size,
+    dossiers: selectedDossiers.size,
+    totalAvailable: availableActualites.length + availableDossiers.length,
     isLoading: loadingActualites || loadingDossiers
-  }), [actualites, dossiers, loadingActualites, loadingDossiers]);
+  }), [selectedActualites.size, selectedDossiers.size, availableActualites.length, availableDossiers.length, loadingActualites, loadingDossiers]);
 
   useEffect(() => {
     // Auto-scroll to bottom when messages change
@@ -309,36 +379,48 @@ export default function AssistantPage() {
                 Assistant IA
               </CardTitle>
               
-              {/* Context Indicator */}
-              <Tooltip>
-                <TooltipTrigger asChild>
+              {/* Context Indicator with Selector */}
+              <Popover>
+                <PopoverTrigger asChild>
                   <Badge 
                     variant="outline" 
-                    className="flex items-center gap-2 px-3 py-1.5 cursor-help hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-muted/50 transition-colors"
                   >
                     {contextStats.isLoading ? (
                       <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
                     ) : (
-                      <Database className="h-3.5 w-3.5 text-primary" />
+                      <Settings2 className="h-3.5 w-3.5 text-primary" />
                     )}
                     <span className="text-xs">
                       {contextStats.actualites} actualités • {contextStats.dossiers} dossiers
                     </span>
                   </Badge>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs">
-                  <div className="space-y-2 text-sm">
-                    <p className="font-medium">Contexte automatique synchronisé</p>
-                    <ul className="text-muted-foreground space-y-1">
-                      <li>• {contextStats.actualites} actualités des dernières 72h</li>
-                      <li>• {contextStats.dossiers} dossiers stratégiques publiés</li>
-                    </ul>
-                    <p className="text-xs text-muted-foreground/80 pt-1 border-t">
-                      L'assistant utilise ces informations pour personnaliser ses réponses.
+                </PopoverTrigger>
+                <PopoverContent side="bottom" align="end" className="w-80">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-sm">Configurer le contexte</h4>
+                      <Badge variant="secondary" className="text-xs">
+                        {contextStats.actualites + contextStats.dossiers} sélectionnés
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Sélectionnez les actualités et dossiers que l'assistant utilisera pour contextualiser ses réponses.
                     </p>
+                    <ContextSelector
+                      actualites={availableActualites}
+                      dossiers={availableDossiers}
+                      selectedActualites={selectedActualites}
+                      selectedDossiers={selectedDossiers}
+                      onToggleActualite={handleToggleActualite}
+                      onToggleDossier={handleToggleDossier}
+                      onSelectAllActualites={handleSelectAllActualites}
+                      onSelectAllDossiers={handleSelectAllDossiers}
+                      onClearAll={handleClearAll}
+                    />
                   </div>
-                </TooltipContent>
-              </Tooltip>
+                </PopoverContent>
+              </Popover>
             </div>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col min-h-0">
