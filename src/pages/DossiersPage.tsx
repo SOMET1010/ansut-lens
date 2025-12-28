@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Plus, Search, Filter, Clock, ChevronRight } from 'lucide-react';
+import { FileText, Plus, Search, Clock, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,11 +16,14 @@ import {
   type Dossier 
 } from '@/hooks/useDossiers';
 import { useAuth } from '@/contexts/AuthContext';
+import { DossierFormDialog, DossierView } from '@/components/dossiers';
 
 export default function DossiersPage() {
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDossier, setSelectedDossier] = useState<Dossier | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingDossier, setEditingDossier] = useState<Dossier | null>(null);
   
   const { isAdmin } = useAuth();
   const { data: dossiers, isLoading } = useDossiers();
@@ -51,7 +54,7 @@ export default function DossiersPage() {
         </div>
         
         {isAdmin && (
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={() => { setEditingDossier(null); setIsFormOpen(true); }}>
             <Plus className="h-4 w-4" />
             Nouveau dossier
           </Button>
@@ -211,6 +214,25 @@ export default function DossiersPage() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Dialog de création/édition */}
+      <DossierFormDialog
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        dossier={editingDossier}
+      />
+
+      {/* Vue de lecture */}
+      <DossierView
+        dossier={selectedDossier}
+        open={!!selectedDossier}
+        onOpenChange={(open) => !open && setSelectedDossier(null)}
+        onEdit={(dossier) => {
+          setSelectedDossier(null);
+          setEditingDossier(dossier);
+          setIsFormOpen(true);
+        }}
+      />
     </div>
   );
 }
