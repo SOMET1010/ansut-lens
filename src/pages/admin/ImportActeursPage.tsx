@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,9 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Download, RefreshCw, ExternalLink, AlertTriangle, CheckCircle2, Users } from 'lucide-react';
+import { Loader2, Download, RefreshCw, AlertTriangle, CheckCircle2, Users, Copy, Database } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useDeduplicationActeurs } from '@/hooks/useDeduplicationActeurs';
+import { SourceBadge } from '@/components/import-acteurs/SourceBadge';
+import { EditableCell } from '@/components/import-acteurs/EditableCell';
+import { StatsPanel } from '@/components/import-acteurs/StatsPanel';
 
 interface ActeurGenere {
   nom_complet: string;
@@ -24,6 +28,8 @@ interface ActeurGenere {
   score_influence: number;
   statut: 'verifie' | 'a_verifier';
   selected?: boolean;
+  doublon?: boolean;
+  doublonId?: string;
 }
 
 const CATEGORIES = [
@@ -51,6 +57,28 @@ export default function ImportActeursPage() {
   const [acteursAVerifier, setActeursAVerifier] = useState<ActeurGenere[]>([]);
   const [citations, setCitations] = useState<string[]>([]);
 
+  const { chargerActeursExistants, verifierDoublon, nombreActeursExistants, isLoading: isLoadingExistants } = useDeduplicationActeurs();
+
+  // Charger les acteurs existants au montage
+  useEffect(() => {
+    chargerActeursExistants();
+  }, [chargerActeursExistants]);
+
+  // Vérifier les doublons quand les acteurs changent
+  const acteursAvecDoublons = useMemo(() => {
+    return acteurs.map(acteur => {
+      const doublon = verifierDoublon(acteur.nom_complet, acteur.organisation);
+      return {
+        ...acteur,
+        doublon: !!doublon,
+        doublonId: doublon?.id,
+        selected: acteur.selected && !doublon // Désélectionner les doublons
+      };
+    });
+  }, [acteurs, verifierDoublon]);
+
+  const doublonsCount = acteursAvecDoublons.filter(a => a.doublon).length;
+
   const handleGenerate = async () => {
     if (!selectedCategorie) {
       toast({ title: 'Sélectionnez une catégorie', variant: 'destructive' });
@@ -62,6 +90,9 @@ export default function ImportActeursPage() {
     setActeursAVerifier([]);
 
     try {
+      // Recharger les acteurs existants pour la déduplication
+      await chargerActeursExistants();
+
       const { data, error } = await supabase.functions.invoke('generer-acteurs', {
         body: { categorie: selectedCategorie }
       });
@@ -70,7 +101,7 @@ export default function ImportActeursPage() {
 
       const acteursWithSelection = (data.acteurs || []).map((a: ActeurGenere) => ({
         ...a,
-        selected: true // Pré-sélectionner tous les acteurs vérifiés
+        selected: true
       }));
 
       setActeurs(acteursWithSelection);
@@ -106,20 +137,24 @@ export default function ImportActeursPage() {
     ));
   };
 
+  const updateActeurField = (index: number, field: 'fonction' | 'organisation', value: string) => {
+    setActeurs(prev => prev.map((a, i) => 
+      i === index ? { ...a, [field]: value } : a
+    ));
+  };
+
   const handleImport = async () => {
-    const selectedActeurs = acteurs.filter(a => a.selected);
+    const selectedActeurs = acteursAvecDoublons.filter(a => a.selected && !a.doublon);
     
     if (selectedActeurs.length === 0) {
-      toast({ title: 'Aucun acteur sélectionné', variant: 'destructive' });
+      toast({ title: 'Aucun acteur sélectionné (hors doublons)', variant: 'destructive' });
       return;
     }
 
     setIsImporting(true);
 
     try {
-      // Préparer les données pour l'insertion
       const personnalites = selectedActeurs.map(acteur => {
-        // Séparer nom et prénom
         const parts = acteur.nom_complet.trim().split(' ');
         const prenom = parts[0] || '';
         const nom = parts.slice(1).join(' ') || parts[0] || '';
@@ -152,10 +187,12 @@ export default function ImportActeursPage() {
         description: `${personnalites.length} acteurs importés dans la base`
       });
 
-      // Réinitialiser après import
       setActeurs([]);
       setActeursAVerifier([]);
       setCitations([]);
+      
+      // Recharger pour la prochaine déduplication
+      await chargerActeursExistants();
 
     } catch (error) {
       console.error('Erreur import:', error);
@@ -169,16 +206,22 @@ export default function ImportActeursPage() {
     }
   };
 
-  const selectedCount = acteurs.filter(a => a.selected).length;
-  const spdiCount = acteurs.filter(a => a.selected && a.suivi_spdi_actif).length;
+  const selectedCount = acteursAvecDoublons.filter(a => a.selected && !a.doublon).length;
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold">Import Acteurs (Perplexity)</h1>
-        <p className="text-muted-foreground">
-          Génération et import d'acteurs clés avec sources vérifiées
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Import Acteurs (Perplexity)</h1>
+          <p className="text-muted-foreground">
+            Génération et import d'acteurs clés avec sources vérifiées
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Database className="h-4 w-4" />
+          <span>{nombreActeursExistants} acteurs en base</span>
+          {isLoadingExistants && <Loader2 className="h-3 w-3 animate-spin" />}
+        </div>
       </div>
 
       {/* Sélection catégorie et génération */}
@@ -238,18 +281,23 @@ export default function ImportActeursPage() {
         </CardContent>
       </Card>
 
+      {/* Statistiques temps réel */}
+      {acteursAvecDoublons.length > 0 && (
+        <StatsPanel acteurs={acteursAvecDoublons} doublonsCount={doublonsCount} />
+      )}
+
       {/* Résultats */}
-      {acteurs.length > 0 && (
+      {acteursAvecDoublons.length > 0 && (
         <Card className="glass">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
-                  Acteurs trouvés ({acteurs.length})
+                  Acteurs trouvés ({acteursAvecDoublons.length})
                 </CardTitle>
                 <CardDescription>
-                  {selectedCount} sélectionnés · {spdiCount} avec suivi SPDI actif
+                  {selectedCount} à importer · Double-cliquez pour modifier
                 </CardDescription>
               </div>
               <Button 
@@ -271,13 +319,13 @@ export default function ImportActeursPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">
                       <Checkbox 
-                        checked={acteurs.every(a => a.selected)}
+                        checked={acteursAvecDoublons.filter(a => !a.doublon).every(a => a.selected)}
                         onCheckedChange={(checked) => {
                           setActeurs(prev => prev.map(a => ({ ...a, selected: !!checked })));
                         }}
@@ -287,64 +335,69 @@ export default function ImportActeursPage() {
                     <TableHead>Fonction</TableHead>
                     <TableHead>Organisation</TableHead>
                     <TableHead className="w-20">Cercle</TableHead>
-                    <TableHead className="w-24">Score</TableHead>
-                    <TableHead className="w-24">SPDI</TableHead>
-                    <TableHead>Sources</TableHead>
+                    <TableHead className="w-20">SPDI</TableHead>
+                    <TableHead className="min-w-[200px]">Sources</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {acteurs.map((acteur, index) => (
-                    <TableRow key={index} className={acteur.selected ? '' : 'opacity-50'}>
+                  {acteursAvecDoublons.map((acteur, index) => (
+                    <TableRow 
+                      key={index} 
+                      className={
+                        acteur.doublon 
+                          ? 'opacity-50 bg-yellow-500/5' 
+                          : acteur.selected ? '' : 'opacity-50'
+                      }
+                    >
                       <TableCell>
-                        <Checkbox 
-                          checked={acteur.selected}
-                          onCheckedChange={() => toggleActeurSelection(index)}
-                        />
+                        {acteur.doublon ? (
+                          <Badge variant="outline" className="text-xs bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+                            <Copy className="h-3 w-3 mr-1" />
+                            Doublon
+                          </Badge>
+                        ) : (
+                          <Checkbox 
+                            checked={acteur.selected}
+                            onCheckedChange={() => toggleActeurSelection(index)}
+                          />
+                        )}
                       </TableCell>
                       <TableCell className="font-medium">
                         {acteur.nom_complet}
+                        {acteur.statut === 'verifie' && (
+                          <CheckCircle2 className="h-3 w-3 text-green-500 inline ml-1" />
+                        )}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {acteur.fonction}
+                      <TableCell>
+                        <EditableCell 
+                          value={acteur.fonction}
+                          onChange={(val) => updateActeurField(index, 'fonction', val)}
+                          className="text-sm text-muted-foreground"
+                        />
                       </TableCell>
-                      <TableCell>{acteur.organisation}</TableCell>
+                      <TableCell>
+                        <EditableCell 
+                          value={acteur.organisation}
+                          onChange={(val) => updateActeurField(index, 'organisation', val)}
+                        />
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={CERCLE_COLORS[acteur.cercle]}>
                           C{acteur.cercle}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{acteur.score_influence}</Badge>
-                      </TableCell>
-                      <TableCell>
                         <Switch 
                           checked={acteur.suivi_spdi_actif}
                           onCheckedChange={() => toggleActeurSPDI(index)}
+                          disabled={acteur.doublon}
                         />
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          {acteur.statut === 'verifie' ? (
-                            <CheckCircle2 className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                          )}
-                          {acteur.sources.slice(0, 2).map((url, i) => (
-                            <a 
-                              key={i}
-                              href={url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-primary hover:underline"
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
+                        <div className="flex flex-wrap gap-1">
+                          {acteur.sources.map((url, i) => (
+                            <SourceBadge key={i} url={url} />
                           ))}
-                          {acteur.sources.length > 2 && (
-                            <span className="text-xs text-muted-foreground">
-                              +{acteur.sources.length - 2}
-                            </span>
-                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -356,7 +409,7 @@ export default function ImportActeursPage() {
         </Card>
       )}
 
-      {/* Acteurs sans sources (avertissement) */}
+      {/* Acteurs sans sources */}
       {acteursAVerifier.length > 0 && (
         <Card className="glass border-yellow-500/30">
           <CardHeader>
@@ -389,16 +442,7 @@ export default function ImportActeursPage() {
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {citations.map((url, i) => (
-                <a 
-                  key={i}
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline flex items-center gap-1"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  {new URL(url).hostname}
-                </a>
+                <SourceBadge key={i} url={url} />
               ))}
             </div>
           </CardContent>
