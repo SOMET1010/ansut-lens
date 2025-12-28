@@ -187,6 +187,39 @@ export type Database = {
         }
         Relationships: []
       }
+      collectes_log: {
+        Row: {
+          created_at: string
+          duree_ms: number | null
+          erreur: string | null
+          id: string
+          mots_cles_utilises: string[] | null
+          nb_resultats: number | null
+          statut: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          duree_ms?: number | null
+          erreur?: string | null
+          id?: string
+          mots_cles_utilises?: string[] | null
+          nb_resultats?: number | null
+          statut: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          duree_ms?: number | null
+          erreur?: string | null
+          id?: string
+          mots_cles_utilises?: string[] | null
+          nb_resultats?: number | null
+          statut?: string
+          type?: string
+        }
+        Relationships: []
+      }
       config_seuils: {
         Row: {
           cle: string
