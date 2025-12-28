@@ -368,51 +368,117 @@ export type Database = {
       }
       personnalites: {
         Row: {
+          actif: boolean | null
+          alertes_config: Json | null
           bio: string | null
           categorie: string | null
+          cercle: number | null
           created_at: string
           derniere_activite: string | null
           fonction: string | null
           id: string
+          niveau_alerte: string | null
           nom: string
+          notes: string | null
           organisation: string | null
+          pays: string | null
           photo_url: string | null
           prenom: string | null
           reseaux: Json | null
           score_influence: number | null
+          sources_suivies: Json | null
+          sous_categorie: string | null
           tags: string[] | null
+          thematiques: string[] | null
+          zone: string | null
         }
         Insert: {
+          actif?: boolean | null
+          alertes_config?: Json | null
           bio?: string | null
           categorie?: string | null
+          cercle?: number | null
           created_at?: string
           derniere_activite?: string | null
           fonction?: string | null
           id?: string
+          niveau_alerte?: string | null
           nom: string
+          notes?: string | null
           organisation?: string | null
+          pays?: string | null
           photo_url?: string | null
           prenom?: string | null
           reseaux?: Json | null
           score_influence?: number | null
+          sources_suivies?: Json | null
+          sous_categorie?: string | null
           tags?: string[] | null
+          thematiques?: string[] | null
+          zone?: string | null
         }
         Update: {
+          actif?: boolean | null
+          alertes_config?: Json | null
           bio?: string | null
           categorie?: string | null
+          cercle?: number | null
           created_at?: string
           derniere_activite?: string | null
           fonction?: string | null
           id?: string
+          niveau_alerte?: string | null
           nom?: string
+          notes?: string | null
           organisation?: string | null
+          pays?: string | null
           photo_url?: string | null
           prenom?: string | null
           reseaux?: Json | null
           score_influence?: number | null
+          sources_suivies?: Json | null
+          sous_categorie?: string | null
           tags?: string[] | null
+          thematiques?: string[] | null
+          zone?: string | null
         }
         Relationships: []
+      }
+      personnalites_mentions: {
+        Row: {
+          created_at: string | null
+          id: string
+          mention_id: string
+          personnalite_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          mention_id: string
+          personnalite_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          mention_id?: string
+          personnalite_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personnalites_mentions_mention_id_fkey"
+            columns: ["mention_id"]
+            isOneToOne: false
+            referencedRelation: "mentions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "personnalites_mentions_personnalite_id_fkey"
+            columns: ["personnalite_id"]
+            isOneToOne: false
+            referencedRelation: "personnalites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

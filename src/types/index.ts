@@ -65,19 +65,80 @@ export interface Mention {
   suggestion_reaction?: string;
 }
 
+// Cercles stratégiques (1 = priorité absolue, 4 = veille)
+export type CercleStrategique = 1 | 2 | 3 | 4;
+
+// Sous-catégories par cercle
+export type SousCategorieActeur = 
+  // Cercle 1 - Institutionnels Nationaux
+  | 'tutelle_mtnd'
+  | 'regulation_artci'
+  | 'gouvernance_ansut'
+  // Cercle 2 - Opérateurs, FAI & Connectivité
+  | 'operateurs_mobiles'
+  | 'fai_internet'
+  | 'fintech_mobile_money'
+  | 'equipementiers'
+  | 'associations_sectorielles'
+  // Cercle 3 - Bailleurs & Internationaux
+  | 'bailleurs_financeurs'
+  | 'organisations_africaines'
+  | 'normalisation_standards'
+  // Cercle 4 - Experts & Médias
+  | 'medias_analystes'
+  | 'academique_formation'
+  | 'consultants_influenceurs';
+
+// Niveaux d'alerte par acteur
+export type NiveauAlerte = 'normal' | 'eleve' | 'critique';
+
+// Configuration des alertes par type d'événement
+export interface AlertesConfig {
+  changement_position?: boolean;
+  annonce_majeure?: boolean;
+  polemique?: boolean;
+  financement?: boolean;
+  // Spécifiques FAI
+  panne_service?: boolean;
+  retrait_zone?: boolean;
+  // Spécifiques Fintech
+  incident_paiement?: boolean;
+  controverse_reglementaire?: boolean;
+}
+
+// Catégories d'acteurs
+export type CategorieActeur = 'operateur' | 'regulateur' | 'expert' | 'politique' | 'media' | 'bailleur' | 'fai' | 'fintech' | 'autre';
+
+// Interface Personnalité enrichie
 export interface Personnalite {
   id: string;
   nom: string;
   prenom?: string;
   fonction?: string;
   organisation?: string;
-  categorie?: 'operateur' | 'regulateur' | 'expert' | 'politique' | 'media' | 'autre';
+  categorie?: CategorieActeur;
+  sous_categorie?: SousCategorieActeur;
+  cercle: CercleStrategique;
+  pays?: string;
+  zone?: string;
   photo_url?: string;
   bio?: string;
   score_influence: number;
   reseaux?: Record<string, string>;
+  thematiques?: string[];
+  sources_suivies?: {
+    twitter?: string;
+    linkedin?: string;
+    presse?: string[];
+    communiques?: string[];
+  };
+  alertes_config?: AlertesConfig;
+  niveau_alerte?: NiveauAlerte;
   tags?: string[];
   derniere_activite?: string;
+  actif?: boolean;
+  notes?: string;
+  created_at?: string;
 }
 
 export interface Alerte {
