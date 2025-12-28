@@ -1,22 +1,21 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Send, Bot, User, Loader2, Signal, Brain, Users, FileText, Database, RefreshCw, Settings2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, Signal, Brain, Users, FileText, RefreshCw, Settings2, History } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { toast } from 'sonner';
 import { useActualites } from '@/hooks/useActualites';
 import { useDossiers } from '@/hooks/useDossiers';
+import { useConversationsIA, type ConversationMessage, type Conversation } from '@/hooks/useConversationsIA';
 import { MessageContent } from '@/components/assistant/MessageContent';
 import { ContextSelector } from '@/components/assistant/ContextSelector';
-
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-}
+import { ConversationHistory } from '@/components/assistant/ConversationHistory';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PromptCategory {
   category: string;
@@ -73,13 +72,17 @@ const promptCategories: PromptCategory[] = [
   }
 ];
 
-// Quick inline suggestions for empty state
 const inlineSuggestions = [
   { text: 'Actualités SUT', prompt: 'Résume les dernières actualités SUT' },
   { text: 'Briefing DG', prompt: 'Génère un briefing DG pour aujourd\'hui' },
   { text: 'Acteurs à surveiller', prompt: 'Quels acteurs clés surveiller cette semaine ?' },
   { text: 'Note IA', prompt: 'Génère une note de synthèse sur l\'IA en Afrique' },
 ];
+
+const WELCOME_MESSAGE: ConversationMessage = { 
+  role: 'assistant', 
+  content: 'Bonjour ! Je suis votre assistant IA ANSUT RADAR. J\'ai accès aux actualités récentes et dossiers stratégiques pour contextualiser mes réponses. Comment puis-je vous aider ?' 
+};
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/assistant-ia`;
 
@@ -90,7 +93,7 @@ async function streamChat({
   onDone,
   onError,
 }: {
-  messages: Message[];
+  messages: ConversationMessage[];
   context: string;
   onDelta: (deltaText: string) => void;
   onDone: () => void;
@@ -155,14 +158,12 @@ async function streamChat({
           const content = parsed.choices?.[0]?.delta?.content as string | undefined;
           if (content) onDelta(content);
         } catch {
-          // Incomplete JSON, put it back
           textBuffer = line + '\n' + textBuffer;
           break;
         }
       }
     }
 
-    // Final flush
     if (textBuffer.trim()) {
       for (let raw of textBuffer.split('\n')) {
         if (!raw) continue;
@@ -187,26 +188,32 @@ async function streamChat({
 }
 
 export default function AssistantPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Bonjour ! Je suis votre assistant IA ANSUT RADAR. J\'ai accès aux actualités récentes et dossiers stratégiques pour contextualiser mes réponses. Comment puis-je vous aider ?' }
-  ]);
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<ConversationMessage[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const { 
+    conversations, 
+    isLoading: loadingConversations, 
+    createConversation, 
+    updateConversation, 
+    deleteConversation 
+  } = useConversationsIA();
 
   // Fetch context data
   const { data: actualites, isLoading: loadingActualites } = useActualites({ maxAgeHours: 72 });
   const { data: dossiers, isLoading: loadingDossiers } = useDossiers();
   
-  // Available items for selection
   const availableActualites = useMemo(() => actualites?.slice(0, 10) || [], [actualites]);
   const availableDossiers = useMemo(() => dossiers?.filter(d => d.statut === 'publie').slice(0, 10) || [], [dossiers]);
 
-  // Selection state - default to first 5 actualites and first 3 dossiers
   const [selectedActualites, setSelectedActualites] = useState<Set<string>>(new Set());
   const [selectedDossiers, setSelectedDossiers] = useState<Set<string>>(new Set());
   
-  // Initialize selections when data loads
   useEffect(() => {
     if (availableActualites.length > 0 && selectedActualites.size === 0) {
       setSelectedActualites(new Set(availableActualites.slice(0, 5).map(a => a.id)));
@@ -219,15 +226,11 @@ export default function AssistantPage() {
     }
   }, [availableDossiers]);
 
-  // Selection handlers
   const handleToggleActualite = useCallback((id: string) => {
     setSelectedActualites(prev => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }, []);
@@ -235,11 +238,8 @@ export default function AssistantPage() {
   const handleToggleDossier = useCallback((id: string) => {
     setSelectedDossiers(prev => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }, []);
@@ -265,13 +265,9 @@ export default function AssistantPage() {
     setSelectedDossiers(new Set());
   }, []);
 
-  // Build context string for the AI based on selection
   const context = useMemo(() => {
     const now = new Date().toLocaleDateString('fr-FR', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
     });
     let contextStr = `=== CONTEXTE ACTUALISÉ (${now}) ===\n\n`;
     
@@ -279,9 +275,7 @@ export default function AssistantPage() {
     if (selectedActus.length > 0) {
       contextStr += "📰 ACTUALITÉS SÉLECTIONNÉES (utilise le format [[ACTU:id|titre]] pour citer) :\n";
       selectedActus.forEach(a => {
-        const date = a.date_publication 
-          ? new Date(a.date_publication).toLocaleDateString('fr-FR') 
-          : '';
+        const date = a.date_publication ? new Date(a.date_publication).toLocaleDateString('fr-FR') : '';
         const importance = a.importance ? `[Importance: ${a.importance}/100]` : '';
         contextStr += `- ID: ${a.id} | Titre: "${a.titre}" ${importance}\n  Résumé: ${a.resume || 'Non disponible'}\n  Source: ${a.source_nom || 'Inconnue'} (${date})\n\n`;
       });
@@ -301,21 +295,35 @@ export default function AssistantPage() {
   const contextStats = useMemo(() => ({
     actualites: selectedActualites.size,
     dossiers: selectedDossiers.size,
-    totalAvailable: availableActualites.length + availableDossiers.length,
     isLoading: loadingActualites || loadingDossiers
-  }), [selectedActualites.size, selectedDossiers.size, availableActualites.length, availableDossiers.length, loadingActualites, loadingDossiers]);
+  }), [selectedActualites.size, selectedDossiers.size, loadingActualites, loadingDossiers]);
 
   useEffect(() => {
-    // Auto-scroll to bottom when messages change
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
+  // Save conversation after each message exchange
+  const saveConversation = useCallback(async (newMessages: ConversationMessage[]) => {
+    if (!user) return;
+    
+    // Filter out welcome message for storage
+    const messagesToSave = newMessages.filter(m => m !== WELCOME_MESSAGE && m.content !== WELCOME_MESSAGE.content);
+    if (messagesToSave.length === 0) return;
+
+    if (currentConversationId) {
+      updateConversation.mutate({ id: currentConversationId, messages: messagesToSave });
+    } else {
+      const result = await createConversation.mutateAsync(messagesToSave);
+      setCurrentConversationId(result.id);
+    }
+  }, [user, currentConversationId, createConversation, updateConversation]);
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { role: 'user', content: input.trim() };
+    const userMessage: ConversationMessage = { role: 'user', content: input.trim() };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInput('');
@@ -328,12 +336,8 @@ export default function AssistantPage() {
       setMessages(prev => {
         const last = prev[prev.length - 1];
         if (last?.role === 'assistant' && prev.length > messages.length) {
-          // Update existing assistant message
-          return prev.map((m, i) => 
-            i === prev.length - 1 ? { ...m, content: assistantContent } : m
-          );
+          return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
         }
-        // Create new assistant message
         return [...prev.slice(0, -1), userMessage, { role: 'assistant', content: assistantContent }];
       });
     };
@@ -342,11 +346,15 @@ export default function AssistantPage() {
       messages: newMessages.map(m => ({ role: m.role, content: m.content })),
       context,
       onDelta: updateAssistant,
-      onDone: () => setIsLoading(false),
+      onDone: () => {
+        setIsLoading(false);
+        // Save after response complete
+        const finalMessages = [...newMessages, { role: 'assistant' as const, content: assistantContent }];
+        saveConversation(finalMessages);
+      },
       onError: (error) => {
         toast.error(error);
         setIsLoading(false);
-        // Remove the incomplete assistant message if any
         setMessages(prev => {
           const last = prev[prev.length - 1];
           if (last?.role === 'assistant' && last.content === '') {
@@ -362,6 +370,25 @@ export default function AssistantPage() {
     setInput(prompt);
   };
 
+  const handleNewConversation = useCallback(() => {
+    setMessages([WELCOME_MESSAGE]);
+    setCurrentConversationId(null);
+    setHistoryOpen(false);
+  }, []);
+
+  const handleSelectConversation = useCallback((conv: Conversation) => {
+    setMessages([WELCOME_MESSAGE, ...conv.messages]);
+    setCurrentConversationId(conv.id);
+    setHistoryOpen(false);
+  }, []);
+
+  const handleDeleteConversation = useCallback((id: string) => {
+    deleteConversation.mutate(id);
+    if (currentConversationId === id) {
+      handleNewConversation();
+    }
+  }, [deleteConversation, currentConversationId, handleNewConversation]);
+
   const isEmptyConversation = messages.length === 1 && messages[0].role === 'assistant';
 
   const handleSuggestionClick = (prompt: string) => {
@@ -371,15 +398,65 @@ export default function AssistantPage() {
   return (
     <TooltipProvider>
       <div className="h-[calc(100vh-8rem)] flex gap-4 animate-fade-in">
+        {/* History Sidebar - Desktop */}
+        <Card className="w-72 glass hidden xl:flex xl:flex-col">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <History className="h-4 w-4" />
+              Historique
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 p-0 overflow-hidden">
+            <ConversationHistory
+              conversations={conversations}
+              isLoading={loadingConversations}
+              currentConversationId={currentConversationId}
+              onSelectConversation={handleSelectConversation}
+              onNewConversation={handleNewConversation}
+              onDeleteConversation={handleDeleteConversation}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Main Chat Area */}
         <Card className="flex-1 glass flex flex-col">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="h-5 w-5 text-primary" />
-                Assistant IA
-              </CardTitle>
+              <div className="flex items-center gap-2">
+                {/* Mobile History Button */}
+                <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+                  <SheetTrigger asChild>
+                    <Button variant="ghost" size="icon" className="xl:hidden">
+                      <History className="h-5 w-5" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-80 p-0">
+                    <SheetHeader className="p-4 border-b">
+                      <SheetTitle className="flex items-center gap-2">
+                        <History className="h-4 w-4" />
+                        Historique
+                      </SheetTitle>
+                    </SheetHeader>
+                    <div className="h-[calc(100vh-5rem)]">
+                      <ConversationHistory
+                        conversations={conversations}
+                        isLoading={loadingConversations}
+                        currentConversationId={currentConversationId}
+                        onSelectConversation={handleSelectConversation}
+                        onNewConversation={handleNewConversation}
+                        onDeleteConversation={handleDeleteConversation}
+                      />
+                    </div>
+                  </SheetContent>
+                </Sheet>
+
+                <CardTitle className="flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-primary" />
+                  Assistant IA
+                </CardTitle>
+              </div>
               
-              {/* Context Indicator with Selector */}
+              {/* Context Indicator */}
               <Popover>
                 <PopoverTrigger asChild>
                   <Badge 
@@ -448,7 +525,6 @@ export default function AssistantPage() {
                       </div>
                     </div>
                     
-                    {/* Inline suggestions after welcome message */}
                     {isEmptyConversation && i === 0 && msg.role === 'assistant' && (
                       <div className="mt-4 ml-11 grid grid-cols-2 gap-2 max-w-md">
                         {inlineSuggestions.map((suggestion, idx) => (
@@ -480,7 +556,6 @@ export default function AssistantPage() {
               </div>
             </ScrollArea>
             
-            {/* Mobile suggestions (visible only on mobile) */}
             <div className="flex gap-2 overflow-x-auto py-2 lg:hidden">
               {inlineSuggestions.map((suggestion, idx) => (
                 <Button
@@ -512,7 +587,7 @@ export default function AssistantPage() {
           </CardContent>
         </Card>
         
-        {/* Sidebar with categorized prompts */}
+        {/* Sidebar with prompts */}
         <Card className="w-80 glass hidden lg:flex lg:flex-col">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">Suggestions par thème</CardTitle>
