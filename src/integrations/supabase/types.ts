@@ -151,6 +151,42 @@ export type Database = {
         }
         Relationships: []
       }
+      categories_veille: {
+        Row: {
+          actif: boolean | null
+          code: string
+          couleur: string | null
+          created_at: string
+          description: string | null
+          id: string
+          nom: string
+          priorite: number | null
+          quadrant_default: string | null
+        }
+        Insert: {
+          actif?: boolean | null
+          code: string
+          couleur?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom: string
+          priorite?: number | null
+          quadrant_default?: string | null
+        }
+        Update: {
+          actif?: boolean | null
+          code?: string
+          couleur?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom?: string
+          priorite?: number | null
+          quadrant_default?: string | null
+        }
+        Relationships: []
+      }
       config_seuils: {
         Row: {
           cle: string
@@ -249,6 +285,53 @@ export type Database = {
           traite?: boolean | null
         }
         Relationships: []
+      }
+      mots_cles_veille: {
+        Row: {
+          actif: boolean | null
+          alerte_auto: boolean | null
+          categorie_id: string | null
+          created_at: string
+          id: string
+          mot_cle: string
+          quadrant: string | null
+          score_criticite: number | null
+          updated_at: string
+          variantes: string[] | null
+        }
+        Insert: {
+          actif?: boolean | null
+          alerte_auto?: boolean | null
+          categorie_id?: string | null
+          created_at?: string
+          id?: string
+          mot_cle: string
+          quadrant?: string | null
+          score_criticite?: number | null
+          updated_at?: string
+          variantes?: string[] | null
+        }
+        Update: {
+          actif?: boolean | null
+          alerte_auto?: boolean | null
+          categorie_id?: string | null
+          created_at?: string
+          id?: string
+          mot_cle?: string
+          quadrant?: string | null
+          score_criticite?: number | null
+          updated_at?: string
+          variantes?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mots_cles_veille_categorie_id_fkey"
+            columns: ["categorie_id"]
+            isOneToOne: false
+            referencedRelation: "categories_veille"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       personnalites: {
         Row: {

@@ -14,6 +14,7 @@ import MediasPage from "@/pages/MediasPage";
 import PersonnalitesPage from "@/pages/PersonnalitesPage";
 import AssistantPage from "@/pages/AssistantPage";
 import AdminPage from "@/pages/AdminPage";
+import MotsClesPage from "@/pages/admin/MotsClesPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
                   <Route path="/personnalites" element={<PersonnalitesPage />} />
                   <Route path="/assistant" element={<AssistantPage />} />
                   <Route path="/admin" element={<AdminPage />} />
+                  <Route path="/admin/mots-cles" element={<MotsClesPage />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
