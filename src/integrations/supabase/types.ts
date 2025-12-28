@@ -274,6 +274,42 @@ export type Database = {
         }
         Relationships: []
       }
+      dossiers: {
+        Row: {
+          auteur_id: string | null
+          categorie: string
+          contenu: string | null
+          created_at: string
+          id: string
+          resume: string | null
+          statut: string
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          auteur_id?: string | null
+          categorie?: string
+          contenu?: string | null
+          created_at?: string
+          id?: string
+          resume?: string | null
+          statut?: string
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          auteur_id?: string | null
+          categorie?: string
+          contenu?: string | null
+          created_at?: string
+          id?: string
+          resume?: string | null
+          statut?: string
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mentions: {
         Row: {
           auteur: string | null

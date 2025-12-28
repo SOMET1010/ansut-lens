@@ -1,12 +1,11 @@
 import { 
-  Target, 
+  LayoutDashboard, 
   Newspaper, 
-  BarChart3, 
   Users, 
+  FileText,
   Bot, 
   Settings,
   LogOut,
-  Activity
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
@@ -25,36 +24,31 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import logoAnsut from '@/assets/logo-ansut.jpg';
 
+// Menu à 6 entrées maximum (+ admin conditionnel)
 const menuItems = [
   { 
-    title: 'Centre Radar', 
+    title: 'Tableau de bord', 
     url: '/radar', 
-    icon: Target,
-    description: 'Tableau de bord'
+    icon: LayoutDashboard,
+    description: 'Vue exécutive'
   },
   { 
-    title: 'Actualités', 
+    title: 'Actualités & Veille', 
     url: '/actualites', 
     icon: Newspaper,
-    description: 'Veille du jour'
+    description: 'Revue de presse'
   },
   { 
-    title: 'Médias ANSUT', 
-    url: '/medias', 
-    icon: BarChart3,
-    description: 'E-réputation'
-  },
-  { 
-    title: 'Personnalités', 
+    title: 'Acteurs clés', 
     url: '/personnalites', 
     icon: Users,
-    description: 'Suivi influenceurs'
+    description: 'Fiches personnalités'
   },
   { 
-    title: 'Présence Digitale', 
-    url: '/presence-digitale', 
-    icon: Activity,
-    description: 'Score SPDI'
+    title: 'Dossiers stratégiques', 
+    url: '/dossiers', 
+    icon: FileText,
+    description: 'Notes et briefings'
   },
   { 
     title: 'Assistant IA', 
