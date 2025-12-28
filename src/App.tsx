@@ -18,6 +18,7 @@ import AssistantPage from "@/pages/AssistantPage";
 import AdminPage from "@/pages/AdminPage";
 import MotsClesPage from "@/pages/admin/MotsClesPage";
 import ImportActeursPage from "@/pages/admin/ImportActeursPage";
+import AlertesHistoryPage from "@/pages/AlertesHistoryPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App = () => (
                     <Route path="/admin" element={<AdminPage />} />
                     <Route path="/admin/mots-cles" element={<MotsClesPage />} />
                     <Route path="/admin/import-acteurs" element={<ImportActeursPage />} />
+                    <Route path="/alertes" element={<AlertesHistoryPage />} />
                   </Route>
                   <Route path="*" element={<NotFound />} />
                 </Routes>
