@@ -117,13 +117,13 @@ export const useLastCollecte = () => {
         .select('*')
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Erreur récupération dernière collecte:', error);
         return null;
       }
-      return data as CollecteLog | null;
+      return data;
     },
     refetchInterval: 60000,
   });
