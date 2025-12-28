@@ -1,7 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Settings, Users, Database, Bell } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Settings, Users, Database, Bell, Tag } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function AdminPage() {
   return (
@@ -10,7 +9,7 @@ export default function AdminPage() {
         <h1 className="text-3xl font-bold">Administration</h1>
         <p className="text-muted-foreground">Configuration et gestion du système</p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card className="glass cursor-pointer hover:shadow-glow transition-shadow">
           <CardContent className="pt-6 flex flex-col items-center text-center">
             <Database className="h-10 w-10 text-primary mb-3" />
@@ -18,9 +17,18 @@ export default function AdminPage() {
             <p className="text-sm text-muted-foreground">12 actives</p>
           </CardContent>
         </Card>
+        <Link to="/admin/mots-cles">
+          <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full">
+            <CardContent className="pt-6 flex flex-col items-center text-center">
+              <Tag className="h-10 w-10 text-secondary mb-3" />
+              <h3 className="font-semibold">Mots-Clés</h3>
+              <p className="text-sm text-muted-foreground">Veille & alertes</p>
+            </CardContent>
+          </Card>
+        </Link>
         <Card className="glass cursor-pointer hover:shadow-glow transition-shadow">
           <CardContent className="pt-6 flex flex-col items-center text-center">
-            <Bell className="h-10 w-10 text-secondary mb-3" />
+            <Bell className="h-10 w-10 text-chart-4 mb-3" />
             <h3 className="font-semibold">Alertes</h3>
             <p className="text-sm text-muted-foreground">Configurer seuils</p>
           </CardContent>
