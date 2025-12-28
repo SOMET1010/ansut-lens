@@ -71,7 +71,7 @@ export function useCreateDossier() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (dossier: { titre: string; resume?: string; contenu?: string; categorie?: DossierCategorie }) => {
+    mutationFn: async (dossier: { titre: string; resume?: string; contenu?: string; categorie?: DossierCategorie; statut?: DossierStatut }) => {
       const { data, error } = await supabase
         .from('dossiers')
         .insert([dossier])
