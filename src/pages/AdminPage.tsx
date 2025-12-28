@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Settings, Users, Database, Bell, Tag } from 'lucide-react';
+import { Settings, Users, Database, Bell, Tag, UserPlus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function AdminPage() {
@@ -9,7 +9,16 @@ export default function AdminPage() {
         <h1 className="text-3xl font-bold">Administration</h1>
         <p className="text-muted-foreground">Configuration et gestion du système</p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Link to="/admin/import-acteurs">
+          <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full">
+            <CardContent className="pt-6 flex flex-col items-center text-center">
+              <UserPlus className="h-10 w-10 text-primary mb-3" />
+              <h3 className="font-semibold">Import Acteurs</h3>
+              <p className="text-sm text-muted-foreground">Via Perplexity</p>
+            </CardContent>
+          </Card>
+        </Link>
         <Card className="glass cursor-pointer hover:shadow-glow transition-shadow">
           <CardContent className="pt-6 flex flex-col items-center text-center">
             <Database className="h-10 w-10 text-primary mb-3" />

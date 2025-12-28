@@ -16,6 +16,7 @@ import PresenceDigitalePage from "@/pages/PresenceDigitalePage";
 import AssistantPage from "@/pages/AssistantPage";
 import AdminPage from "@/pages/AdminPage";
 import MotsClesPage from "@/pages/admin/MotsClesPage";
+import ImportActeursPage from "@/pages/admin/ImportActeursPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
                   <Route path="/assistant" element={<AssistantPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/admin/mots-cles" element={<MotsClesPage />} />
+                  <Route path="/admin/import-acteurs" element={<ImportActeursPage />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
