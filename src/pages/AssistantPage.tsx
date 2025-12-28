@@ -1,10 +1,14 @@
-import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Signal, Brain, Users, FileText } from 'lucide-react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { Send, Bot, User, Loader2, Signal, Brain, Users, FileText, Database, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
+import { useActualites } from '@/hooks/useActualites';
+import { useDossiers } from '@/hooks/useDossiers';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -78,11 +82,13 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/assistant-ia
 
 async function streamChat({
   messages,
+  context,
   onDelta,
   onDone,
   onError,
 }: {
   messages: Message[];
+  context: string;
   onDelta: (deltaText: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
@@ -94,7 +100,7 @@ async function streamChat({
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ messages, context }),
     });
 
     if (!resp.ok) {
@@ -179,11 +185,54 @@ async function streamChat({
 
 export default function AssistantPage() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Bonjour ! Je suis votre assistant IA ANSUT RADAR. Comment puis-je vous aider dans votre veille stratégique ?' }
+    { role: 'assistant', content: 'Bonjour ! Je suis votre assistant IA ANSUT RADAR. J\'ai accès aux actualités récentes et dossiers stratégiques pour contextualiser mes réponses. Comment puis-je vous aider ?' }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Fetch context data
+  const { data: actualites, isLoading: loadingActualites } = useActualites({ maxAgeHours: 72 });
+  const { data: dossiers, isLoading: loadingDossiers } = useDossiers();
+
+  // Build context string for the AI
+  const context = useMemo(() => {
+    const now = new Date().toLocaleDateString('fr-FR', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    let contextStr = `=== CONTEXTE ACTUALISÉ (${now}) ===\n\n`;
+    
+    const recentActualites = actualites?.slice(0, 5) || [];
+    if (recentActualites.length > 0) {
+      contextStr += "📰 ACTUALITÉS RÉCENTES :\n";
+      recentActualites.forEach(a => {
+        const date = a.date_publication 
+          ? new Date(a.date_publication).toLocaleDateString('fr-FR') 
+          : '';
+        const importance = a.importance ? `[Importance: ${a.importance}/100]` : '';
+        contextStr += `- ${a.titre} ${importance}\n  Résumé: ${a.resume || 'Non disponible'}\n  Source: ${a.source_nom || 'Inconnue'} (${date})\n\n`;
+      });
+    }
+    
+    const publishedDossiers = dossiers?.filter(d => d.statut === 'publie').slice(0, 3) || [];
+    if (publishedDossiers.length > 0) {
+      contextStr += "📋 DOSSIERS STRATÉGIQUES EN COURS :\n";
+      publishedDossiers.forEach(d => {
+        contextStr += `- ${d.titre} [${d.categorie}]\n  Résumé: ${d.resume || 'Non disponible'}\n\n`;
+      });
+    }
+    
+    return contextStr;
+  }, [actualites, dossiers]);
+
+  const contextStats = useMemo(() => ({
+    actualites: actualites?.slice(0, 5).length || 0,
+    dossiers: dossiers?.filter(d => d.statut === 'publie').slice(0, 3).length || 0,
+    isLoading: loadingActualites || loadingDossiers
+  }), [actualites, dossiers, loadingActualites, loadingDossiers]);
 
   useEffect(() => {
     // Auto-scroll to bottom when messages change
@@ -220,6 +269,7 @@ export default function AssistantPage() {
 
     await streamChat({
       messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+      context,
       onDelta: updateAssistant,
       onDone: () => setIsLoading(false),
       onError: (error) => {
@@ -248,136 +298,171 @@ export default function AssistantPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex gap-4 animate-fade-in">
-      <Card className="flex-1 glass flex flex-col">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2">
-            <Bot className="h-5 w-5 text-primary" />
-            Assistant IA
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 flex flex-col min-h-0">
-          <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
-            <div className="space-y-4 pb-4">
-              {messages.map((msg, i) => (
-                <div key={i}>
-                  <div className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                    <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
-                      msg.role === 'assistant' ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'
-                    }`}>
-                      {msg.role === 'assistant' ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
+    <TooltipProvider>
+      <div className="h-[calc(100vh-8rem)] flex gap-4 animate-fade-in">
+        <Card className="flex-1 glass flex flex-col">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Bot className="h-5 w-5 text-primary" />
+                Assistant IA
+              </CardTitle>
+              
+              {/* Context Indicator */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge 
+                    variant="outline" 
+                    className="flex items-center gap-2 px-3 py-1.5 cursor-help hover:bg-muted/50 transition-colors"
+                  >
+                    {contextStats.isLoading ? (
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                    ) : (
+                      <Database className="h-3.5 w-3.5 text-primary" />
+                    )}
+                    <span className="text-xs">
+                      {contextStats.actualites} actualités • {contextStats.dossiers} dossiers
+                    </span>
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <div className="space-y-2 text-sm">
+                    <p className="font-medium">Contexte automatique synchronisé</p>
+                    <ul className="text-muted-foreground space-y-1">
+                      <li>• {contextStats.actualites} actualités des dernières 72h</li>
+                      <li>• {contextStats.dossiers} dossiers stratégiques publiés</li>
+                    </ul>
+                    <p className="text-xs text-muted-foreground/80 pt-1 border-t">
+                      L'assistant utilise ces informations pour personnaliser ses réponses.
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col min-h-0">
+            <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
+              <div className="space-y-4 pb-4">
+                {messages.map((msg, i) => (
+                  <div key={i}>
+                    <div className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                      <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
+                        msg.role === 'assistant' ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'
+                      }`}>
+                        {msg.role === 'assistant' ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
+                      </div>
+                      <div className={`max-w-[80%] p-3 rounded-lg whitespace-pre-wrap ${
+                        msg.role === 'assistant' ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'
+                      }`}>
+                        {msg.content}
+                        {isLoading && i === messages.length - 1 && msg.role === 'assistant' && (
+                          <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
+                        )}
+                      </div>
                     </div>
-                    <div className={`max-w-[80%] p-3 rounded-lg whitespace-pre-wrap ${
-                      msg.role === 'assistant' ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'
-                    }`}>
-                      {msg.content}
-                      {isLoading && i === messages.length - 1 && msg.role === 'assistant' && (
-                        <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
-                      )}
+                    
+                    {/* Inline suggestions after welcome message */}
+                    {isEmptyConversation && i === 0 && msg.role === 'assistant' && (
+                      <div className="mt-4 ml-11 grid grid-cols-2 gap-2 max-w-md">
+                        {inlineSuggestions.map((suggestion, idx) => (
+                          <Button
+                            key={idx}
+                            variant="outline"
+                            size="sm"
+                            className="justify-start text-xs h-auto py-2.5 px-3 border-dashed hover:border-primary hover:bg-primary/5 transition-colors"
+                            onClick={() => handleSuggestionClick(suggestion.prompt)}
+                            disabled={isLoading}
+                          >
+                            {suggestion.text}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {isLoading && messages[messages.length - 1]?.role === 'user' && (
+                  <div className="flex gap-3">
+                    <div className="h-8 w-8 rounded-full flex items-center justify-center bg-primary/20 text-primary">
+                      <Bot className="h-4 w-4" />
+                    </div>
+                    <div className="bg-muted p-3 rounded-lg">
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     </div>
                   </div>
-                  
-                  {/* Inline suggestions after welcome message */}
-                  {isEmptyConversation && i === 0 && msg.role === 'assistant' && (
-                    <div className="mt-4 ml-11 grid grid-cols-2 gap-2 max-w-md">
-                      {inlineSuggestions.map((suggestion, idx) => (
-                        <Button
-                          key={idx}
-                          variant="outline"
-                          size="sm"
-                          className="justify-start text-xs h-auto py-2.5 px-3 border-dashed hover:border-primary hover:bg-primary/5 transition-colors"
-                          onClick={() => handleSuggestionClick(suggestion.prompt)}
-                          disabled={isLoading}
-                        >
-                          {suggestion.text}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                )}
+              </div>
+            </ScrollArea>
+            
+            {/* Mobile suggestions (visible only on mobile) */}
+            <div className="flex gap-2 overflow-x-auto py-2 lg:hidden">
+              {inlineSuggestions.map((suggestion, idx) => (
+                <Button
+                  key={idx}
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 text-xs h-8 px-3 border-dashed"
+                  onClick={() => handleSuggestionClick(suggestion.prompt)}
+                  disabled={isLoading}
+                >
+                  {suggestion.text}
+                </Button>
               ))}
-              {isLoading && messages[messages.length - 1]?.role === 'user' && (
-                <div className="flex gap-3">
-                  <div className="h-8 w-8 rounded-full flex items-center justify-center bg-primary/20 text-primary">
-                    <Bot className="h-4 w-4" />
-                  </div>
-                  <div className="bg-muted p-3 rounded-lg">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  </div>
-                </div>
-              )}
             </div>
-          </ScrollArea>
-          
-          {/* Mobile suggestions (visible only on mobile) */}
-          <div className="flex gap-2 overflow-x-auto py-2 lg:hidden">
-            {inlineSuggestions.map((suggestion, idx) => (
-              <Button
-                key={idx}
-                variant="outline"
-                size="sm"
-                className="shrink-0 text-xs h-8 px-3 border-dashed"
-                onClick={() => handleSuggestionClick(suggestion.prompt)}
+            
+            <div className="flex gap-2 mt-2 pt-4 border-t border-border">
+              <Input 
+                value={input} 
+                onChange={(e) => setInput(e.target.value)} 
+                placeholder="Posez votre question..." 
+                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
                 disabled={isLoading}
-              >
-                {suggestion.text}
+                className="flex-1"
+              />
+              <Button onClick={handleSend} disabled={isLoading || !input.trim()}>
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </Button>
-            ))}
-          </div>
-          
-          <div className="flex gap-2 mt-2 pt-4 border-t border-border">
-            <Input 
-              value={input} 
-              onChange={(e) => setInput(e.target.value)} 
-              placeholder="Posez votre question..." 
-              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-              disabled={isLoading}
-              className="flex-1"
-            />
-            <Button onClick={handleSend} disabled={isLoading || !input.trim()}>
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Sidebar with categorized prompts */}
-      <Card className="w-80 glass hidden lg:flex lg:flex-col">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Suggestions par thème</CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 overflow-hidden">
-          <ScrollArea className="h-full pr-2">
-            <div className="space-y-4">
-              {promptCategories.map((cat, catIdx) => {
-                const IconComponent = cat.icon;
-                return (
-                  <div key={catIdx} className="space-y-2">
-                    <div className={`flex items-center gap-2 text-xs font-medium ${cat.colorClass}`}>
-                      <IconComponent className="h-3.5 w-3.5" />
-                      {cat.category}
-                    </div>
-                    <div className="space-y-1.5">
-                      {cat.prompts.map((prompt, promptIdx) => (
-                        <Button
-                          key={promptIdx}
-                          variant="outline"
-                          size="sm"
-                          className={`w-full justify-start text-xs h-auto py-2 px-3 whitespace-normal text-left border ${cat.bgClass} transition-colors`}
-                          onClick={() => handleQuickPrompt(prompt)}
-                          disabled={isLoading}
-                        >
-                          {prompt}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
             </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
-    </div>
+          </CardContent>
+        </Card>
+        
+        {/* Sidebar with categorized prompts */}
+        <Card className="w-80 glass hidden lg:flex lg:flex-col">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Suggestions par thème</CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full pr-2">
+              <div className="space-y-4">
+                {promptCategories.map((cat, catIdx) => {
+                  const IconComponent = cat.icon;
+                  return (
+                    <div key={catIdx} className="space-y-2">
+                      <div className={`flex items-center gap-2 text-xs font-medium ${cat.colorClass}`}>
+                        <IconComponent className="h-3.5 w-3.5" />
+                        {cat.category}
+                      </div>
+                      <div className="space-y-1.5">
+                        {cat.prompts.map((prompt, promptIdx) => (
+                          <Button
+                            key={promptIdx}
+                            variant="outline"
+                            size="sm"
+                            className={`w-full justify-start text-xs h-auto py-2 px-3 whitespace-normal text-left border ${cat.bgClass} transition-colors`}
+                            onClick={() => handleQuickPrompt(prompt)}
+                            disabled={isLoading}
+                          >
+                            {prompt}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
+    </TooltipProvider>
   );
 }

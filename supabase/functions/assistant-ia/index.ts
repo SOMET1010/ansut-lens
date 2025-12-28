@@ -29,7 +29,13 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, context } = await req.json();
+    
+    // Build contextual system prompt
+    let contextualPrompt = SYSTEM_PROMPT;
+    if (context) {
+      contextualPrompt = `${SYSTEM_PROMPT}\n\n${context}\n\nUtilise ces informations contextuelles pour personnaliser et enrichir tes réponses. Cite les sources (actualités, dossiers) quand c'est pertinent.`;
+    }
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -48,7 +54,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: contextualPrompt },
           ...messages,
         ],
         stream: true,
