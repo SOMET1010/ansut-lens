@@ -101,28 +101,21 @@ serve(async (req) => {
     const topKeywords = motsCles.slice(0, 10).map((m) => m.mot_cle);
     const keywordsString = topKeywords.join(', ');
 
-    const perplexityPrompt = `Collecte les informations les plus récentes (moins de ${recency}h) concernant les télécommunications et le numérique en Côte d'Ivoire, particulièrement sur ces sujets : ${keywordsString}.
+    const perplexityPrompt = `Recherche les actualités récentes sur les télécommunications, le numérique et les technologies en Côte d'Ivoire.
 
-Sources prioritaires :
-- Médias ivoiriens (Fraternité Matin, AIP, Abidjan.net, L'Intelligent d'Abidjan)
-- Institutions publiques (ARTCI, ANSUT, Ministère de la Communication)
-- Organisations internationales (UIT, Banque Mondiale)
-- Médias africains (Jeune Afrique, CIO Mag Africa)
+Thèmes prioritaires: ${keywordsString}
 
-Ignore toute information antérieure à 7 jours.
+Mais inclut aussi toute actualité récente sur:
+- Orange CI, MTN, Moov Africa (opérateurs télécom)
+- ARTCI (régulateur télécoms)
+- ANSUT (agence nationale du service universel des télécommunications)
+- Ministère de la Transition Numérique
+- Projets de fibre optique, 4G/5G, couverture réseau
+- Startups tech ivoiriennes, fintech, mobile money
+- Cybersécurité en Afrique de l'Ouest
+- Événements tech (SITEC, AfricaTech, etc.)
 
-Pour chaque actualité trouvée, fournis UNIQUEMENT un tableau JSON valide avec ces champs :
-[
-  {
-    "titre": "Titre de l'article",
-    "resume": "Résumé en 2-3 phrases",
-    "source": "Nom du média",
-    "url": "URL de l'article",
-    "date_publication": "YYYY-MM-DD"
-  }
-]
-
-Retourne un tableau JSON valide avec 5 à 10 actualités maximum. Si aucune actualité récente, retourne un tableau vide [].`;
+Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours) avec leurs vraies URLs.`;
 
     console.log('[collecte-veille] Appel Perplexity API...');
 
@@ -137,38 +130,98 @@ Retourne un tableau JSON valide avec 5 à 10 actualités maximum. Si aucune actu
         messages: [
           { 
             role: 'system', 
-            content: 'Tu es un assistant spécialisé dans la veille stratégique sur les télécommunications en Côte d\'Ivoire. Tu réponds uniquement en JSON valide.' 
+            content: 'Tu es un assistant spécialisé dans la veille stratégique sur les télécommunications en Côte d\'Ivoire. Tu dois TOUJOURS répondre avec un objet JSON valide contenant un tableau "actualites".' 
           },
           { role: 'user', content: perplexityPrompt }
         ],
         search_recency_filter: 'week',
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'actualites_response',
+            schema: {
+              type: 'object',
+              properties: {
+                actualites: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      titre: { type: 'string', description: 'Titre de l\'article' },
+                      resume: { type: 'string', description: 'Résumé en 2-3 phrases' },
+                      source: { type: 'string', description: 'Nom du média source' },
+                      url: { type: 'string', description: 'URL de l\'article' },
+                      date_publication: { type: 'string', description: 'Date au format YYYY-MM-DD' }
+                    },
+                    required: ['titre', 'resume', 'source', 'url', 'date_publication']
+                  }
+                }
+              },
+              required: ['actualites']
+            }
+          }
+        }
       }),
     });
 
     if (!perplexityResponse.ok) {
       const errorText = await perplexityResponse.text();
       console.error('[collecte-veille] Erreur Perplexity:', perplexityResponse.status, errorText);
-      throw new Error(`Perplexity API error: ${perplexityResponse.status}`);
+      throw new Error(`Perplexity API error: ${perplexityResponse.status} - ${errorText}`);
     }
 
     const perplexityData = await perplexityResponse.json();
-    const content = perplexityData.choices?.[0]?.message?.content || '[]';
+    const content = perplexityData.choices?.[0]?.message?.content || '{}';
     const citations = perplexityData.citations || [];
 
     console.log('[collecte-veille] Réponse Perplexity reçue, parsing...');
+    console.log('[collecte-veille] Contenu brut (500 premiers chars):', content.substring(0, 500));
 
-    // 3. Parser les résultats
+    // 3. Parser les résultats avec plusieurs stratégies de fallback
     let actualites: PerplexityResult[] = [];
     try {
-      // Extraire le JSON du contenu (peut être entouré de markdown)
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        actualites = JSON.parse(jsonMatch[0]);
+      // Stratégie 1: Parser directement comme objet JSON structuré
+      const parsed = JSON.parse(content);
+      if (parsed.actualites && Array.isArray(parsed.actualites)) {
+        actualites = parsed.actualites;
+        console.log('[collecte-veille] Parsing réussi via structured output');
+      } else if (Array.isArray(parsed)) {
+        // Stratégie 2: C'est directement un tableau
+        actualites = parsed;
+        console.log('[collecte-veille] Parsing réussi via tableau direct');
       }
     } catch (parseError) {
-      console.error('[collecte-veille] Erreur parsing JSON:', parseError);
-      console.log('[collecte-veille] Contenu brut:', content);
+      console.error('[collecte-veille] Erreur parsing JSON initial:', parseError);
+      
+      // Stratégie 3: Chercher un tableau JSON dans le contenu (fallback markdown)
+      try {
+        const jsonArrayMatch = content.match(/\[[\s\S]*?\]/);
+        if (jsonArrayMatch) {
+          actualites = JSON.parse(jsonArrayMatch[0]);
+          console.log('[collecte-veille] Parsing réussi via extraction tableau');
+        }
+      } catch (fallbackError) {
+        console.error('[collecte-veille] Échec parsing fallback tableau:', fallbackError);
+      }
+      
+      // Stratégie 4: Chercher un objet JSON avec actualites
+      if (actualites.length === 0) {
+        try {
+          const jsonObjectMatch = content.match(/\{[\s\S]*"actualites"[\s\S]*\}/);
+          if (jsonObjectMatch) {
+            const parsed = JSON.parse(jsonObjectMatch[0]);
+            actualites = parsed.actualites || [];
+            console.log('[collecte-veille] Parsing réussi via extraction objet');
+          }
+        } catch (objFallbackError) {
+          console.error('[collecte-veille] Échec parsing fallback objet:', objFallbackError);
+        }
+      }
     }
+    
+    // Validation des résultats
+    actualites = actualites.filter(a => a && a.titre && typeof a.titre === 'string');
+    console.log(`[collecte-veille] ${actualites.length} actualités validées après parsing`);
 
     console.log(`[collecte-veille] ${actualites.length} actualités parsées`);
 
