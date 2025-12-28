@@ -1,1 +1,4 @@
 project_id = "lpkfwxisranmetbtgxrv"
+
+[functions.assistant-ia]
+verify_jwt = false
