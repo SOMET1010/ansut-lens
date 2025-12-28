@@ -12,6 +12,7 @@ import RadarPage from "@/pages/RadarPage";
 import ActualitesPage from "@/pages/ActualitesPage";
 import MediasPage from "@/pages/MediasPage";
 import PersonnalitesPage from "@/pages/PersonnalitesPage";
+import PresenceDigitalePage from "@/pages/PresenceDigitalePage";
 import AssistantPage from "@/pages/AssistantPage";
 import AdminPage from "@/pages/AdminPage";
 import MotsClesPage from "@/pages/admin/MotsClesPage";
@@ -36,6 +37,7 @@ const App = () => (
                   <Route path="/actualites" element={<ActualitesPage />} />
                   <Route path="/medias" element={<MediasPage />} />
                   <Route path="/personnalites" element={<PersonnalitesPage />} />
+                  <Route path="/presence-digitale" element={<PresenceDigitalePage />} />
                   <Route path="/assistant" element={<AssistantPage />} />
                   <Route path="/admin" element={<AdminPage />} />
                   <Route path="/admin/mots-cles" element={<MotsClesPage />} />

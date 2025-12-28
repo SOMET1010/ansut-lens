@@ -193,3 +193,94 @@ export interface RadarQuadrant {
   signals: Signal[];
   color: string;
 }
+
+// === SPDI - Score de Présence Digitale Institutionnelle ===
+
+// Niveaux d'interprétation du score
+export type InterpretationSPDI = 
+  | 'presence_forte'      // 80-100
+  | 'presence_solide'     // 60-79
+  | 'visibilite_faible'   // 40-59
+  | 'risque_invisibilite'; // <40
+
+// Type de recommandation
+export type TypeRecommandationSPDI = 'opportunite' | 'alerte' | 'canal' | 'thematique';
+
+// Priorité de recommandation
+export type PrioriteRecommandation = 'haute' | 'normale' | 'basse';
+
+// Canal de communication
+export type CanalCommunication = 'linkedin' | 'presse' | 'conference' | 'communique';
+
+// Axes du score composite
+export interface AxesSPDI {
+  visibilite: {
+    score: number;
+    nb_mentions: number;
+    nb_sources: number;
+    regularite: number;
+  };
+  qualite: {
+    score: number;
+    sentiment_moyen: number;
+    themes_strategiques: number;
+    controverses: number;
+  };
+  autorite: {
+    score: number;
+    citations_directes: number;
+    invitations_panels: number;
+    references_croisees: number;
+  };
+  presence: {
+    score: number;
+    activite_linkedin: number;
+    engagement: number;
+    coherence: number;
+  };
+}
+
+// Métrique SPDI journalière
+export interface MetriqueSPDI {
+  id: string;
+  personnalite_id: string;
+  date_mesure: string;
+  axes: AxesSPDI;
+  score_final: number;
+  interpretation: InterpretationSPDI;
+  created_at: string;
+}
+
+// Recommandation IA
+export interface RecommandationSPDI {
+  id: string;
+  personnalite_id: string;
+  type: TypeRecommandationSPDI;
+  priorite: PrioriteRecommandation;
+  titre: string;
+  message: string;
+  thematique?: string;
+  canal?: CanalCommunication;
+  actif: boolean;
+  vue: boolean;
+  created_at: string;
+  expire_at?: string;
+}
+
+// Évolution du score sur une période
+export interface EvolutionSPDI {
+  periode: '7j' | '30j' | '90j';
+  historique: { date: string; score: number }[];
+  variation: number;
+  tendance: Tendance;
+}
+
+// Extension de Personnalite avec SPDI
+export interface PersonnaliteAvecSPDI extends Personnalite {
+  suivi_spdi_actif: boolean;
+  score_spdi_actuel: number;
+  tendance_spdi: Tendance;
+  derniere_mesure_spdi?: string;
+  axes_spdi?: AxesSPDI;
+  recommandations?: RecommandationSPDI[];
+}

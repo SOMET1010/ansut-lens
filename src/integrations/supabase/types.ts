@@ -375,6 +375,7 @@ export type Database = {
           cercle: number | null
           created_at: string
           derniere_activite: string | null
+          derniere_mesure_spdi: string | null
           fonction: string | null
           id: string
           niveau_alerte: string | null
@@ -386,9 +387,12 @@ export type Database = {
           prenom: string | null
           reseaux: Json | null
           score_influence: number | null
+          score_spdi_actuel: number | null
           sources_suivies: Json | null
           sous_categorie: string | null
+          suivi_spdi_actif: boolean | null
           tags: string[] | null
+          tendance_spdi: string | null
           thematiques: string[] | null
           zone: string | null
         }
@@ -400,6 +404,7 @@ export type Database = {
           cercle?: number | null
           created_at?: string
           derniere_activite?: string | null
+          derniere_mesure_spdi?: string | null
           fonction?: string | null
           id?: string
           niveau_alerte?: string | null
@@ -411,9 +416,12 @@ export type Database = {
           prenom?: string | null
           reseaux?: Json | null
           score_influence?: number | null
+          score_spdi_actuel?: number | null
           sources_suivies?: Json | null
           sous_categorie?: string | null
+          suivi_spdi_actif?: boolean | null
           tags?: string[] | null
+          tendance_spdi?: string | null
           thematiques?: string[] | null
           zone?: string | null
         }
@@ -425,6 +433,7 @@ export type Database = {
           cercle?: number | null
           created_at?: string
           derniere_activite?: string | null
+          derniere_mesure_spdi?: string | null
           fonction?: string | null
           id?: string
           niveau_alerte?: string | null
@@ -436,9 +445,12 @@ export type Database = {
           prenom?: string | null
           reseaux?: Json | null
           score_influence?: number | null
+          score_spdi_actuel?: number | null
           sources_suivies?: Json | null
           sous_categorie?: string | null
+          suivi_spdi_actif?: boolean | null
           tags?: string[] | null
+          tendance_spdi?: string | null
           thematiques?: string[] | null
           zone?: string | null
         }
@@ -473,6 +485,142 @@ export type Database = {
           },
           {
             foreignKeyName: "personnalites_mentions_personnalite_id_fkey"
+            columns: ["personnalite_id"]
+            isOneToOne: false
+            referencedRelation: "personnalites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presence_digitale_metrics: {
+        Row: {
+          activite_linkedin: number | null
+          coherence_message: number | null
+          created_at: string | null
+          date_mesure: string
+          engagement_linkedin: number | null
+          id: string
+          interpretation: string | null
+          nb_citations_directes: number | null
+          nb_controverses: number | null
+          nb_invitations_panels: number | null
+          nb_mentions: number | null
+          nb_references_croisees: number | null
+          nb_sources_distinctes: number | null
+          pct_themes_strategiques: number | null
+          personnalite_id: string
+          regularite_mentions: number | null
+          score_autorite: number | null
+          score_presence: number | null
+          score_qualite: number | null
+          score_spdi: number | null
+          score_visibilite: number | null
+          sentiment_moyen: number | null
+        }
+        Insert: {
+          activite_linkedin?: number | null
+          coherence_message?: number | null
+          created_at?: string | null
+          date_mesure?: string
+          engagement_linkedin?: number | null
+          id?: string
+          interpretation?: string | null
+          nb_citations_directes?: number | null
+          nb_controverses?: number | null
+          nb_invitations_panels?: number | null
+          nb_mentions?: number | null
+          nb_references_croisees?: number | null
+          nb_sources_distinctes?: number | null
+          pct_themes_strategiques?: number | null
+          personnalite_id: string
+          regularite_mentions?: number | null
+          score_autorite?: number | null
+          score_presence?: number | null
+          score_qualite?: number | null
+          score_spdi?: number | null
+          score_visibilite?: number | null
+          sentiment_moyen?: number | null
+        }
+        Update: {
+          activite_linkedin?: number | null
+          coherence_message?: number | null
+          created_at?: string | null
+          date_mesure?: string
+          engagement_linkedin?: number | null
+          id?: string
+          interpretation?: string | null
+          nb_citations_directes?: number | null
+          nb_controverses?: number | null
+          nb_invitations_panels?: number | null
+          nb_mentions?: number | null
+          nb_references_croisees?: number | null
+          nb_sources_distinctes?: number | null
+          pct_themes_strategiques?: number | null
+          personnalite_id?: string
+          regularite_mentions?: number | null
+          score_autorite?: number | null
+          score_presence?: number | null
+          score_qualite?: number | null
+          score_spdi?: number | null
+          score_visibilite?: number | null
+          sentiment_moyen?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presence_digitale_metrics_personnalite_id_fkey"
+            columns: ["personnalite_id"]
+            isOneToOne: false
+            referencedRelation: "personnalites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presence_digitale_recommandations: {
+        Row: {
+          actif: boolean | null
+          canal: string | null
+          created_at: string | null
+          expire_at: string | null
+          id: string
+          message: string
+          personnalite_id: string
+          priorite: string | null
+          thematique: string | null
+          titre: string
+          type: string
+          vue: boolean | null
+        }
+        Insert: {
+          actif?: boolean | null
+          canal?: string | null
+          created_at?: string | null
+          expire_at?: string | null
+          id?: string
+          message: string
+          personnalite_id: string
+          priorite?: string | null
+          thematique?: string | null
+          titre: string
+          type: string
+          vue?: boolean | null
+        }
+        Update: {
+          actif?: boolean | null
+          canal?: string | null
+          created_at?: string | null
+          expire_at?: string | null
+          id?: string
+          message?: string
+          personnalite_id?: string
+          priorite?: string | null
+          thematique?: string | null
+          titre?: string
+          type?: string
+          vue?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presence_digitale_recommandations_personnalite_id_fkey"
             columns: ["personnalite_id"]
             isOneToOne: false
             referencedRelation: "personnalites"
