@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from 'sonner';
 import { useActualites } from '@/hooks/useActualites';
 import { useDossiers } from '@/hooks/useDossiers';
+import { MessageContent } from '@/components/assistant/MessageContent';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -207,21 +208,21 @@ export default function AssistantPage() {
     
     const recentActualites = actualites?.slice(0, 5) || [];
     if (recentActualites.length > 0) {
-      contextStr += "📰 ACTUALITÉS RÉCENTES :\n";
+      contextStr += "📰 ACTUALITÉS RÉCENTES (utilise le format [[ACTU:id|titre]] pour citer) :\n";
       recentActualites.forEach(a => {
         const date = a.date_publication 
           ? new Date(a.date_publication).toLocaleDateString('fr-FR') 
           : '';
         const importance = a.importance ? `[Importance: ${a.importance}/100]` : '';
-        contextStr += `- ${a.titre} ${importance}\n  Résumé: ${a.resume || 'Non disponible'}\n  Source: ${a.source_nom || 'Inconnue'} (${date})\n\n`;
+        contextStr += `- ID: ${a.id} | Titre: "${a.titre}" ${importance}\n  Résumé: ${a.resume || 'Non disponible'}\n  Source: ${a.source_nom || 'Inconnue'} (${date})\n\n`;
       });
     }
     
     const publishedDossiers = dossiers?.filter(d => d.statut === 'publie').slice(0, 3) || [];
     if (publishedDossiers.length > 0) {
-      contextStr += "📋 DOSSIERS STRATÉGIQUES EN COURS :\n";
+      contextStr += "📋 DOSSIERS STRATÉGIQUES (utilise le format [[DOSSIER:id|titre]] pour citer) :\n";
       publishedDossiers.forEach(d => {
-        contextStr += `- ${d.titre} [${d.categorie}]\n  Résumé: ${d.resume || 'Non disponible'}\n\n`;
+        contextStr += `- ID: ${d.id} | Titre: "${d.titre}" [${d.categorie}]\n  Résumé: ${d.resume || 'Non disponible'}\n\n`;
       });
     }
     
@@ -354,7 +355,11 @@ export default function AssistantPage() {
                       <div className={`max-w-[80%] p-3 rounded-lg whitespace-pre-wrap ${
                         msg.role === 'assistant' ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'
                       }`}>
-                        {msg.content}
+                        {msg.role === 'assistant' ? (
+                          <MessageContent content={msg.content} />
+                        ) : (
+                          msg.content
+                        )}
                         {isLoading && i === messages.length - 1 && msg.role === 'assistant' && (
                           <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
                         )}
