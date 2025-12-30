@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RefreshCw, Search, TrendingUp, AlertTriangle, Newspaper, Clock, Sparkles, Loader2 } from 'lucide-react';
+import { RefreshCw, Search, TrendingUp, AlertTriangle, Newspaper, Clock, Sparkles, Loader2, ExternalLink } from 'lucide-react';
 import { useActualites, useLastCollecte, useTriggerCollecte, useEnrichActualite, calculateFreshness } from '@/hooks/useActualites';
 import { FreshnessIndicator, CollecteStatus } from '@/components/actualites/FreshnessIndicator';
 import { useCategoriesVeille } from '@/hooks/useMotsClesVeille';
@@ -268,7 +268,22 @@ export default function ActualitesPage() {
                             </Badge>
                           )}
                         </div>
-                        <CardTitle className="text-lg leading-tight">{actu.titre}</CardTitle>
+                        {actu.source_url ? (
+                          <a 
+                            href={actu.source_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="group"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <CardTitle className="text-lg leading-tight group-hover:text-primary transition-colors flex items-center gap-2">
+                              {actu.titre}
+                              <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </CardTitle>
+                          </a>
+                        ) : (
+                          <CardTitle className="text-lg leading-tight">{actu.titre}</CardTitle>
+                        )}
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         <Badge variant={actu.importance && actu.importance > 70 ? 'default' : 'secondary'}>
@@ -358,7 +373,21 @@ export default function ActualitesPage() {
                         {actu.importance || 50}%
                       </Badge>
                     </div>
-                    <CardTitle className="text-base leading-tight line-clamp-2">{actu.titre}</CardTitle>
+                    {actu.source_url ? (
+                      <a 
+                        href={actu.source_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="group"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <CardTitle className="text-base leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+                          {actu.titre}
+                        </CardTitle>
+                      </a>
+                    ) : (
+                      <CardTitle className="text-base leading-tight line-clamp-2">{actu.titre}</CardTitle>
+                    )}
                   </CardHeader>
                   <CardContent>
                     {actu.resume && (
