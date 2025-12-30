@@ -6,8 +6,11 @@ import {
   Bot, 
   Settings,
   LogOut,
+  User,
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import {
   Sidebar,
   SidebarContent,
@@ -69,7 +72,23 @@ export function AppSidebar() {
   const location = useLocation();
   const { state } = useSidebar();
   const { isAdmin, signOut, user } = useAuth();
+  const { profile } = useUserProfile();
   const collapsed = state === 'collapsed';
+
+  const getInitials = (name?: string | null, email?: string) => {
+    if (name) {
+      return name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    if (email) {
+      return email[0].toUpperCase();
+    }
+    return '?';
+  };
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
 
@@ -131,12 +150,30 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-4">
         {user && (
-          <div className="flex flex-col gap-2">
-            {!collapsed && (
-              <div className="text-xs text-muted-foreground truncate">
-                {user.email}
-              </div>
-            )}
+          <div className="flex flex-col gap-3">
+            <NavLink 
+              to="/profile" 
+              className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/50 transition-colors"
+            >
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || 'Avatar'} />
+                <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                  {getInitials(profile?.full_name, user.email)}
+                </AvatarFallback>
+              </Avatar>
+              {!collapsed && (
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sm font-medium truncate">
+                    {profile?.full_name || user.email}
+                  </span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <User className="h-3 w-3" />
+                    Mon profil
+                  </span>
+                </div>
+              )}
+            </NavLink>
+            
             <Button 
               variant="ghost" 
               size="sm" 
