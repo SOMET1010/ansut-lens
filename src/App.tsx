@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ViewModeProvider } from "@/contexts/ViewModeContext";
 import { AlertNotificationProvider } from "@/components/notifications";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ProtectedRoute, AdminRoute } from "@/components/auth";
 import AuthPage from "@/pages/AuthPage";
 import RadarPage from "@/pages/RadarPage";
 import ActualitesPage from "@/pages/ActualitesPage";
@@ -33,22 +34,31 @@ const App = () => (
               <Sonner />
               <BrowserRouter>
                 <Routes>
+                  {/* Route publique */}
                   <Route path="/auth" element={<AuthPage />} />
+                  
+                  {/* Redirections */}
                   <Route path="/" element={<Navigate to="/radar" replace />} />
-                  {/* Redirections pour les anciennes routes */}
                   <Route path="/medias" element={<Navigate to="/radar" replace />} />
                   <Route path="/presence-digitale" element={<Navigate to="/personnalites" replace />} />
-                  <Route element={<AppLayout />}>
+                  
+                  {/* Routes protégées */}
+                  <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                     <Route path="/radar" element={<RadarPage />} />
                     <Route path="/actualites" element={<ActualitesPage />} />
                     <Route path="/personnalites" element={<PersonnalitesPage />} />
                     <Route path="/dossiers" element={<DossiersPage />} />
                     <Route path="/assistant" element={<AssistantPage />} />
-                    <Route path="/admin" element={<AdminPage />} />
-                    <Route path="/admin/mots-cles" element={<MotsClesPage />} />
-                    <Route path="/admin/import-acteurs" element={<ImportActeursPage />} />
                     <Route path="/alertes" element={<AlertesHistoryPage />} />
+                    
+                    {/* Routes Admin */}
+                    <Route element={<AdminRoute />}>
+                      <Route path="/admin" element={<AdminPage />} />
+                      <Route path="/admin/mots-cles" element={<MotsClesPage />} />
+                      <Route path="/admin/import-acteurs" element={<ImportActeursPage />} />
+                    </Route>
                   </Route>
+                  
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>
