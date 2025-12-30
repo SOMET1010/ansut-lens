@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,8 +14,19 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { user, isLoading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Récupérer l'URL d'origine depuis location.state
+  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/radar';
+
+  // Rediriger si déjà connecté
+  useEffect(() => {
+    if (user && !isLoading) {
+      navigate(from, { replace: true });
+    }
+  }, [user, isLoading, from, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +39,7 @@ export default function AuthPage() {
           toast.error(error.message || 'Erreur de connexion');
         } else {
           toast.success('Connexion réussie');
-          navigate('/radar');
+          navigate(from, { replace: true });
         }
       } else {
         const { error } = await signUp(email, password, fullName);
