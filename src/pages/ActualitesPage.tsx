@@ -320,23 +320,42 @@ export default function ActualitesPage() {
                           </Badge>
                         )}
                       </div>
-                      <Button
-                        variant={needsEnrichment(actu) ? "default" : "ghost"}
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEnrich(actu.id);
-                        }}
-                        disabled={enrichingId === actu.id}
-                        className={needsEnrichment(actu) ? "animate-pulse" : ""}
-                      >
-                        {enrichingId === actu.id ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <Sparkles className="h-4 w-4 mr-2" />
+                      <div className="flex items-center gap-2">
+                        {actu.source_url && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            asChild
+                          >
+                            <a 
+                              href={actu.source_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              Voir la source
+                            </a>
+                          </Button>
                         )}
-                        {needsEnrichment(actu) ? "Enrichir" : "Ré-enrichir"}
-                      </Button>
+                        <Button
+                          variant={needsEnrichment(actu) ? "default" : "ghost"}
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEnrich(actu.id);
+                          }}
+                          disabled={enrichingId === actu.id}
+                          className={needsEnrichment(actu) ? "animate-pulse" : ""}
+                        >
+                          {enrichingId === actu.id ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4 mr-2" />
+                          )}
+                          {needsEnrichment(actu) ? "Enrichir" : "Ré-enrichir"}
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -395,14 +414,33 @@ export default function ActualitesPage() {
                         {actu.resume}
                       </p>
                     )}
-                    <div className="flex justify-between items-center mt-3 pt-2 border-t border-border/50">
-                      <div className="flex flex-wrap gap-1">
-                        {actu.tags?.slice(0, 3).map((tag) => (
-                          <Badge key={tag} variant="secondary" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
+                    <div className="flex flex-wrap gap-1 mt-3 pt-2 border-t border-border/50">
+                      {actu.tags?.slice(0, 3).map((tag) => (
+                        <Badge key={tag} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex justify-between items-center mt-3">
+                      {actu.source_url ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                        >
+                          <a 
+                            href={actu.source_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Source
+                          </a>
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">{actu.source_nom}</span>
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
