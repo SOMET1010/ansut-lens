@@ -1,25 +1,65 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { toast } from 'sonner';
 import logoAnsut from '@/assets/logo-ansut.jpg';
 
+// Schéma de validation pour la connexion
+const loginSchema = z.object({
+  email: z.string()
+    .trim()
+    .min(1, "L'email est requis")
+    .email("Format d'email invalide")
+    .max(255, "L'email ne peut pas dépasser 255 caractères"),
+  password: z.string()
+    .min(1, "Le mot de passe est requis")
+    .min(6, "Le mot de passe doit contenir au moins 6 caractères"),
+  fullName: z.string().optional()
+});
+
+// Schéma de validation pour l'inscription
+const signUpSchema = z.object({
+  email: z.string()
+    .trim()
+    .min(1, "L'email est requis")
+    .email("Format d'email invalide")
+    .max(255, "L'email ne peut pas dépasser 255 caractères"),
+  password: z.string()
+    .min(1, "Le mot de passe est requis")
+    .min(6, "Le mot de passe doit contenir au moins 6 caractères"),
+  fullName: z.string()
+    .trim()
+    .min(1, "Le nom complet est requis")
+    .max(100, "Le nom ne peut pas dépasser 100 caractères")
+});
+
+type FormData = z.infer<typeof signUpSchema>;
+
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const { user, isLoading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Récupérer l'URL d'origine depuis location.state
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/radar';
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(isLogin ? loginSchema : signUpSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      fullName: ''
+    },
+    mode: 'onBlur'
+  });
 
   // Rediriger si déjà connecté
   useEffect(() => {
@@ -28,13 +68,18 @@ export default function AuthPage() {
     }
   }, [user, isLoading, from, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Réinitialiser le formulaire au changement de mode
+  const handleModeChange = () => {
+    form.reset();
+    setIsLogin(!isLogin);
+  };
+
+  const onSubmit = async (data: FormData) => {
     setLoading(true);
 
     try {
       if (isLogin) {
-        const { error } = await signIn(email, password);
+        const { error } = await signIn(data.email, data.password);
         if (error) {
           toast.error(error.message || 'Erreur de connexion');
         } else {
@@ -42,12 +87,13 @@ export default function AuthPage() {
           navigate(from, { replace: true });
         }
       } else {
-        const { error } = await signUp(email, password, fullName);
+        const { error } = await signUp(data.email, data.password, data.fullName);
         if (error) {
           toast.error(error.message || 'Erreur lors de l\'inscription');
         } else {
           toast.success('Compte créé ! Vérifiez votre email.');
           setIsLogin(true);
+          form.reset();
         }
       }
     } catch (err) {
@@ -72,49 +118,58 @@ export default function AuthPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Nom complet</Label>
-                <Input
-                  id="fullName"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Jean Dupont"
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {!isLogin && (
+                <FormField
+                  control={form.control}
+                  name="fullName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nom complet</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Jean Dupont" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="vous@ansut.ci"
-                required
+              )}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="vous@ansut.ci" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                minLength={6}
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mot de passe</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Chargement...' : isLogin ? 'Se connecter' : 'Créer un compte'}
-            </Button>
-          </form>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Chargement...' : isLogin ? 'Se connecter' : 'Créer un compte'}
+              </Button>
+            </form>
+          </Form>
           <div className="mt-4 text-center">
             <button
               type="button"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={handleModeChange}
               className="text-sm text-muted-foreground hover:text-primary transition-colors"
             >
               {isLogin ? 'Pas de compte ? Inscrivez-vous' : 'Déjà un compte ? Connectez-vous'}
