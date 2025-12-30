@@ -19,6 +19,7 @@ import AdminPage from "@/pages/AdminPage";
 import MotsClesPage from "@/pages/admin/MotsClesPage";
 import ImportActeursPage from "@/pages/admin/ImportActeursPage";
 import AlertesHistoryPage from "@/pages/AlertesHistoryPage";
+import ProfilePage from "@/pages/ProfilePage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ const App = () => (
                     <Route path="/dossiers" element={<DossiersPage />} />
                     <Route path="/assistant" element={<AssistantPage />} />
                     <Route path="/alertes" element={<AlertesHistoryPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
                     
                     {/* Routes Admin */}
                     <Route element={<AdminRoute />}>
