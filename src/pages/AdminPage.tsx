@@ -42,13 +42,15 @@ export default function AdminPage() {
             <p className="text-sm text-muted-foreground">Configurer seuils</p>
           </CardContent>
         </Card>
-        <Card className="glass cursor-pointer hover:shadow-glow transition-shadow">
-          <CardContent className="pt-6 flex flex-col items-center text-center">
-            <Users className="h-10 w-10 text-chart-3 mb-3" />
-            <h3 className="font-semibold">Utilisateurs</h3>
-            <p className="text-sm text-muted-foreground">8 utilisateurs</p>
-          </CardContent>
-        </Card>
+        <Link to="/admin/users">
+          <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full">
+            <CardContent className="pt-6 flex flex-col items-center text-center">
+              <Users className="h-10 w-10 text-chart-3 mb-3" />
+              <h3 className="font-semibold">Utilisateurs</h3>
+              <p className="text-sm text-muted-foreground">Inviter & gérer</p>
+            </CardContent>
+          </Card>
+        </Link>
         <Card className="glass cursor-pointer hover:shadow-glow transition-shadow">
           <CardContent className="pt-6 flex flex-col items-center text-center">
             <Settings className="h-10 w-10 text-chart-5 mb-3" />

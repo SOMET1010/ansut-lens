@@ -23,23 +23,6 @@ const loginSchema = z.object({
   password: z.string()
     .min(1, "Le mot de passe est requis")
     .min(6, "Le mot de passe doit contenir au moins 6 caractères"),
-  fullName: z.string().optional()
-});
-
-// Schéma de validation pour l'inscription
-const signUpSchema = z.object({
-  email: z.string()
-    .trim()
-    .min(1, "L'email est requis")
-    .email("Format d'email invalide")
-    .max(255, "L'email ne peut pas dépasser 255 caractères"),
-  password: z.string()
-    .min(1, "Le mot de passe est requis")
-    .min(6, "Le mot de passe doit contenir au moins 6 caractères"),
-  fullName: z.string()
-    .trim()
-    .min(1, "Le nom complet est requis")
-    .max(100, "Le nom ne peut pas dépasser 100 caractères")
 });
 
 // Schéma pour la réinitialisation
@@ -51,26 +34,25 @@ const resetSchema = z.object({
     .max(255, "L'email ne peut pas dépasser 255 caractères"),
 });
 
-type FormData = z.infer<typeof signUpSchema>;
+type LoginFormData = z.infer<typeof loginSchema>;
 type ResetFormData = z.infer<typeof resetSchema>;
 
-type AuthMode = 'login' | 'signup' | 'forgot-password';
+type AuthMode = 'login' | 'forgot-password';
 
 export default function AuthPage() {
   const [mode, setMode] = useState<AuthMode>('login');
   const [loading, setLoading] = useState(false);
-  const { user, isLoading, signIn, signUp } = useAuth();
+  const { user, isLoading, signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/radar';
 
-  const form = useForm<FormData>({
-    resolver: zodResolver(mode === 'signup' ? signUpSchema : loginSchema),
+  const form = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
       password: '',
-      fullName: ''
     },
     mode: 'onBlur'
   });
@@ -97,26 +79,16 @@ export default function AuthPage() {
     setMode(newMode);
   };
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: LoginFormData) => {
     setLoading(true);
 
     try {
-      if (mode === 'login') {
-        const { error } = await signIn(data.email, data.password);
-        if (error) {
-          toast.error(error.message || 'Erreur de connexion');
-        } else {
-          toast.success('Connexion réussie');
-          navigate(from, { replace: true });
-        }
-      } else if (mode === 'signup') {
-        const { error } = await signUp(data.email, data.password, data.fullName);
-        if (error) {
-          toast.error(error.message || 'Erreur lors de l\'inscription');
-        } else {
-          toast.success('Compte créé ! Vérifiez votre email.');
-          handleModeChange('login');
-        }
+      const { error } = await signIn(data.email, data.password);
+      if (error) {
+        toast.error(error.message || 'Erreur de connexion');
+      } else {
+        toast.success('Connexion réussie');
+        navigate(from, { replace: true });
       }
     } catch (err) {
       toast.error('Une erreur est survenue');
@@ -217,21 +189,6 @@ export default function AuthPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {mode === 'signup' && (
-                <FormField
-                  control={form.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nom complet</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Jean Dupont" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
               <FormField
                 control={form.control}
                 name="email"
@@ -252,15 +209,13 @@ export default function AuthPage() {
                   <FormItem>
                     <div className="flex items-center justify-between">
                       <FormLabel>Mot de passe</FormLabel>
-                      {mode === 'login' && (
-                        <button
-                          type="button"
-                          onClick={() => handleModeChange('forgot-password')}
-                          className="text-xs text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          Mot de passe oublié ?
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleModeChange('forgot-password')}
+                        className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        Mot de passe oublié ?
+                      </button>
                     </div>
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} />
@@ -270,19 +225,10 @@ export default function AuthPage() {
                 )}
               />
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Chargement...' : mode === 'login' ? 'Se connecter' : 'Créer un compte'}
+                {loading ? 'Chargement...' : 'Se connecter'}
               </Button>
             </form>
           </Form>
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              onClick={() => handleModeChange(mode === 'login' ? 'signup' : 'login')}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              {mode === 'login' ? 'Pas de compte ? Inscrivez-vous' : 'Déjà un compte ? Connectez-vous'}
-            </button>
-          </div>
         </CardContent>
       </Card>
     </div>
