@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users } from 'lucide-react';
+import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,11 +11,13 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Database } from '@/integrations/supabase/types';
 
 type AppRole = Database['public']['Enums']['app_role'];
@@ -56,9 +58,17 @@ const roleColors: Record<AppRole, string> = {
   guest: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
 };
 
+const roleIcons: Record<AppRole, React.ReactNode> = {
+  admin: <Shield className="h-4 w-4" />,
+  user: <User className="h-4 w-4" />,
+  council_user: <Users className="h-4 w-4" />,
+  guest: <Mail className="h-4 w-4" />,
+};
+
 export default function UsersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
 
   const form = useForm<InviteFormData>({
     resolver: zodResolver(inviteSchema),
@@ -73,21 +83,18 @@ export default function UsersPage() {
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
-      // Récupérer les profils
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, avatar_url, created_at');
 
       if (profilesError) throw profilesError;
 
-      // Récupérer les rôles
       const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role');
 
       if (rolesError) throw rolesError;
 
-      // Combiner les données
       const usersWithRoles: UserWithProfile[] = profiles.map((profile) => {
         const userRole = roles.find((r) => r.user_id === profile.id);
         return {
@@ -130,8 +137,38 @@ export default function UsersPage() {
     },
   });
 
+  // Mutation pour changer le rôle
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ userId, newRole }: { userId: string; newRole: AppRole }) => {
+      const response = await supabase.functions.invoke('update-user-role', {
+        body: { userId, newRole },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Erreur lors de la modification du rôle');
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Rôle mis à jour avec succès');
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erreur lors de la modification du rôle');
+    },
+  });
+
   const onSubmit = (data: InviteFormData) => {
     inviteMutation.mutate(data);
+  };
+
+  const handleRoleChange = (userId: string, newRole: AppRole) => {
+    updateRoleMutation.mutate({ userId, newRole });
   };
 
   const getInitials = (name: string | null) => {
@@ -288,35 +325,86 @@ export default function UsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.avatar_url || undefined} />
-                          <AvatarFallback className="text-xs">
-                            {getInitials(user.full_name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">
-                          {user.full_name || 'Sans nom'}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={roleColors[user.role]} variant="secondary">
-                        {roleLabels[user.role]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(user.created_at).toLocaleDateString('fr-FR', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {users.map((user) => {
+                  const isCurrentUser = user.id === currentUser?.id;
+                  
+                  return (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.avatar_url || undefined} />
+                            <AvatarFallback className="text-xs">
+                              {getInitials(user.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {user.full_name || 'Sans nom'}
+                            </span>
+                            {isCurrentUser && (
+                              <span className="text-xs text-muted-foreground">(vous)</span>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {isCurrentUser ? (
+                          <Badge className={roleColors[user.role]} variant="secondary">
+                            {roleLabels[user.role]}
+                          </Badge>
+                        ) : (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-auto p-0 hover:bg-transparent"
+                                disabled={updateRoleMutation.isPending}
+                              >
+                                <Badge 
+                                  className={`${roleColors[user.role]} cursor-pointer hover:opacity-80`} 
+                                  variant="secondary"
+                                >
+                                  {updateRoleMutation.isPending ? (
+                                    <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                  ) : null}
+                                  {roleLabels[user.role]}
+                                  <ChevronDown className="ml-1 h-3 w-3" />
+                                </Badge>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              {(Object.keys(roleLabels) as AppRole[]).map((role) => (
+                                <DropdownMenuItem
+                                  key={role}
+                                  onClick={() => handleRoleChange(user.id, role)}
+                                  className="flex items-center gap-2"
+                                  disabled={role === user.role}
+                                >
+                                  {roleIcons[role]}
+                                  <span className={role === user.role ? 'font-semibold' : ''}>
+                                    {roleLabels[role]}
+                                  </span>
+                                  {role === user.role && (
+                                    <span className="text-xs text-muted-foreground ml-auto">actuel</span>
+                                  )}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(user.created_at).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           ) : (
