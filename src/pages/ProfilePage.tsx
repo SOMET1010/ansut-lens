@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AvatarUpload, ProfileForm } from '@/components/profile';
+import { AvatarUpload, ProfileForm, ChangePasswordForm } from '@/components/profile';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -67,6 +67,18 @@ export default function ProfilePage() {
             onSubmit={updateProfile}
             isSubmitting={isUpdating}
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Sécurité</CardTitle>
+          <CardDescription>
+            Modifiez votre mot de passe
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ChangePasswordForm />
         </CardContent>
       </Card>
     </div>
