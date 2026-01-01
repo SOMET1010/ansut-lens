@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users, ChevronDown } from 'lucide-react';
+import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users, ChevronDown, MoreVertical, UserX, UserCheck, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,7 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -42,6 +43,7 @@ interface UserWithProfile {
   avatar_url: string | null;
   created_at: string;
   role: AppRole;
+  disabled: boolean;
 }
 
 const roleLabels: Record<AppRole, string> = {
@@ -67,6 +69,7 @@ const roleIcons: Record<AppRole, React.ReactNode> = {
 
 export default function UsersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
 
@@ -85,7 +88,7 @@ export default function UsersPage() {
     queryFn: async () => {
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, created_at');
+        .select('id, full_name, avatar_url, created_at, disabled');
 
       if (profilesError) throw profilesError;
 
@@ -103,6 +106,7 @@ export default function UsersPage() {
           avatar_url: profile.avatar_url,
           created_at: profile.created_at,
           role: (userRole?.role as AppRole) || 'user',
+          disabled: profile.disabled || false,
         };
       });
 
@@ -160,6 +164,59 @@ export default function UsersPage() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Erreur lors de la modification du rôle');
+    },
+  });
+
+  // Mutation pour désactiver/réactiver un utilisateur
+  const toggleUserMutation = useMutation({
+    mutationFn: async ({ userId, action }: { userId: string; action: 'disable' | 'enable' }) => {
+      const response = await supabase.functions.invoke('manage-user', {
+        body: { userId, action },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Erreur lors de la modification');
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      toast.success(variables.action === 'disable' ? 'Utilisateur désactivé' : 'Utilisateur réactivé');
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erreur lors de la modification');
+    },
+  });
+
+  // Mutation pour supprimer un utilisateur
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const response = await supabase.functions.invoke('manage-user', {
+        body: { userId, action: 'delete' },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Erreur lors de la suppression');
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Utilisateur supprimé définitivement');
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setDeleteUserId(null);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erreur lors de la suppression');
     },
   });
 
@@ -321,7 +378,9 @@ export default function UsersPage() {
                 <TableRow>
                   <TableHead>Utilisateur</TableHead>
                   <TableHead>Rôle</TableHead>
+                  <TableHead>Statut</TableHead>
                   <TableHead>Date de création</TableHead>
+                  <TableHead className="w-[70px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -329,7 +388,7 @@ export default function UsersPage() {
                   const isCurrentUser = user.id === currentUser?.id;
                   
                   return (
-                    <TableRow key={user.id}>
+                    <TableRow key={user.id} className={user.disabled ? 'opacity-60' : ''}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
@@ -349,7 +408,7 @@ export default function UsersPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {isCurrentUser ? (
+                        {isCurrentUser || user.disabled ? (
                           <Badge className={roleColors[user.role]} variant="secondary">
                             {roleLabels[user.role]}
                           </Badge>
@@ -395,12 +454,61 @@ export default function UsersPage() {
                           </DropdownMenu>
                         )}
                       </TableCell>
+                      <TableCell>
+                        {user.disabled ? (
+                          <Badge variant="secondary" className="bg-muted text-muted-foreground">
+                            Désactivé
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                            Actif
+                          </Badge>
+                        )}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {new Date(user.created_at).toLocaleDateString('fr-FR', {
                           day: 'numeric',
                           month: 'long',
                           year: 'numeric',
                         })}
+                      </TableCell>
+                      <TableCell>
+                        {!isCurrentUser && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {user.disabled ? (
+                                <DropdownMenuItem
+                                  onClick={() => toggleUserMutation.mutate({ userId: user.id, action: 'enable' })}
+                                  disabled={toggleUserMutation.isPending}
+                                >
+                                  <UserCheck className="mr-2 h-4 w-4" />
+                                  Réactiver
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem
+                                  onClick={() => toggleUserMutation.mutate({ userId: user.id, action: 'disable' })}
+                                  disabled={toggleUserMutation.isPending}
+                                >
+                                  <UserX className="mr-2 h-4 w-4" />
+                                  Désactiver
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => setDeleteUserId(user.id)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Supprimer
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                       </TableCell>
                     </TableRow>
                   );
@@ -414,6 +522,31 @@ export default function UsersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog de confirmation de suppression */}
+      <AlertDialog open={!!deleteUserId} onOpenChange={(open) => !open && setDeleteUserId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer définitivement ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. L'utilisateur{' '}
+              <strong>{users?.find((u) => u.id === deleteUserId)?.full_name || 'Sans nom'}</strong>{' '}
+              et toutes ses données seront supprimés.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteUserId && deleteUserMutation.mutate(deleteUserId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteUserMutation.isPending}
+            >
+              {deleteUserMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

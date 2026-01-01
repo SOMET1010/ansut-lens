@@ -1,0 +1,2 @@
+-- Add disabled column to profiles table
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS disabled boolean NOT NULL DEFAULT false;
