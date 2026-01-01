@@ -10,6 +10,7 @@ import { AlertNotificationProvider } from "@/components/notifications";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProtectedRoute, AdminRoute } from "@/components/auth";
 import AuthPage from "@/pages/AuthPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import RadarPage from "@/pages/RadarPage";
 import ActualitesPage from "@/pages/ActualitesPage";
 import PersonnalitesPage from "@/pages/PersonnalitesPage";
@@ -35,8 +36,9 @@ const App = () => (
               <Sonner />
               <BrowserRouter>
                 <Routes>
-                  {/* Route publique */}
+                  {/* Routes publiques */}
                   <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
                   
                   {/* Redirections */}
                   <Route path="/" element={<Navigate to="/radar" replace />} />
