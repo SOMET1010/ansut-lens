@@ -624,6 +624,116 @@ sequenceDiagram
 | 15 | Frontend | [DONE] déclenche onDone callback |
 | 16 | Frontend | Sauvegarde conversation dans conversations_ia |
 
+#### Diagramme détaillé : Gestion des contextes dynamiques
+
+Ce diagramme illustre comment l'assistant IA construit et utilise le contexte à partir des actualités et dossiers sélectionnés par l'utilisateur.
+
+```mermaid
+flowchart TB
+    subgraph Frontend["Frontend - AssistantPage"]
+        direction TB
+        
+        subgraph DataFetching["Chargement données"]
+            A1[useActualites] -->|TanStack Query| A2[(actualites)]
+            D1[useDossiers] -->|TanStack Query| D2[(dossiers)]
+        end
+        
+        subgraph Selection["Sélection contexte"]
+            A2 --> S1{{"ContextSelector"}}
+            D2 --> S1
+            S1 -->|Checkboxes| S2["selectedActualites[]"]
+            S1 -->|Checkboxes| S3["selectedDossiers[]"]
+        end
+        
+        subgraph ContextBuilder["Construction contexte"]
+            S2 --> CB1["map: [[ACTU:id|titre]]\nrésumé + contenu"]
+            S3 --> CB2["map: [[DOSSIER:id|titre]]\nrésumé + contenu"]
+            CB1 --> CB3["useMemo → context string"]
+            CB2 --> CB3
+        end
+        
+        subgraph Chat["Interface chat"]
+            UI1[("messages[]")]
+            UI2["Input utilisateur"]
+            UI2 -->|handleSend| UI3["streamChat()"]
+            CB3 -->|context| UI3
+            UI1 -->|messages| UI3
+        end
+    end
+    
+    subgraph EdgeFunction["Edge Function - assistant-ia"]
+        direction TB
+        EF1["Réception {messages, context}"]
+        EF2["SYSTEM_PROMPT enrichi"]
+        EF3["contextualPrompt = SYSTEM + context"]
+        
+        EF1 --> EF2
+        EF2 --> EF3
+    end
+    
+    subgraph LovableAI["Lovable AI Gateway"]
+        AI1["POST /v1/chat/completions"]
+        AI2["Model: gemini-2.5-flash"]
+        AI3["stream: true"]
+        AI1 --> AI2 --> AI3
+    end
+    
+    subgraph SSEStream["Streaming SSE"]
+        direction LR
+        SSE1["data: {delta.content}"]
+        SSE2["data: {delta.content}"]
+        SSE3["..."]
+        SSE4["data: [DONE]"]
+        SSE1 --> SSE2 --> SSE3 --> SSE4
+    end
+    
+    subgraph ResponseParsing["Parsing réponse"]
+        RP1["onDelta(token)"]
+        RP2["setMessages(prev => ...)"]
+        RP3["Affichage progressif"]
+        RP4["Citations cliquables"]
+        RP1 --> RP2 --> RP3
+        RP3 --> RP4
+    end
+    
+    UI3 -->|fetch POST| EF1
+    EF3 -->|API call| AI1
+    AI3 -->|SSE| SSE1
+    SSE4 -->|forward| RP1
+    
+    style Frontend fill:#1e3a5f,stroke:#3b82f6,color:#fff
+    style EdgeFunction fill:#1e3a5f,stroke:#10b981,color:#fff
+    style LovableAI fill:#1e3a5f,stroke:#f59e0b,color:#fff
+    style SSEStream fill:#1e3a5f,stroke:#8b5cf6,color:#fff
+    style ResponseParsing fill:#1e3a5f,stroke:#ef4444,color:#fff
+```
+
+**Légende des couleurs :**
+- 🔵 **Frontend** : Composants React et gestion d'état
+- 🟢 **Edge Function** : Logique serveur et enrichissement prompt
+- 🟠 **Lovable AI** : Gateway vers modèles IA
+- 🟣 **SSE Stream** : Flux Server-Sent Events
+- 🔴 **Response Parsing** : Traitement et affichage des tokens
+
+**Format des citations dans le contexte :**
+```
+=== ACTUALITÉS DISPONIBLES ===
+[[ACTU:uuid-1|Titre de l'actualité 1]]
+Résumé: Lorem ipsum...
+Contenu: Détails complets...
+
+[[ACTU:uuid-2|Titre de l'actualité 2]]
+...
+
+=== DOSSIERS DISPONIBLES ===
+[[DOSSIER:uuid-1|Titre du dossier 1]]
+Catégorie: Stratégique
+Résumé: Lorem ipsum...
+...
+```
+
+L'IA utilise ces identifiants pour générer des citations cliquables dans ses réponses, permettant à l'utilisateur de naviguer directement vers la source.
+
 ### Flux de gestion des utilisateurs (Admin)
 
 Ce diagramme illustre les 4 flux de gestion administrative des utilisateurs : invitation, modification de rôle, désactivation/réactivation et suppression. Toutes les actions sont tracées dans la table `admin_audit_logs` pour garantir une traçabilité complète.
