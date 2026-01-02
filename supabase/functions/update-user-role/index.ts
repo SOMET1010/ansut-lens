@@ -78,6 +78,15 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    // Get old role before changing
+    const { data: oldRoleData } = await adminClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const oldRole = oldRoleData?.role || "unknown";
+
     // Supprimer les anciens rôles et ajouter le nouveau
     const { error: deleteError } = await adminClient
       .from("user_roles")
@@ -102,6 +111,31 @@ serve(async (req) => {
         JSON.stringify({ error: "Erreur lors de l'attribution du nouveau rôle" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Get target user name for audit
+    const { data: targetProfile } = await adminClient
+      .from("profiles")
+      .select("full_name")
+      .eq("id", userId)
+      .maybeSingle();
+
+    // Log the role change in audit
+    const { error: auditError } = await adminClient
+      .from("admin_audit_logs")
+      .insert({
+        admin_id: user.id,
+        target_user_id: userId,
+        action: "role_changed",
+        details: { 
+          old_role: oldRole, 
+          new_role: newRole,
+          target_name: targetProfile?.full_name || "Inconnu"
+        },
+      });
+
+    if (auditError) {
+      console.error("Audit log error:", auditError);
     }
 
     return new Response(
