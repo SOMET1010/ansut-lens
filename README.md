@@ -319,6 +319,262 @@ flowchart TB
 | **Alertes temps réel** | Insertion dans `alertes` avec broadcast Realtime vers le frontend |
 | **Audit** | Toutes les actions admin sont loguées dans `admin_audit_logs` |
 
+### Schéma de la base de données
+
+Le diagramme ER ci-dessous visualise les 17 tables et leurs relations.
+
+```mermaid
+erDiagram
+    %% ==========================================
+    %% TABLES AUTHENTIFICATION
+    %% ==========================================
+    
+    profiles {
+        uuid id PK
+        text full_name
+        text avatar_url
+        text department
+        boolean disabled
+        timestamp created_at
+    }
+    
+    user_roles {
+        uuid id PK
+        uuid user_id FK
+        app_role role
+        timestamp created_at
+    }
+    
+    %% ==========================================
+    %% TABLES PRINCIPALES
+    %% ==========================================
+    
+    personnalites {
+        uuid id PK
+        text nom
+        text prenom
+        text fonction
+        text organisation
+        text categorie
+        integer cercle
+        integer score_influence
+        numeric score_spdi_actuel
+        text niveau_alerte
+        boolean suivi_spdi_actif
+        jsonb reseaux
+        jsonb alertes_config
+    }
+    
+    actualites {
+        uuid id PK
+        uuid source_id FK
+        text titre
+        text contenu
+        text resume
+        text categorie
+        integer importance
+        numeric sentiment
+        text analyse_ia
+        timestamp date_publication
+    }
+    
+    signaux {
+        uuid id PK
+        uuid source_id FK
+        text titre
+        text description
+        text quadrant
+        text niveau
+        text tendance
+        integer score_impact
+        boolean actif
+    }
+    
+    alertes {
+        uuid id PK
+        uuid user_id FK
+        uuid reference_id
+        text reference_type
+        text titre
+        text message
+        text niveau
+        text type
+        boolean lue
+        boolean traitee
+    }
+    
+    dossiers {
+        uuid id PK
+        uuid auteur_id FK
+        text titre
+        text contenu
+        text resume
+        text categorie
+        text statut
+    }
+    
+    mentions {
+        uuid id PK
+        text contenu
+        text source
+        text source_url
+        text auteur
+        numeric sentiment
+        integer score_influence
+        boolean est_critique
+    }
+    
+    %% ==========================================
+    %% TABLES SPDI
+    %% ==========================================
+    
+    presence_digitale_metrics {
+        uuid id PK
+        uuid personnalite_id FK
+        date date_mesure
+        numeric score_spdi
+        numeric score_visibilite
+        numeric score_qualite
+        numeric score_autorite
+        numeric score_presence
+        integer nb_mentions
+        text interpretation
+    }
+    
+    presence_digitale_recommandations {
+        uuid id PK
+        uuid personnalite_id FK
+        text titre
+        text message
+        text type
+        text priorite
+        text canal
+        boolean vue
+        boolean actif
+    }
+    
+    personnalites_mentions {
+        uuid id PK
+        uuid personnalite_id FK
+        uuid mention_id FK
+        timestamp created_at
+    }
+    
+    %% ==========================================
+    %% TABLES VEILLE
+    %% ==========================================
+    
+    sources_media {
+        uuid id PK
+        text nom
+        text type
+        text url
+        text frequence_scan
+        boolean actif
+        timestamp derniere_collecte
+    }
+    
+    categories_veille {
+        uuid id PK
+        text code
+        text nom
+        text description
+        text couleur
+        integer priorite
+        boolean actif
+    }
+    
+    mots_cles_veille {
+        uuid id PK
+        uuid categorie_id FK
+        text mot_cle
+        text quadrant
+        integer score_criticite
+        boolean alerte_auto
+        boolean actif
+    }
+    
+    collectes_log {
+        uuid id PK
+        text type
+        text statut
+        integer nb_resultats
+        integer duree_ms
+        text erreur
+    }
+    
+    %% ==========================================
+    %% TABLES AUDIT
+    %% ==========================================
+    
+    admin_audit_logs {
+        uuid id PK
+        uuid admin_id FK
+        uuid target_user_id FK
+        text action
+        jsonb details
+        text ip_address
+    }
+    
+    audit_consultations {
+        uuid id PK
+        uuid user_id FK
+        uuid resource_id
+        text resource_type
+        text action
+        jsonb metadata
+    }
+    
+    conversations_ia {
+        uuid id PK
+        uuid user_id FK
+        text titre
+        jsonb messages
+        timestamp updated_at
+    }
+    
+    config_seuils {
+        uuid id PK
+        uuid updated_by FK
+        text cle
+        jsonb valeur
+        text description
+    }
+    
+    %% ==========================================
+    %% RELATIONS
+    %% ==========================================
+    
+    profiles ||--o{ user_roles : "has roles"
+    profiles ||--o{ admin_audit_logs : "performs"
+    profiles ||--o{ alertes : "receives"
+    profiles ||--o{ audit_consultations : "generates"
+    profiles ||--o{ conversations_ia : "owns"
+    profiles ||--o{ dossiers : "creates"
+    profiles ||--o{ config_seuils : "updates"
+    profiles ||--o{ admin_audit_logs : "target of"
+    
+    personnalites ||--o{ presence_digitale_metrics : "has metrics"
+    personnalites ||--o{ presence_digitale_recommandations : "receives"
+    personnalites ||--o{ personnalites_mentions : "linked to"
+    mentions ||--o{ personnalites_mentions : "concerns"
+    
+    sources_media ||--o{ actualites : "publishes"
+    sources_media ||--o{ signaux : "generates"
+    
+    categories_veille ||--o{ mots_cles_veille : "contains"
+```
+
+### Légende des groupes de tables
+
+| Groupe | Tables | Description |
+|--------|--------|-------------|
+| **Auth** | `profiles`, `user_roles` | Gestion des utilisateurs et rôles |
+| **Principales** | `personnalites`, `actualites`, `signaux`, `alertes`, `dossiers`, `mentions` | Données métier core |
+| **SPDI** | `presence_digitale_metrics`, `presence_digitale_recommandations`, `personnalites_mentions` | Score de Présence Digitale |
+| **Veille** | `sources_media`, `categories_veille`, `mots_cles_veille`, `collectes_log` | Configuration collecte |
+| **Audit** | `admin_audit_logs`, `audit_consultations`, `conversations_ia`, `config_seuils` | Traçabilité et config |
+
 ---
 
 ## Schéma des Données
