@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ArrowLeft, ClipboardList, UserPlus, Shield, UserX, UserCheck, Trash2, Filter, Loader2 } from "lucide-react";
+import { ArrowLeft, ClipboardList, UserPlus, Shield, UserX, UserCheck, Trash2, Filter, Loader2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -106,6 +106,35 @@ export default function AuditLogsPage() {
     }
   };
 
+  const exportToCSV = () => {
+    if (!logs || logs.length === 0) return;
+
+    const headers = ["Date", "Administrateur", "Action", "Utilisateur cible", "Détails"];
+    
+    const rows = logs.map((log) => [
+      format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss", { locale: fr }),
+      log.admin_profile?.full_name || "Inconnu",
+      actionConfig[log.action]?.label || log.action,
+      log.target_profile?.full_name || 
+        (log.details?.target_name as string) || 
+        (log.details?.full_name as string) || "",
+      formatDetails(log)
+    ]);
+
+    const csvContent = "\uFEFF" + [
+      headers.join(";"),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(";"))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `audit-logs-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-4">
@@ -127,8 +156,18 @@ export default function AuditLogsPage() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">Actions récentes</CardTitle>
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={exportToCSV}
+                disabled={!logs || logs.length === 0}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exporter CSV
+              </Button>
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
               <Select value={actionFilter} onValueChange={setActionFilter}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Filtrer par action" />
@@ -142,6 +181,7 @@ export default function AuditLogsPage() {
                   <SelectItem value="user_deleted">Suppressions</SelectItem>
                 </SelectContent>
               </Select>
+              </div>
             </div>
           </div>
         </CardHeader>
