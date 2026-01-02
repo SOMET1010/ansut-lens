@@ -835,6 +835,141 @@ sequenceDiagram
 | `SPDIComparaisonPairs` | Benchmark vs pairs du même cercle stratégique |
 | `SPDIAlerteBanner` | Bannière d'alerte pour variations critiques (≤ -15%) |
 
+### Flux de stockage des fichiers (Storage)
+
+Le système utilise Supabase Storage pour le stockage des fichiers utilisateurs. Actuellement implémenté pour les avatars, l'architecture est extensible pour les documents des dossiers analytiques.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant User as Utilisateur
+    participant UI as AvatarUpload
+    participant Hook as useUserProfile
+    participant Storage as Supabase Storage
+    participant DB as PostgreSQL
+    participant CDN as CDN Public
+
+    Note over User,CDN: Phase 1 - Validation côté client
+
+    User->>UI: Sélection fichier (input[type=file])
+    activate UI
+    
+    UI->>UI: Validation type MIME
+    Note right of UI: JPEG, PNG, WebP uniquement
+    
+    alt Type non autorisé
+        UI-->>User: Toast "Format non supporté"
+    else Type valide
+        UI->>UI: Validation taille fichier
+        Note right of UI: Maximum 2 Mo
+        
+        alt Fichier trop volumineux
+            UI-->>User: Toast "Fichier trop volumineux"
+        else Taille valide
+            UI->>Hook: onUpload(file)
+        end
+    end
+    deactivate UI
+
+    Note over User,CDN: Phase 2 - Upload vers Storage
+
+    activate Hook
+    Hook->>Hook: Génération chemin fichier
+    Note right of Hook: {user_id}/avatar.{ext}
+    
+    Hook->>Storage: upload(bucket: 'avatars', path, file, {upsert: true})
+    activate Storage
+    
+    alt Erreur upload
+        Storage-->>Hook: UploadError
+        Hook-->>User: Toast "Impossible d'uploader l'image"
+    else Upload réussi
+        Storage-->>Hook: {path, id}
+        Note right of Storage: Fichier stocké dans bucket public
+    end
+    deactivate Storage
+
+    Note over User,CDN: Phase 3 - Récupération URL publique
+
+    Hook->>Storage: getPublicUrl(filePath)
+    activate Storage
+    Storage-->>Hook: {publicUrl}
+    deactivate Storage
+    
+    Hook->>Hook: Ajout cache buster
+    Note right of Hook: publicUrl + ?t={timestamp}
+
+    Note over User,CDN: Phase 4 - Mise à jour profil
+
+    Hook->>DB: UPDATE profiles SET avatar_url = urlWithCacheBuster
+    activate DB
+    DB-->>Hook: success
+    deactivate DB
+    
+    Hook->>Hook: invalidateQueries(['profile', userId])
+    Note right of Hook: TanStack Query cache refresh
+    
+    Hook-->>User: Toast "Profil mis à jour"
+    deactivate Hook
+
+    Note over User,CDN: Phase 5 - Affichage avatar
+
+    User->>UI: Visite page profil
+    activate UI
+    UI->>Hook: useUserProfile()
+    Hook->>DB: SELECT * FROM profiles WHERE id = userId
+    DB-->>Hook: profile {avatar_url, ...}
+    Hook-->>UI: profile
+    
+    UI->>CDN: GET avatar_url
+    activate CDN
+    Note right of CDN: Cache CDN avec cache buster
+    CDN-->>UI: Image binaire
+    deactivate CDN
+    
+    UI-->>User: Avatar affiché (AvatarImage)
+    deactivate UI
+```
+
+#### Buckets configurés
+
+| Bucket | Public | Usage | Chemin fichiers |
+|--------|--------|-------|-----------------|
+| `avatars` | ✅ Oui | Photos de profil utilisateurs | `{user_id}/avatar.{ext}` |
+
+#### Validations côté client
+
+| Validation | Valeur | Composant | Message erreur |
+|------------|--------|-----------|----------------|
+| Types MIME autorisés | `image/jpeg`, `image/png`, `image/webp` | `AvatarUpload` | "Format non supporté" |
+| Taille maximum | 2 Mo (2 × 1024 × 1024 bytes) | `AvatarUpload` | "Fichier trop volumineux" |
+| Authentification | Utilisateur connecté requis | `useUserProfile` | "Non authentifié" |
+
+#### Méthodes Supabase Storage
+
+| Méthode | Description | Paramètres |
+|---------|-------------|------------|
+| `upload()` | Upload fichier vers bucket | `bucket`, `path`, `file`, `{upsert}` |
+| `getPublicUrl()` | Récupère URL publique CDN | `filePath` |
+| `remove()` | Supprime fichier(s) | `paths[]` |
+| `list()` | Liste fichiers d'un dossier | `path`, `options` |
+
+#### Composants impliqués
+
+| Composant/Hook | Rôle | Fichier |
+|----------------|------|---------|
+| `AvatarUpload` | UI upload avec validation et preview | `src/components/profile/AvatarUpload.tsx` |
+| `useUserProfile` | Hook avec méthode `uploadAvatar` | `src/hooks/useUserProfile.ts` |
+| `ProfilePage` | Page conteneur intégrant l'upload | `src/pages/ProfilePage.tsx` |
+
+#### Cache busting
+
+L'ajout du paramètre `?t={timestamp}` à l'URL publique force le rafraîchissement du cache navigateur et CDN après mise à jour de l'avatar, garantissant l'affichage immédiat de la nouvelle image.
+
+```typescript
+const urlWithCacheBuster = `${publicUrl}?t=${Date.now()}`;
+```
+
 ### Schéma de la base de données
 
 Le diagramme ER ci-dessous visualise les 17 tables et leurs relations.
