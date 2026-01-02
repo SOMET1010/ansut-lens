@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Settings, Users, Database, Bell, Tag, UserPlus, ClipboardList } from 'lucide-react';
+import { Users, Database, Bell, Tag, UserPlus, ClipboardList, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function AdminPage() {
@@ -57,6 +57,15 @@ export default function AdminPage() {
               <ClipboardList className="h-10 w-10 text-chart-5 mb-3" />
               <h3 className="font-semibold">Historique d'audit</h3>
               <p className="text-sm text-muted-foreground">Actions admin</p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/admin/cron-jobs">
+          <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full">
+            <CardContent className="pt-6 flex flex-col items-center text-center">
+              <Clock className="h-10 w-10 text-chart-2 mb-3" />
+              <h3 className="font-semibold">Tâches CRON</h3>
+              <p className="text-sm text-muted-foreground">Collecte automatisée</p>
             </CardContent>
           </Card>
         </Link>

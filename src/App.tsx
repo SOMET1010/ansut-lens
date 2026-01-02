@@ -21,6 +21,7 @@ import MotsClesPage from "@/pages/admin/MotsClesPage";
 import ImportActeursPage from "@/pages/admin/ImportActeursPage";
 import UsersPage from "@/pages/admin/UsersPage";
 import AuditLogsPage from "@/pages/admin/AuditLogsPage";
+import CronJobsPage from "@/pages/admin/CronJobsPage";
 import AlertesHistoryPage from "@/pages/AlertesHistoryPage";
 import ProfilePage from "@/pages/ProfilePage";
 import NotFound from "@/pages/NotFound";
@@ -64,6 +65,7 @@ const App = () => (
                       <Route path="/admin/import-acteurs" element={<ImportActeursPage />} />
                       <Route path="/admin/users" element={<UsersPage />} />
                       <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
+                      <Route path="/admin/cron-jobs" element={<CronJobsPage />} />
                     </Route>
                   </Route>
                   
