@@ -51,12 +51,12 @@ const getCategorieIcon = (categorie?: string) => {
 export function ActeurDetail({ personnalite, open, onOpenChange }: ActeurDetailProps) {
   const toggleSuivi = useToggleSuiviSPDI();
   
-  // Récupérer les données SPDI si le suivi est actif
+  // Récupérer les données SPDI si le suivi est actif (accès direct aux champs optionnels)
   const { data: metriqueSPDI } = useDerniereMetriqueSPDI(
-    (personnalite as any)?.suivi_spdi_actif ? personnalite?.id : undefined
+    personnalite?.suivi_spdi_actif ? personnalite?.id : undefined
   );
   const { data: recommandationsSPDI } = useRecommandationsSPDI(
-    (personnalite as any)?.suivi_spdi_actif ? personnalite?.id : undefined
+    personnalite?.suivi_spdi_actif ? personnalite?.id : undefined
   );
   
   if (!personnalite) return null;
@@ -67,11 +67,10 @@ export function ActeurDetail({ personnalite, open, onOpenChange }: ActeurDetailP
   const stars = Math.round((personnalite.score_influence / 100) * 5);
   const cercleInfo = CERCLE_LABELS[personnalite.cercle];
   
-  // Cast pour accéder aux nouveaux champs SPDI
-  const acteurAvecSPDI = personnalite as any;
-  const suiviSPDIActif = acteurAvecSPDI.suivi_spdi_actif ?? false;
-  const scoreSPDI = acteurAvecSPDI.score_spdi_actuel ?? 0;
-  const tendanceSPDI = (acteurAvecSPDI.tendance_spdi ?? 'stable') as Tendance;
+  // Accès direct aux champs SPDI optionnels (sans cast)
+  const suiviSPDIActif = personnalite.suivi_spdi_actif ?? false;
+  const scoreSPDI = personnalite.score_spdi_actuel ?? 0;
+  const tendanceSPDI = (personnalite.tendance_spdi ?? 'stable') as Tendance;
   
   const handleToggleSuivi = () => {
     toggleSuivi.mutate({ 

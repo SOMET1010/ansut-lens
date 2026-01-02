@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { Personnalite, CercleStrategique, CategorieActeur, NiveauAlerte, SousCategorieActeur } from '@/types';
+import type { Database, Json } from '@/integrations/supabase/types';
+import type { Personnalite, CercleStrategique, CategorieActeur, NiveauAlerte, SousCategorieActeur, Tendance } from '@/types';
+import { parseReseaux, parseAlertesConfig, parseSourcesSuivies } from '@/types/json-schemas';
+
+// Type Row généré par Supabase
+type PersonnaliteRow = Database['public']['Tables']['personnalites']['Row'];
 
 export interface PersonnalitesFilters {
   cercle?: CercleStrategique;
@@ -18,31 +23,36 @@ export interface PersonnalitesStats {
   alertesElevees: number;
 }
 
-// Mapper les données DB vers le type Personnalite
-const mapDbToPersonnalite = (row: any): Personnalite => ({
+// Mapper les données DB vers le type Personnalite (typé strictement)
+const mapDbToPersonnalite = (row: PersonnaliteRow): Personnalite => ({
   id: row.id,
   nom: row.nom,
-  prenom: row.prenom,
-  fonction: row.fonction,
-  organisation: row.organisation,
-  categorie: row.categorie as CategorieActeur,
-  sous_categorie: row.sous_categorie as SousCategorieActeur,
-  cercle: (row.cercle || 2) as CercleStrategique,
-  pays: row.pays,
-  zone: row.zone,
-  photo_url: row.photo_url,
-  bio: row.bio,
-  score_influence: row.score_influence || 50,
-  reseaux: row.reseaux as Record<string, string>,
-  thematiques: row.thematiques,
-  sources_suivies: row.sources_suivies,
-  alertes_config: row.alertes_config,
-  niveau_alerte: row.niveau_alerte as NiveauAlerte,
-  tags: row.tags,
-  derniere_activite: row.derniere_activite,
+  prenom: row.prenom ?? undefined,
+  fonction: row.fonction ?? undefined,
+  organisation: row.organisation ?? undefined,
+  categorie: row.categorie as CategorieActeur | undefined,
+  sous_categorie: row.sous_categorie as SousCategorieActeur | undefined,
+  cercle: (row.cercle ?? 2) as CercleStrategique,
+  pays: row.pays ?? undefined,
+  zone: row.zone ?? undefined,
+  photo_url: row.photo_url ?? undefined,
+  bio: row.bio ?? undefined,
+  score_influence: row.score_influence ?? 50,
+  reseaux: parseReseaux(row.reseaux),
+  thematiques: row.thematiques ?? undefined,
+  sources_suivies: parseSourcesSuivies(row.sources_suivies),
+  alertes_config: parseAlertesConfig(row.alertes_config),
+  niveau_alerte: row.niveau_alerte as NiveauAlerte | undefined,
+  tags: row.tags ?? undefined,
+  derniere_activite: row.derniere_activite ?? undefined,
   actif: row.actif ?? true,
-  notes: row.notes,
+  notes: row.notes ?? undefined,
   created_at: row.created_at,
+  // Champs SPDI
+  suivi_spdi_actif: row.suivi_spdi_actif ?? false,
+  score_spdi_actuel: row.score_spdi_actuel != null ? Number(row.score_spdi_actuel) : undefined,
+  tendance_spdi: (row.tendance_spdi ?? 'stable') as Tendance,
+  derniere_mesure_spdi: row.derniere_mesure_spdi ?? undefined,
 });
 
 // Hook principal pour récupérer les personnalités avec filtres
@@ -158,10 +168,10 @@ export function useCreatePersonnalite() {
           photo_url: personnalite.photo_url,
           bio: personnalite.bio,
           score_influence: personnalite.score_influence,
-          reseaux: personnalite.reseaux as any,
+          reseaux: (personnalite.reseaux ?? {}) as Json,
           thematiques: personnalite.thematiques,
-          sources_suivies: personnalite.sources_suivies as any,
-          alertes_config: personnalite.alertes_config as any,
+          sources_suivies: (personnalite.sources_suivies ?? {}) as Json,
+          alertes_config: (personnalite.alertes_config ?? {}) as Json,
           niveau_alerte: personnalite.niveau_alerte,
           tags: personnalite.tags,
           actif: personnalite.actif,
@@ -186,10 +196,34 @@ export function useUpdatePersonnalite() {
   
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Personnalite> & { id: string }) => {
-      const updateData: any = { ...updates };
-      if (updates.alertes_config) updateData.alertes_config = updates.alertes_config as any;
-      if (updates.sources_suivies) updateData.sources_suivies = updates.sources_suivies as any;
-      if (updates.reseaux) updateData.reseaux = updates.reseaux as any;
+      // Construire l'objet de mise à jour avec les types corrects
+      const updateData: Record<string, unknown> = {};
+      
+      // Champs simples
+      const simpleFields = [
+        'nom', 'prenom', 'fonction', 'organisation', 'categorie',
+        'sous_categorie', 'cercle', 'pays', 'zone', 'photo_url',
+        'bio', 'score_influence', 'niveau_alerte', 'tags', 'thematiques',
+        'actif', 'notes', 'derniere_activite',
+        'suivi_spdi_actif', 'score_spdi_actuel', 'tendance_spdi', 'derniere_mesure_spdi'
+      ] as const;
+      
+      for (const field of simpleFields) {
+        if (field in updates) {
+          updateData[field] = updates[field as keyof typeof updates];
+        }
+      }
+      
+      // Champs JSONB (convertis en Json)
+      if ('alertes_config' in updates) {
+        updateData.alertes_config = (updates.alertes_config ?? {}) as Json;
+      }
+      if ('sources_suivies' in updates) {
+        updateData.sources_suivies = (updates.sources_suivies ?? {}) as Json;
+      }
+      if ('reseaux' in updates) {
+        updateData.reseaux = (updates.reseaux ?? {}) as Json;
+      }
       
       const { data, error } = await supabase
         .from('personnalites')

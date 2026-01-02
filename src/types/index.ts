@@ -139,6 +139,11 @@ export interface Personnalite {
   actif?: boolean;
   notes?: string;
   created_at?: string;
+  // Champs SPDI optionnels (présents si suivi actif)
+  suivi_spdi_actif?: boolean;
+  score_spdi_actuel?: number;
+  tendance_spdi?: Tendance;
+  derniere_mesure_spdi?: string;
 }
 
 export interface Alerte {
