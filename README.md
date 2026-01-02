@@ -326,83 +326,192 @@ Ce diagramme de séquence illustre le processus complet de collecte des actualit
 ```mermaid
 sequenceDiagram
     autonumber
+    participant CRON as pg_cron + pg_net
     participant Frontend as React Frontend
     participant EF1 as collecte-veille
     participant DB as PostgreSQL
     participant Perplexity as Perplexity API
     participant EF2 as enrichir-actualite
 
-    Note over Frontend,EF2: Phase 1 - Déclenchement collecte
+    Note over CRON,EF2: Phase 0 - Déclenchement CRON automatique
+
+    rect rgb(240, 240, 255)
+        CRON->>CRON: Schedule atteint (6h critique / 24h quotidienne)
+        CRON->>EF1: net.http_post(/collecte-veille, {type})
+        Note right of CRON: Headers: Authorization Bearer ANON_KEY
+    end
+
+    Note over CRON,EF2: Phase 1 - Déclenchement manuel (alternatif)
 
     Frontend->>EF1: POST /collecte-veille {type, recency}
     activate EF1
-    
+
+    Note over CRON,EF2: Phase 2 - Récupération mots-clés
+
     EF1->>DB: SELECT mots_cles_veille WHERE actif = true
-    DB-->>EF1: Liste mots-clés (max 20)
-    
+    Note right of EF1: Filtre: critique >= 70, quotidienne 50-69
+    DB-->>EF1: Liste mots-clés (max 20, triés par score)
+
     Note over EF1: Construction prompt avec top 10 keywords
-    
+
+    Note over CRON,EF2: Phase 3 - Appel Perplexity API
+
     EF1->>Perplexity: POST /chat/completions model sonar-pro
     activate Perplexity
-    Note right of Perplexity: search_recency_filter week
+    Note right of Perplexity: search_recency_filter: week
+    Note right of Perplexity: response_format: json_schema
     Perplexity-->>EF1: JSON {actualites[], citations[]}
     deactivate Perplexity
-    
-    Note over EF1: Parsing JSON (4 stratégies fallback)
-    
-    loop Pour chaque actualité
-        EF1->>DB: SELECT actualites WHERE titre = ?
+
+    Note over CRON,EF2: Phase 4 - Parsing multi-stratégies (4 fallbacks)
+
+    rect rgb(255, 250, 230)
+        EF1->>EF1: Stratégie 1: JSON.parse(content).actualites
+        alt Succès
+            Note right of EF1: Structured output valide
+        else Échec
+            EF1->>EF1: Stratégie 2: JSON.parse(content) si Array
+            alt Succès
+                Note right of EF1: Tableau direct
+            else Échec
+                EF1->>EF1: Stratégie 3: Regex extraction tableau
+                alt Succès
+                    Note right of EF1: Match /\[...\]/
+                else Échec
+                    EF1->>EF1: Stratégie 4: Regex extraction objet
+                    Note right of EF1: Match /\{.*"actualites".*\}/
+                end
+            end
+        end
+        EF1->>EF1: Validation: filter(a => a.titre && typeof === 'string')
+    end
+
+    Note over CRON,EF2: Phase 5 - Gestion doublons et insertion
+
+    loop Pour chaque actualité validée
+        EF1->>DB: SELECT id FROM actualites WHERE titre = ?
         alt Doublon détecté
-            DB-->>EF1: existing record
-            Note over EF1: Skip doublon
+            DB-->>EF1: {id: existing_uuid}
+            Note over EF1: Log: "Doublon ignoré: {titre}"
+            Note over EF1: Skip iteration (continue)
         else Nouvelle actualité
-            DB-->>EF1: null
-            Note over EF1: Analyse mots-clés et calcul importance
-            EF1->>DB: INSERT actualites
-            opt Si alerte_auto = true
+            DB-->>EF1: null (maybeSingle)
+            
+            rect rgb(230, 255, 230)
+                Note over EF1: Analyse mots-clés matchés
+                EF1->>EF1: Calcul totalScore += score_criticite
+                EF1->>EF1: Calcul quadrantScores[quadrant] += score
+                EF1->>EF1: importance = min(100, totalScore * 0.3)
+                EF1->>EF1: dominantQuadrant = max(quadrantScores)
+            end
+            
+            EF1->>DB: INSERT actualites avec analyse_ia JSON
+            Note right of DB: tags, importance, quadrant, collecte_type
+            
+            opt Si alerte_auto = true sur mot-clé matché
                 EF1->>DB: INSERT alertes niveau warning
             end
         end
     end
-    
-    EF1->>DB: INSERT collectes_log statut success
-    EF1-->>Frontend: {success, nb_resultats, alertes, duree_ms}
+
+    Note over CRON,EF2: Phase 6 - Logging et réponse
+
+    EF1->>DB: INSERT collectes_log {type, statut, nb_resultats, duree_ms}
+    EF1-->>Frontend: {success, nb_resultats, alertes, duree_ms, citations}
     deactivate EF1
-    
-    Note over Frontend,EF2: Phase 2 - Enrichissement optionnel
+
+    Note over CRON,EF2: Phase 7 - Enrichissement optionnel
 
     Frontend->>EF2: POST /enrichir-actualite {actualite_id}
     activate EF2
-    
     EF2->>DB: SELECT mots_cles_veille + actualites
     DB-->>EF2: Données complètes
-    
     Note over EF2: Analyse NLP normalisation et matching
-    
     EF2->>DB: UPDATE actualites SET tags importance analyse_ia
-    
     opt Si mots-clés critiques détectés
         EF2->>DB: INSERT alertes niveau critical
     end
-    
     EF2-->>Frontend: {success, enrichment}
     deactivate EF2
 ```
 
-#### Récapitulatif des étapes
+#### Schedules CRON
 
-| Étape | Composant | Action |
+| Type | Schedule CRON | Fréquence | Score min | Description |
+|------|---------------|-----------|-----------|-------------|
+| `critique` | `0 */6 * * *` | Toutes les 6h | 70 | Mots-clés haute priorité |
+| `quotidienne` | `0 8 * * *` | 1x/jour à 8h | 50 | Mots-clés priorité moyenne |
+| `hebdomadaire` | `0 6 * * 1` | Lundi 6h | 0 | Tous les mots-clés actifs |
+| `manuelle` | N/A | Utilisateur | Variable | Déclenchement via UI |
+
+#### Stratégies de parsing JSON
+
+| Ordre | Stratégie | Pattern | Cas d'usage |
+|-------|-----------|---------|-------------|
+| 1 | JSON structuré | `{actualites: [...]}` | Réponse json_schema Perplexity |
+| 2 | Tableau direct | `[...]` | Réponse simplifiée |
+| 3 | Regex tableau | `/\[[\s\S]*?\]/` | Markdown avec JSON embedded |
+| 4 | Regex objet | `/\{[\s\S]*"actualites"[\s\S]*\}/` | Texte avec JSON embedded |
+
+#### Détection des doublons
+
+| Critère | Méthode | Action si doublon |
+|---------|---------|-------------------|
+| Titre exact | `eq('titre', actu.titre)` | Skip + log console |
+| Résultat | `maybeSingle()` | Retourne `null` ou `{id}` |
+| Log | `console.log()` | "Doublon ignoré: {titre truncated}" |
+
+#### Calcul d'importance
+
+| Métrique | Formule | Plafond |
+|----------|---------|---------|
+| `totalScore` | Somme des `score_criticite` des mots-clés matchés | Aucun |
+| `importance` | `Math.min(100, Math.round(totalScore * 0.3))` | 100 |
+| `quadrantScores` | Accumulation par quadrant (tech, regulation, market, reputation) | Aucun |
+| `dominantQuadrant` | `Object.entries(quadrantScores).sort((a,b) => b[1]-a[1])[0][0]` | N/A |
+
+#### Récapitulatif des phases
+
+| Phase | Composant | Action |
 |-------|-----------|--------|
-| 1 | Frontend | Déclenche collecte via hook `useTriggerCollecte` |
+| 0 | pg_cron | Déclenchement automatique selon schedule (6h/24h) |
+| 1 | Frontend | Déclenchement manuel via hook `useTriggerCollecte` |
 | 2 | collecte-veille | Récupère 20 mots-clés actifs triés par criticité |
 | 3 | Perplexity | Recherche web avec `sonar-pro` et filtre 7 jours |
-| 4 | collecte-veille | Parse JSON (4 stratégies fallback) |
-| 5 | collecte-veille | Détection doublons par titre |
-| 6 | collecte-veille | INSERT actualités avec tags et importance |
-| 7 | collecte-veille | Création alertes si `alerte_auto = true` |
-| 8 | collecte-veille | Log dans `collectes_log` |
-| 9 | enrichir-actualite | Enrichissement NLP optionnel |
-| 10 | enrichir-actualite | Mise à jour tags, quadrant, importance |
+| 4 | collecte-veille | Parse JSON avec 4 stratégies fallback |
+| 5 | collecte-veille | Détection doublons par titre + calcul importance |
+| 6 | collecte-veille | INSERT actualités + alertes + log |
+| 7 | enrichir-actualite | Enrichissement NLP optionnel |
+
+#### Configuration CRON (exemple SQL)
+
+```sql
+-- Collecte critique toutes les 6 heures
+SELECT cron.schedule(
+  'collecte-veille-critique',
+  '0 */6 * * *',
+  $$
+  SELECT net.http_post(
+    url := 'https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1/collecte-veille',
+    headers := '{"Content-Type": "application/json", "Authorization": "Bearer ANON_KEY"}'::jsonb,
+    body := '{"type": "critique"}'::jsonb
+  ) AS request_id;
+  $$
+);
+
+-- Collecte quotidienne à 8h
+SELECT cron.schedule(
+  'collecte-veille-quotidienne',
+  '0 8 * * *',
+  $$
+  SELECT net.http_post(
+    url := 'https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1/collecte-veille',
+    headers := '{"Content-Type": "application/json", "Authorization": "Bearer ANON_KEY"}'::jsonb,
+    body := '{"type": "quotidienne"}'::jsonb
+  ) AS request_id;
+  $$
+);
+```
 
 ### Flux de l'assistant IA
 
