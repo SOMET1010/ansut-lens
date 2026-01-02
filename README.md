@@ -404,6 +404,117 @@ sequenceDiagram
 | 9 | enrichir-actualite | Enrichissement NLP optionnel |
 | 10 | enrichir-actualite | Mise à jour tags, quadrant, importance |
 
+### Flux de l'assistant IA
+
+Ce diagramme illustre le flux complet de l'assistant IA avec streaming SSE (Server-Sent Events), incluant la contextualisation dynamique des actualités et dossiers, ainsi que le parsing token-by-token côté client.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant User as Utilisateur
+    participant Frontend as React Frontend
+    participant DB as PostgreSQL
+    participant EF as assistant-ia
+    participant AI as Lovable AI Gateway
+
+    Note over User,AI: Phase 1 - Initialisation contexte
+
+    User->>Frontend: Ouvre page Assistant
+    activate Frontend
+    
+    Frontend->>DB: useActualites(maxAgeHours: 72)
+    DB-->>Frontend: 10 actualités récentes
+    
+    Frontend->>DB: useDossiers() WHERE statut = publié
+    DB-->>Frontend: 10 dossiers publiés
+    
+    Note over Frontend: Sélection auto: 5 actus + 3 dossiers
+    Note over Frontend: Construction context string avec IDs
+
+    Frontend-->>User: Interface prête avec contexte
+    deactivate Frontend
+
+    Note over User,AI: Phase 2 - Envoi message et streaming
+
+    User->>Frontend: Saisit message + Envoyer
+    activate Frontend
+    
+    Note over Frontend: Ajoute message utilisateur à messages[]
+    Note over Frontend: Affiche loader streaming
+
+    Frontend->>EF: POST /assistant-ia {messages, context}
+    activate EF
+    
+    Note over EF: Enrichit SYSTEM_PROMPT avec context
+    Note over EF: Format citations [[ACTU:id|titre]]
+    
+    EF->>AI: POST /v1/chat/completions {stream: true}
+    activate AI
+    Note right of AI: model: gemini-2.5-flash
+    
+    AI-->>EF: HTTP 200 + SSE Stream
+    EF-->>Frontend: Content-Type: text/event-stream
+    
+    loop Streaming token par token
+        AI-->>EF: data: {"choices":[{"delta":{"content":"token"}}]}
+        EF-->>Frontend: SSE event forwarding
+        
+        Note over Frontend: Parse ligne: data: {...}
+        Note over Frontend: JSON.parse + extract delta.content
+        Note over Frontend: onDelta(token) -> setState
+        
+        Frontend-->>User: Affichage progressif réponse
+    end
+    
+    AI-->>EF: data: [DONE]
+    deactivate AI
+    
+    EF-->>Frontend: Stream terminé
+    deactivate EF
+    
+    Note over Frontend: onDone() callback
+
+    Note over User,AI: Phase 3 - Persistance conversation
+
+    Frontend->>DB: INSERT/UPDATE conversations_ia
+    DB-->>Frontend: Conversation sauvegardée
+    
+    Note over Frontend: setIsLoading(false)
+    Frontend-->>User: Réponse complète affichée
+    deactivate Frontend
+
+    Note over User,AI: Gestion des erreurs
+
+    rect rgb(254, 226, 226)
+        Note over EF,AI: Erreurs possibles
+        AI-->>EF: HTTP 429 Rate Limit
+        EF-->>Frontend: {"error": "Limite atteinte"}
+        Frontend-->>User: Toast erreur rouge
+        
+        AI-->>EF: HTTP 402 Crédits épuisés
+        EF-->>Frontend: {"error": "Crédits épuisés"}
+        Frontend-->>User: Toast recharge compte
+    end
+```
+
+#### Récapitulatif des étapes
+
+| Étape | Composant | Action |
+|-------|-----------|--------|
+| 1-4 | Frontend | Charge actualités et dossiers via hooks TanStack Query |
+| 5 | Frontend | Sélection auto: 5 actualités + 3 dossiers |
+| 6 | Frontend | Construction string context avec IDs pour citations |
+| 7 | Frontend | POST vers edge function avec messages + context |
+| 8 | assistant-ia | Enrichit SYSTEM_PROMPT avec contexte |
+| 9 | assistant-ia | Appel Lovable AI Gateway stream: true |
+| 10 | AI Gateway | Retourne flux SSE (Server-Sent Events) |
+| 11 | assistant-ia | Forward stream SSE vers client |
+| 12 | Frontend | Parse ligne par ligne: data: JSON |
+| 13 | Frontend | onDelta(token) met à jour React state |
+| 14 | Frontend | Affichage progressif token par token |
+| 15 | Frontend | [DONE] déclenche onDone callback |
+| 16 | Frontend | Sauvegarde conversation dans conversations_ia |
+
 ### Schéma de la base de données
 
 Le diagramme ER ci-dessous visualise les 17 tables et leurs relations.
