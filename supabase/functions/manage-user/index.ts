@@ -78,7 +78,32 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Get target user name for audit
+    const { data: targetProfile } = await adminClient
+      .from('profiles')
+      .select('full_name')
+      .eq('id', userId)
+      .maybeSingle();
+
+    const targetName = targetProfile?.full_name || 'Inconnu';
+
     console.log(`Processing action: ${action} for user: ${userId}`);
+
+    // Helper function to log audit
+    const logAudit = async (auditAction: string) => {
+      const { error: auditError } = await adminClient
+        .from('admin_audit_logs')
+        .insert({
+          admin_id: currentUser.id,
+          target_user_id: userId,
+          action: auditAction,
+          details: { target_name: targetName },
+        });
+
+      if (auditError) {
+        console.error('Audit log error:', auditError);
+      }
+    };
 
     switch (action) {
       case 'disable': {
@@ -104,6 +129,7 @@ Deno.serve(async (req) => {
           throw new Error('Erreur lors du bannissement de la session');
         }
 
+        await logAudit('user_disabled');
         console.log(`User ${userId} disabled successfully`);
         return new Response(
           JSON.stringify({ success: true, message: 'Utilisateur désactivé' }),
@@ -134,6 +160,7 @@ Deno.serve(async (req) => {
           throw new Error('Erreur lors de la levée du bannissement');
         }
 
+        await logAudit('user_enabled');
         console.log(`User ${userId} enabled successfully`);
         return new Response(
           JSON.stringify({ success: true, message: 'Utilisateur réactivé' }),
@@ -142,6 +169,9 @@ Deno.serve(async (req) => {
       }
 
       case 'delete': {
+        // Log audit before deletion (user will be deleted)
+        await logAudit('user_deleted');
+
         // Delete the user completely (cascade will handle profiles and user_roles)
         const { error: deleteError } = await adminClient.auth.admin.deleteUser(userId);
 

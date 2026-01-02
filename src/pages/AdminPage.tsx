@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Settings, Users, Database, Bell, Tag, UserPlus } from 'lucide-react';
+import { Settings, Users, Database, Bell, Tag, UserPlus, ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function AdminPage() {
@@ -51,13 +51,15 @@ export default function AdminPage() {
             </CardContent>
           </Card>
         </Link>
-        <Card className="glass cursor-pointer hover:shadow-glow transition-shadow">
-          <CardContent className="pt-6 flex flex-col items-center text-center">
-            <Settings className="h-10 w-10 text-chart-5 mb-3" />
-            <h3 className="font-semibold">Système</h3>
-            <p className="text-sm text-muted-foreground">Logs & audit</p>
-          </CardContent>
-        </Card>
+        <Link to="/admin/audit-logs">
+          <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full">
+            <CardContent className="pt-6 flex flex-col items-center text-center">
+              <ClipboardList className="h-10 w-10 text-chart-5 mb-3" />
+              <h3 className="font-semibold">Historique d'audit</h3>
+              <p className="text-sm text-muted-foreground">Actions admin</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </div>
   );

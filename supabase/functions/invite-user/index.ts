@@ -115,6 +115,20 @@ serve(async (req) => {
       if (profileError) {
         console.error("Profile creation error:", profileError);
       }
+
+      // Log the invitation in audit
+      const { error: auditError } = await adminClient
+        .from("admin_audit_logs")
+        .insert({
+          admin_id: user.id,
+          target_user_id: inviteData.user.id,
+          action: "user_invited",
+          details: { email, role, full_name: fullName },
+        });
+
+      if (auditError) {
+        console.error("Audit log error:", auditError);
+      }
     }
 
     return new Response(
