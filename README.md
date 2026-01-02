@@ -201,6 +201,126 @@ $$;
 
 ---
 
+## Architecture Visuelle
+
+### Diagramme système global
+
+Le diagramme ci-dessous illustre les flux de données entre les composants principaux de la plateforme.
+
+```mermaid
+flowchart TB
+    subgraph Frontend["Frontend React"]
+        direction TB
+        UI[Interface Utilisateur<br/>shadcn/ui + Tailwind]
+        Pages[12 Pages<br/>Radar, Actualités, SPDI...]
+        Hooks[13 Hooks Custom<br/>TanStack Query]
+        Auth[AuthContext<br/>Gestion sessions]
+    end
+
+    subgraph EdgeFunctions["Edge Functions Deno"]
+        direction TB
+        EF1[collecte-veille<br/>Collecte actualités]
+        EF2[assistant-ia<br/>Chatbot streaming]
+        EF3[enrichir-actualite<br/>Tags et importance]
+        EF4[generer-acteurs<br/>Génération IA]
+        EF5[invite-user<br/>Invitations email]
+        EF6[manage-user<br/>Activation comptes]
+        EF7[update-user-role<br/>Gestion rôles]
+    end
+
+    subgraph Database["Base de Données PostgreSQL"]
+        direction TB
+        subgraph Core["Tables Principales"]
+            T1[(personnalites)]
+            T2[(actualites)]
+            T3[(signaux)]
+            T4[(alertes)]
+            T5[(dossiers)]
+        end
+        subgraph SPDI["Tables SPDI"]
+            T6[(presence_digitale_metrics)]
+            T7[(presence_digitale_recommandations)]
+        end
+        subgraph Veille["Tables Veille"]
+            T8[(mots_cles_veille)]
+            T9[(categories_veille)]
+            T10[(sources_media)]
+        end
+        subgraph AuthTables["Tables Auth"]
+            T11[(profiles)]
+            T12[(user_roles)]
+            T13[(admin_audit_logs)]
+        end
+    end
+
+    subgraph External["APIs Externes"]
+        Perplexity[Perplexity API<br/>Recherche web]
+        LovableAI[Lovable AI Gateway<br/>Gemini 2.5 Flash]
+    end
+
+    subgraph Security["Sécurité"]
+        RLS[Row-Level Security<br/>17 tables protégées]
+        Roles[4 Rôles<br/>admin, user, council_user, guest]
+        Checks[12 Contraintes CHECK<br/>Validation données]
+    end
+
+    %% Connexions Frontend
+    UI --> Pages
+    Pages --> Hooks
+    Hooks --> Auth
+    Auth -->|JWT Token| Database
+
+    %% Connexions Edge Functions
+    EF1 -->|INSERT actualités| T2
+    EF1 -->|Recherche| Perplexity
+    EF1 -->|Appel| EF3
+    EF2 -->|Streaming| LovableAI
+    EF3 -->|UPDATE tags| T2
+    EF3 -->|INSERT| T4
+    EF4 -->|INSERT| T1
+    EF4 -->|Génération| Perplexity
+    EF5 -->|INSERT| T11
+    EF5 -->|INSERT| T12
+    EF6 -->|UPDATE| T11
+    EF7 -->|UPDATE| T12
+
+    %% Flux principaux
+    Hooks -->|Invocation| EdgeFunctions
+    EF5 -->|Audit| T13
+    EF6 -->|Audit| T13
+    EF7 -->|Audit| T13
+
+    %% Sécurité
+    Database --> RLS
+    Database --> Checks
+    RLS --> Roles
+
+    %% Styles
+    classDef frontend fill:#3b82f6,stroke:#1e40af,color:#fff
+    classDef edge fill:#8b5cf6,stroke:#5b21b6,color:#fff
+    classDef db fill:#10b981,stroke:#047857,color:#fff
+    classDef external fill:#f59e0b,stroke:#b45309,color:#fff
+    classDef security fill:#ef4444,stroke:#b91c1c,color:#fff
+
+    class UI,Pages,Hooks,Auth frontend
+    class EF1,EF2,EF3,EF4,EF5,EF6,EF7 edge
+    class T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13 db
+    class Perplexity,LovableAI external
+    class RLS,Roles,Checks security
+```
+
+### Flux de données principaux
+
+| Flux | Description |
+|------|-------------|
+| **Collecte automatisée** | `collecte-veille` interroge Perplexity, insère dans `actualites`, déclenche `enrichir-actualite` |
+| **Assistant IA** | `assistant-ia` reçoit le contexte, appelle Lovable AI Gateway, stream la réponse SSE |
+| **Gestion utilisateurs** | `invite-user`, `manage-user`, `update-user-role` modifient `profiles` et `user_roles` |
+| **Alertes temps réel** | Insertion dans `alertes` avec broadcast Realtime vers le frontend |
+| **Audit** | Toutes les actions admin sont loguées dans `admin_audit_logs` |
+
+---
+
 ## Schéma des Données
 
 ### 17 tables avec RLS activé
