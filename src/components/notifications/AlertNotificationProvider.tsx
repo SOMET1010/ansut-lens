@@ -1,5 +1,6 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import { useRealtimeAlerts } from '@/hooks/useRealtimeAlerts';
+import { useRealtimeCronAlerts } from '@/hooks/useRealtimeCronAlerts';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Alerte = Tables<'alertes'>;
@@ -19,6 +20,9 @@ interface AlertNotificationProviderProps {
 
 export function AlertNotificationProvider({ children }: AlertNotificationProviderProps) {
   const alertsData = useRealtimeAlerts();
+  
+  // Notifications temps réel pour les exécutions CRON (admins uniquement)
+  useRealtimeCronAlerts();
 
   return (
     <AlertNotificationContext.Provider value={alertsData}>
