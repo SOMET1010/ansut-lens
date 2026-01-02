@@ -319,6 +319,91 @@ flowchart TB
 | **Alertes temps réel** | Insertion dans `alertes` avec broadcast Realtime vers le frontend |
 | **Audit** | Toutes les actions admin sont loguées dans `admin_audit_logs` |
 
+### Flux de collecte automatisée
+
+Ce diagramme de séquence illustre le processus complet de collecte des actualités en 2 phases : la collecte via Perplexity API puis l'enrichissement NLP optionnel.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Frontend as React Frontend
+    participant EF1 as collecte-veille
+    participant DB as PostgreSQL
+    participant Perplexity as Perplexity API
+    participant EF2 as enrichir-actualite
+
+    Note over Frontend,EF2: Phase 1 - Déclenchement collecte
+
+    Frontend->>EF1: POST /collecte-veille {type, recency}
+    activate EF1
+    
+    EF1->>DB: SELECT mots_cles_veille WHERE actif = true
+    DB-->>EF1: Liste mots-clés (max 20)
+    
+    Note over EF1: Construction prompt avec top 10 keywords
+    
+    EF1->>Perplexity: POST /chat/completions model sonar-pro
+    activate Perplexity
+    Note right of Perplexity: search_recency_filter week
+    Perplexity-->>EF1: JSON {actualites[], citations[]}
+    deactivate Perplexity
+    
+    Note over EF1: Parsing JSON (4 stratégies fallback)
+    
+    loop Pour chaque actualité
+        EF1->>DB: SELECT actualites WHERE titre = ?
+        alt Doublon détecté
+            DB-->>EF1: existing record
+            Note over EF1: Skip doublon
+        else Nouvelle actualité
+            DB-->>EF1: null
+            Note over EF1: Analyse mots-clés et calcul importance
+            EF1->>DB: INSERT actualites
+            opt Si alerte_auto = true
+                EF1->>DB: INSERT alertes niveau warning
+            end
+        end
+    end
+    
+    EF1->>DB: INSERT collectes_log statut success
+    EF1-->>Frontend: {success, nb_resultats, alertes, duree_ms}
+    deactivate EF1
+    
+    Note over Frontend,EF2: Phase 2 - Enrichissement optionnel
+
+    Frontend->>EF2: POST /enrichir-actualite {actualite_id}
+    activate EF2
+    
+    EF2->>DB: SELECT mots_cles_veille + actualites
+    DB-->>EF2: Données complètes
+    
+    Note over EF2: Analyse NLP normalisation et matching
+    
+    EF2->>DB: UPDATE actualites SET tags importance analyse_ia
+    
+    opt Si mots-clés critiques détectés
+        EF2->>DB: INSERT alertes niveau critical
+    end
+    
+    EF2-->>Frontend: {success, enrichment}
+    deactivate EF2
+```
+
+#### Récapitulatif des étapes
+
+| Étape | Composant | Action |
+|-------|-----------|--------|
+| 1 | Frontend | Déclenche collecte via hook `useTriggerCollecte` |
+| 2 | collecte-veille | Récupère 20 mots-clés actifs triés par criticité |
+| 3 | Perplexity | Recherche web avec `sonar-pro` et filtre 7 jours |
+| 4 | collecte-veille | Parse JSON (4 stratégies fallback) |
+| 5 | collecte-veille | Détection doublons par titre |
+| 6 | collecte-veille | INSERT actualités avec tags et importance |
+| 7 | collecte-veille | Création alertes si `alerte_auto = true` |
+| 8 | collecte-veille | Log dans `collectes_log` |
+| 9 | enrichir-actualite | Enrichissement NLP optionnel |
+| 10 | enrichir-actualite | Mise à jour tags, quadrant, importance |
+
 ### Schéma de la base de données
 
 Le diagramme ER ci-dessous visualise les 17 tables et leurs relations.
