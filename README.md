@@ -970,6 +970,241 @@ L'ajout du paramètre `?t={timestamp}` à l'URL publique force le rafraîchissem
 const urlWithCacheBuster = `${publicUrl}?t=${Date.now()}`;
 ```
 
+### Flux d'authentification et gestion des sessions
+
+Le système d'authentification repose sur Supabase Auth avec gestion des rôles (4 niveaux), protection des routes et persistence des sessions via localStorage.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant User as Utilisateur
+    participant UI as AuthPage
+    participant Ctx as AuthContext
+    participant Auth as Supabase Auth
+    participant DB as PostgreSQL
+    participant Router as React Router
+
+    Note over User,Router: Phase 1 - Initialisation session (App mount)
+
+    Ctx->>Auth: getSession()
+    activate Ctx
+    Auth-->>Ctx: session | null
+    
+    Ctx->>Ctx: onAuthStateChange(callback)
+    Note right of Ctx: Listener actif pour toute la durée de l'app
+    
+    alt Session existante
+        Ctx->>Ctx: setUser(session.user)
+        Ctx->>Ctx: setSession(session)
+        Ctx->>Ctx: setTimeout(fetchUserRole, 0)
+        Note right of Ctx: Defer pour éviter deadlock
+        Ctx->>DB: SELECT role FROM user_roles WHERE user_id
+        DB-->>Ctx: app_role (admin|user|council_user|guest)
+        Ctx->>Ctx: setRole(role)
+    else Pas de session
+        Ctx->>Ctx: setUser(null), setRole(null)
+    end
+    Ctx->>Ctx: setIsLoading(false)
+    deactivate Ctx
+
+    Note over User,Router: Phase 2 - Protection des routes
+
+    User->>Router: Navigation vers /radar
+    activate Router
+    Router->>Ctx: ProtectedRoute: useAuth()
+    
+    alt isLoading = true
+        Router-->>User: LoadingScreen
+    else !user (non authentifié)
+        Router->>Router: Navigate to="/auth" state={from: location}
+        Router-->>User: Redirection vers /auth
+    else user authentifié
+        Router-->>User: Affichage page demandée
+    end
+    deactivate Router
+
+    User->>Router: Navigation vers /admin/*
+    activate Router
+    Router->>Ctx: AdminRoute: useAuth()
+    
+    alt !user
+        Router-->>User: Redirection vers /auth
+    else !isAdmin (role != 'admin')
+        Router->>User: Toast "Accès réservé aux administrateurs"
+        Router-->>User: Redirection vers /radar
+    else isAdmin
+        Router-->>User: Affichage page admin
+    end
+    deactivate Router
+
+    Note over User,Router: Phase 3 - Connexion utilisateur
+
+    User->>UI: Accès /auth
+    activate UI
+    
+    UI->>Ctx: useAuth() - vérification user
+    alt user déjà connecté
+        UI->>Router: navigate(from || '/radar')
+        Router-->>User: Redirection automatique
+    end
+    
+    User->>UI: Saisie email + password
+    UI->>UI: Validation Zod (loginSchema)
+    
+    alt Validation échouée
+        UI-->>User: Affichage erreurs champs
+    else Validation réussie
+        UI->>Ctx: signIn(email, password)
+        Ctx->>Auth: signInWithPassword({email, password})
+        
+        alt Erreur authentification
+            Auth-->>Ctx: AuthError
+            Ctx-->>UI: {error}
+            UI-->>User: Toast "Erreur de connexion"
+        else Succès
+            Auth-->>Ctx: {session, user}
+            Note over Auth,Ctx: onAuthStateChange déclenché automatiquement
+            Ctx->>Ctx: setSession(session), setUser(user)
+            Ctx->>DB: fetchUserRole(user.id)
+            DB-->>Ctx: role
+            Ctx->>Ctx: setRole(role)
+            UI-->>User: Toast "Connexion réussie"
+            UI->>Router: navigate(from || '/radar')
+        end
+    end
+    deactivate UI
+
+    Note over User,Router: Phase 4 - Réinitialisation mot de passe
+
+    User->>UI: Clic "Mot de passe oublié"
+    activate UI
+    UI->>UI: setMode('forgot-password')
+    
+    User->>UI: Saisie email
+    UI->>UI: Validation Zod (resetSchema)
+    
+    UI->>Auth: resetPasswordForEmail(email, {redirectTo})
+    Note right of Auth: redirectTo = origin + /auth/reset-password
+    
+    alt Erreur envoi
+        Auth-->>UI: error
+        UI-->>User: Toast "Erreur lors de l'envoi"
+    else Succès
+        Auth-->>UI: success
+        Auth->>User: Email avec lien magic link
+        UI-->>User: Toast "Email envoyé"
+        UI->>UI: setMode('login')
+    end
+    deactivate UI
+
+    User->>UI: Clic lien email -> /auth/reset-password#access_token=...
+    activate UI
+    
+    UI->>Auth: getSession()
+    alt Pas de session ni token
+        UI-->>User: Toast "Lien invalide ou expiré"
+        UI->>Router: navigate('/auth')
+    else Token valide
+        User->>UI: Saisie nouveau password + confirmation
+        UI->>UI: Validation Zod (refine: passwords match)
+        
+        UI->>Auth: updateUser({password})
+        alt Erreur
+            Auth-->>UI: error
+            UI-->>User: Toast "Erreur réinitialisation"
+        else Succès
+            Auth-->>UI: success
+            UI-->>User: Vue succès + bouton "Accéder"
+            User->>UI: Clic "Accéder à l'application"
+            UI->>Router: navigate('/radar')
+        end
+    end
+    deactivate UI
+
+    Note over User,Router: Phase 5 - Déconnexion
+
+    User->>UI: Clic bouton déconnexion
+    UI->>Ctx: signOut()
+    activate Ctx
+    Ctx->>Auth: signOut()
+    Auth-->>Ctx: success
+    Ctx->>Ctx: setUser(null), setSession(null), setRole(null)
+    Note over Auth,Ctx: onAuthStateChange déclenché avec session=null
+    deactivate Ctx
+    Router->>Router: ProtectedRoute détecte !user
+    Router-->>User: Redirection vers /auth
+```
+
+#### Rôles utilisateurs
+
+| Rôle | Niveau | Accès | Description |
+|------|--------|-------|-------------|
+| `admin` | 1 | Toutes pages + /admin/* | Administrateur système |
+| `user` | 2 | Toutes pages sauf /admin/* | Utilisateur standard |
+| `council_user` | 3 | Pages conseil restreintes | Membre du conseil |
+| `guest` | 4 | Lecture seule | Invité sans édition |
+
+#### Routes protégées
+
+| Route | Guard | Redirection si non autorisé | Condition |
+|-------|-------|----------------------------|-----------|
+| `/radar`, `/actualites`, etc. | `ProtectedRoute` | `/auth` | `!user` |
+| `/admin/*` | `AdminRoute` | `/radar` | `!isAdmin` |
+| `/auth` | Aucun | `/radar` (si connecté) | `user` |
+
+#### Validations Zod
+
+| Schema | Champs | Règles |
+|--------|--------|--------|
+| `loginSchema` | email | `trim`, `min(1)`, `email()`, `max(255)` |
+| `loginSchema` | password | `min(1)`, `min(6)` |
+| `resetSchema` | email | `trim`, `min(1)`, `email()`, `max(255)` |
+| `resetPasswordSchema` | password | `min(6)`, `max(72)` |
+| `resetPasswordSchema` | confirmPassword | `refine(match password)` |
+
+#### Composants d'authentification
+
+| Composant/Hook | Rôle | Fichier |
+|----------------|------|---------|
+| `AuthContext` | Provider global session + rôle | `src/contexts/AuthContext.tsx` |
+| `useAuth` | Hook d'accès au contexte | `src/contexts/AuthContext.tsx` |
+| `AuthPage` | Page login + forgot password | `src/pages/AuthPage.tsx` |
+| `ResetPasswordPage` | Page nouveau mot de passe | `src/pages/ResetPasswordPage.tsx` |
+| `ProtectedRoute` | Guard routes authentifiées | `src/components/auth/ProtectedRoute.tsx` |
+| `AdminRoute` | Guard routes admin | `src/components/auth/AdminRoute.tsx` |
+| `LoadingScreen` | Écran chargement vérification | `src/components/auth/LoadingScreen.tsx` |
+
+#### Prévention deadlock
+
+L'utilisation de `setTimeout(fetchUserRole, 0)` dans `onAuthStateChange` évite les appels Supabase imbriqués qui causent des deadlocks :
+
+```typescript
+supabase.auth.onAuthStateChange((event, session) => {
+  setSession(session);
+  setUser(session?.user ?? null);
+  
+  // Defer Supabase calls with setTimeout
+  if (session?.user) {
+    setTimeout(() => {
+      fetchUserRole(session.user.id).then(setRole);
+    }, 0);
+  }
+});
+```
+
+#### Sauvegarde URL origine
+
+Le mécanisme `state={{ from: location }}` préserve l'URL d'origine pour rediriger l'utilisateur vers sa page initiale après connexion :
+
+```typescript
+// Dans ProtectedRoute
+<Navigate to="/auth" state={{ from: location }} replace />
+
+// Dans AuthPage après connexion réussie
+const from = location.state?.from?.pathname || '/radar';
+navigate(from, { replace: true });
+```
+
 ### Schéma de la base de données
 
 Le diagramme ER ci-dessous visualise les 17 tables et leurs relations.
