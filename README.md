@@ -515,6 +515,141 @@ sequenceDiagram
 | 15 | Frontend | [DONE] déclenche onDone callback |
 | 16 | Frontend | Sauvegarde conversation dans conversations_ia |
 
+### Flux de gestion des utilisateurs (Admin)
+
+Ce diagramme illustre les 4 flux de gestion administrative des utilisateurs : invitation, modification de rôle, désactivation/réactivation et suppression. Toutes les actions sont tracées dans la table `admin_audit_logs` pour garantir une traçabilité complète.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Admin as Admin Frontend
+    participant EF1 as invite-user
+    participant EF2 as update-user-role
+    participant EF3 as manage-user
+    participant DB as PostgreSQL
+    participant Auth as Supabase Auth Admin
+
+    Note over Admin,Auth: Flux 1 - Invitation utilisateur
+
+    Admin->>EF1: POST {email, fullName, role}
+    activate EF1
+    
+    EF1->>DB: has_role(auth.uid(), admin)
+    DB-->>EF1: true
+    
+    EF1->>Auth: inviteUserByEmail(email, redirectTo)
+    activate Auth
+    Auth-->>EF1: {user: {id, email}}
+    deactivate Auth
+    
+    EF1->>DB: UPSERT user_roles {user_id, role}
+    EF1->>DB: UPSERT profiles {id, full_name}
+    EF1->>DB: INSERT admin_audit_logs action: user_invited
+    
+    EF1-->>Admin: {success, user}
+    deactivate EF1
+    
+    Note right of Auth: Email envoyé avec lien reset password
+
+    Note over Admin,Auth: Flux 2 - Modification rôle
+
+    Admin->>EF2: POST {userId, newRole}
+    activate EF2
+    
+    EF2->>DB: has_role(auth.uid(), admin)
+    DB-->>EF2: true
+    
+    alt userId === currentUser.id
+        EF2-->>Admin: {error: Auto-modification interdite}
+    else Autre utilisateur
+        EF2->>DB: SELECT role FROM user_roles WHERE user_id
+        DB-->>EF2: old_role
+        
+        EF2->>DB: DELETE user_roles WHERE user_id
+        EF2->>DB: INSERT user_roles {user_id, newRole}
+        EF2->>DB: INSERT admin_audit_logs action: role_changed
+        Note right of DB: details: {old_role, new_role, target_name}
+        
+        EF2-->>Admin: {success: true}
+    end
+    deactivate EF2
+
+    Note over Admin,Auth: Flux 3 - Désactivation / Réactivation
+
+    Admin->>EF3: POST {userId, action: disable|enable}
+    activate EF3
+    
+    EF3->>DB: SELECT role FROM user_roles WHERE user_id = currentUser
+    DB-->>EF3: admin
+    
+    alt action === disable
+        EF3->>DB: UPDATE profiles SET disabled = true
+        EF3->>Auth: updateUserById(ban_duration: 876000h)
+        EF3->>DB: INSERT admin_audit_logs action: user_disabled
+    else action === enable
+        EF3->>DB: UPDATE profiles SET disabled = false
+        EF3->>Auth: updateUserById(ban_duration: none)
+        EF3->>DB: INSERT admin_audit_logs action: user_enabled
+    end
+    
+    EF3-->>Admin: {success, message}
+    deactivate EF3
+
+    Note over Admin,Auth: Flux 4 - Suppression définitive
+
+    Admin->>EF3: POST {userId, action: delete}
+    activate EF3
+    
+    EF3->>DB: SELECT role FROM user_roles
+    DB-->>EF3: admin
+    
+    EF3->>DB: INSERT admin_audit_logs action: user_deleted
+    Note right of DB: Audit AVANT suppression
+    
+    EF3->>Auth: deleteUser(userId)
+    activate Auth
+    Note right of Auth: CASCADE: profiles + user_roles
+    Auth-->>EF3: success
+    deactivate Auth
+    
+    EF3-->>Admin: {success: Utilisateur supprimé}
+    deactivate EF3
+
+    Note over Admin,Auth: Sécurité et audit
+
+    rect rgb(220, 252, 231)
+        Note over EF1,DB: Toutes les actions sont tracées
+        Note over EF1,DB: dans admin_audit_logs avec:
+        Note over EF1,DB: admin_id, target_user_id, action, details
+    end
+```
+
+#### Récapitulatif des flux
+
+| Flux | Edge Function | Actions principales | Audit Log |
+|------|---------------|---------------------|-----------|
+| **Invitation** | `invite-user` | inviteUserByEmail + UPSERT profile/role | `user_invited` |
+| **Modification rôle** | `update-user-role` | DELETE + INSERT user_roles | `role_changed` |
+| **Désactivation** | `manage-user` | UPDATE disabled + ban auth | `user_disabled` |
+| **Réactivation** | `manage-user` | UPDATE disabled + unban auth | `user_enabled` |
+| **Suppression** | `manage-user` | deleteUser (CASCADE) | `user_deleted` |
+
+#### Rôles disponibles
+
+| Rôle | Label | Description |
+|------|-------|-------------|
+| `admin` | Administrateur | Accès complet, gestion utilisateurs |
+| `user` | Utilisateur | Accès standard aux fonctionnalités |
+| `council_user` | Membre du conseil | Accès aux rapports stratégiques |
+| `guest` | Invité | Accès lecture seule limité |
+
+#### Mesures de sécurité
+
+- **Vérification admin** : Fonction RPC `has_role()` avec `SECURITY DEFINER`
+- **Protection auto-modification** : Un admin ne peut pas modifier son propre rôle/compte
+- **Audit préventif** : Logging AVANT les actions destructives (suppression)
+- **Bannissement auth** : `ban_duration: 876000h` empêche la reconnexion après désactivation
+
 ### Schéma de la base de données
 
 Le diagramme ER ci-dessous visualise les 17 tables et leurs relations.
