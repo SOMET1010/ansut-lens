@@ -650,6 +650,191 @@ sequenceDiagram
 - **Audit préventif** : Logging AVANT les actions destructives (suppression)
 - **Bannissement auth** : `ban_duration: 876000h` empêche la reconnexion après désactivation
 
+### Flux SPDI - Score de Présence Digitale Institutionnelle
+
+Le **SPDI** (Score de Présence Digitale Institutionnelle) est un scoring composite à 4 axes permettant de mesurer et suivre la présence digitale des personnalités stratégiques. Le système collecte automatiquement les mentions, calcule les métriques quotidiennement et génère des recommandations personnalisées via l'IA.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Sources as Sources Externes
+    participant EF as collecte-veille
+    participant DB as PostgreSQL
+    participant Calc as Moteur Calcul SPDI
+    participant AI as Lovable AI
+    participant Frontend as React Frontend
+
+    Note over Sources,Frontend: Phase 1 - Collecte des mentions
+
+    EF->>Sources: Scan sources (Perplexity, RSS, LinkedIn)
+    activate EF
+    Sources-->>EF: Actualités et mentions brutes
+    
+    EF->>DB: INSERT actualites
+    EF->>DB: INSERT mentions {contenu, source, sentiment}
+    
+    loop Pour chaque personnalité mentionnée
+        EF->>DB: SELECT personnalites WHERE nom ILIKE mention
+        DB-->>EF: personnalite_id
+        EF->>DB: INSERT personnalites_mentions {personnalite_id, mention_id}
+    end
+    deactivate EF
+
+    Note over Sources,Frontend: Phase 2 - Calcul métriques SPDI (quotidien)
+
+    rect rgb(239, 246, 255)
+        Note over Calc: Déclenchement: CRON quotidien 02:00 UTC
+    end
+
+    activate Calc
+    Calc->>DB: SELECT personnalites WHERE suivi_spdi_actif = true
+    DB-->>Calc: Liste acteurs suivis
+
+    loop Pour chaque personnalité
+        Calc->>DB: SELECT mentions JOIN personnalites_mentions (30 derniers jours)
+        DB-->>Calc: mentions[]
+        
+        Note over Calc: === AXE VISIBILITÉ (30%) ===
+        Note over Calc: nb_mentions, nb_sources_distinctes
+        Note over Calc: regularite = écart-type dates
+        
+        Calc->>DB: SELECT actualites WHERE tags CONTAINS nom (30j)
+        DB-->>Calc: actualites[]
+        
+        Note over Calc: === AXE QUALITÉ (25%) ===
+        Note over Calc: sentiment_moyen = AVG(sentiment)
+        Note over Calc: pct_themes_strategiques
+        Note over Calc: nb_controverses = COUNT(sentiment < -0.3)
+        
+        Note over Calc: === AXE AUTORITÉ (25%) ===
+        Note over Calc: nb_citations_directes
+        Note over Calc: nb_invitations_panels
+        Note over Calc: nb_references_croisees
+        
+        Note over Calc: === AXE PRÉSENCE (20%) ===
+        Note over Calc: activite_linkedin (API)
+        Note over Calc: engagement_linkedin
+        Note over Calc: coherence_message
+        
+        Note over Calc: === SCORE FINAL ===
+        Note over Calc: SPDI = 0.30×Visibilité + 0.25×Qualité
+        Note over Calc: + 0.25×Autorité + 0.20×Présence
+        
+        Calc->>DB: INSERT presence_digitale_metrics
+        Note right of DB: Tous les axes + score_spdi + interpretation
+        
+        Calc->>DB: UPDATE personnalites SET score_spdi_actuel, tendance_spdi
+    end
+    deactivate Calc
+
+    Note over Sources,Frontend: Phase 3 - Génération recommandations IA
+
+    activate AI
+    AI->>DB: SELECT presence_digitale_metrics (dernière)
+    DB-->>AI: métriques actuelles
+    
+    AI->>DB: SELECT presence_digitale_metrics (historique 30j)
+    DB-->>AI: évolution scores
+    
+    Note over AI: Analyse des axes faibles
+    Note over AI: Détection opportunités (axes en hausse)
+    Note over AI: Identification alertes (controverses, baisse)
+    
+    alt Score visibilité < 40
+        AI->>DB: INSERT presence_digitale_recommandations
+        Note right of DB: type: canal, priorité: haute
+        Note right of DB: "Augmenter présence LinkedIn"
+    end
+    
+    alt Controverses détectées
+        AI->>DB: INSERT presence_digitale_recommandations
+        Note right of DB: type: alerte, priorité: haute
+        Note right of DB: "Risque réputationnel détecté"
+    end
+    
+    alt Opportunité thématique
+        AI->>DB: INSERT presence_digitale_recommandations
+        Note right of DB: type: opportunité, priorité: normale
+        Note right of DB: "Capitaliser sur thème tendance"
+    end
+    deactivate AI
+
+    Note over Sources,Frontend: Phase 4 - Affichage Frontend
+
+    Frontend->>DB: useDerniereMetriqueSPDI(personnaliteId)
+    activate Frontend
+    DB-->>Frontend: MetriqueSPDI {axes, score_final, interpretation}
+    
+    Frontend->>DB: useEvolutionSPDI(personnaliteId, periode)
+    DB-->>Frontend: EvolutionSPDI {historique[], variation, tendance}
+    
+    Frontend->>DB: useRecommandationsSPDI(personnaliteId)
+    DB-->>Frontend: RecommandationSPDI[] actives
+    
+    Frontend->>DB: useComparaisonPairs(personnaliteId, cercle)
+    DB-->>Frontend: {monScore, moyenne, rang, total}
+    
+    Note over Frontend: Rendu composants:
+    Note over Frontend: SPDIGaugeCard (jauge semi-circulaire)
+    Note over Frontend: SPDIAxesRadar (radar 4 axes)
+    Note over Frontend: SPDIEvolutionChart (courbe historique)
+    Note over Frontend: SPDIRecommandations (cards IA)
+    Note over Frontend: SPDIComparaisonPairs (benchmark)
+    
+    Frontend-->>Frontend: Affichage fiche personnalité enrichie
+    deactivate Frontend
+```
+
+#### Les 4 axes du SPDI
+
+| Axe | Poids | Métriques clés | Description |
+|-----|-------|----------------|-------------|
+| **Visibilité** | 30% | `nb_mentions`, `nb_sources_distinctes`, `regularite_mentions` | Volume et fréquence des mentions dans les médias |
+| **Qualité** | 25% | `sentiment_moyen`, `pct_themes_strategiques`, `nb_controverses` | Tonalité et pertinence du contenu |
+| **Autorité** | 25% | `nb_citations_directes`, `nb_invitations_panels`, `nb_references_croisees` | Reconnaissance et influence institutionnelle |
+| **Présence** | 20% | `activite_linkedin`, `engagement_linkedin`, `coherence_message` | Activité propre sur les réseaux sociaux |
+
+#### Interprétation des scores
+
+| Score | Interprétation | Badge | Action recommandée |
+|-------|----------------|-------|-------------------|
+| 80-100 | Présence forte | 🟢 Vert | Maintenir la dynamique |
+| 60-79 | Présence solide | 🔵 Bleu | Optimiser les axes faibles |
+| 40-59 | Visibilité faible | 🟠 Orange | Plan d'action prioritaire |
+| < 40 | Risque invisibilité | 🔴 Rouge | Intervention urgente requise |
+
+#### Types de recommandations IA
+
+| Type | Icône | Couleur | Exemple |
+|------|-------|---------|---------|
+| `opportunite` | 💡 Lightbulb | Vert | "Thème X en tendance, opportunité de prise de parole" |
+| `alerte` | ⚠️ AlertTriangle | Rouge | "Controverse détectée, risque réputationnel" |
+| `canal` | 🔗 Share2 | Bleu | "Augmenter fréquence posts LinkedIn" |
+| `thematique` | 🏷️ Tag | Violet | "Renforcer positionnement sur thème Y" |
+
+#### Hooks React associés
+
+| Hook | Description | Données retournées |
+|------|-------------|-------------------|
+| `useDerniereMetriqueSPDI` | Dernière mesure SPDI | `MetriqueSPDI` avec axes détaillés |
+| `useMetriquesSPDI` | Historique sur période | `MetriqueSPDI[]` (7j/30j/90j) |
+| `useEvolutionSPDI` | Évolution et tendance | `EvolutionSPDI` avec variation % |
+| `useRecommandationsSPDI` | Recommandations actives | `RecommandationSPDI[]` |
+| `useComparaisonPairs` | Benchmark cercle | Score, moyenne, rang, total |
+| `useToggleSuiviSPDI` | Activer/désactiver suivi | Mutation toggle |
+| `useMarquerRecommandationVue` | Marquer comme lue | Mutation update |
+
+#### Composants SPDI
+
+| Composant | Description |
+|-----------|-------------|
+| `SPDIGaugeCard` | Jauge semi-circulaire avec score, tendance et interprétation |
+| `SPDIAxesRadar` | Graphique radar des 4 axes avec légende |
+| `SPDIEvolutionChart` | Courbe d'évolution historique avec sélection de période |
+| `SPDIRecommandations` | Liste des recommandations IA avec actions |
+| `SPDIComparaisonPairs` | Benchmark vs pairs du même cercle stratégique |
+| `SPDIAlerteBanner` | Bannière d'alerte pour variations critiques (≤ -15%) |
+
 ### Schéma de la base de données
 
 Le diagramme ER ci-dessous visualise les 17 tables et leurs relations.
