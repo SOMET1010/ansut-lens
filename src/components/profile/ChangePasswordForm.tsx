@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { toErrorMessage } from '@/utils/errors';
 
 const changePasswordSchema = z.object({
   newPassword: z
@@ -53,10 +54,10 @@ export function ChangePasswordForm() {
       });
 
       form.reset();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Erreur',
-        description: error.message || 'Impossible de modifier le mot de passe.',
+        description: toErrorMessage(error),
         variant: 'destructive',
       });
     } finally {

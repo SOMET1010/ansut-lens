@@ -1,17 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import type { 
   MetriqueSPDI, 
   RecommandationSPDI, 
   EvolutionSPDI, 
-  AxesSPDI, 
   InterpretationSPDI,
+  TypeRecommandationSPDI,
+  PrioriteRecommandation,
+  CanalCommunication,
   CercleStrategique,
   Tendance 
 } from '@/types';
 
-// Mapper les données DB vers MetriqueSPDI
-const mapDbToMetrique = (row: any): MetriqueSPDI => ({
+// Types Row générés par Supabase
+type MetriquesRow = Database['public']['Tables']['presence_digitale_metrics']['Row'];
+type RecommandationsRow = Database['public']['Tables']['presence_digitale_recommandations']['Row'];
+
+// Mapper les données DB vers MetriqueSPDI (typé strictement)
+const mapDbToMetrique = (row: MetriquesRow): MetriqueSPDI => ({
   id: row.id,
   personnalite_id: row.personnalite_id,
   date_mesure: row.date_mesure,
@@ -43,23 +50,23 @@ const mapDbToMetrique = (row: any): MetriqueSPDI => ({
   },
   score_final: Number(row.score_spdi) || 0,
   interpretation: (row.interpretation as InterpretationSPDI) || 'visibilite_faible',
-  created_at: row.created_at,
+  created_at: row.created_at ?? '',
 });
 
-// Mapper les données DB vers RecommandationSPDI
-const mapDbToRecommandation = (row: any): RecommandationSPDI => ({
+// Mapper les données DB vers RecommandationSPDI (typé strictement)
+const mapDbToRecommandation = (row: RecommandationsRow): RecommandationSPDI => ({
   id: row.id,
   personnalite_id: row.personnalite_id,
-  type: row.type,
-  priorite: row.priorite,
+  type: row.type as TypeRecommandationSPDI,
+  priorite: (row.priorite ?? 'normale') as PrioriteRecommandation,
   titre: row.titre,
   message: row.message,
-  thematique: row.thematique,
-  canal: row.canal,
-  actif: row.actif,
-  vue: row.vue,
-  created_at: row.created_at,
-  expire_at: row.expire_at,
+  thematique: row.thematique ?? undefined,
+  canal: row.canal as CanalCommunication | undefined,
+  actif: row.actif ?? true,
+  vue: row.vue ?? false,
+  created_at: row.created_at ?? '',
+  expire_at: row.expire_at ?? undefined,
 });
 
 // Calculer la tendance à partir de l'historique
