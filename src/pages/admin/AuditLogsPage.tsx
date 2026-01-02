@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ArrowLeft, ClipboardList, UserPlus, Shield, UserX, UserCheck, Trash2, Filter, Loader2, Download } from "lucide-react";
+import { ArrowLeft, ClipboardList, UserPlus, Shield, UserX, UserCheck, Trash2, Filter, Loader2, Download, CalendarIcon, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +23,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface AuditLog {
   id: string;
@@ -53,9 +56,11 @@ const roleLabels: Record<string, string> = {
 
 export default function AuditLogsPage() {
   const [actionFilter, setActionFilter] = useState<string>("all");
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
   const { data: logs, isLoading } = useQuery({
-    queryKey: ["admin-audit-logs", actionFilter],
+    queryKey: ["admin-audit-logs", actionFilter, startDate?.toISOString(), endDate?.toISOString()],
     queryFn: async () => {
       let query = supabase
         .from("admin_audit_logs")
@@ -65,6 +70,16 @@ export default function AuditLogsPage() {
 
       if (actionFilter !== "all") {
         query = query.eq("action", actionFilter);
+      }
+
+      if (startDate) {
+        query = query.gte("created_at", startDate.toISOString());
+      }
+
+      if (endDate) {
+        const endOfDay = new Date(endDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        query = query.lte("created_at", endOfDay.toISOString());
       }
 
       const { data, error } = await query;
@@ -156,7 +171,7 @@ export default function AuditLogsPage() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">Actions récentes</CardTitle>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -166,21 +181,87 @@ export default function AuditLogsPage() {
                 <Download className="h-4 w-4 mr-2" />
                 Exporter CSV
               </Button>
+
+              <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "w-[130px] justify-start text-left font-normal",
+                        !startDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDate ? format(startDate, "dd/MM/yyyy") : "Date début"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      disabled={(date) => endDate ? date > endDate : false}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "w-[130px] justify-start text-left font-normal",
+                        !endDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {endDate ? format(endDate, "dd/MM/yyyy") : "Date fin"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      disabled={(date) => startDate ? date < startDate : false}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                {(startDate || endDate) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setStartDate(undefined); setEndDate(undefined); }}
+                    className="h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={actionFilter} onValueChange={setActionFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filtrer par action" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Toutes les actions</SelectItem>
-                  <SelectItem value="user_invited">Invitations</SelectItem>
-                  <SelectItem value="role_changed">Changements de rôle</SelectItem>
-                  <SelectItem value="user_disabled">Désactivations</SelectItem>
-                  <SelectItem value="user_enabled">Réactivations</SelectItem>
-                  <SelectItem value="user_deleted">Suppressions</SelectItem>
-                </SelectContent>
-              </Select>
+                <Select value={actionFilter} onValueChange={setActionFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filtrer par action" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les actions</SelectItem>
+                    <SelectItem value="user_invited">Invitations</SelectItem>
+                    <SelectItem value="role_changed">Changements de rôle</SelectItem>
+                    <SelectItem value="user_disabled">Désactivations</SelectItem>
+                    <SelectItem value="user_enabled">Réactivations</SelectItem>
+                    <SelectItem value="user_deleted">Suppressions</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
