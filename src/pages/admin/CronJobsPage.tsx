@@ -26,6 +26,7 @@ export default function CronJobsPage() {
   const [newSchedule, setNewSchedule] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isTestingNotification, setIsTestingNotification] = useState(false);
+  const [isTestingSuccess, setIsTestingSuccess] = useState(false);
 
   // Déclencher une collecte de test pour vérifier les notifications
   const handleTestNotification = async () => {
@@ -52,6 +53,32 @@ export default function CronJobsPage() {
       });
     } finally {
       setIsTestingNotification(false);
+    }
+  };
+
+  // Déclencher un test de succès avec résultats
+  const handleTestSuccessNotification = async () => {
+    setIsTestingSuccess(true);
+    try {
+      const { error } = await supabase.from('collectes_log').insert({
+        type: 'test-success',
+        statut: 'success',
+        nb_resultats: 5,
+        duree_ms: 1234,
+        mots_cles_utilises: ['test', 'succès']
+      });
+      
+      if (error) throw error;
+      
+      toast.info('Log de succès inséré', {
+        description: 'Une notification de succès devrait apparaître si Realtime fonctionne',
+      });
+    } catch (error) {
+      toast.error('Erreur lors du test', {
+        description: error instanceof Error ? error.message : 'Erreur inconnue',
+      });
+    } finally {
+      setIsTestingSuccess(false);
     }
   };
 
@@ -105,7 +132,15 @@ export default function CronJobsPage() {
           disabled={isTestingNotification}
         >
           <FlaskConical className={`h-4 w-4 mr-2 ${isTestingNotification ? 'animate-pulse' : ''}`} />
-          Tester notification
+          Tester erreur
+        </Button>
+        <Button 
+          variant="outline" 
+          onClick={handleTestSuccessNotification} 
+          disabled={isTestingSuccess}
+        >
+          <CheckCircle2 className={`h-4 w-4 mr-2 ${isTestingSuccess ? 'animate-pulse' : ''}`} />
+          Tester succès
         </Button>
         <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
