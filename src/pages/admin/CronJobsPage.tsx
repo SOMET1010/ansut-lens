@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Clock, Play, RefreshCw, Settings2, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Clock, Play, RefreshCw, Settings2, CheckCircle2, XCircle, Loader2, FlaskConical } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -23,6 +25,35 @@ export default function CronJobsPage() {
   const [editingJob, setEditingJob] = useState<CronJob | null>(null);
   const [newSchedule, setNewSchedule] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isTestingNotification, setIsTestingNotification] = useState(false);
+
+  // Déclencher une collecte de test pour vérifier les notifications
+  const handleTestNotification = async () => {
+    setIsTestingNotification(true);
+    try {
+      // Insérer directement un log de test pour déclencher la notification realtime
+      const { error } = await supabase.from('collectes_log').insert({
+        type: 'test-notification',
+        statut: 'error',
+        nb_resultats: 0,
+        duree_ms: 123,
+        erreur: 'Ceci est un test de notification CRON',
+        mots_cles_utilises: ['test']
+      });
+      
+      if (error) throw error;
+      
+      toast.info('Log de test inséré', {
+        description: 'Une notification d\'erreur devrait apparaître si Realtime fonctionne',
+      });
+    } catch (error) {
+      toast.error('Erreur lors du test', {
+        description: error instanceof Error ? error.message : 'Erreur inconnue',
+      });
+    } finally {
+      setIsTestingNotification(false);
+    }
+  };
 
   // Filtrer l'historique
   const filteredHistory = history.filter(entry => {
@@ -68,6 +99,14 @@ export default function CronJobsPage() {
           </h1>
           <p className="text-muted-foreground">Automatisation de la collecte de veille</p>
         </div>
+        <Button 
+          variant="secondary" 
+          onClick={handleTestNotification} 
+          disabled={isTestingNotification}
+        >
+          <FlaskConical className={`h-4 w-4 mr-2 ${isTestingNotification ? 'animate-pulse' : ''}`} />
+          Tester notification
+        </Button>
         <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
           Actualiser
