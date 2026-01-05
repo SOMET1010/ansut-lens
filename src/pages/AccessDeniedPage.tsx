@@ -1,15 +1,27 @@
+import { useEffect, useRef } from 'react';
 import { ShieldX, Home, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAccessDeniedLogger } from '@/hooks/useAccessDeniedLogger';
 
 const AccessDeniedPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut } = useAuth();
+  const { logAccessDenied } = useAccessDeniedLogger();
+  const hasLogged = useRef(false);
   
   const attemptedPath = location.state?.from || 'cette page';
+  const requiredPermission = location.state?.permission;
+
+  useEffect(() => {
+    if (!hasLogged.current && attemptedPath !== 'cette page') {
+      logAccessDenied(attemptedPath, requiredPermission);
+      hasLogged.current = true;
+    }
+  }, [attemptedPath, requiredPermission, logAccessDenied]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted p-4">
