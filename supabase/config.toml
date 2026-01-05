@@ -14,3 +14,15 @@ verify_jwt = false
 
 [functions.manage-cron-jobs]
 verify_jwt = false
+
+[functions.send-flux-digest]
+verify_jwt = false
+
+[functions.invite-user]
+verify_jwt = false
+
+[functions.manage-user]
+verify_jwt = false
+
+[functions.update-user-role]
+verify_jwt = false
