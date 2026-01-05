@@ -640,6 +640,7 @@ export type Database = {
           programmation_active: boolean | null
           rappel_envoye: boolean | null
           statut: string
+          template: string | null
           ton: string
           updated_at: string | null
           valide_par: string | null
@@ -665,6 +666,7 @@ export type Database = {
           programmation_active?: boolean | null
           rappel_envoye?: boolean | null
           statut?: string
+          template?: string | null
           ton?: string
           updated_at?: string | null
           valide_par?: string | null
@@ -690,6 +692,7 @@ export type Database = {
           programmation_active?: boolean | null
           rappel_envoye?: boolean | null
           statut?: string
+          template?: string | null
           ton?: string
           updated_at?: string | null
           valide_par?: string | null

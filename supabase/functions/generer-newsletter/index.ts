@@ -10,6 +10,7 @@ interface GenerateRequest {
   periode: "hebdo" | "mensuel";
   ton: "institutionnel" | "pedagogique" | "strategique";
   cible: "dg_ca" | "partenaires" | "general";
+  template?: "innovactu" | "ansut_radar";
   date_debut?: string;
   date_fin?: string;
 }
@@ -63,8 +64,8 @@ serve(async (req) => {
     });
 
     // Parse request
-    const { periode, ton, cible, date_debut, date_fin }: GenerateRequest = await req.json();
-    console.log(`📋 [generer-newsletter] Paramètres: periode=${periode}, ton=${ton}, cible=${cible}`);
+    const { periode, ton, cible, template = 'innovactu', date_debut, date_fin }: GenerateRequest = await req.json();
+    console.log(`📋 [generer-newsletter] Paramètres: periode=${periode}, ton=${ton}, cible=${cible}, template=${template}`);
 
     // Calculate date range
     const endDate = date_fin ? new Date(date_fin) : new Date();
@@ -351,9 +352,11 @@ Tu DOIS générer un JSON valide avec cette structure EXACTE:
 
     console.log('✅ [generer-newsletter] Contenu validé');
 
-    // Generate HTML versions
-    console.log('🎨 [generer-newsletter] Génération du HTML...');
-    const htmlCourt = generateProfessionalHtml(generatedContent, nextNumero, startDate, endDate, ton, cible);
+    // Generate HTML versions based on template
+    console.log(`🎨 [generer-newsletter] Génération du HTML (template: ${template})...`);
+    const htmlCourt = template === 'ansut_radar'
+      ? generateAnsutRadarHtml(generatedContent, nextNumero, startDate, endDate, ton, cible)
+      : generateInnovActuHtml(generatedContent, nextNumero, startDate, endDate, ton, cible);
 
     // Get current user
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
@@ -378,6 +381,7 @@ Tu DOIS générer un JSON valide avec cette structure EXACTE:
         date_fin: endDate.toISOString().split('T')[0],
         ton,
         cible,
+        template,
         contenu: generatedContent,
         html_court: htmlCourt,
         statut: 'brouillon',
@@ -391,7 +395,7 @@ Tu DOIS générer un JSON valide avec cette structure EXACTE:
       throw new Error(`Erreur de sauvegarde: ${insertError.message}`);
     }
 
-    console.log(`🎉 [generer-newsletter] Newsletter #${nextNumero} créée avec succès! ID: ${newsletter.id}`);
+    console.log(`🎉 [generer-newsletter] Newsletter #${nextNumero} créée avec succès! ID: ${newsletter.id}, Template: ${template}`);
 
     return new Response(
       JSON.stringify(newsletter),
@@ -408,7 +412,10 @@ Tu DOIS générer un JSON valide avec cette structure EXACTE:
   }
 });
 
-function generateProfessionalHtml(
+// ============================================
+// INNOV'ACTU HTML Template (Modern, 2 columns)
+// ============================================
+function generateInnovActuHtml(
   content: NewsletterContenu, 
   numero: number, 
   startDate: Date, 
@@ -663,6 +670,198 @@ function generateProfessionalHtml(
               <a href="https://www.ansut.ci" style="color: #e65100; text-decoration: none; font-weight: 600; font-size: 14px;">www.ansut.ci</a>
               <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.15); font-size: 11px; color: rgba(255,255,255,0.5);">
                 INNOV'ACTU Newsletter · ${formatMonthYear(startDate)} · ${tonLabel}
+              </div>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+// ============================================
+// ANSUT RADAR HTML Template (Classic, 1 column)
+// ============================================
+function generateAnsutRadarHtml(
+  content: NewsletterContenu, 
+  numero: number, 
+  startDate: Date, 
+  endDate: Date,
+  ton: string,
+  cible: string
+): string {
+  const formatDate = (d: Date) => d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const formatMonthYear = (d: Date) => d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  
+  const header = content.header || {};
+  const edito = content.edito || { texte: '' };
+  const essentielAnsut = content.essentiel_ansut || [];
+  const tendanceTech = content.tendance_tech || { titre: '', contenu: '', lien_ansut: '' };
+  const decryptage = content.decryptage || { titre: '', contenu: '' };
+  const chiffreMarquant = content.chiffre_marquant || { valeur: '', unite: '', contexte: '' };
+  const aVenir = content.a_venir || [];
+
+  const tonLabel = ton === 'pedagogique' ? 'Pédagogique' : ton === 'institutionnel' ? 'Institutionnel' : 'Stratégique';
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ANSUT RADAR #${numero} - ${formatMonthYear(startDate)}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: Georgia, 'Times New Roman', serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8fafc;">
+    <tr>
+      <td align="center" style="padding: 20px 0;">
+        <!-- Main Container -->
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
+          
+          <!-- HEADER ANSUT RADAR -->
+          <tr>
+            <td style="background: #1e293b; padding: 24px 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td width="50" valign="middle">
+                    <div style="width: 48px; height: 48px; background: #ffffff; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                      <span style="font-size: 24px;">📡</span>
+                    </div>
+                  </td>
+                  <td valign="middle" style="padding-left: 16px;">
+                    <div style="font-size: 24px; font-weight: 700; color: #ffffff; letter-spacing: 2px; font-family: 'Segoe UI', Arial, sans-serif;">ANSUT RADAR</div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-top: 4px; letter-spacing: 1px;">Veille Stratégique</div>
+                  </td>
+                  <td align="right" valign="middle">
+                    <div style="font-size: 22px; font-weight: 700; color: #ffffff;">N°${numero}</div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">${formatDate(startDate)}</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Orange line -->
+          <tr>
+            <td style="height: 4px; background: #e65100;"></td>
+          </tr>
+          
+          <!-- HEADER IMAGE (if available) -->
+          ${header.image_url ? `
+          <tr>
+            <td style="padding: 0;">
+              <img src="${header.image_url}" alt="${header.image_alt || 'Image newsletter'}" style="width: 100%; height: auto; display: block;" />
+            </td>
+          </tr>
+          ` : ''}
+          
+          <!-- ÉDITO -->
+          <tr>
+            <td style="padding: 32px 40px; border-bottom: 2px solid #e2e8f0;">
+              <div style="font-size: 14px; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; font-family: 'Segoe UI', Arial, sans-serif;">
+                <span style="color: #e65100;">━</span> Édito
+              </div>
+              <div style="font-size: 18px; color: #475569; font-style: italic; line-height: 1.8;">${edito.texte}</div>
+              <div style="text-align: right; font-size: 13px; color: #64748b; margin-top: 16px; font-weight: 500;">— La Direction ANSUT</div>
+            </td>
+          </tr>
+          
+          <!-- L'ESSENTIEL -->
+          <tr>
+            <td style="padding: 32px 40px; border-bottom: 2px solid #e2e8f0;">
+              <div style="font-size: 14px; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 24px; font-family: 'Segoe UI', Arial, sans-serif;">
+                <span style="color: #e65100;">━</span> L'Essentiel
+              </div>
+              ${essentielAnsut.map((item, index) => `
+                <div style="margin-bottom: 24px; padding-left: 16px; border-left: 2px solid #cbd5e1;">
+                  ${item.image_url ? `
+                    <img src="${item.image_url}" alt="${item.image_alt || item.titre}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 12px;" />
+                  ` : ''}
+                  <div style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 8px; font-family: 'Segoe UI', Arial, sans-serif;">
+                    ${index + 1}. ${item.titre}
+                  </div>
+                  <div style="font-size: 14px; color: #64748b; margin-bottom: 4px; line-height: 1.6;">
+                    <span style="font-weight: 600;">Pourquoi :</span> ${item.pourquoi}
+                  </div>
+                  <div style="font-size: 14px; color: #64748b; line-height: 1.6;">
+                    <span style="font-weight: 600; color: #e65100;">Impact :</span> ${item.impact}
+                  </div>
+                </div>
+              `).join('')}
+            </td>
+          </tr>
+          
+          <!-- TENDANCE TECHNOLOGIQUE -->
+          <tr>
+            <td style="padding: 32px 40px; background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+              <div style="font-size: 14px; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; font-family: 'Segoe UI', Arial, sans-serif;">
+                <span style="color: #e65100;">━</span> Tendance Technologique
+              </div>
+              ${tendanceTech.image_url ? `
+                <img src="${tendanceTech.image_url}" alt="${tendanceTech.image_alt || tendanceTech.titre}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 4px; margin-bottom: 16px;" />
+              ` : ''}
+              <div style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 12px; font-family: 'Segoe UI', Arial, sans-serif;">${tendanceTech.titre}</div>
+              <div style="font-size: 15px; color: #475569; line-height: 1.7; margin-bottom: 16px;">${tendanceTech.contenu}</div>
+              <div style="background: #ffffff; padding: 12px 16px; border-radius: 4px; border: 1px solid #e2e8f0;">
+                <span style="font-weight: 600; color: #e65100;">→ Lien ANSUT :</span>
+                <span style="color: #475569; margin-left: 4px;">${tendanceTech.lien_ansut}</span>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- DÉCRYPTAGE -->
+          <tr>
+            <td style="padding: 32px 40px; border-bottom: 2px solid #e2e8f0;">
+              <div style="font-size: 14px; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; font-family: 'Segoe UI', Arial, sans-serif;">
+                <span style="color: #e65100;">━</span> En 2 Minutes
+              </div>
+              <div style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 12px; font-family: 'Segoe UI', Arial, sans-serif;">${decryptage.titre}</div>
+              <div style="font-size: 15px; color: #475569; line-height: 1.7;">${decryptage.contenu}</div>
+            </td>
+          </tr>
+          
+          <!-- LE CHIFFRE -->
+          <tr>
+            <td style="background: #1e293b; text-align: center; padding: 40px 32px;">
+              <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 3px; color: #94a3b8; margin-bottom: 12px;">Le Chiffre</div>
+              <div style="font-size: 56px; font-weight: 800; color: #e65100; line-height: 1; margin-bottom: 8px; font-family: 'Segoe UI', Arial, sans-serif;">${chiffreMarquant.valeur}</div>
+              <div style="font-size: 18px; font-weight: 600; color: #ffffff; margin-bottom: 8px;">${chiffreMarquant.unite}</div>
+              <div style="font-size: 13px; color: #94a3b8;">${chiffreMarquant.contexte}</div>
+            </td>
+          </tr>
+          
+          <!-- À SURVEILLER -->
+          <tr>
+            <td style="padding: 32px 40px; border-top: 4px solid #e65100;">
+              <div style="font-size: 14px; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; font-family: 'Segoe UI', Arial, sans-serif;">
+                <span style="color: #e65100;">━</span> À Surveiller
+              </div>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                ${aVenir.map(item => `
+                  <tr>
+                    <td style="padding: 8px 0;">
+                      <div style="font-size: 14px; color: #475569;">
+                        <span style="color: #e65100; font-weight: 700;">•</span>
+                        <span style="font-weight: 500; margin-left: 8px;">${item.titre}</span>
+                        ${item.date ? `<span style="color: #94a3b8; margin-left: 8px;">— ${item.date}</span>` : ''}
+                      </div>
+                    </td>
+                  </tr>
+                `).join('')}
+              </table>
+            </td>
+          </tr>
+          
+          <!-- FOOTER -->
+          <tr>
+            <td style="background: #1e293b; padding: 28px 32px; text-align: center;">
+              <div style="font-size: 16px; font-weight: 700; color: #ffffff; margin-bottom: 4px; font-family: 'Segoe UI', Arial, sans-serif;">ANSUT</div>
+              <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">Agence Nationale du Service Universel des Télécommunications</div>
+              <a href="https://www.ansut.ci" style="color: #e65100; text-decoration: none; font-weight: 600; font-size: 13px;">www.ansut.ci</a>
+              <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #334155; font-size: 10px; color: #64748b;">
+                ANSUT RADAR · Veille Stratégique · ${formatMonthYear(startDate)} · ${tonLabel}
               </div>
             </td>
           </tr>
