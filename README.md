@@ -2,6 +2,24 @@
 
 **Plateforme de veille stratégique** pour l'Agence Nationale du Service Universel des Télécommunications (ANSUT) de Côte d'Ivoire.
 
+## 📖 Documentation Développeur
+
+Pour une documentation technique approfondie, consultez le dossier [`docs/`](./docs/) :
+
+| Document | Description |
+|----------|-------------|
+| [Guide de démarrage](./docs/README.md) | Index et quick start |
+| [Architecture](./docs/ARCHITECTURE.md) | Stack, patterns, flux de données |
+| [Base de données](./docs/DATABASE.md) | Schéma, 17 tables, RLS policies |
+| [Edge Functions](./docs/EDGE-FUNCTIONS.md) | 9 fonctions backend documentées |
+| [Authentification](./docs/AUTHENTICATION.md) | Flux auth, 4 rôles, permissions |
+| [Référence API](./docs/API.md) | Endpoints, payloads, exemples curl |
+| [Contribution](./docs/CONTRIBUTING.md) | Guide Git, conventions de code |
+| [Déploiement](./docs/DEPLOYMENT.md) | Configuration, variables, CRON |
+| [Dépannage](./docs/TROUBLESHOOTING.md) | FAQ et résolution de problèmes |
+
+---
+
 ## Périmètre fonctionnel
 
 - 📡 **Radar stratégique** — Signaux classés par quadrant (tech, régulation, marché, réputation)
