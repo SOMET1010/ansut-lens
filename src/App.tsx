@@ -30,6 +30,7 @@ import ProfilePage from "@/pages/ProfilePage";
 import FluxPage from "@/pages/FluxPage";
 import FluxDetailPage from "@/pages/FluxDetailPage";
 import NotFound from "@/pages/NotFound";
+import AccessDeniedPage from "@/pages/AccessDeniedPage";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => (
                   {/* Routes publiques */}
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="/access-denied" element={<AccessDeniedPage />} />
                   
                   {/* Redirections */}
                   <Route path="/" element={<Navigate to="/radar" replace />} />
