@@ -7,6 +7,7 @@ import {
   Settings,
   LogOut,
   User,
+  Rss,
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -40,6 +41,12 @@ const menuItems = [
     url: '/actualites', 
     icon: Newspaper,
     description: 'Revue de presse'
+  },
+  { 
+    title: 'Mes Flux', 
+    url: '/flux', 
+    icon: Rss,
+    description: 'Flux personnalisés'
   },
   { 
     title: 'Acteurs clés', 
