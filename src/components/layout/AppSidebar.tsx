@@ -12,6 +12,7 @@ import {
 import { NavLink, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useUserPermissions } from '@/hooks/useUserPermissions';
 import {
   Sidebar,
   SidebarContent,
@@ -30,59 +31,65 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import logoAnsut from '@/assets/logo-ansut.jpg';
 
-// Menu à 6 entrées maximum (+ admin conditionnel)
+// Menu avec permissions associées
 const menuItems = [
   { 
     title: 'Tableau de bord', 
     url: '/radar', 
     icon: LayoutDashboard,
-    description: 'Vue exécutive'
+    description: 'Vue exécutive',
+    permission: 'view_radar'
   },
   { 
     title: 'Actualités & Veille', 
     url: '/actualites', 
     icon: Newspaper,
-    description: 'Revue de presse'
+    description: 'Revue de presse',
+    permission: 'view_actualites'
   },
   { 
     title: 'Mes Flux', 
     url: '/flux', 
     icon: Rss,
-    description: 'Flux personnalisés'
+    description: 'Flux personnalisés',
+    permission: 'create_flux'
   },
   { 
     title: 'Acteurs clés', 
     url: '/personnalites', 
     icon: Users,
-    description: 'Fiches personnalités'
+    description: 'Fiches personnalités',
+    permission: 'view_personnalites'
   },
   { 
     title: 'Dossiers stratégiques', 
     url: '/dossiers', 
     icon: FileText,
-    description: 'Notes et briefings'
+    description: 'Notes et briefings',
+    permission: 'view_dossiers'
   },
   { 
     title: 'Assistant IA', 
     url: '/assistant', 
     icon: Bot,
-    description: 'Copilote intelligence'
+    description: 'Copilote intelligence',
+    permission: 'use_assistant'
   },
 ];
-
-const adminItem = { 
-  title: 'Administration', 
-  url: '/admin', 
-  icon: Settings,
-  description: 'Configuration'
-};
 
 export function AppSidebar() {
   const location = useLocation();
   const { state } = useSidebar();
   const { isAdmin, signOut, user } = useAuth();
   const { profile } = useUserProfile();
+  const { hasPermission } = useUserPermissions();
   const collapsed = state === 'collapsed';
+  
+  // Filtrer les éléments de menu selon les permissions
+  const visibleMenuItems = menuItems.filter(item => hasPermission(item.permission));
+  
+  // Vérifier si l'utilisateur a accès à l'administration
+  const hasAdminAccess = isAdmin || hasPermission('manage_users') || hasPermission('manage_roles');
 
   const getInitials = (name?: string | null, email?: string) => {
     if (name) {
@@ -120,11 +127,11 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Menu fonctionnel */}
+        {/* Menu fonctionnel - filtré par permissions */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {visibleMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild 
@@ -142,8 +149,8 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Séparateur et section Administration - visible uniquement pour les admins */}
-        {isAdmin && (
+        {/* Section Administration - visible si permissions admin */}
+        {hasAdminAccess && (
           <>
             <SidebarSeparator className="my-2" />
             <SidebarGroup>
@@ -157,12 +164,12 @@ export function AppSidebar() {
                   <SidebarMenuItem>
                     <SidebarMenuButton 
                       asChild 
-                      isActive={isActive(adminItem.url)}
-                      tooltip={adminItem.title}
+                      isActive={isActive('/admin')}
+                      tooltip="Administration"
                     >
-                      <NavLink to={adminItem.url} className="flex items-center gap-3">
-                        <adminItem.icon className="h-5 w-5" />
-                        {!collapsed && <span>{adminItem.title}</span>}
+                      <NavLink to="/admin" className="flex items-center gap-3">
+                        <Settings className="h-5 w-5" />
+                        {!collapsed && <span>Administration</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
