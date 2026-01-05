@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, Sparkles, UserPlus } from 'lucide-react';
+import { Users, Sparkles, UserPlus, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePersonnalites, CERCLE_LABELS, type PersonnalitesFilters } from '@/hooks/usePersonnalites';
 import { StatsBar } from '@/components/personnalites/StatsBar';
@@ -11,6 +11,7 @@ import { ActeurFilters } from '@/components/personnalites/ActeurFilters';
 import { ActeurCard } from '@/components/personnalites/ActeurCard';
 import { CercleHeader } from '@/components/personnalites/CercleHeader';
 import { ActeurDetail } from '@/components/personnalites/ActeurDetail';
+import { ActeurFormDialog } from '@/components/personnalites/ActeurFormDialog';
 import type { Personnalite, CercleStrategique } from '@/types';
 
 export default function PersonnalitesPage() {
@@ -18,6 +19,8 @@ export default function PersonnalitesPage() {
   const [selectedActeur, setSelectedActeur] = useState<Personnalite | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('all');
+  const [formDialogOpen, setFormDialogOpen] = useState(false);
+  const { isAdmin } = useAuth();
 
   const { data: personnalites, isLoading } = usePersonnalites(filters);
 
@@ -56,6 +59,12 @@ export default function PersonnalitesPage() {
             Suivi des personnalités stratégiques du secteur numérique
           </p>
         </div>
+        {isAdmin && (
+          <Button onClick={() => setFormDialogOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Ajouter un acteur
+          </Button>
+        )}
       </div>
 
       {/* Stats */}
@@ -91,7 +100,7 @@ export default function PersonnalitesPage() {
           {isLoading ? (
             <LoadingSkeleton />
           ) : personnalites?.length === 0 ? (
-            <EmptyState />
+            <EmptyState onAddManually={() => setFormDialogOpen(true)} />
           ) : (
             ([1, 2, 3, 4] as CercleStrategique[]).map((cercle) => {
               const acteurs = parCercle[cercle];
@@ -147,6 +156,12 @@ export default function PersonnalitesPage() {
         open={detailOpen}
         onOpenChange={setDetailOpen}
       />
+
+      {/* Form dialog */}
+      <ActeurFormDialog
+        open={formDialogOpen}
+        onOpenChange={setFormDialogOpen}
+      />
     </div>
   );
 }
@@ -173,7 +188,7 @@ function LoadingSkeleton() {
   );
 }
 
-function EmptyState({ cercle }: { cercle?: CercleStrategique }) {
+function EmptyState({ cercle, onAddManually }: { cercle?: CercleStrategique; onAddManually?: () => void }) {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
 
@@ -203,14 +218,25 @@ function EmptyState({ cercle }: { cercle?: CercleStrategique }) {
       </p>
       
       {isAdmin ? (
-        <Button 
-          size="lg" 
-          className="mt-6 gap-2"
-          onClick={() => navigate('/admin/import-acteurs')}
-        >
-          <Sparkles className="h-5 w-5" />
-          Générer des acteurs
-        </Button>
+        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+          <Button 
+            size="lg" 
+            className="gap-2"
+            onClick={() => navigate('/admin/import-acteurs')}
+          >
+            <Sparkles className="h-5 w-5" />
+            Générer des acteurs
+          </Button>
+          <Button 
+            size="lg" 
+            variant="outline"
+            className="gap-2"
+            onClick={onAddManually}
+          >
+            <UserPlus className="h-5 w-5" />
+            Ajouter manuellement
+          </Button>
+        </div>
       ) : (
         <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-4 py-3 rounded-lg">
           <UserPlus className="h-4 w-4" />
