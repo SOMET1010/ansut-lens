@@ -28,7 +28,7 @@ export function PermissionRoute({
   }
 
   if (!hasAccess) {
-    return <Navigate to="/access-denied" state={{ from: location.pathname }} replace />;
+    return <Navigate to="/access-denied" state={{ from: location.pathname, permission }} replace />;
   }
 
   return children ? <>{children}</> : <Outlet />;
