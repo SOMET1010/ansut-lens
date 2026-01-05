@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,9 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
-import { useCreatePersonnalite, CERCLE_LABELS, SOUS_CATEGORIE_LABELS } from '@/hooks/usePersonnalites';
+import { useCreatePersonnalite, useUpdatePersonnalite, CERCLE_LABELS, SOUS_CATEGORIE_LABELS } from '@/hooks/usePersonnalites';
 import { Loader2, User, Building2, MapPin, Tag, Network, StickyNote } from 'lucide-react';
-import type { CercleStrategique, CategorieActeur, SousCategorieActeur } from '@/types';
+import type { CercleStrategique, CategorieActeur, SousCategorieActeur, Personnalite } from '@/types';
 
 const CATEGORIES: { value: CategorieActeur; label: string }[] = [
   { value: 'operateur', label: 'Opérateur' },
@@ -55,31 +56,60 @@ interface ActeurFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  acteur?: Personnalite;
 }
 
-export function ActeurFormDialog({ open, onOpenChange, onSuccess }: ActeurFormDialogProps) {
+export function ActeurFormDialog({ open, onOpenChange, onSuccess, acteur }: ActeurFormDialogProps) {
   const { toast } = useToast();
   const createPersonnalite = useCreatePersonnalite();
+  const updatePersonnalite = useUpdatePersonnalite();
+  const isEditMode = !!acteur;
+
+  const defaultValues = {
+    nom: '',
+    prenom: '',
+    fonction: '',
+    organisation: '',
+    cercle: 2,
+    categorie: '',
+    sous_categorie: '',
+    pays: "Côte d'Ivoire",
+    zone: "Afrique de l'Ouest",
+    bio: '',
+    score_influence: 50,
+    twitter: '',
+    linkedin: '',
+    notes: '',
+  };
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      nom: '',
-      prenom: '',
-      fonction: '',
-      organisation: '',
-      cercle: 2,
-      categorie: '',
-      sous_categorie: '',
-      pays: 'Côte d\'Ivoire',
-      zone: 'Afrique de l\'Ouest',
-      bio: '',
-      score_influence: 50,
-      twitter: '',
-      linkedin: '',
-      notes: '',
-    },
+    defaultValues,
   });
+
+  // Pré-remplir le formulaire en mode édition
+  useEffect(() => {
+    if (acteur && open) {
+      form.reset({
+        nom: acteur.nom,
+        prenom: acteur.prenom || '',
+        fonction: acteur.fonction || '',
+        organisation: acteur.organisation || '',
+        cercle: acteur.cercle,
+        categorie: acteur.categorie || '',
+        sous_categorie: acteur.sous_categorie || '',
+        pays: acteur.pays || "Côte d'Ivoire",
+        zone: acteur.zone || "Afrique de l'Ouest",
+        bio: acteur.bio || '',
+        score_influence: acteur.score_influence || 50,
+        twitter: acteur.reseaux?.twitter || '',
+        linkedin: acteur.reseaux?.linkedin || '',
+        notes: acteur.notes || '',
+      });
+    } else if (!acteur && open) {
+      form.reset(defaultValues);
+    }
+  }, [acteur, open, form]);
 
   const watchedCercle = form.watch('cercle') as CercleStrategique;
   const availableSousCategories = SOUS_CATEGORIES_PAR_CERCLE[watchedCercle] || [];
@@ -90,7 +120,7 @@ export function ActeurFormDialog({ open, onOpenChange, onSuccess }: ActeurFormDi
       if (values.twitter) reseaux.twitter = values.twitter;
       if (values.linkedin) reseaux.linkedin = values.linkedin;
 
-      await createPersonnalite.mutateAsync({
+      const personnaliteData = {
         nom: values.nom,
         prenom: values.prenom || undefined,
         fonction: values.fonction || undefined,
@@ -105,12 +135,24 @@ export function ActeurFormDialog({ open, onOpenChange, onSuccess }: ActeurFormDi
         reseaux: Object.keys(reseaux).length > 0 ? reseaux : undefined,
         notes: values.notes || undefined,
         actif: true,
-      });
+      };
 
-      toast({
-        title: 'Acteur créé',
-        description: `${values.prenom ? values.prenom + ' ' : ''}${values.nom} a été ajouté avec succès.`,
-      });
+      if (isEditMode && acteur) {
+        await updatePersonnalite.mutateAsync({
+          id: acteur.id,
+          ...personnaliteData,
+        });
+        toast({
+          title: 'Acteur modifié',
+          description: `Les modifications ont été enregistrées.`,
+        });
+      } else {
+        await createPersonnalite.mutateAsync(personnaliteData);
+        toast({
+          title: 'Acteur créé',
+          description: `${values.prenom ? values.prenom + ' ' : ''}${values.nom} a été ajouté avec succès.`,
+        });
+      }
 
       form.reset();
       onOpenChange(false);
@@ -118,21 +160,25 @@ export function ActeurFormDialog({ open, onOpenChange, onSuccess }: ActeurFormDi
     } catch (error) {
       toast({
         title: 'Erreur',
-        description: 'Impossible de créer l\'acteur. Veuillez réessayer.',
+        description: isEditMode ? "Impossible de modifier l'acteur." : "Impossible de créer l'acteur.",
         variant: 'destructive',
       });
     }
   };
 
+  const isPending = createPersonnalite.isPending || updatePersonnalite.isPending;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Ajouter un acteur</DialogTitle>
-          <DialogDescription>
-            Créer manuellement un nouvel acteur stratégique
-          </DialogDescription>
-        </DialogHeader>
+      <DialogHeader>
+        <DialogTitle>{isEditMode ? "Modifier l'acteur" : 'Ajouter un acteur'}</DialogTitle>
+        <DialogDescription>
+          {isEditMode 
+            ? "Modifier les informations de cet acteur stratégique" 
+            : 'Créer manuellement un nouvel acteur stratégique'}
+        </DialogDescription>
+      </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -437,9 +483,9 @@ export function ActeurFormDialog({ open, onOpenChange, onSuccess }: ActeurFormDi
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Annuler
               </Button>
-              <Button type="submit" disabled={createPersonnalite.isPending}>
-                {createPersonnalite.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Créer l'acteur
+              <Button type="submit" disabled={isPending}>
+                {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {isEditMode ? 'Enregistrer' : "Créer l'acteur"}
               </Button>
             </div>
           </form>

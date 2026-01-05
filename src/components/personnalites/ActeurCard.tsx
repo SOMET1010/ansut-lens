@@ -1,7 +1,8 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Wifi, Wallet, Building2, Landmark, GraduationCap, Newspaper, AlertTriangle, Star, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Wifi, Wallet, Building2, Landmark, GraduationCap, Newspaper, AlertTriangle, Star, ExternalLink, Pencil } from 'lucide-react';
 import { CERCLE_LABELS, SOUS_CATEGORIE_LABELS } from '@/hooks/usePersonnalites';
 import type { Personnalite, CercleStrategique } from '@/types';
 import { cn } from '@/lib/utils';
@@ -9,6 +10,7 @@ import { cn } from '@/lib/utils';
 interface ActeurCardProps {
   personnalite: Personnalite;
   onClick?: () => void;
+  onEdit?: () => void;
 }
 
 const getCercleColors = (cercle: CercleStrategique) => {
@@ -42,7 +44,7 @@ const getNiveauAlerteStyle = (niveau?: string) => {
   }
 };
 
-export function ActeurCard({ personnalite, onClick }: ActeurCardProps) {
+export function ActeurCard({ personnalite, onClick, onEdit }: ActeurCardProps) {
   const cercleColors = getCercleColors(personnalite.cercle);
   const CategorieIcon = getCategorieIcon(personnalite.categorie);
   const initials = `${personnalite.prenom?.[0] || ''}${personnalite.nom[0]}`.toUpperCase();
@@ -54,13 +56,27 @@ export function ActeurCard({ personnalite, onClick }: ActeurCardProps) {
   return (
     <Card 
       className={cn(
-        'glass hover:shadow-lg transition-all cursor-pointer border-l-4',
+        'glass hover:shadow-lg transition-all cursor-pointer border-l-4 group relative',
         cercleColors.border,
         alerteStyle && 'border',
         alerteStyle
       )}
       onClick={onClick}
     >
+      {/* Bouton modifier au survol */}
+      {onEdit && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+      )}
       <CardContent className="pt-4 pb-4">
         <div className="flex items-start gap-3">
           {/* Avatar */}

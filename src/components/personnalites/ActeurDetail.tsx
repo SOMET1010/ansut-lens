@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { 
   Building2, MapPin, Star, AlertTriangle, Bell, 
   Twitter, Linkedin, Newspaper, ExternalLink,
-  Wifi, Wallet, Landmark, GraduationCap, Activity
+  Wifi, Wallet, Landmark, GraduationCap, Activity, Pencil
 } from 'lucide-react';
 import { CERCLE_LABELS, SOUS_CATEGORIE_LABELS } from '@/hooks/usePersonnalites';
 import { 
@@ -19,6 +19,7 @@ import {
   INTERPRETATION_LABELS,
 } from '@/hooks/usePresenceDigitale';
 import { SPDIGaugeCard, SPDIRecommandations } from '@/components/spdi';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Personnalite, CercleStrategique, Tendance } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +27,7 @@ interface ActeurDetailProps {
   personnalite: Personnalite | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onEdit?: () => void;
 }
 
 const getCercleColors = (cercle: CercleStrategique) => {
@@ -48,7 +50,8 @@ const getCategorieIcon = (categorie?: string) => {
   }
 };
 
-export function ActeurDetail({ personnalite, open, onOpenChange }: ActeurDetailProps) {
+export function ActeurDetail({ personnalite, open, onOpenChange, onEdit }: ActeurDetailProps) {
+  const { isAdmin } = useAuth();
   const toggleSuivi = useToggleSuiviSPDI();
   
   // Récupérer les données SPDI si le suivi est actif (accès direct aux champs optionnels)
@@ -94,12 +97,22 @@ export function ActeurDetail({ personnalite, open, onOpenChange }: ActeurDetailP
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <SheetTitle className="text-xl">
-                  {personnalite.prenom} {personnalite.nom}
-                </SheetTitle>
-                <SheetDescription className="text-sm mt-1">
-                  {personnalite.fonction}
-                </SheetDescription>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <SheetTitle className="text-xl">
+                      {personnalite.prenom} {personnalite.nom}
+                    </SheetTitle>
+                    <SheetDescription className="text-sm mt-1">
+                      {personnalite.fonction}
+                    </SheetDescription>
+                  </div>
+                  {isAdmin && onEdit && (
+                    <Button variant="outline" size="sm" onClick={onEdit} className="gap-1 shrink-0">
+                      <Pencil className="h-3.5 w-3.5" />
+                      Modifier
+                    </Button>
+                  )}
+                </div>
                 {personnalite.organisation && (
                   <div className="flex items-center gap-1.5 mt-1 text-sm text-muted-foreground">
                     <Building2 className="h-3.5 w-3.5" />
