@@ -1,0 +1,193 @@
+# Architecture Technique
+
+## Vue d'ensemble
+
+ANSUT RADAR est une Single Page Application (SPA) React avec un backend serverless via Lovable Cloud (Supabase).
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      NAVIGATEUR                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │              React SPA (Vite + TypeScript)          │    │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────────────┐    │    │
+│  │  │  Pages   │ │Components│ │   TanStack Query │    │    │
+│  │  └──────────┘ └──────────┘ └──────────────────┘    │    │
+│  └─────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    LOVABLE CLOUD                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐   │
+│  │  PostgreSQL  │  │Edge Functions│  │     Storage      │   │
+│  │  (17 tables) │  │  (9 funcs)   │  │    (avatars)     │   │
+│  └──────────────┘  └──────────────┘  └──────────────────┘   │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐   │
+│  │     Auth     │  │   Realtime   │  │   CRON Jobs      │   │
+│  │  (4 rôles)   │  │ (WebSocket)  │  │  (pg_cron)       │   │
+│  └──────────────┘  └──────────────┘  └──────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    APIs EXTERNES                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐   │
+│  │  Perplexity  │  │   Grok (xAI) │  │     Resend       │   │
+│  │  (recherche) │  │  (analyse IA)│  │    (emails)      │   │
+│  └──────────────┘  └──────────────┘  └──────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Stack Technique
+
+### Frontend
+
+| Technologie | Version | Usage |
+|-------------|---------|-------|
+| React | 18.3 | Framework UI |
+| TypeScript | 5.x | Typage statique |
+| Vite | 5.x | Build tool |
+| Tailwind CSS | 3.x | Styling utility-first |
+| shadcn/ui | - | Composants UI (50+) |
+| TanStack Query | 5.x | Cache & data fetching |
+| React Router | 6.x | Routing SPA |
+| Recharts | 2.x | Graphiques & visualisations |
+| Framer Motion | - | Animations (via shadcn) |
+
+### Backend (Lovable Cloud)
+
+| Service | Usage |
+|---------|-------|
+| PostgreSQL | Base de données (17 tables) |
+| Edge Functions | API serverless (9 fonctions) |
+| Auth | Authentification (4 rôles) |
+| Storage | Stockage fichiers (avatars) |
+| Realtime | WebSocket temps réel |
+| pg_cron | Tâches planifiées |
+
+### APIs Externes
+
+| API | Usage | Secret |
+|-----|-------|--------|
+| Perplexity | Recherche web IA | `PERPLEXITY_API_KEY` |
+| Grok (xAI) | Analyse et génération IA | `XAI_API_KEY` |
+| Resend | Envoi d'emails | `RESEND_API_KEY` |
+
+## Patterns & Conventions
+
+### Architecture des Composants
+
+```
+src/components/
+├── ui/                 # shadcn/ui primitives (NE PAS MODIFIER)
+├── auth/               # Composants d'authentification
+├── layout/             # AppHeader, AppSidebar, AppLayout
+├── personnalites/      # Composants métier Personnalités
+├── actualites/         # Composants métier Actualités
+├── dossiers/           # Composants métier Dossiers
+├── flux/               # Composants métier Flux de veille
+├── spdi/               # Composants SPDI (Score Présence Digitale)
+├── assistant/          # Composants Assistant IA
+├── notifications/      # Système d'alertes
+└── profile/            # Gestion profil utilisateur
+```
+
+### Hooks Personnalisés
+
+| Hook | Fichier | Description |
+|------|---------|-------------|
+| `useAuth` | `contexts/AuthContext.tsx` | Authentification et rôles |
+| `useActualites` | `hooks/useActualites.ts` | CRUD actualités |
+| `usePersonnalites` | `hooks/usePersonnalites.ts` | CRUD personnalités |
+| `useDossiers` | `hooks/useDossiers.ts` | CRUD dossiers analytiques |
+| `useFluxVeille` | `hooks/useFluxVeille.ts` | Gestion flux de veille |
+| `useConversationsIA` | `hooks/useConversationsIA.ts` | Historique conversations IA |
+| `usePresenceDigitale` | `hooks/usePresenceDigitale.ts` | Métriques SPDI |
+| `useRadarData` | `hooks/useRadarData.ts` | KPIs du radar |
+| `useCronJobs` | `hooks/useCronJobs.ts` | Gestion CRON (admin) |
+| `useUserProfile` | `hooks/useUserProfile.ts` | Profil utilisateur |
+| `useRealtimeAlerts` | `hooks/useRealtimeAlerts.ts` | Alertes temps réel |
+| `useAlertesHistory` | `hooks/useAlertesHistory.ts` | Historique alertes |
+| `useMotsClesVeille` | `hooks/useMotsClesVeille.ts` | Mots-clés de veille |
+
+### Gestion d'État
+
+```typescript
+// TanStack Query pour les données serveur
+const { data, isLoading, error } = useQuery({
+  queryKey: ['personnalites'],
+  queryFn: fetchPersonnalites,
+});
+
+// Context API pour l'état global
+const { user, isAdmin, signOut } = useAuth();
+
+// useState pour l'état local UI
+const [isOpen, setIsOpen] = useState(false);
+```
+
+### Conventions de Nommage
+
+| Type | Convention | Exemple |
+|------|------------|---------|
+| Composants | PascalCase | `ActeurCard.tsx` |
+| Hooks | camelCase avec `use` | `usePersonnalites.ts` |
+| Pages | PascalCase + `Page` | `PersonnalitesPage.tsx` |
+| Types | PascalCase | `Personnalite` |
+| Constantes | SCREAMING_SNAKE | `API_BASE_URL` |
+| Fichiers CSS | kebab-case | `index.css` |
+
+## Flux de Données
+
+### Lecture (Query)
+
+```
+Component → useQuery → supabase.from().select() → PostgreSQL
+     ↑                                                  │
+     └──────────── Cache TanStack Query ←───────────────┘
+```
+
+### Écriture (Mutation)
+
+```
+Component → useMutation → supabase.from().insert/update/delete()
+     │                                      │
+     └── invalidateQueries ←── onSuccess ←──┘
+```
+
+### Temps Réel (Realtime)
+
+```
+PostgreSQL ──► supabase.channel().on('postgres_changes') ──► Component
+                                                               │
+                                                         setState/refetch
+```
+
+## Sécurité
+
+### Row Level Security (RLS)
+
+Toutes les tables ont RLS activé avec des politiques basées sur :
+- `auth.uid()` pour les données utilisateur
+- `has_role(auth.uid(), 'admin')` pour les données admin
+
+### Protection des Routes
+
+```typescript
+// Route protégée standard
+<ProtectedRoute><Page /></ProtectedRoute>
+
+// Route admin uniquement
+<AdminRoute><AdminPage /></AdminRoute>
+```
+
+### Edge Functions
+
+Toutes les Edge Functions vérifient :
+1. Token JWT valide
+2. Rôle approprié via `has_role()`
+3. Permissions spécifiques par action
+
+---
+
+Voir aussi : [Database](./DATABASE.md) | [Authentication](./AUTHENTICATION.md) | [Edge Functions](./EDGE-FUNCTIONS.md)
