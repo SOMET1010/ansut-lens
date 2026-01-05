@@ -11,12 +11,21 @@ export interface NewsletterEssentiel {
   pourquoi: string;
   impact: string;
   actualite_id?: string;
+  image_url?: string;
+  image_alt?: string;
 }
 
 export interface NewsletterTendance {
   titre: string;
   contenu: string;
   lien_ansut: string;
+  image_url?: string;
+  image_alt?: string;
+}
+
+export interface NewsletterHeader {
+  image_url?: string;
+  image_alt?: string;
 }
 
 export interface NewsletterDecryptage {
@@ -37,6 +46,7 @@ export interface NewsletterAVenir {
 }
 
 export interface NewsletterContenu {
+  header?: NewsletterHeader;
   edito: {
     texte: string;
     genere_par_ia: boolean;

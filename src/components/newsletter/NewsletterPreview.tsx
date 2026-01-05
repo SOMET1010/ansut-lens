@@ -265,6 +265,17 @@ export function NewsletterPreview({ newsletter, onBack, onEdit, onRefresh }: New
                 <div className="h-1.5 bg-gradient-to-r from-[#e65100] via-[#ff8a00] to-[#e65100]" />
               </div>
 
+              {/* HEADER IMAGE (if available) */}
+              {contenu.header?.image_url && (
+                <div className="w-full">
+                  <img 
+                    src={contenu.header.image_url} 
+                    alt={contenu.header.image_alt || 'Image newsletter'} 
+                    className="w-full h-48 object-cover"
+                  />
+                </div>
+              )}
+
               {/* CONTENT: SOMMAIRE + MAIN */}
               <div className="flex min-h-[500px]">
                 {/* SOMMAIRE (Left Sidebar) */}
@@ -318,6 +329,13 @@ export function NewsletterPreview({ newsletter, onBack, onEdit, onRefresh }: New
                     <div className="space-y-4">
                       {contenu.essentiel_ansut?.map((item, index) => (
                         <div key={index} className="bg-gradient-to-r from-orange-50 to-orange-100/50 p-5 rounded-xl border-l-4 border-[#e65100]">
+                          {item.image_url && (
+                            <img 
+                              src={item.image_url} 
+                              alt={item.image_alt || item.titre} 
+                              className="w-full h-36 object-cover rounded-lg mb-3"
+                            />
+                          )}
                           <h3 className="font-semibold text-foreground mb-3 flex items-start gap-2.5">
                             <span className="flex-shrink-0 w-6 h-6 bg-[#e65100] text-white rounded-full flex items-center justify-center text-xs font-bold">{index + 1}</span>
                             {item.titre}
@@ -339,6 +357,13 @@ export function NewsletterPreview({ newsletter, onBack, onEdit, onRefresh }: New
                       <div className="w-9 h-9 rounded-xl bg-blue-500 text-white flex items-center justify-center text-lg">🔬</div>
                       <span className="text-xs font-bold uppercase tracking-wider text-blue-700">Technologie</span>
                     </div>
+                    {contenu.tendance_tech?.image_url && (
+                      <img 
+                        src={contenu.tendance_tech.image_url} 
+                        alt={contenu.tendance_tech.image_alt || contenu.tendance_tech.titre} 
+                        className="w-full h-44 object-cover rounded-xl mb-4"
+                      />
+                    )}
                     <h3 className="font-semibold text-blue-900 mb-3 text-lg">{contenu.tendance_tech?.titre}</h3>
                     <p className="text-sm text-blue-800 mb-4 leading-relaxed">{contenu.tendance_tech?.contenu}</p>
                     <div className="bg-white p-4 rounded-lg shadow-sm">

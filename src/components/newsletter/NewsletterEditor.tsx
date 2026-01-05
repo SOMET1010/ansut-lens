@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useUpdateNewsletter } from '@/hooks/useNewsletters';
+import { ImageUploader } from './ImageUploader';
 import type { Newsletter, NewsletterContenu, NewsletterEssentiel, NewsletterAVenir } from '@/types/newsletter';
 
 interface NewsletterEditorProps {
@@ -34,12 +35,26 @@ export function NewsletterEditor({ newsletter, onBack, onSaved }: NewsletterEdit
     }));
   };
 
-  const updateEssentiel = (index: number, field: keyof NewsletterEssentiel, value: string) => {
+  const updateEssentiel = (index: number, field: keyof NewsletterEssentiel, value: string | undefined) => {
     setContenu(prev => ({
       ...prev,
       essentiel_ansut: prev.essentiel_ansut.map((item, i) => 
         i === index ? { ...item, [field]: value } : item
       )
+    }));
+  };
+
+  const updateHeaderImage = (url: string | undefined, alt?: string) => {
+    setContenu(prev => ({
+      ...prev,
+      header: { image_url: url, image_alt: alt }
+    }));
+  };
+
+  const updateTendanceImage = (url: string | undefined, alt?: string) => {
+    setContenu(prev => ({
+      ...prev,
+      tendance_tech: { ...prev.tendance_tech, image_url: url, image_alt: alt }
     }));
   };
 
@@ -123,6 +138,21 @@ export function NewsletterEditor({ newsletter, onBack, onSaved }: NewsletterEdit
         </Button>
       </div>
 
+      {/* Header Image */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">📸 Image principale</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ImageUploader
+            value={contenu.header?.image_url}
+            alt={contenu.header?.image_alt}
+            onImageChange={updateHeaderImage}
+            label="Image d'en-tête de la newsletter (optionnelle)"
+          />
+        </CardContent>
+      </Card>
+
       {/* Édito */}
       <Card>
         <CardHeader>
@@ -178,6 +208,17 @@ export function NewsletterEditor({ newsletter, onBack, onSaved }: NewsletterEdit
                 placeholder="Impact concret..."
                 rows={2}
               />
+              <ImageUploader
+                value={item.image_url}
+                alt={item.image_alt}
+                onImageChange={(url, alt) => {
+                  updateEssentiel(index, 'image_url', url);
+                  if (alt !== undefined) {
+                    updateEssentiel(index, 'image_alt', alt);
+                  }
+                }}
+                label="Image de l'article (optionnelle)"
+              />
             </div>
           ))}
         </CardContent>
@@ -215,6 +256,12 @@ export function NewsletterEditor({ newsletter, onBack, onSaved }: NewsletterEdit
               rows={2}
             />
           </div>
+          <ImageUploader
+            value={contenu.tendance_tech?.image_url}
+            alt={contenu.tendance_tech?.image_alt}
+            onImageChange={updateTendanceImage}
+            label="Image de la section technologie (optionnelle)"
+          />
         </CardContent>
       </Card>
 
