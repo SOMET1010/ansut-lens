@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users, ChevronDown, MoreVertical, UserX, UserCheck, Trash2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users, ChevronDown, MoreVertical, UserX, UserCheck, Trash2, RefreshCw, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,10 +16,19 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Database } from '@/integrations/supabase/types';
+
+interface UserStatus {
+  id: string;
+  email: string;
+  email_confirmed_at: string | null;
+  last_sign_in_at: string | null;
+  created_at: string;
+}
 
 type AppRole = Database['public']['Enums']['app_role'];
 
@@ -111,6 +120,19 @@ export default function UsersPage() {
       });
 
       return usersWithRoles;
+    },
+  });
+
+  // Récupérer le statut de confirmation des utilisateurs
+  const { data: usersStatus } = useQuery({
+    queryKey: ['users-status'],
+    queryFn: async () => {
+      const response = await supabase.functions.invoke('list-users-status');
+      if (response.error) {
+        console.error('Error fetching users status:', response.error);
+        return {};
+      }
+      return response.data?.usersStatus as Record<string, UserStatus> || {};
     },
   });
 
@@ -494,6 +516,20 @@ export default function UsersPage() {
                           <Badge variant="secondary" className="bg-muted text-muted-foreground">
                             Désactivé
                           </Badge>
+                        ) : !usersStatus?.[user.id]?.email_confirmed_at ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 gap-1 cursor-help">
+                                  <Clock className="h-3 w-3" />
+                                  En attente
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>L'utilisateur n'a pas encore activé son compte via le lien d'invitation</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         ) : (
                           <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
                             Actif
