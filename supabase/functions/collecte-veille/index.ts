@@ -35,6 +35,237 @@ interface PerplexityResult {
   date_publication: string;
 }
 
+interface GrokResult {
+  titre: string;
+  resume: string;
+  auteur_twitter?: string;
+  url: string;
+  date_publication: string;
+}
+
+interface CollectedActualite {
+  titre: string;
+  resume: string;
+  source: string;
+  url: string;
+  date_publication: string;
+  source_type: 'perplexity' | 'grok_twitter';
+}
+
+// ============= PERPLEXITY COLLECTION =============
+async function collectePerplexity(
+  keywordsString: string,
+  PERPLEXITY_API_KEY: string
+): Promise<{ actualites: CollectedActualite[], citations: string[] }> {
+  console.log('[collecte-veille] Appel Perplexity API...');
+
+  const perplexityPrompt = `Recherche les actualités récentes sur les télécommunications, le numérique et les technologies en Côte d'Ivoire.
+
+Thèmes prioritaires: ${keywordsString}
+
+Mais inclut aussi toute actualité récente sur:
+- Orange CI, MTN, Moov Africa (opérateurs télécom)
+- ARTCI (régulateur télécoms)
+- ANSUT (agence nationale du service universel des télécommunications)
+- Ministère de la Transition Numérique
+- Projets de fibre optique, 4G/5G, couverture réseau
+- Startups tech ivoiriennes, fintech, mobile money
+- Cybersécurité en Afrique de l'Ouest
+- Événements tech (SITEC, AfricaTech, etc.)
+
+Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours) avec leurs vraies URLs.`;
+
+  const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'sonar-pro',
+      messages: [
+        { 
+          role: 'system', 
+          content: 'Tu es un assistant spécialisé dans la veille stratégique sur les télécommunications en Côte d\'Ivoire. Tu dois TOUJOURS répondre avec un objet JSON valide contenant un tableau "actualites".' 
+        },
+        { role: 'user', content: perplexityPrompt }
+      ],
+      search_recency_filter: 'week',
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'actualites_response',
+          schema: {
+            type: 'object',
+            properties: {
+              actualites: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    titre: { type: 'string', description: 'Titre de l\'article' },
+                    resume: { type: 'string', description: 'Résumé en 2-3 phrases' },
+                    source: { type: 'string', description: 'Nom du média source' },
+                    url: { type: 'string', description: 'URL de l\'article' },
+                    date_publication: { type: 'string', description: 'Date au format YYYY-MM-DD' }
+                  },
+                  required: ['titre', 'resume', 'source', 'url', 'date_publication']
+                }
+              }
+            },
+            required: ['actualites']
+          }
+        }
+      }
+    }),
+  });
+
+  if (!perplexityResponse.ok) {
+    const errorText = await perplexityResponse.text();
+    console.error('[collecte-veille] Erreur Perplexity:', perplexityResponse.status, errorText);
+    throw new Error(`Perplexity API error: ${perplexityResponse.status}`);
+  }
+
+  const perplexityData = await perplexityResponse.json();
+  const content = perplexityData.choices?.[0]?.message?.content || '{}';
+  const citations = perplexityData.citations || [];
+
+  console.log('[collecte-veille] Réponse Perplexity reçue, parsing...');
+
+  // Parser les résultats avec plusieurs stratégies de fallback
+  let actualites: PerplexityResult[] = [];
+  try {
+    const parsed = JSON.parse(content);
+    if (parsed.actualites && Array.isArray(parsed.actualites)) {
+      actualites = parsed.actualites;
+    } else if (Array.isArray(parsed)) {
+      actualites = parsed;
+    }
+  } catch {
+    try {
+      const jsonArrayMatch = content.match(/\[[\s\S]*?\]/);
+      if (jsonArrayMatch) {
+        actualites = JSON.parse(jsonArrayMatch[0]);
+      }
+    } catch {
+      console.error('[collecte-veille] Échec parsing Perplexity');
+    }
+  }
+
+  // Validation et transformation
+  const validActualites = actualites
+    .filter(a => a && a.titre && typeof a.titre === 'string')
+    .map(a => ({
+      ...a,
+      source_type: 'perplexity' as const
+    }));
+
+  console.log(`[collecte-veille] Perplexity: ${validActualites.length} actualités`);
+  return { actualites: validActualites, citations };
+}
+
+// ============= GROK (xAI) COLLECTION - Twitter/X =============
+async function collecteGrok(
+  keywordsString: string,
+  XAI_API_KEY: string
+): Promise<{ actualites: CollectedActualite[], citations: string[] }> {
+  console.log('[collecte-veille] Appel Grok API pour Twitter/X...');
+
+  const grokPrompt = `Recherche les tweets et posts Twitter/X récents sur les télécommunications et le numérique en Côte d'Ivoire.
+
+Thèmes prioritaires: ${keywordsString}
+
+Cibles spécifiques sur Twitter/X:
+- Comptes officiels: @OrangeCIV, @MTNCotedIvoire, @MoovAfrica_CI, @ARTCI_CI, @ANSUT_CI
+- Ministères et institutions ivoiriennes liées au numérique
+- Journalistes tech et influenceurs télécom africains
+- Acteurs du secteur: CEO, directeurs, responsables télécoms
+- Hashtags: #TelecomCI #NumériqueCI #CotedIvoire #TechAfrique
+
+Retourne les 5 à 8 tweets/posts les plus pertinents et récents avec leurs URLs Twitter.
+Format de réponse JSON obligatoire.`;
+
+  const grokResponse = await fetch('https://api.x.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${XAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'grok-3-latest',
+      messages: [
+        { 
+          role: 'system', 
+          content: `Tu es un assistant spécialisé dans la veille Twitter/X sur les télécommunications en Afrique.
+Tu dois TOUJOURS répondre avec un objet JSON valide au format suivant:
+{
+  "actualites": [
+    {
+      "titre": "Résumé du tweet en une phrase",
+      "resume": "Contenu détaillé du tweet ou thread",
+      "auteur_twitter": "@handle de l'auteur",
+      "url": "URL du tweet (format https://x.com/user/status/id)",
+      "date_publication": "YYYY-MM-DD"
+    }
+  ]
+}` 
+        },
+        { role: 'user', content: grokPrompt }
+      ],
+      max_tokens: 4000,
+      temperature: 0.3,
+    }),
+  });
+
+  if (!grokResponse.ok) {
+    const errorText = await grokResponse.text();
+    console.error('[collecte-veille] Erreur Grok:', grokResponse.status, errorText);
+    throw new Error(`Grok API error: ${grokResponse.status}`);
+  }
+
+  const grokData = await grokResponse.json();
+  const content = grokData.choices?.[0]?.message?.content || '{}';
+
+  console.log('[collecte-veille] Réponse Grok reçue, parsing...');
+
+  // Parser les résultats
+  let actualites: GrokResult[] = [];
+  try {
+    const parsed = JSON.parse(content);
+    if (parsed.actualites && Array.isArray(parsed.actualites)) {
+      actualites = parsed.actualites;
+    } else if (Array.isArray(parsed)) {
+      actualites = parsed;
+    }
+  } catch {
+    // Fallback: extraire JSON du texte
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*"actualites"[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        actualites = parsed.actualites || [];
+      }
+    } catch {
+      console.error('[collecte-veille] Échec parsing Grok');
+    }
+  }
+
+  // Validation et transformation
+  const validActualites = actualites
+    .filter(a => a && a.titre && typeof a.titre === 'string')
+    .map(a => ({
+      titre: a.titre,
+      resume: a.resume,
+      source: a.auteur_twitter || 'Twitter/X',
+      url: a.url,
+      date_publication: a.date_publication,
+      source_type: 'grok_twitter' as const
+    }));
+
+  console.log(`[collecte-veille] Grok: ${validActualites.length} tweets/posts`);
+  return { actualites: validActualites, citations: [] };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -42,12 +273,22 @@ serve(async (req) => {
 
   const startTime = Date.now();
   const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
+  const XAI_API_KEY = Deno.env.get('XAI_API_KEY');
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-  if (!PERPLEXITY_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     console.error('Missing required environment variables');
     return new Response(JSON.stringify({ error: 'Configuration manquante' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  // Au moins une API doit être configurée
+  if (!PERPLEXITY_API_KEY && !XAI_API_KEY) {
+    console.error('Aucune API de collecte configurée (Perplexity ou Grok)');
+    return new Response(JSON.stringify({ error: 'Aucune API de collecte configurée' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -97,139 +338,52 @@ serve(async (req) => {
 
     console.log(`[collecte-veille] ${motsCles.length} mots-clés à traiter`);
 
-    // 2. Construire la requête Perplexity
+    // 2. Construire la requête
     const topKeywords = motsCles.slice(0, 10).map((m) => m.mot_cle);
     const keywordsString = topKeywords.join(', ');
 
-    const perplexityPrompt = `Recherche les actualités récentes sur les télécommunications, le numérique et les technologies en Côte d'Ivoire.
+    // 3. Appels parallèles aux APIs disponibles
+    const sourcesUtilisees: string[] = [];
+    const collectePromises: Promise<{ actualites: CollectedActualite[], citations: string[] }>[] = [];
 
-Thèmes prioritaires: ${keywordsString}
-
-Mais inclut aussi toute actualité récente sur:
-- Orange CI, MTN, Moov Africa (opérateurs télécom)
-- ARTCI (régulateur télécoms)
-- ANSUT (agence nationale du service universel des télécommunications)
-- Ministère de la Transition Numérique
-- Projets de fibre optique, 4G/5G, couverture réseau
-- Startups tech ivoiriennes, fintech, mobile money
-- Cybersécurité en Afrique de l'Ouest
-- Événements tech (SITEC, AfricaTech, etc.)
-
-Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours) avec leurs vraies URLs.`;
-
-    console.log('[collecte-veille] Appel Perplexity API...');
-
-    const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'sonar-pro',
-        messages: [
-          { 
-            role: 'system', 
-            content: 'Tu es un assistant spécialisé dans la veille stratégique sur les télécommunications en Côte d\'Ivoire. Tu dois TOUJOURS répondre avec un objet JSON valide contenant un tableau "actualites".' 
-          },
-          { role: 'user', content: perplexityPrompt }
-        ],
-        search_recency_filter: 'week',
-        response_format: {
-          type: 'json_schema',
-          json_schema: {
-            name: 'actualites_response',
-            schema: {
-              type: 'object',
-              properties: {
-                actualites: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      titre: { type: 'string', description: 'Titre de l\'article' },
-                      resume: { type: 'string', description: 'Résumé en 2-3 phrases' },
-                      source: { type: 'string', description: 'Nom du média source' },
-                      url: { type: 'string', description: 'URL de l\'article' },
-                      date_publication: { type: 'string', description: 'Date au format YYYY-MM-DD' }
-                    },
-                    required: ['titre', 'resume', 'source', 'url', 'date_publication']
-                  }
-                }
-              },
-              required: ['actualites']
-            }
-          }
-        }
-      }),
-    });
-
-    if (!perplexityResponse.ok) {
-      const errorText = await perplexityResponse.text();
-      console.error('[collecte-veille] Erreur Perplexity:', perplexityResponse.status, errorText);
-      throw new Error(`Perplexity API error: ${perplexityResponse.status} - ${errorText}`);
+    if (PERPLEXITY_API_KEY) {
+      sourcesUtilisees.push('perplexity');
+      collectePromises.push(
+        collectePerplexity(keywordsString, PERPLEXITY_API_KEY)
+          .catch(err => {
+            console.error('[collecte-veille] Erreur Perplexity (continue):', err.message);
+            return { actualites: [], citations: [] };
+          })
+      );
     }
 
-    const perplexityData = await perplexityResponse.json();
-    const content = perplexityData.choices?.[0]?.message?.content || '{}';
-    const citations = perplexityData.citations || [];
-
-    console.log('[collecte-veille] Réponse Perplexity reçue, parsing...');
-    console.log('[collecte-veille] Contenu brut (500 premiers chars):', content.substring(0, 500));
-
-    // 3. Parser les résultats avec plusieurs stratégies de fallback
-    let actualites: PerplexityResult[] = [];
-    try {
-      // Stratégie 1: Parser directement comme objet JSON structuré
-      const parsed = JSON.parse(content);
-      if (parsed.actualites && Array.isArray(parsed.actualites)) {
-        actualites = parsed.actualites;
-        console.log('[collecte-veille] Parsing réussi via structured output');
-      } else if (Array.isArray(parsed)) {
-        // Stratégie 2: C'est directement un tableau
-        actualites = parsed;
-        console.log('[collecte-veille] Parsing réussi via tableau direct');
-      }
-    } catch (parseError) {
-      console.error('[collecte-veille] Erreur parsing JSON initial:', parseError);
-      
-      // Stratégie 3: Chercher un tableau JSON dans le contenu (fallback markdown)
-      try {
-        const jsonArrayMatch = content.match(/\[[\s\S]*?\]/);
-        if (jsonArrayMatch) {
-          actualites = JSON.parse(jsonArrayMatch[0]);
-          console.log('[collecte-veille] Parsing réussi via extraction tableau');
-        }
-      } catch (fallbackError) {
-        console.error('[collecte-veille] Échec parsing fallback tableau:', fallbackError);
-      }
-      
-      // Stratégie 4: Chercher un objet JSON avec actualites
-      if (actualites.length === 0) {
-        try {
-          const jsonObjectMatch = content.match(/\{[\s\S]*"actualites"[\s\S]*\}/);
-          if (jsonObjectMatch) {
-            const parsed = JSON.parse(jsonObjectMatch[0]);
-            actualites = parsed.actualites || [];
-            console.log('[collecte-veille] Parsing réussi via extraction objet');
-          }
-        } catch (objFallbackError) {
-          console.error('[collecte-veille] Échec parsing fallback objet:', objFallbackError);
-        }
-      }
+    if (XAI_API_KEY) {
+      sourcesUtilisees.push('grok_twitter');
+      collectePromises.push(
+        collecteGrok(keywordsString, XAI_API_KEY)
+          .catch(err => {
+            console.error('[collecte-veille] Erreur Grok (continue):', err.message);
+            return { actualites: [], citations: [] };
+          })
+      );
     }
-    
-    // Validation des résultats
-    actualites = actualites.filter(a => a && a.titre && typeof a.titre === 'string');
-    console.log(`[collecte-veille] ${actualites.length} actualités validées après parsing`);
 
-    console.log(`[collecte-veille] ${actualites.length} actualités parsées`);
+    console.log(`[collecte-veille] Sources utilisées: ${sourcesUtilisees.join(', ')}`);
+
+    // Attendre toutes les réponses en parallèle
+    const results = await Promise.all(collectePromises);
+
+    // Fusionner les résultats
+    const allActualites: CollectedActualite[] = results.flatMap(r => r.actualites);
+    const allCitations: string[] = results.flatMap(r => r.citations);
+
+    console.log(`[collecte-veille] Total: ${allActualites.length} actualités collectées`);
 
     // 4. Insérer les actualités dans la base
     let insertedCount = 0;
     const alertes: string[] = [];
 
-    for (const actu of actualites) {
+    for (const actu of allActualites) {
       if (!actu.titre) continue;
 
       // Vérifier si l'actualité existe déjà (éviter les doublons)
@@ -290,6 +444,7 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours) avec leur
           contenu: actu.resume,
           source_nom: actu.source,
           source_url: actu.url,
+          source_type: actu.source_type,
           date_publication: actu.date_publication || new Date().toISOString(),
           tags: matchedKeywords,
           categorie: dominantCategory || 'Actualités sectorielles',
@@ -299,6 +454,7 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours) avec leur
             quadrant_dominant: dominantQuadrant,
             quadrant_scores: quadrantScores,
             collecte_type: type,
+            source_collecte: actu.source_type,
             collecte_date: new Date().toISOString()
           })
         });
@@ -307,7 +463,7 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours) avec leur
         console.error('[collecte-veille] Erreur insertion:', insertError);
       } else {
         insertedCount++;
-        console.log(`[collecte-veille] Inséré: ${actu.titre.substring(0, 50)}...`);
+        console.log(`[collecte-veille] [${actu.source_type}] Inséré: ${actu.titre.substring(0, 50)}...`);
       }
 
       // Créer une alerte si mot-clé critique détecté
@@ -318,7 +474,7 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours) avec leur
             type: 'veille',
             niveau: 'warning',
             titre: `Mot-clé critique détecté: ${alertes[0]}`,
-            message: `L'actualité "${actu.titre}" contient des mots-clés critiques: ${matchedKeywords.join(', ')}`,
+            message: `L'actualité "${actu.titre}" (source: ${actu.source_type}) contient des mots-clés critiques: ${matchedKeywords.join(', ')}`,
             reference_type: 'actualite',
           });
       }
@@ -333,18 +489,20 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours) avec leur
         statut: 'success',
         nb_resultats: insertedCount,
         mots_cles_utilises: topKeywords,
+        sources_utilisees: sourcesUtilisees,
         duree_ms: duration,
       });
 
-    console.log(`[collecte-veille] Terminé: ${insertedCount} actualités insérées en ${duration}ms`);
+    console.log(`[collecte-veille] Terminé: ${insertedCount} actualités insérées en ${duration}ms (sources: ${sourcesUtilisees.join(', ')})`);
 
     return new Response(JSON.stringify({
       success: true,
       nb_resultats: insertedCount,
       mots_cles_utilises: topKeywords,
+      sources_utilisees: sourcesUtilisees,
       alertes_declenchees: alertes,
       duree_ms: duration,
-      citations
+      citations: allCitations
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

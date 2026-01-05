@@ -28,6 +28,7 @@ export type Database = {
           sentiment: number | null
           source_id: string | null
           source_nom: string | null
+          source_type: string | null
           source_url: string | null
           tags: string[] | null
           titre: string
@@ -45,6 +46,7 @@ export type Database = {
           sentiment?: number | null
           source_id?: string | null
           source_nom?: string | null
+          source_type?: string | null
           source_url?: string | null
           tags?: string[] | null
           titre: string
@@ -62,6 +64,7 @@ export type Database = {
           sentiment?: number | null
           source_id?: string | null
           source_nom?: string | null
+          source_type?: string | null
           source_url?: string | null
           tags?: string[] | null
           titre?: string
@@ -225,6 +228,7 @@ export type Database = {
           id: string
           mots_cles_utilises: string[] | null
           nb_resultats: number | null
+          sources_utilisees: string[] | null
           statut: string
           type: string
         }
@@ -235,6 +239,7 @@ export type Database = {
           id?: string
           mots_cles_utilises?: string[] | null
           nb_resultats?: number | null
+          sources_utilisees?: string[] | null
           statut: string
           type: string
         }
@@ -245,6 +250,7 @@ export type Database = {
           id?: string
           mots_cles_utilises?: string[] | null
           nb_resultats?: number | null
+          sources_utilisees?: string[] | null
           statut?: string
           type?: string
         }
