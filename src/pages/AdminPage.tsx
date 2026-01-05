@@ -1,8 +1,26 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Users, Database, Bell, Tag, UserPlus, ClipboardList, Clock, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAdminStats } from '@/hooks/useAdminStats';
+import { AdminStatBadge } from '@/components/admin/AdminStatBadge';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
+
+function getCollecteVariant(derniereCollecte: string | null): 'success' | 'warning' | 'error' | 'muted' {
+  if (!derniereCollecte) return 'muted';
+  const heuresDepuis = (Date.now() - new Date(derniereCollecte).getTime()) / (1000 * 60 * 60);
+  if (heuresDepuis < 6) return 'success';
+  if (heuresDepuis < 24) return 'warning';
+  return 'error';
+}
 
 export default function AdminPage() {
+  const { data: stats, isLoading } = useAdminStats();
+
+  const collecteLabel = stats?.derniereCollecte
+    ? formatDistanceToNow(new Date(stats.derniereCollecte), { addSuffix: true, locale: fr })
+    : 'Jamais';
+
   return (
     <div className="space-y-8 animate-fade-in">
       <div>
@@ -23,6 +41,12 @@ export default function AdminPage() {
                 <Users className="h-10 w-10 text-chart-3 mb-3" />
                 <h3 className="font-semibold">Utilisateurs</h3>
                 <p className="text-sm text-muted-foreground">Inviter & gérer</p>
+                <AdminStatBadge
+                  value={stats?.usersActifs ?? 0}
+                  label="actifs"
+                  variant={stats?.usersActifs && stats.usersActifs > 0 ? 'success' : 'warning'}
+                  loading={isLoading}
+                />
               </CardContent>
             </Card>
           </Link>
@@ -32,6 +56,12 @@ export default function AdminPage() {
                 <UserPlus className="h-10 w-10 text-primary mb-3" />
                 <h3 className="font-semibold">Import Acteurs</h3>
                 <p className="text-sm text-muted-foreground">Via Perplexity</p>
+                <AdminStatBadge
+                  value={stats?.totalActeurs ?? 0}
+                  label="acteurs"
+                  variant="info"
+                  loading={isLoading}
+                />
               </CardContent>
             </Card>
           </Link>
@@ -41,6 +71,12 @@ export default function AdminPage() {
                 <Tag className="h-10 w-10 text-secondary mb-3" />
                 <h3 className="font-semibold">Mots-Clés</h3>
                 <p className="text-sm text-muted-foreground">Veille & alertes</p>
+                <AdminStatBadge
+                  value={stats?.motsClesActifs ?? 0}
+                  label="actifs"
+                  variant="info"
+                  loading={isLoading}
+                />
               </CardContent>
             </Card>
           </Link>
@@ -50,6 +86,12 @@ export default function AdminPage() {
                 <Mail className="h-10 w-10 text-chart-1 mb-3" />
                 <h3 className="font-semibold">Newsletters</h3>
                 <p className="text-sm text-muted-foreground">Génération IA</p>
+                <AdminStatBadge
+                  value={stats?.newslettersEnAttente ?? 0}
+                  label="en attente"
+                  variant={stats?.newslettersEnAttente && stats.newslettersEnAttente > 0 ? 'warning' : 'muted'}
+                  loading={isLoading}
+                />
               </CardContent>
             </Card>
           </Link>
@@ -58,13 +100,25 @@ export default function AdminPage() {
               <Bell className="h-10 w-10 text-chart-4 mb-3" />
               <h3 className="font-semibold">Alertes</h3>
               <p className="text-sm text-muted-foreground">Configurer seuils</p>
+              <AdminStatBadge
+                value={stats?.alertesNonLues ?? 0}
+                label="non lues"
+                variant={stats?.alertesNonLues && stats.alertesNonLues > 0 ? 'warning' : 'muted'}
+                loading={isLoading}
+              />
             </CardContent>
           </Card>
           <Card className="glass cursor-pointer hover:shadow-glow transition-shadow">
             <CardContent className="pt-6 flex flex-col items-center text-center">
               <Database className="h-10 w-10 text-primary mb-3" />
               <h3 className="font-semibold">Sources</h3>
-              <p className="text-sm text-muted-foreground">12 actives</p>
+              <p className="text-sm text-muted-foreground">Médias & flux</p>
+              <AdminStatBadge
+                value={stats?.sourcesActives ?? 0}
+                label="actives"
+                variant={stats?.sourcesActives && stats.sourcesActives > 0 ? 'success' : 'warning'}
+                loading={isLoading}
+              />
             </CardContent>
           </Card>
         </div>
@@ -83,6 +137,11 @@ export default function AdminPage() {
                 <Clock className="h-10 w-10 text-chart-2 mb-3" />
                 <h3 className="font-semibold">Tâches CRON</h3>
                 <p className="text-sm text-muted-foreground">Collecte automatisée</p>
+                <AdminStatBadge
+                  value={collecteLabel}
+                  variant={getCollecteVariant(stats?.derniereCollecte ?? null)}
+                  loading={isLoading}
+                />
               </CardContent>
             </Card>
           </Link>
@@ -92,6 +151,12 @@ export default function AdminPage() {
                 <ClipboardList className="h-10 w-10 text-chart-5 mb-3" />
                 <h3 className="font-semibold">Historique d'audit</h3>
                 <p className="text-sm text-muted-foreground">Actions admin</p>
+                <AdminStatBadge
+                  value={stats?.actionsAudit24h ?? 0}
+                  label="actions (24h)"
+                  variant="muted"
+                  loading={isLoading}
+                />
               </CardContent>
             </Card>
           </Link>
