@@ -329,6 +329,42 @@ function generateDigestEmail(
             Pour modifier vos préférences, accédez à la gestion de vos flux.
           </p>
         </div>
+        
+        <!-- Footer ANSUT -->
+        <div style="margin-top: 20px; padding: 24px; background: #1f2937; border-radius: 12px; text-align: center;">
+          <img src="https://lpkfwxisranmetbtgxrv.supabase.co/storage/v1/object/public/avatars/logo-ansut.png" 
+               alt="ANSUT Logo" 
+               style="width: 50px; height: 50px; border-radius: 8px; margin-bottom: 12px; object-fit: contain; background: white; padding: 4px;"
+          />
+          <h3 style="margin: 0 0 8px 0; color: white; font-size: 14px; font-weight: 600;">
+            Agence Nationale du Service Universel des Télécommunications
+          </h3>
+          
+          <div style="color: #9ca3af; font-size: 13px; line-height: 1.8; margin: 16px 0;">
+            <p style="margin: 0;">📍 Marcory, Abidjan - Côte d'Ivoire</p>
+            <p style="margin: 4px 0;">📞 +225 27 22 52 95 05</p>
+            <p style="margin: 4px 0;">
+              ✉️ <a href="mailto:contact@ansut.ci" style="color: #60a5fa; text-decoration: none;">contact@ansut.ci</a>
+            </p>
+            <p style="margin: 4px 0;">
+              🌐 <a href="https://www.ansut.ci" style="color: #60a5fa; text-decoration: none;">www.ansut.ci</a>
+            </p>
+          </div>
+          
+          <div style="margin: 16px 0;">
+            <a href="https://www.facebook.com/ansutci" style="display: inline-block; margin: 0 8px; color: #60a5fa; text-decoration: none; font-size: 14px;">Facebook</a>
+            <span style="color: #4b5563;">|</span>
+            <a href="https://x.com/ansut_ci" style="display: inline-block; margin: 0 8px; color: #60a5fa; text-decoration: none; font-size: 14px;">X</a>
+            <span style="color: #4b5563;">|</span>
+            <a href="https://www.linkedin.com/company/ansut" style="display: inline-block; margin: 0 8px; color: #60a5fa; text-decoration: none; font-size: 14px;">LinkedIn</a>
+          </div>
+          
+          <div style="border-top: 1px solid #374151; padding-top: 16px; margin-top: 16px;">
+            <p style="margin: 0; color: #6b7280; font-size: 11px;">
+              © 2025 ANSUT - Tous droits réservés
+            </p>
+          </div>
+        </div>
       </div>
     </body>
     </html>
