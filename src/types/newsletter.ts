@@ -5,6 +5,7 @@ export type NewsletterTon = 'institutionnel' | 'pedagogique' | 'strategique';
 export type NewsletterCible = 'dg_ca' | 'partenaires' | 'general';
 export type NewsletterStatut = 'brouillon' | 'en_revision' | 'valide' | 'envoye' | 'archive';
 export type ProgrammationFrequence = 'hebdo' | 'mensuel' | 'desactive';
+export type NewsletterTemplate = 'innovactu' | 'ansut_radar';
 
 export interface NewsletterEssentiel {
   titre: string;
@@ -66,6 +67,7 @@ export interface Newsletter {
   date_fin: string;
   ton: NewsletterTon;
   cible: NewsletterCible;
+  template: NewsletterTemplate;
   contenu: NewsletterContenu;
   html_court: string | null;
   html_complet: string | null;
@@ -118,6 +120,7 @@ export interface GenerateNewsletterParams {
   periode: NewsletterPeriode;
   ton: NewsletterTon;
   cible: NewsletterCible;
+  template?: NewsletterTemplate;
   date_debut?: string;
   date_fin?: string;
 }

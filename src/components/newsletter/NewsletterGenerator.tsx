@@ -10,7 +10,8 @@ import {
   CheckCircle,
   FileText,
   Zap,
-  AlertCircle
+  AlertCircle,
+  Layout
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { useGenerateNewsletter } from '@/hooks/useNewsletters';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { NewsletterPeriode, NewsletterTon, NewsletterCible, Newsletter } from '@/types/newsletter';
+import type { NewsletterPeriode, NewsletterTon, NewsletterCible, NewsletterTemplate, Newsletter } from '@/types/newsletter';
 
 interface NewsletterGeneratorProps {
   onGenerated: (newsletter: Newsletter) => void;
@@ -55,6 +56,7 @@ export function NewsletterGenerator({ onGenerated }: NewsletterGeneratorProps) {
   const [periode, setPeriode] = useState<NewsletterPeriode>('mensuel');
   const [ton, setTon] = useState<NewsletterTon>('pedagogique');
   const [cible, setCible] = useState<NewsletterCible>('general');
+  const [template, setTemplate] = useState<NewsletterTemplate>('innovactu');
   const [step, setStep] = useState<GenerationStep>('config');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -118,6 +120,7 @@ export function NewsletterGenerator({ onGenerated }: NewsletterGeneratorProps) {
         periode,
         ton,
         cible,
+        template,
         date_debut: format(startDate, 'yyyy-MM-dd'),
         date_fin: format(endDate, 'yyyy-MM-dd'),
       });
@@ -377,6 +380,88 @@ export function NewsletterGenerator({ onGenerated }: NewsletterGeneratorProps) {
                     </div>
                   </Label>
                 ))}
+              </RadioGroup>
+            </div>
+
+            {/* Template */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Layout className="h-4 w-4 text-primary" />
+                <Label className="text-base font-semibold">4. Template visuel</Label>
+              </div>
+              <RadioGroup 
+                value={template} 
+                onValueChange={(v) => setTemplate(v as NewsletterTemplate)}
+                className="grid grid-cols-2 gap-4"
+              >
+                {/* INNOV'ACTU Template */}
+                <Label 
+                  htmlFor="innovactu" 
+                  className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    template === 'innovactu' 
+                      ? 'border-primary bg-primary/5 shadow-sm' 
+                      : 'border-border hover:bg-accent/50 hover:border-primary/30'
+                  }`}
+                >
+                  <RadioGroupItem value="innovactu" id="innovactu" className="sr-only" />
+                  {/* Mini preview INNOV'ACTU */}
+                  <div className="w-full h-32 rounded-lg overflow-hidden border bg-white">
+                    <div className="h-6 bg-gradient-to-r from-[#1a237e] to-[#283593] flex items-center px-2">
+                      <span className="text-[8px] font-bold text-[#e65100]">INNOV'ACTU</span>
+                    </div>
+                    <div className="h-0.5 bg-[#e65100]" />
+                    <div className="flex h-[calc(100%-26px)]">
+                      <div className="w-8 bg-[#e65100]" />
+                      <div className="flex-1 p-1.5 space-y-1">
+                        <div className="h-2 bg-muted/60 rounded w-full" />
+                        <div className="h-2 bg-muted/40 rounded w-3/4" />
+                        <div className="h-3 bg-orange-100 rounded mt-1" />
+                        <div className="h-3 bg-blue-100 rounded" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-semibold flex items-center gap-2 justify-center">
+                      INNOV'ACTU
+                      <Badge variant="secondary" className="text-xs">Moderne</Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground">2 colonnes, dynamique</div>
+                  </div>
+                </Label>
+
+                {/* ANSUT RADAR Template */}
+                <Label 
+                  htmlFor="ansut_radar" 
+                  className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    template === 'ansut_radar' 
+                      ? 'border-primary bg-primary/5 shadow-sm' 
+                      : 'border-border hover:bg-accent/50 hover:border-primary/30'
+                  }`}
+                >
+                  <RadioGroupItem value="ansut_radar" id="ansut_radar" className="sr-only" />
+                  {/* Mini preview ANSUT RADAR */}
+                  <div className="w-full h-32 rounded-lg overflow-hidden border bg-white">
+                    <div className="h-6 bg-slate-800 flex items-center justify-center px-2">
+                      <span className="text-[8px] font-bold text-white">ANSUT RADAR</span>
+                    </div>
+                    <div className="h-0.5 bg-[#e65100]" />
+                    <div className="p-1.5 space-y-1">
+                      <div className="h-2.5 bg-muted/50 rounded w-full" />
+                      <div className="h-px bg-border my-1" />
+                      <div className="h-2 bg-muted/40 rounded w-full" />
+                      <div className="h-2 bg-muted/30 rounded w-5/6" />
+                      <div className="h-px bg-border my-1" />
+                      <div className="h-2 bg-muted/40 rounded w-full" />
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-semibold flex items-center gap-2 justify-center">
+                      ANSUT RADAR
+                      <Badge variant="outline" className="text-xs">Classique</Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground">1 colonne, exécutif</div>
+                  </div>
+                </Label>
               </RadioGroup>
             </div>
 
