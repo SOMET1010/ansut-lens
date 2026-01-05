@@ -4,6 +4,8 @@ Bienvenue dans la documentation technique du projet ANSUT RADAR, plateforme de v
 
 ## 📚 Index de la Documentation
 
+### Documentation Technique
+
 | Document | Description |
 |----------|-------------|
 | [Architecture](./ARCHITECTURE.md) | Architecture technique, stack, patterns |
@@ -14,6 +16,17 @@ Bienvenue dans la documentation technique du projet ANSUT RADAR, plateforme de v
 | [Contribution](./CONTRIBUTING.md) | Guide Git, conventions de code |
 | [Déploiement](./DEPLOYMENT.md) | Lovable Cloud, variables, CRON |
 | [Dépannage](./TROUBLESHOOTING.md) | FAQ, erreurs courantes, debug |
+
+### Guides Utilisateurs
+
+| Document | Description |
+|----------|-------------|
+| [Présentation de la solution](./OVERVIEW.md) | Vue d'ensemble ANSUT RADAR |
+| [Index des formations](./formation/README.md) | Guides par profil utilisateur |
+| [Formation Administrateur](./formation/ADMIN.md) | Gestion de la plateforme |
+| [Formation Utilisateur](./formation/USER.md) | Analyse et veille quotidienne |
+| [Formation Conseil](./formation/COUNCIL-USER.md) | Consultation avancée |
+| [Formation Invité](./formation/GUEST.md) | Accès lecture seule |
 
 ## 🚀 Démarrage Rapide
 
