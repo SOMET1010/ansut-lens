@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, Plus } from 'lucide-react';
+import { Users, Sparkles, UserPlus } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { usePersonnalites, CERCLE_LABELS, type PersonnalitesFilters } from '@/hooks/usePersonnalites';
 import { StatsBar } from '@/components/personnalites/StatsBar';
 import { ActeurFilters } from '@/components/personnalites/ActeurFilters';
@@ -172,16 +174,49 @@ function LoadingSkeleton() {
 }
 
 function EmptyState({ cercle }: { cercle?: CercleStrategique }) {
+  const navigate = useNavigate();
+  const { isAdmin } = useAuth();
+
+  // Si c'est un cercle spécifique vide, message simple
+  if (cercle) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
+        <h3 className="text-lg font-semibold">Aucun acteur trouvé</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          Aucun acteur dans le cercle {cercle} pour le moment.
+        </p>
+      </div>
+    );
+  }
+
+  // EmptyState global avec actions
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
-      <h3 className="text-lg font-semibold">Aucun acteur trouvé</h3>
-      <p className="text-sm text-muted-foreground mt-1">
-        {cercle 
-          ? `Aucun acteur dans le cercle ${cercle} pour le moment.`
-          : 'Aucun acteur ne correspond aux filtres sélectionnés.'
-        }
+    <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="rounded-full bg-primary/10 p-4 mb-6">
+        <Users className="h-16 w-16 text-primary" />
+      </div>
+      <h3 className="text-xl font-semibold">Aucun acteur dans la base</h3>
+      <p className="text-sm text-muted-foreground mt-2 max-w-md">
+        La base d'acteurs est vide. Commencez par générer des personnalités
+        clés du secteur numérique ivoirien.
       </p>
+      
+      {isAdmin ? (
+        <Button 
+          size="lg" 
+          className="mt-6 gap-2"
+          onClick={() => navigate('/admin/import-acteurs')}
+        >
+          <Sparkles className="h-5 w-5" />
+          Générer des acteurs
+        </Button>
+      ) : (
+        <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-4 py-3 rounded-lg">
+          <UserPlus className="h-4 w-4" />
+          <span>Contactez un administrateur pour alimenter la base</span>
+        </div>
+      )}
     </div>
   );
 }
