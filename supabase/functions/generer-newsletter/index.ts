@@ -415,8 +415,8 @@ function generateProfessionalHtml(
   ton: string,
   cible: string
 ): string {
-  const formatDate = (d: Date) => d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-  const formatShortDate = (d: Date) => d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  const formatDate = (d: Date) => d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const formatMonthYear = (d: Date) => d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
   
   const edito = content.edito || { texte: '' };
   const essentielAnsut = content.essentiel_ansut || [];
@@ -426,459 +426,234 @@ function generateProfessionalHtml(
   const aVenir = content.a_venir || [];
 
   const tonLabel = ton === 'pedagogique' ? 'Pédagogique' : ton === 'institutionnel' ? 'Institutionnel' : 'Stratégique';
-  const cibleLabel = cible === 'dg_ca' ? 'Direction' : cible === 'partenaires' ? 'Partenaires' : 'Grand Public';
 
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ANSUT RADAR #${numero} - ${formatDate(startDate)}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
-      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; 
-      line-height: 1.6; 
-      color: #1a1a2e; 
-      background: #f8fafc; 
-    }
-    .container { 
-      max-width: 680px; 
-      margin: 0 auto; 
-      background: #ffffff; 
-      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-    }
-    
-    /* Header moderne */
-    .header { 
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); 
-      color: white; 
-      padding: 40px 32px; 
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-    .header::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-    }
-    .header-content { position: relative; z-index: 1; }
-    .logo-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    .logo-icon {
-      width: 48px;
-      height: 48px;
-      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
-    }
-    .header h1 { 
-      font-size: 28px; 
-      font-weight: 800; 
-      letter-spacing: -0.5px;
-      margin-bottom: 4px;
-    }
-    .header .subtitle { 
-      font-size: 14px; 
-      opacity: 0.85; 
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-    }
-    .header-meta {
-      margin-top: 20px;
-      display: flex;
-      justify-content: center;
-      gap: 24px;
-      font-size: 13px;
-      opacity: 0.9;
-    }
-    .header-meta-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .header-badge {
-      background: rgba(255,255,255,0.15);
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    /* Sections */
-    .section { 
-      padding: 32px; 
-      border-bottom: 1px solid #e2e8f0; 
-    }
-    .section:last-child { border-bottom: none; }
-    .section-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .section-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-    }
-    .section-title { 
-      font-size: 13px; 
-      font-weight: 700; 
-      text-transform: uppercase; 
-      letter-spacing: 1.5px;
-      color: #64748b;
-    }
-
-    /* Édito */
-    .edito-section .section-icon { background: #fef3c7; }
-    .edito-content {
-      font-size: 17px;
-      color: #475569;
-      font-style: italic;
-      line-height: 1.8;
-      padding-left: 20px;
-      border-left: 3px solid #f97316;
-    }
-    .edito-signature {
-      margin-top: 16px;
-      text-align: right;
-      font-size: 13px;
-      color: #94a3b8;
-      font-weight: 500;
-    }
-
-    /* Essentiel */
-    .essentiel-section .section-icon { background: #fee2e2; color: #dc2626; }
-    .essentiel-grid { display: flex; flex-direction: column; gap: 16px; }
-    .essentiel-card {
-      background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
-      border-radius: 12px;
-      padding: 20px;
-      border-left: 4px solid #f97316;
-      transition: transform 0.2s;
-    }
-    .essentiel-card h3 {
-      font-size: 16px;
-      font-weight: 700;
-      color: #1e293b;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-    }
-    .essentiel-card h3::before {
-      content: '✓';
-      background: #22c55e;
-      color: white;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-    .essentiel-pourquoi {
-      font-size: 14px;
-      color: #64748b;
-      margin-bottom: 8px;
-      padding-left: 28px;
-    }
-    .essentiel-impact {
-      font-size: 14px;
-      color: #059669;
-      font-weight: 600;
-      padding-left: 28px;
-    }
-
-    /* Tech & Decryptage - Grid */
-    .dual-section {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0;
-    }
-    @media (max-width: 600px) {
-      .dual-section { grid-template-columns: 1fr; }
-    }
-    .tech-card, .decrypt-card {
-      padding: 28px;
-    }
-    .tech-card {
-      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-      border-bottom: 1px solid #bfdbfe;
-    }
-    .tech-card .section-icon { background: #3b82f6; color: white; }
-    .tech-card h3 {
-      font-size: 15px;
-      font-weight: 700;
-      color: #1e40af;
-      margin-bottom: 12px;
-    }
-    .tech-card p { font-size: 14px; color: #334155; margin-bottom: 12px; }
-    .tech-ansut {
-      background: white;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 13px;
-      color: #1e40af;
-      margin-top: 12px;
-    }
-    .tech-ansut strong { color: #f97316; }
-
-    .decrypt-card {
-      background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
-      border-bottom: 1px solid #fde047;
-    }
-    .decrypt-card .section-icon { background: #eab308; color: white; }
-    .decrypt-card h3 {
-      font-size: 15px;
-      font-weight: 700;
-      color: #854d0e;
-      margin-bottom: 12px;
-    }
-    .decrypt-card p { font-size: 14px; color: #422006; }
-
-    /* Chiffre marquant */
-    .chiffre-section {
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-      color: white;
-      text-align: center;
-      padding: 48px 32px;
-      position: relative;
-    }
-    .chiffre-section::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: radial-gradient(circle at 30% 50%, rgba(249, 115, 22, 0.15) 0%, transparent 50%);
-    }
-    .chiffre-content { position: relative; z-index: 1; }
-    .chiffre-label {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 3px;
-      opacity: 0.7;
-      margin-bottom: 16px;
-    }
-    .chiffre-valeur {
-      font-size: 72px;
-      font-weight: 800;
-      background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      line-height: 1;
-      margin-bottom: 8px;
-    }
-    .chiffre-unite {
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 12px;
-    }
-    .chiffre-contexte {
-      font-size: 14px;
-      opacity: 0.8;
-      max-width: 400px;
-      margin: 0 auto;
-    }
-
-    /* À venir */
-    .avenir-section .section-icon { background: #f3e8ff; color: #9333ea; }
-    .avenir-list { display: flex; flex-direction: column; gap: 12px; }
-    .avenir-item {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 16px;
-      background: #fafafa;
-      border-radius: 10px;
-      transition: background 0.2s;
-    }
-    .avenir-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      flex-shrink: 0;
-    }
-    .avenir-icon.evenement { background: #dbeafe; }
-    .avenir-icon.appel_projets { background: #dcfce7; }
-    .avenir-icon.deploiement { background: #fef3c7; }
-    .avenir-icon.decision { background: #f3e8ff; }
-    .avenir-content { flex: 1; }
-    .avenir-titre { font-weight: 600; color: #1e293b; font-size: 14px; }
-    .avenir-date { font-size: 12px; color: #64748b; margin-top: 2px; }
-
-    /* Footer */
-    .footer {
-      background: #0f172a;
-      color: white;
-      padding: 32px;
-      text-align: center;
-    }
-    .footer-logo {
-      font-size: 18px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-    .footer-org {
-      font-size: 13px;
-      opacity: 0.8;
-      margin-bottom: 16px;
-    }
-    .footer-link {
-      color: #f97316;
-      text-decoration: none;
-      font-weight: 500;
-    }
-    .footer-credits {
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid rgba(255,255,255,0.1);
-      font-size: 11px;
-      opacity: 0.5;
-    }
-  </style>
+  <title>INNOV'ACTU #${numero} - ${formatMonthYear(startDate)}</title>
 </head>
-<body>
-  <div class="container">
-    <!-- Header -->
-    <div class="header">
-      <div class="header-content">
-        <div class="logo-row">
-          <div class="logo-icon">📡</div>
-        </div>
-        <h1>ANSUT RADAR</h1>
-        <div class="subtitle">Veille Stratégique Numérique</div>
-        <div class="header-meta">
-          <div class="header-meta-item">
-            <span>📅</span>
-            <span>${formatDate(startDate)}</span>
-          </div>
-          <div class="header-meta-item">
-            <span class="header-badge">N°${numero}</span>
-          </div>
-          <div class="header-meta-item">
-            <span class="header-badge">${tonLabel}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Édito -->
-    <div class="section edito-section">
-      <div class="section-header">
-        <div class="section-icon">📝</div>
-        <span class="section-title">Édito</span>
-      </div>
-      <div class="edito-content">${edito.texte}</div>
-      <div class="edito-signature">— La Rédaction ANSUT RADAR</div>
-    </div>
-
-    <!-- L'essentiel ANSUT -->
-    <div class="section essentiel-section">
-      <div class="section-header">
-        <div class="section-icon">🎯</div>
-        <span class="section-title">L'essentiel ANSUT</span>
-      </div>
-      <div class="essentiel-grid">
-        ${essentielAnsut.map(item => `
-          <div class="essentiel-card">
-            <h3>${item.titre}</h3>
-            <p class="essentiel-pourquoi"><strong>Pourquoi :</strong> ${item.pourquoi}</p>
-            <p class="essentiel-impact">→ ${item.impact}</p>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-
-    <!-- Tech & Décryptage -->
-    <div class="dual-section">
-      <div class="tech-card">
-        <div class="section-header">
-          <div class="section-icon">🔬</div>
-          <span class="section-title">Tendance Tech</span>
-        </div>
-        <h3>${tendanceTech.titre}</h3>
-        <p>${tendanceTech.contenu}</p>
-        <div class="tech-ansut"><strong>👉 Pour l'ANSUT :</strong> ${tendanceTech.lien_ansut}</div>
-      </div>
-      <div class="decrypt-card">
-        <div class="section-header">
-          <div class="section-icon">📚</div>
-          <span class="section-title">En 2 Minutes</span>
-        </div>
-        <h3>${decryptage.titre}</h3>
-        <p>${decryptage.contenu}</p>
-      </div>
-    </div>
-
-    <!-- Le Chiffre -->
-    <div class="chiffre-section">
-      <div class="chiffre-content">
-        <div class="chiffre-label">📊 Le Chiffre Marquant</div>
-        <div class="chiffre-valeur">${chiffreMarquant.valeur}</div>
-        <div class="chiffre-unite">${chiffreMarquant.unite}</div>
-        <div class="chiffre-contexte">${chiffreMarquant.contexte}</div>
-      </div>
-    </div>
-
-    <!-- À venir -->
-    <div class="section avenir-section">
-      <div class="section-header">
-        <div class="section-icon">📅</div>
-        <span class="section-title">À Venir</span>
-      </div>
-      <div class="avenir-list">
-        ${aVenir.map(item => `
-          <div class="avenir-item">
-            <div class="avenir-icon ${item.type}">
-              ${item.type === 'evenement' ? '📆' : item.type === 'appel_projets' ? '📢' : item.type === 'deploiement' ? '🚀' : '⚖️'}
-            </div>
-            <div class="avenir-content">
-              <div class="avenir-titre">${item.titre}</div>
-              ${item.date ? `<div class="avenir-date">${item.date}</div>` : ''}
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="footer">
-      <div class="footer-logo">ANSUT</div>
-      <div class="footer-org">Agence Nationale du Service Universel des Télécommunications</div>
-      <a href="https://www.ansut.ci" class="footer-link">www.ansut.ci</a>
-      <div class="footer-credits">
-        Newsletter générée par ANSUT RADAR · ${formatShortDate(startDate)} - ${formatShortDate(endDate)}
-      </div>
-    </div>
-  </div>
+<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f5;">
+    <tr>
+      <td align="center" style="padding: 20px 0;">
+        <!-- Main Container -->
+        <table width="700" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; box-shadow: 0 4px 24px rgba(0,0,0,0.1);">
+          
+          <!-- HEADER INNOV'ACTU -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #1a237e 0%, #283593 100%); padding: 0;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding: 24px 32px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <!-- Logo ANSUT -->
+                        <td width="80" valign="middle">
+                          <div style="width: 60px; height: 60px; background: #ffffff; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                            <span style="font-size: 32px;">📡</span>
+                          </div>
+                        </td>
+                        <!-- Title -->
+                        <td valign="middle" style="padding-left: 16px;">
+                          <div style="font-size: 42px; font-weight: 800; color: #e65100; letter-spacing: -1px; line-height: 1;">INNOV'ACTU</div>
+                          <div style="font-size: 14px; color: rgba(255,255,255,0.9); margin-top: 6px; letter-spacing: 1px;">NEWSLETTER ANSUT</div>
+                        </td>
+                        <!-- Numero & Date -->
+                        <td align="right" valign="middle">
+                          <div style="background: #e65100; color: white; padding: 8px 16px; border-radius: 8px; font-weight: 700; font-size: 18px;">N°${numero}</div>
+                          <div style="color: rgba(255,255,255,0.85); font-size: 13px; margin-top: 8px;">${formatDate(startDate)}</div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <!-- Wave decoration -->
+                <tr>
+                  <td style="height: 6px; background: linear-gradient(90deg, #e65100 0%, #ff8a00 50%, #e65100 100%);"></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- CONTENT AREA: SOMMAIRE + MAIN -->
+          <tr>
+            <td style="padding: 0;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <!-- SOMMAIRE (Left Sidebar) -->
+                  <td width="180" valign="top" style="background: #e65100;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="padding: 24px 20px;">
+                          <div style="font-size: 16px; font-weight: 700; color: #ffffff; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px;">≡</span> Sommaire
+                          </div>
+                          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.2);">
+                                <a href="#edito" style="color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 500;">📝 Édito</a>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.2);">
+                                <a href="#ansut-news" style="color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 500;">🎯 ANSUT News</a>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.2);">
+                                <a href="#technologie" style="color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 500;">🔬 Technologie</a>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.2);">
+                                <a href="#en-2-minutes" style="color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 500;">📚 En 2 Minutes</a>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.2);">
+                                <a href="#chiffre" style="color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 500;">📊 Le Chiffre</a>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 10px 0;">
+                                <a href="#avenir" style="color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 500;">📅 À Venir</a>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  
+                  <!-- MAIN CONTENT (Right) -->
+                  <td valign="top" style="background: #ffffff;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      
+                      <!-- ÉDITO -->
+                      <tr id="edito">
+                        <td style="padding: 28px 28px 24px 28px; border-bottom: 1px solid #e5e7eb;">
+                          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                            <div style="width: 32px; height: 32px; background: #fef3c7; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px;">📝</div>
+                            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #e65100;">Édito</span>
+                          </div>
+                          <div style="font-size: 15px; color: #475569; font-style: italic; line-height: 1.7; padding-left: 16px; border-left: 3px solid #e65100;">${edito.texte}</div>
+                          <div style="text-align: right; font-size: 12px; color: #94a3b8; margin-top: 12px; font-weight: 500;">— La Rédaction ANSUT</div>
+                        </td>
+                      </tr>
+                      
+                      <!-- ANSUT NEWS -->
+                      <tr id="ansut-news">
+                        <td style="padding: 28px 28px 24px 28px; border-bottom: 1px solid #e5e7eb;">
+                          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                            <div style="width: 32px; height: 32px; background: #fee2e2; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px;">🎯</div>
+                            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #e65100;">ANSUT News</span>
+                          </div>
+                          ${essentielAnsut.map((item, index) => `
+                            <div style="margin-bottom: 16px; padding: 16px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 10px; border-left: 4px solid #e65100;">
+                              <div style="font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 8px;">
+                                <span style="background: #e65100; color: white; width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0;">${index + 1}</span>
+                                ${item.titre}
+                              </div>
+                              <div style="font-size: 13px; color: #64748b; margin-bottom: 6px; padding-left: 28px;"><strong style="color: #475569;">Pourquoi :</strong> ${item.pourquoi}</div>
+                              <div style="font-size: 13px; color: #059669; font-weight: 600; padding-left: 28px;">→ ${item.impact}</div>
+                            </div>
+                          `).join('')}
+                        </td>
+                      </tr>
+                      
+                      <!-- TECHNOLOGIE -->
+                      <tr id="technologie">
+                        <td style="padding: 28px 28px 24px 28px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-bottom: 1px solid #bfdbfe;">
+                          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                            <div style="width: 32px; height: 32px; background: #3b82f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white;">🔬</div>
+                            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #1e40af;">Technologie</span>
+                          </div>
+                          <div style="font-size: 15px; font-weight: 700; color: #1e40af; margin-bottom: 12px;">${tendanceTech.titre}</div>
+                          <div style="font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 16px;">${tendanceTech.contenu}</div>
+                          <div style="background: white; padding: 12px 16px; border-radius: 8px; font-size: 13px; color: #1e40af;">
+                            <strong style="color: #e65100;">👉 Pour l'ANSUT :</strong> ${tendanceTech.lien_ansut}
+                          </div>
+                        </td>
+                      </tr>
+                      
+                      <!-- EN 2 MINUTES -->
+                      <tr id="en-2-minutes">
+                        <td style="padding: 28px 28px 24px 28px; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-bottom: 1px solid #fde047;">
+                          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                            <div style="width: 32px; height: 32px; background: #eab308; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white;">📚</div>
+                            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #854d0e;">En 2 Minutes</span>
+                          </div>
+                          <div style="font-size: 15px; font-weight: 700; color: #854d0e; margin-bottom: 12px;">${decryptage.titre}</div>
+                          <div style="font-size: 14px; color: #422006; line-height: 1.6;">${decryptage.contenu}</div>
+                        </td>
+                      </tr>
+                      
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- LE CHIFFRE MARQUANT (Full Width) -->
+          <tr id="chiffre">
+            <td style="background: linear-gradient(135deg, #1a237e 0%, #283593 100%); text-align: center; padding: 48px 32px;">
+              <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 3px; color: rgba(255,255,255,0.7); margin-bottom: 16px;">📊 Le Chiffre Marquant</div>
+              <div style="font-size: 72px; font-weight: 800; color: #e65100; line-height: 1; margin-bottom: 8px;">${chiffreMarquant.valeur}</div>
+              <div style="font-size: 20px; font-weight: 600; color: #ffffff; margin-bottom: 12px;">${chiffreMarquant.unite}</div>
+              <div style="font-size: 14px; color: rgba(255,255,255,0.8); max-width: 400px; margin: 0 auto;">${chiffreMarquant.contexte}</div>
+            </td>
+          </tr>
+          
+          <!-- À VENIR -->
+          <tr id="avenir">
+            <td style="padding: 28px 32px; background: #ffffff; border-top: 4px solid #e65100;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                <div style="width: 32px; height: 32px; background: #f3e8ff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px;">📅</div>
+                <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #e65100;">À Venir</span>
+              </div>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                ${aVenir.map(item => `
+                  <tr>
+                    <td style="padding: 12px 0; border-bottom: 1px solid #f1f5f9;">
+                      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td width="40" valign="top">
+                            <div style="width: 36px; height: 36px; background: ${item.type === 'evenement' ? '#dbeafe' : item.type === 'appel_projets' ? '#dcfce7' : item.type === 'deploiement' ? '#fef3c7' : '#f3e8ff'}; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+                              ${item.type === 'evenement' ? '📆' : item.type === 'appel_projets' ? '📢' : item.type === 'deploiement' ? '🚀' : '⚖️'}
+                            </div>
+                          </td>
+                          <td style="padding-left: 12px;" valign="middle">
+                            <div style="font-size: 14px; font-weight: 600; color: #1e293b;">${item.titre}</div>
+                            ${item.date ? `<div style="font-size: 12px; color: #64748b; margin-top: 2px;">${item.date}</div>` : ''}
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                `).join('')}
+              </table>
+            </td>
+          </tr>
+          
+          <!-- FOOTER -->
+          <tr>
+            <td style="background: #1a237e; padding: 32px; text-align: center;">
+              <div style="font-size: 20px; font-weight: 700; color: #ffffff; margin-bottom: 8px;">ANSUT</div>
+              <div style="font-size: 13px; color: rgba(255,255,255,0.8); margin-bottom: 16px;">Agence Nationale du Service Universel des Télécommunications</div>
+              <a href="https://www.ansut.ci" style="color: #e65100; text-decoration: none; font-weight: 600; font-size: 14px;">www.ansut.ci</a>
+              <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.15); font-size: 11px; color: rgba(255,255,255,0.5);">
+                INNOV'ACTU Newsletter · ${formatMonthYear(startDate)} · ${tonLabel}
+              </div>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
 }
