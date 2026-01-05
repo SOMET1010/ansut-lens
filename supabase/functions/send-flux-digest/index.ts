@@ -183,8 +183,8 @@ const handler = async (req: Request): Promise<Response> => {
 
         // Send email
         const periodLabel = digestType === "quotidien" ? "quotidien" : "hebdomadaire";
-        const { error: emailError } = await resend.emails.send({
-          from: "ANSUT Radar <noreply@resend.dev>",
+      const { error: emailError } = await resend.emails.send({
+        from: "ANSUT Radar <no-reply@notifications.ansut.ci>",
           to: [userEmail],
           subject: `📡 Votre digest ${periodLabel} - ANSUT Radar`,
           html: emailHtml,
