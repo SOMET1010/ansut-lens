@@ -352,9 +352,9 @@ function generateDigestEmail(
           </div>
           
           <div style="margin: 16px 0;">
-            <a href="https://www.facebook.com/ansutci" style="display: inline-block; margin: 0 8px; color: #60a5fa; text-decoration: none; font-size: 14px;">Facebook</a>
+            <a href="https://www.facebook.com/ansutci/" style="display: inline-block; margin: 0 8px; color: #60a5fa; text-decoration: none; font-size: 14px;">Facebook</a>
             <span style="color: #4b5563;">|</span>
-            <a href="https://x.com/ansut_ci" style="display: inline-block; margin: 0 8px; color: #60a5fa; text-decoration: none; font-size: 14px;">X</a>
+            <a href="https://x.com/ANSUT_CI" style="display: inline-block; margin: 0 8px; color: #60a5fa; text-decoration: none; font-size: 14px;">X</a>
             <span style="color: #4b5563;">|</span>
             <a href="https://www.linkedin.com/company/ansut" style="display: inline-block; margin: 0 8px; color: #60a5fa; text-decoration: none; font-size: 14px;">LinkedIn</a>
           </div>
