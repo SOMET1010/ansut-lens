@@ -22,6 +22,7 @@ import ImportActeursPage from "@/pages/admin/ImportActeursPage";
 import UsersPage from "@/pages/admin/UsersPage";
 import AuditLogsPage from "@/pages/admin/AuditLogsPage";
 import CronJobsPage from "@/pages/admin/CronJobsPage";
+import NewslettersPage from "@/pages/admin/NewslettersPage";
 import AlertesHistoryPage from "@/pages/AlertesHistoryPage";
 import ProfilePage from "@/pages/ProfilePage";
 import FluxPage from "@/pages/FluxPage";
@@ -70,6 +71,7 @@ const App = () => (
                       <Route path="/admin/users" element={<UsersPage />} />
                       <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
                       <Route path="/admin/cron-jobs" element={<CronJobsPage />} />
+                      <Route path="/admin/newsletters" element={<NewslettersPage />} />
                     </Route>
                   </Route>
                   

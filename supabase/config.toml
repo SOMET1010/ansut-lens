@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.update-user-role]
 verify_jwt = false
+
+[functions.generer-newsletter]
+verify_jwt = false
+
+[functions.envoyer-newsletter]
+verify_jwt = false
