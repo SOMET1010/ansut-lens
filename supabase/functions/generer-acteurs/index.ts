@@ -125,8 +125,109 @@ serve(async (req) => {
       throw new Error('PERPLEXITY_API_KEY non configurée');
     }
 
-    const { categorie } = await req.json();
+    const { categorie, nom_recherche } = await req.json();
     
+    // Mode recherche individuelle par nom
+    if (categorie === 'recherche_individuelle' && nom_recherche) {
+      console.log(`[generer-acteurs] Recherche individuelle: ${nom_recherche}`);
+      
+      const query = `Recherche des informations sur "${nom_recherche}" dans le contexte du secteur numérique, télécommunications ou technologie en Côte d'Ivoire ou Afrique de l'Ouest.
+
+Trouve:
+- Son poste/fonction actuel
+- Son organisation/entreprise
+- Des sources vérifiables (articles, LinkedIn, communiqués officiels)
+
+IMPORTANT: Ne fournis des informations QUE si tu trouves des sources vérifiables. Si tu ne trouves rien de concret, dis-le clairement.`;
+
+      const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'sonar-pro',
+          messages: [
+            {
+              role: 'system',
+              content: `Tu es un assistant de recherche. Réponds UNIQUEMENT en JSON valide:
+{
+  "trouve": true/false,
+  "acteur": {
+    "nom_complet": "Prénom NOM",
+    "fonction": "Titre du poste",
+    "organisation": "Nom de l'organisation",
+    "pays": "Côte d'Ivoire",
+    "sources": ["https://..."],
+    "notes": "Contexte"
+  }
+}`
+            },
+            { role: 'user', content: query }
+          ],
+          search_recency_filter: 'year',
+          return_citations: true
+        }),
+      });
+
+      if (!perplexityResponse.ok) {
+        throw new Error(`Erreur Perplexity: ${perplexityResponse.status}`);
+      }
+
+      const data = await perplexityResponse.json();
+      const content = data.choices?.[0]?.message?.content || '';
+      const citations = data.citations || [];
+
+      let result = { trouve: false, acteur: null };
+      try {
+        const jsonMatch = content.match(/\{[\s\S]*"trouve"[\s\S]*\}/);
+        if (jsonMatch) {
+          result = JSON.parse(jsonMatch[0]);
+        }
+      } catch (e) {
+        console.error('[generer-acteurs] Erreur parsing recherche individuelle:', e);
+      }
+
+      if (result.trouve && result.acteur) {
+        const acteur = result.acteur as any;
+        // Enrichir avec des valeurs par défaut
+        const acteurEnrichi = {
+          ...acteur,
+          sources: acteur.sources?.length > 0 ? acteur.sources : citations.slice(0, 2),
+          cercle: 3, // Par défaut cercle 3
+          categorie: 'autre',
+          sous_categorie: 'recherche_manuelle',
+          suivi_spdi_actif: false,
+          score_influence: 50,
+          statut: 'verifie'
+        };
+
+        return new Response(
+          JSON.stringify({
+            categorie: 'recherche_individuelle',
+            acteurs: [acteurEnrichi],
+            acteurs_a_verifier: [],
+            citations_globales: citations,
+            total: 1
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } else {
+        return new Response(
+          JSON.stringify({
+            categorie: 'recherche_individuelle',
+            acteurs: [],
+            acteurs_a_verifier: [],
+            citations_globales: citations,
+            total: 0
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+    
+    // Mode génération par catégorie (existant)
     if (!categorie || !CATEGORIES_CONFIG[categorie as keyof typeof CATEGORIES_CONFIG]) {
       return new Response(
         JSON.stringify({ 
