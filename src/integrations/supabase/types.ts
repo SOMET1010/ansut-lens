@@ -570,6 +570,54 @@ export type Database = {
         }
         Relationships: []
       }
+      newsletter_programmation: {
+        Row: {
+          actif: boolean | null
+          cible_defaut: string | null
+          created_at: string | null
+          delai_rappel_heures: number | null
+          derniere_generation: string | null
+          emails_rappel: string[] | null
+          frequence: string
+          heure_envoi: string | null
+          id: string
+          jour_envoi: number | null
+          prochain_envoi: string | null
+          ton_defaut: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actif?: boolean | null
+          cible_defaut?: string | null
+          created_at?: string | null
+          delai_rappel_heures?: number | null
+          derniere_generation?: string | null
+          emails_rappel?: string[] | null
+          frequence?: string
+          heure_envoi?: string | null
+          id?: string
+          jour_envoi?: number | null
+          prochain_envoi?: string | null
+          ton_defaut?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actif?: boolean | null
+          cible_defaut?: string | null
+          created_at?: string | null
+          delai_rappel_heures?: number | null
+          derniere_generation?: string | null
+          emails_rappel?: string[] | null
+          frequence?: string
+          heure_envoi?: string | null
+          id?: string
+          jour_envoi?: number | null
+          prochain_envoi?: string | null
+          ton_defaut?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       newsletters: {
         Row: {
           cible: string
@@ -577,7 +625,9 @@ export type Database = {
           created_at: string | null
           date_debut: string
           date_envoi: string | null
+          date_envoi_programme: string | null
           date_fin: string
+          date_rappel: string | null
           date_validation: string | null
           genere_par: string | null
           html_complet: string | null
@@ -587,6 +637,8 @@ export type Database = {
           nb_destinataires: number | null
           numero: number
           periode: string
+          programmation_active: boolean | null
+          rappel_envoye: boolean | null
           statut: string
           ton: string
           updated_at: string | null
@@ -598,7 +650,9 @@ export type Database = {
           created_at?: string | null
           date_debut: string
           date_envoi?: string | null
+          date_envoi_programme?: string | null
           date_fin: string
+          date_rappel?: string | null
           date_validation?: string | null
           genere_par?: string | null
           html_complet?: string | null
@@ -608,6 +662,8 @@ export type Database = {
           nb_destinataires?: number | null
           numero: number
           periode?: string
+          programmation_active?: boolean | null
+          rappel_envoye?: boolean | null
           statut?: string
           ton?: string
           updated_at?: string | null
@@ -619,7 +675,9 @@ export type Database = {
           created_at?: string | null
           date_debut?: string
           date_envoi?: string | null
+          date_envoi_programme?: string | null
           date_fin?: string
+          date_rappel?: string | null
           date_validation?: string | null
           genere_par?: string | null
           html_complet?: string | null
@@ -629,6 +687,8 @@ export type Database = {
           nb_destinataires?: number | null
           numero?: number
           periode?: string
+          programmation_active?: boolean | null
+          rappel_envoye?: boolean | null
           statut?: string
           ton?: string
           updated_at?: string | null

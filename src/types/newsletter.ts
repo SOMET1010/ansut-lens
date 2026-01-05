@@ -4,6 +4,7 @@ export type NewsletterPeriode = 'hebdo' | 'mensuel';
 export type NewsletterTon = 'institutionnel' | 'pedagogique' | 'strategique';
 export type NewsletterCible = 'dg_ca' | 'partenaires' | 'general';
 export type NewsletterStatut = 'brouillon' | 'en_revision' | 'valide' | 'envoye' | 'archive';
+export type ProgrammationFrequence = 'hebdo' | 'mensuel' | 'desactive';
 
 export interface NewsletterEssentiel {
   titre: string;
@@ -67,6 +68,11 @@ export interface Newsletter {
   nb_destinataires: number;
   created_at: string;
   updated_at: string;
+  // Champs de programmation
+  programmation_active: boolean;
+  date_envoi_programme: string | null;
+  rappel_envoye: boolean;
+  date_rappel: string | null;
 }
 
 export interface NewsletterDestinataire {
@@ -78,6 +84,22 @@ export interface NewsletterDestinataire {
   frequence: NewsletterPeriode | 'tous';
   derniere_reception: string | null;
   nb_receptions: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NewsletterProgrammation {
+  id: string;
+  frequence: ProgrammationFrequence;
+  jour_envoi: number;
+  heure_envoi: string;
+  ton_defaut: NewsletterTon;
+  cible_defaut: NewsletterCible;
+  delai_rappel_heures: number;
+  emails_rappel: string[];
+  actif: boolean;
+  derniere_generation: string | null;
+  prochain_envoi: string | null;
   created_at: string;
   updated_at: string;
 }
