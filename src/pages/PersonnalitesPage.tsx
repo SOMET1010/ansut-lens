@@ -20,6 +20,7 @@ export default function PersonnalitesPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('all');
   const [formDialogOpen, setFormDialogOpen] = useState(false);
+  const [editingActeur, setEditingActeur] = useState<Personnalite | null>(null);
   const { isAdmin } = useAuth();
 
   const { data: personnalites, isLoading } = usePersonnalites(filters);
@@ -38,6 +39,21 @@ export default function PersonnalitesPage() {
   const handleActeurClick = (acteur: Personnalite) => {
     setSelectedActeur(acteur);
     setDetailOpen(true);
+  };
+
+  const openCreateDialog = () => {
+    setEditingActeur(null);
+    setFormDialogOpen(true);
+  };
+
+  const openEditDialog = (acteur: Personnalite) => {
+    setEditingActeur(acteur);
+    setFormDialogOpen(true);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setFormDialogOpen(open);
+    if (!open) setEditingActeur(null);
   };
 
   const filteredPersonnalites = useMemo(() => {
@@ -60,7 +76,7 @@ export default function PersonnalitesPage() {
           </p>
         </div>
         {isAdmin && (
-          <Button onClick={() => setFormDialogOpen(true)} className="gap-2">
+          <Button onClick={openCreateDialog} className="gap-2">
             <Plus className="h-4 w-4" />
             Ajouter un acteur
           </Button>
@@ -100,7 +116,7 @@ export default function PersonnalitesPage() {
           {isLoading ? (
             <LoadingSkeleton />
           ) : personnalites?.length === 0 ? (
-            <EmptyState onAddManually={() => setFormDialogOpen(true)} />
+            <EmptyState onAddManually={openCreateDialog} />
           ) : (
             ([1, 2, 3, 4] as CercleStrategique[]).map((cercle) => {
               const acteurs = parCercle[cercle];
@@ -114,6 +130,7 @@ export default function PersonnalitesPage() {
                         key={acteur.id}
                         personnalite={acteur}
                         onClick={() => handleActeurClick(acteur)}
+                        onEdit={isAdmin ? () => openEditDialog(acteur) : undefined}
                       />
                     ))}
                   </div>
@@ -140,6 +157,7 @@ export default function PersonnalitesPage() {
                         key={acteur.id}
                         personnalite={acteur}
                         onClick={() => handleActeurClick(acteur)}
+                        onEdit={isAdmin ? () => openEditDialog(acteur) : undefined}
                       />
                     ))}
                   </div>
@@ -155,12 +173,19 @@ export default function PersonnalitesPage() {
         personnalite={selectedActeur}
         open={detailOpen}
         onOpenChange={setDetailOpen}
+        onEdit={() => {
+          if (selectedActeur) {
+            setDetailOpen(false);
+            openEditDialog(selectedActeur);
+          }
+        }}
       />
 
       {/* Form dialog */}
       <ActeurFormDialog
         open={formDialogOpen}
-        onOpenChange={setFormDialogOpen}
+        onOpenChange={handleDialogClose}
+        acteur={editingActeur ?? undefined}
       />
     </div>
   );
