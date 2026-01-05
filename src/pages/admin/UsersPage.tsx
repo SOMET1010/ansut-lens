@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users, ChevronDown, MoreVertical, UserX, UserCheck, Trash2, RefreshCw, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -79,6 +79,8 @@ const roleIcons: Record<AppRole, React.ReactNode> = {
 export default function UsersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'pending' | 'disabled'>('all');
+  const [roleFilter, setRoleFilter] = useState<AppRole | 'all'>('all');
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
 
@@ -295,6 +297,27 @@ export default function UsersPage() {
       .slice(0, 2);
   };
 
+  // Filtrer les utilisateurs
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+    
+    return users.filter(user => {
+      const status = usersStatus?.[user.id];
+      
+      // Filtre par statut
+      if (statusFilter !== 'all') {
+        if (statusFilter === 'disabled' && !user.disabled) return false;
+        if (statusFilter === 'pending' && (user.disabled || status?.email_confirmed_at)) return false;
+        if (statusFilter === 'active' && (user.disabled || !status?.email_confirmed_at)) return false;
+      }
+      
+      // Filtre par rôle
+      if (roleFilter !== 'all' && user.role !== roleFilter) return false;
+      
+      return true;
+    });
+  }, [users, usersStatus, statusFilter, roleFilter]);
+
   return (
     <div className="container max-w-5xl py-8">
       <div className="mb-6 flex items-center justify-between">
@@ -425,11 +448,96 @@ export default function UsersPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Barre de filtres */}
+          <div className="flex flex-wrap items-center gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Statut :</span>
+              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous</SelectItem>
+                  <SelectItem value="active">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-green-500" />
+                      Actifs
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="pending">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-amber-500" />
+                      En attente
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="disabled">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-gray-400" />
+                      Désactivés
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Rôle :</span>
+              <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as typeof roleFilter)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les rôles</SelectItem>
+                  <SelectItem value="admin">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Administrateur
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="user">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Utilisateur
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="council_user">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Membre du conseil
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="guest">
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      Invité
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {(statusFilter !== 'all' || roleFilter !== 'all') && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => { setStatusFilter('all'); setRoleFilter('all'); }}
+              >
+                Réinitialiser
+              </Button>
+            )}
+          </div>
+
+          {/* Compteur de résultats */}
+          {users && filteredUsers.length !== users.length && (
+            <p className="text-sm text-muted-foreground mb-4">
+              Affichage de {filteredUsers.length} sur {users.length} utilisateurs
+            </p>
+          )}
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : users && users.length > 0 ? (
+          ) : filteredUsers.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -441,7 +549,7 @@ export default function UsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => {
+                {filteredUsers.map((user) => {
                   const isCurrentUser = user.id === currentUser?.id;
                   
                   return (
@@ -600,7 +708,19 @@ export default function UsersPage() {
             </Table>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              Aucun utilisateur trouvé
+              {users && users.length > 0 ? (
+                <>
+                  <p>Aucun utilisateur ne correspond aux filtres sélectionnés</p>
+                  <Button 
+                    variant="link" 
+                    onClick={() => { setStatusFilter('all'); setRoleFilter('all'); }}
+                  >
+                    Réinitialiser les filtres
+                  </Button>
+                </>
+              ) : (
+                <p>Aucun utilisateur trouvé</p>
+              )}
             </div>
           )}
         </CardContent>
