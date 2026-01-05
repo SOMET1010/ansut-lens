@@ -480,7 +480,109 @@ serve(async (req) => {
       }
     }
 
-    // 5. Logger la collecte
+    // 5. Matcher les actualités avec les flux utilisateurs
+    console.log('[collecte-veille] Matching flux utilisateurs...');
+    const { data: fluxActifs } = await supabase
+      .from('flux_veille')
+      .select('id, user_id, nom, mots_cles, categories_ids, quadrants, importance_min, alerte_push')
+      .eq('actif', true);
+
+    if (fluxActifs && fluxActifs.length > 0) {
+      // Récupérer les actualités récemment insérées (dernières 2 heures pour être sûr)
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+      const { data: recentActus } = await supabase
+        .from('actualites')
+        .select('id, titre, resume, importance, categorie, tags, analyse_ia')
+        .gte('created_at', twoHoursAgo);
+
+      if (recentActus && recentActus.length > 0) {
+        for (const flux of fluxActifs) {
+          for (const actu of recentActus) {
+            // Calculer le score de match
+            let scoreMatch = 0;
+            const fullContent = `${actu.titre} ${actu.resume || ''}`.toLowerCase();
+
+            // Match par mots-clés personnalisés
+            const fluxMotsCles = (flux.mots_cles as string[]) || [];
+            for (const kw of fluxMotsCles) {
+              if (fullContent.includes(kw.toLowerCase())) {
+                scoreMatch += 30;
+              }
+            }
+
+            // Match par tags de l'actualité
+            const actuTags = (actu.tags as string[]) || [];
+            for (const tag of actuTags) {
+              if (fluxMotsCles.some(kw => kw.toLowerCase() === tag.toLowerCase())) {
+                scoreMatch += 20;
+              }
+            }
+
+            // Match par quadrant
+            const fluxQuadrants = (flux.quadrants as string[]) || [];
+            if (fluxQuadrants.length > 0 && actu.analyse_ia) {
+              try {
+                const analyse = JSON.parse(actu.analyse_ia as string);
+                if (analyse.quadrant_dominant && fluxQuadrants.includes(analyse.quadrant_dominant)) {
+                  scoreMatch += 15;
+                }
+              } catch {}
+            }
+
+            // Vérifier l'importance minimum
+            const importanceMin = flux.importance_min || 0;
+            const actuImportance = actu.importance || 0;
+            if (actuImportance >= importanceMin) {
+              scoreMatch += 10;
+            } else if (importanceMin > 0) {
+              // Ne pas matcher si en dessous du seuil
+              continue;
+            }
+
+            // Si score suffisant, créer l'association
+            if (scoreMatch >= 20) {
+              // Vérifier si pas déjà associé
+              const { data: existing } = await supabase
+                .from('flux_actualites')
+                .select('id')
+                .eq('flux_id', flux.id)
+                .eq('actualite_id', actu.id)
+                .maybeSingle();
+
+              if (!existing) {
+                await supabase
+                  .from('flux_actualites')
+                  .insert({
+                    flux_id: flux.id,
+                    actualite_id: actu.id,
+                    score_match: scoreMatch,
+                    notifie: false,
+                  });
+
+                // Créer une alerte si push activé
+                if (flux.alerte_push) {
+                  await supabase
+                    .from('alertes')
+                    .insert({
+                      type: 'flux',
+                      niveau: 'info',
+                      titre: `Nouveau dans "${flux.nom}"`,
+                      message: actu.titre,
+                      reference_type: 'actualite',
+                      reference_id: actu.id,
+                      user_id: flux.user_id,
+                    });
+                }
+
+                console.log(`[collecte-veille] Flux "${flux.nom}": matched actu "${actu.titre.substring(0, 40)}..." (score: ${scoreMatch})`);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 6. Logger la collecte
     const duration = Date.now() - startTime;
     await supabase
       .from('collectes_log')

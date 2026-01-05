@@ -346,6 +346,99 @@ export type Database = {
         }
         Relationships: []
       }
+      flux_actualites: {
+        Row: {
+          actualite_id: string
+          created_at: string
+          flux_id: string
+          id: string
+          notifie: boolean | null
+          score_match: number | null
+        }
+        Insert: {
+          actualite_id: string
+          created_at?: string
+          flux_id: string
+          id?: string
+          notifie?: boolean | null
+          score_match?: number | null
+        }
+        Update: {
+          actualite_id?: string
+          created_at?: string
+          flux_id?: string
+          id?: string
+          notifie?: boolean | null
+          score_match?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flux_actualites_actualite_id_fkey"
+            columns: ["actualite_id"]
+            isOneToOne: false
+            referencedRelation: "actualites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flux_actualites_flux_id_fkey"
+            columns: ["flux_id"]
+            isOneToOne: false
+            referencedRelation: "flux_veille"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flux_veille: {
+        Row: {
+          actif: boolean | null
+          alerte_email: boolean | null
+          alerte_push: boolean | null
+          categories_ids: string[] | null
+          created_at: string
+          description: string | null
+          frequence_digest: string | null
+          id: string
+          importance_min: number | null
+          mots_cles: string[] | null
+          nom: string
+          quadrants: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actif?: boolean | null
+          alerte_email?: boolean | null
+          alerte_push?: boolean | null
+          categories_ids?: string[] | null
+          created_at?: string
+          description?: string | null
+          frequence_digest?: string | null
+          id?: string
+          importance_min?: number | null
+          mots_cles?: string[] | null
+          nom: string
+          quadrants?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actif?: boolean | null
+          alerte_email?: boolean | null
+          alerte_push?: boolean | null
+          categories_ids?: string[] | null
+          created_at?: string
+          description?: string | null
+          frequence_digest?: string | null
+          id?: string
+          importance_min?: number | null
+          mots_cles?: string[] | null
+          nom?: string
+          quadrants?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mentions: {
         Row: {
           auteur: string | null

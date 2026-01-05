@@ -24,6 +24,8 @@ import AuditLogsPage from "@/pages/admin/AuditLogsPage";
 import CronJobsPage from "@/pages/admin/CronJobsPage";
 import AlertesHistoryPage from "@/pages/AlertesHistoryPage";
 import ProfilePage from "@/pages/ProfilePage";
+import FluxPage from "@/pages/FluxPage";
+import FluxDetailPage from "@/pages/FluxDetailPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +58,8 @@ const App = () => (
                     <Route path="/dossiers" element={<DossiersPage />} />
                     <Route path="/assistant" element={<AssistantPage />} />
                     <Route path="/alertes" element={<AlertesHistoryPage />} />
+                    <Route path="/flux" element={<FluxPage />} />
+                    <Route path="/flux/:id" element={<FluxDetailPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
                     
                     {/* Routes Admin */}
