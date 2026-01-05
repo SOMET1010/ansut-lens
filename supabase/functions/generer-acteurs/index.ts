@@ -125,7 +125,7 @@ serve(async (req) => {
       throw new Error('PERPLEXITY_API_KEY non configurée');
     }
 
-    const { categorie, nom_recherche } = await req.json();
+    const { categorie, nom_recherche, cercle_force, categorie_force } = await req.json();
     
     // Mode recherche individuelle par nom
     if (categorie === 'recherche_individuelle' && nom_recherche) {
@@ -191,12 +191,12 @@ IMPORTANT: Ne fournis des informations QUE si tu trouves des sources vérifiable
 
       if (result.trouve && result.acteur) {
         const acteur = result.acteur as any;
-        // Enrichir avec des valeurs par défaut
+        // Enrichir avec des valeurs par défaut ou forcées
         const acteurEnrichi = {
           ...acteur,
           sources: acteur.sources?.length > 0 ? acteur.sources : citations.slice(0, 2),
-          cercle: 3, // Par défaut cercle 3
-          categorie: 'autre',
+          cercle: cercle_force ?? 3,
+          categorie: categorie_force ?? 'autre',
           sous_categorie: 'recherche_manuelle',
           suivi_spdi_actif: false,
           score_influence: 50,
