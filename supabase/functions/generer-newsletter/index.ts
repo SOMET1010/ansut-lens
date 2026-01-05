@@ -15,9 +15,10 @@ interface GenerateRequest {
 }
 
 interface NewsletterContenu {
+  header?: { image_url?: string; image_alt?: string };
   edito: { texte: string; genere_par_ia: boolean };
-  essentiel_ansut: Array<{ titre: string; pourquoi: string; impact: string }>;
-  tendance_tech: { titre: string; contenu: string; lien_ansut: string };
+  essentiel_ansut: Array<{ titre: string; pourquoi: string; impact: string; image_url?: string; image_alt?: string }>;
+  tendance_tech: { titre: string; contenu: string; lien_ansut: string; image_url?: string; image_alt?: string };
   decryptage: { titre: string; contenu: string };
   chiffre_marquant: { valeur: string; unite: string; contexte: string };
   a_venir: Array<{ type: string; titre: string; date?: string }>;
@@ -418,6 +419,7 @@ function generateProfessionalHtml(
   const formatDate = (d: Date) => d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   const formatMonthYear = (d: Date) => d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
   
+  const header = content.header || {};
   const edito = content.edito || { texte: '' };
   const essentielAnsut = content.essentiel_ansut || [];
   const tendanceTech = content.tendance_tech || { titre: '', contenu: '', lien_ansut: '' };
@@ -476,6 +478,15 @@ function generateProfessionalHtml(
               </table>
             </td>
           </tr>
+          
+          <!-- HEADER IMAGE (if available) -->
+          ${header.image_url ? `
+          <tr>
+            <td style="padding: 0;">
+              <img src="${header.image_url}" alt="${header.image_alt || 'Image newsletter'}" style="width: 100%; height: auto; display: block;" />
+            </td>
+          </tr>
+          ` : ''}
           
           <!-- CONTENT AREA: SOMMAIRE + MAIN -->
           <tr>
@@ -552,6 +563,9 @@ function generateProfessionalHtml(
                           </div>
                           ${essentielAnsut.map((item, index) => `
                             <div style="margin-bottom: 16px; padding: 16px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 10px; border-left: 4px solid #e65100;">
+                              ${item.image_url ? `
+                                <img src="${item.image_url}" alt="${item.image_alt || item.titre}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 12px;" />
+                              ` : ''}
                               <div style="font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 8px;">
                                 <span style="background: #e65100; color: white; width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0;">${index + 1}</span>
                                 ${item.titre}
@@ -570,6 +584,9 @@ function generateProfessionalHtml(
                             <div style="width: 32px; height: 32px; background: #3b82f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white;">🔬</div>
                             <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #1e40af;">Technologie</span>
                           </div>
+                          ${tendanceTech.image_url ? `
+                            <img src="${tendanceTech.image_url}" alt="${tendanceTech.image_alt || tendanceTech.titre}" style="width: 100%; height: 180px; object-fit: cover; border-radius: 12px; margin-bottom: 16px;" />
+                          ` : ''}
                           <div style="font-size: 15px; font-weight: 700; color: #1e40af; margin-bottom: 12px;">${tendanceTech.titre}</div>
                           <div style="font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 16px;">${tendanceTech.contenu}</div>
                           <div style="background: white; padding: 12px 16px; border-radius: 8px; font-size: 13px; color: #1e40af;">
