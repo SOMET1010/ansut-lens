@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.scheduler-newsletter]
 verify_jwt = false
+
+[functions.list-users-status]
+verify_jwt = false
