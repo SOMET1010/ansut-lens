@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Download, RefreshCw, AlertTriangle, CheckCircle2, Users, Copy, Database } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, Download, RefreshCw, AlertTriangle, CheckCircle2, Users, Copy, Database, UserPlus, Search } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDeduplicationActeurs } from '@/hooks/useDeduplicationActeurs';
@@ -56,6 +57,10 @@ export default function ImportActeursPage() {
   const [acteurs, setActeurs] = useState<ActeurGenere[]>([]);
   const [acteursAVerifier, setActeursAVerifier] = useState<ActeurGenere[]>([]);
   const [citations, setCitations] = useState<string[]>([]);
+  
+  // État pour l'ajout manuel
+  const [manualName, setManualName] = useState('');
+  const [isSearchingManual, setIsSearchingManual] = useState(false);
 
   const { chargerActeursExistants, verifierDoublon, nombreActeursExistants, isLoading: isLoadingExistants } = useDeduplicationActeurs();
 
@@ -122,6 +127,73 @@ export default function ImportActeursPage() {
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  // Recherche manuelle d'un acteur par son nom
+  const handleManualSearch = async () => {
+    const trimmedName = manualName.trim();
+    if (!trimmedName) {
+      toast({ title: 'Entrez un nom', variant: 'destructive' });
+      return;
+    }
+
+    setIsSearchingManual(true);
+
+    try {
+      // Vérifier d'abord si l'acteur existe déjà
+      const existingDoublon = verifierDoublon(trimmedName, '');
+      if (existingDoublon) {
+        toast({
+          title: 'Acteur déjà en base',
+          description: `${existingDoublon.nom} ${existingDoublon.prenom || ''} existe déjà.`,
+          variant: 'destructive'
+        });
+        setIsSearchingManual(false);
+        return;
+      }
+
+      // Appeler Perplexity pour enrichir les informations
+      const { data, error } = await supabase.functions.invoke('generer-acteurs', {
+        body: { 
+          categorie: 'recherche_individuelle',
+          nom_recherche: trimmedName 
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.acteurs && data.acteurs.length > 0) {
+        const newActeurs = data.acteurs.map((a: ActeurGenere) => ({
+          ...a,
+          selected: true
+        }));
+        
+        setActeurs(prev => [...newActeurs, ...prev]);
+        setCitations(prev => [...(data.citations_globales || []), ...prev]);
+        setManualName('');
+        
+        toast({
+          title: 'Acteur trouvé',
+          description: `${newActeurs[0].nom_complet} ajouté à la liste`
+        });
+      } else {
+        toast({
+          title: 'Acteur non trouvé',
+          description: `Aucune information trouvée pour "${trimmedName}"`,
+          variant: 'destructive'
+        });
+      }
+
+    } catch (error) {
+      console.error('Erreur recherche manuelle:', error);
+      toast({
+        title: 'Erreur de recherche',
+        description: error instanceof Error ? error.message : 'Erreur inconnue',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSearchingManual(false);
     }
   };
 
@@ -277,6 +349,52 @@ export default function ImportActeursPage() {
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <AlertTriangle className="h-4 w-4 text-yellow-500" />
             Seuls les acteurs avec sources vérifiables seront proposés
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Ajout manuel par nom */}
+      <Card className="glass">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5" />
+            Ajouter manuellement
+          </CardTitle>
+          <CardDescription>
+            Recherchez un acteur par son nom pour l'ajouter avec enrichissement automatique
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <Input
+                placeholder="Ex: Amadou Coulibaly, Roger Adom..."
+                value={manualName}
+                onChange={(e) => setManualName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !isSearchingManual) {
+                    handleManualSearch();
+                  }
+                }}
+              />
+            </div>
+            <Button 
+              onClick={handleManualSearch} 
+              disabled={isSearchingManual || !manualName.trim()}
+              variant="secondary"
+            >
+              {isSearchingManual ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Recherche...
+                </>
+              ) : (
+                <>
+                  <Search className="mr-2 h-4 w-4" />
+                  Rechercher
+                </>
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>
