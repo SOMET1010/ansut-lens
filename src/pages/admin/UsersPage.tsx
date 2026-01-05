@@ -297,6 +297,27 @@ export default function UsersPage() {
       .slice(0, 2);
   };
 
+  // Calculer les compteurs
+  const userCounts = useMemo(() => {
+    if (!users) return { total: 0, active: 0, pending: 0, disabled: 0 };
+    
+    let active = 0;
+    let pending = 0;
+    let disabled = 0;
+    
+    users.forEach(user => {
+      if (user.disabled) {
+        disabled++;
+      } else if (usersStatus?.[user.id]?.email_confirmed_at) {
+        active++;
+      } else {
+        pending++;
+      }
+    });
+    
+    return { total: users.length, active, pending, disabled };
+  }, [users, usersStatus]);
+
   // Filtrer les utilisateurs
   const filteredUsers = useMemo(() => {
     if (!users) return [];
@@ -333,8 +354,57 @@ export default function UsersPage() {
             Gestion des utilisateurs
           </h1>
         </div>
+      </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      {/* Compteurs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <Card className="border-l-4 border-l-primary">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total</p>
+                <p className="text-2xl font-bold">{userCounts.total}</p>
+              </div>
+              <Users className="h-8 w-8 text-muted-foreground/50" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-green-500">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Actifs</p>
+                <p className="text-2xl font-bold text-green-600">{userCounts.active}</p>
+              </div>
+              <UserCheck className="h-8 w-8 text-green-500/50" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-amber-500">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">En attente</p>
+                <p className="text-2xl font-bold text-amber-600">{userCounts.pending}</p>
+              </div>
+              <Clock className="h-8 w-8 text-amber-500/50" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-gray-400">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Désactivés</p>
+                <p className="text-2xl font-bold text-muted-foreground">{userCounts.disabled}</p>
+              </div>
+              <UserX className="h-8 w-8 text-muted-foreground/50" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2">
               <UserPlus className="h-4 w-4" />
@@ -438,7 +508,6 @@ export default function UsersPage() {
             </Form>
           </DialogContent>
         </Dialog>
-      </div>
 
       <Card>
         <CardHeader>
