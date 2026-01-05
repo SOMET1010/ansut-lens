@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.envoyer-newsletter]
 verify_jwt = false
+
+[functions.scheduler-newsletter]
+verify_jwt = false
