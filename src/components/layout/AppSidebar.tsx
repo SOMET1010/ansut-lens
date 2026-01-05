@@ -18,10 +18,12 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
@@ -118,6 +120,7 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
+        {/* Menu fonctionnel */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -135,24 +138,39 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-
-              {isAdmin && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={isActive(adminItem.url)}
-                    tooltip={adminItem.title}
-                  >
-                    <NavLink to={adminItem.url} className="flex items-center gap-3">
-                      <adminItem.icon className="h-5 w-5" />
-                      {!collapsed && <span>{adminItem.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Séparateur et section Administration - visible uniquement pour les admins */}
+        {isAdmin && (
+          <>
+            <SidebarSeparator className="my-2" />
+            <SidebarGroup>
+              {!collapsed && (
+                <SidebarGroupLabel className="text-xs text-muted-foreground">
+                  Administration
+                </SidebarGroupLabel>
+              )}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={isActive(adminItem.url)}
+                      tooltip={adminItem.title}
+                    >
+                      <NavLink to={adminItem.url} className="flex items-center gap-3">
+                        <adminItem.icon className="h-5 w-5" />
+                        {!collapsed && <span>{adminItem.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="p-4">
