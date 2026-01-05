@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, Database, Bell, Tag, UserPlus, ClipboardList, Clock, Mail } from 'lucide-react';
+import { Users, Database, Bell, Tag, UserPlus, ClipboardList, Clock, Mail, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { AdminStatBadge } from '@/components/admin/AdminStatBadge';
@@ -46,6 +46,20 @@ export default function AdminPage() {
                   label="actifs"
                   variant={stats?.usersActifs && stats.usersActifs > 0 ? 'success' : 'warning'}
                   loading={isLoading}
+                />
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/admin/roles">
+            <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full">
+              <CardContent className="pt-6 flex flex-col items-center text-center">
+                <Shield className="h-10 w-10 text-red-400 mb-3" />
+                <h3 className="font-semibold">Rôles & Permissions</h3>
+                <p className="text-sm text-muted-foreground">RBAC configurable</p>
+                <AdminStatBadge
+                  value="4 rôles"
+                  variant="info"
+                  loading={false}
                 />
               </CardContent>
             </Card>

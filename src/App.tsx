@@ -24,6 +24,7 @@ import AuditLogsPage from "@/pages/admin/AuditLogsPage";
 import CronJobsPage from "@/pages/admin/CronJobsPage";
 import NewslettersPage from "@/pages/admin/NewslettersPage";
 import SourcesPage from "@/pages/admin/SourcesPage";
+import RolesPage from "@/pages/admin/RolesPage";
 import AlertesHistoryPage from "@/pages/AlertesHistoryPage";
 import ProfilePage from "@/pages/ProfilePage";
 import FluxPage from "@/pages/FluxPage";
@@ -74,6 +75,7 @@ const App = () => (
                       <Route path="/admin/cron-jobs" element={<CronJobsPage />} />
                       <Route path="/admin/newsletters" element={<NewslettersPage />} />
                       <Route path="/admin/sources" element={<SourcesPage />} />
+                      <Route path="/admin/roles" element={<RolesPage />} />
                     </Route>
                   </Route>
                   
