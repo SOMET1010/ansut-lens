@@ -61,6 +61,8 @@ export default function ImportActeursPage() {
   // État pour l'ajout manuel
   const [manualName, setManualName] = useState('');
   const [isSearchingManual, setIsSearchingManual] = useState(false);
+  const [manualCercle, setManualCercle] = useState<number>(3);
+  const [manualCategorie, setManualCategorie] = useState<string>('autre');
 
   const { chargerActeursExistants, verifierDoublon, nombreActeursExistants, isLoading: isLoadingExistants } = useDeduplicationActeurs();
 
@@ -157,7 +159,9 @@ export default function ImportActeursPage() {
       const { data, error } = await supabase.functions.invoke('generer-acteurs', {
         body: { 
           categorie: 'recherche_individuelle',
-          nom_recherche: trimmedName 
+          nom_recherche: trimmedName,
+          cercle_force: manualCercle,
+          categorie_force: manualCategorie
         }
       });
 
@@ -364,7 +368,7 @@ export default function ImportActeursPage() {
             Recherchez un acteur par son nom pour l'ajouter avec enrichissement automatique
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="flex gap-4">
             <div className="flex-1">
               <Input
@@ -377,6 +381,61 @@ export default function ImportActeursPage() {
                   }
                 }}
               />
+            </div>
+          </div>
+          <div className="flex gap-4 items-end">
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block text-muted-foreground">Cercle</label>
+              <Select value={String(manualCercle)} onValueChange={(v) => setManualCercle(Number(v))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">
+                    <span className="flex items-center gap-2">
+                      <Badge variant="outline" className={CERCLE_COLORS[1]}>C1</Badge>
+                      Institutionnels Nationaux
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="2">
+                    <span className="flex items-center gap-2">
+                      <Badge variant="outline" className={CERCLE_COLORS[2]}>C2</Badge>
+                      Opérateurs & Connectivité
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="3">
+                    <span className="flex items-center gap-2">
+                      <Badge variant="outline" className={CERCLE_COLORS[3]}>C3</Badge>
+                      Bailleurs & Internationaux
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="4">
+                    <span className="flex items-center gap-2">
+                      <Badge variant="outline" className={CERCLE_COLORS[4]}>C4</Badge>
+                      Experts & Médias
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block text-muted-foreground">Catégorie</label>
+              <Select value={manualCategorie} onValueChange={setManualCategorie}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="regulateur">Régulateur</SelectItem>
+                  <SelectItem value="operateur">Opérateur</SelectItem>
+                  <SelectItem value="fai">FAI</SelectItem>
+                  <SelectItem value="fintech">Fintech</SelectItem>
+                  <SelectItem value="bailleur">Bailleur</SelectItem>
+                  <SelectItem value="expert">Expert</SelectItem>
+                  <SelectItem value="media">Média</SelectItem>
+                  <SelectItem value="politique">Politique</SelectItem>
+                  <SelectItem value="autre">Autre</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <Button 
               onClick={handleManualSearch} 
