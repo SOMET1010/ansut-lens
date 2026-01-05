@@ -121,7 +121,10 @@ export default function UsersPage() {
       if (!session.session) throw new Error('Non authentifié');
 
       const response = await supabase.functions.invoke('invite-user', {
-        body: data,
+        body: {
+          ...data,
+          redirectUrl: `${window.location.origin}/auth/reset-password`,
+        },
       });
 
       if (response.error) {

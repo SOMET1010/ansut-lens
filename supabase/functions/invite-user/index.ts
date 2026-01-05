@@ -11,6 +11,7 @@ interface InviteUserRequest {
   email: string;
   fullName: string;
   role: "admin" | "user" | "council_user" | "guest";
+  redirectUrl?: string;
 }
 
 serve(async (req) => {
@@ -62,7 +63,7 @@ serve(async (req) => {
     }
 
     // Parser la requête
-    const { email, fullName, role }: InviteUserRequest = await req.json();
+    const { email, fullName, role, redirectUrl }: InviteUserRequest = await req.json();
 
     if (!email || !fullName || !role) {
       return new Response(
@@ -76,10 +77,17 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    // Construire l'URL de redirection - priorité au paramètre, sinon fallback
+    const finalRedirectUrl = redirectUrl 
+      || `${req.headers.get("origin")}/auth/reset-password`
+      || "https://ansut-lens.lovable.app/auth/reset-password";
+
+    console.log("Redirect URL for invitation:", finalRedirectUrl);
+
     // Inviter l'utilisateur via l'API admin
     const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
       data: { full_name: fullName },
-      redirectTo: `${req.headers.get("origin")}/auth/reset-password`,
+      redirectTo: finalRedirectUrl,
     });
 
     if (inviteError) {
