@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users, ChevronDown, MoreVertical, UserX, UserCheck, Trash2 } from 'lucide-react';
+import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users, ChevronDown, MoreVertical, UserX, UserCheck, Trash2, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -220,6 +220,38 @@ export default function UsersPage() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Erreur lors de la suppression');
+    },
+  });
+
+  // Mutation pour renvoyer une invitation
+  const resendInviteMutation = useMutation({
+    mutationFn: async ({ userId, fullName, role }: { userId: string; fullName: string; role: AppRole }) => {
+      // On utilise l'edge function invite-user qui gère aussi le renvoi
+      const response = await supabase.functions.invoke('invite-user', {
+        body: {
+          email: '', // sera ignoré, on utilise l'userId
+          fullName,
+          role,
+          userId, // pour identifier que c'est un renvoi
+          resend: true,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Erreur lors du renvoi');
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      toast.success(`Invitation renvoyée à ${variables.fullName}`);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erreur lors du renvoi de l\'invitation');
     },
   });
 
@@ -484,6 +516,18 @@ export default function UsersPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => resendInviteMutation.mutate({ 
+                                  userId: user.id, 
+                                  fullName: user.full_name || 'Utilisateur',
+                                  role: user.role 
+                                })}
+                                disabled={resendInviteMutation.isPending}
+                              >
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Renvoyer l'invitation
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                               {user.disabled ? (
                                 <DropdownMenuItem
                                   onClick={() => toggleUserMutation.mutate({ userId: user.id, action: 'enable' })}

@@ -13,6 +13,8 @@ interface InviteUserRequest {
   fullName: string;
   role: "admin" | "user" | "council_user" | "guest";
   redirectUrl?: string;
+  userId?: string; // Pour le renvoi d'invitation
+  resend?: boolean; // Indique si c'est un renvoi
 }
 
 // Générer le HTML de l'email d'invitation en français
@@ -162,27 +164,51 @@ serve(async (req) => {
     }
 
     // Parser la requête
-    const { email, fullName, role, redirectUrl }: InviteUserRequest = await req.json();
+    const { email, fullName, role, redirectUrl, userId, resend }: InviteUserRequest = await req.json();
 
-    if (!email || !fullName || !role) {
+    // Si c'est un renvoi, récupérer l'email de l'utilisateur existant
+    let targetEmail = email;
+    let targetFullName = fullName;
+
+    // Client admin pour les opérations
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    if (resend && userId) {
+      console.log("Resending invitation for user:", userId);
+      
+      // Récupérer l'email depuis auth.users
+      const { data: authUser, error: authError } = await adminClient.auth.admin.getUserById(userId);
+      
+      if (authError || !authUser?.user?.email) {
+        return new Response(
+          JSON.stringify({ error: "Utilisateur non trouvé" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      targetEmail = authUser.user.email;
+      targetFullName = fullName || authUser.user.user_metadata?.full_name || "Utilisateur";
+      
+      console.log("Found user email:", targetEmail);
+    }
+
+    if (!targetEmail || !targetFullName || !role) {
       return new Response(
         JSON.stringify({ error: "Email, nom et rôle requis" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Client admin pour créer l'utilisateur
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    // adminClient déjà créé plus haut
 
-    // Construire l'URL de redirection - priorité au paramètre, sinon fallback
-    const finalRedirectUrl = redirectUrl 
-      || `${req.headers.get("origin")}/auth/reset-password`
-      || "https://ansut-lens.lovable.app/auth/reset-password";
+    // Toujours utiliser l'URL de production pour garantir que les liens fonctionnent
+    const PRODUCTION_URL = "https://ansut-lens.lovable.app";
+    const finalRedirectUrl = redirectUrl || `${PRODUCTION_URL}/auth/reset-password`;
 
-    // Base URL pour les assets (logo)
-    const baseUrl = req.headers.get("origin") || "https://ansut-lens.lovable.app";
+    // Base URL pour les assets (logo) - toujours utiliser la production
+    const baseUrl = PRODUCTION_URL;
 
     console.log("Redirect URL for invitation:", finalRedirectUrl);
     console.log("Base URL for assets:", baseUrl);
@@ -196,10 +222,10 @@ serve(async (req) => {
       // Générer le lien d'invitation sans envoyer l'email par défaut
       const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
         type: 'invite',
-        email: email,
+        email: targetEmail,
         options: {
           redirectTo: finalRedirectUrl,
-          data: { full_name: fullName },
+          data: { full_name: targetFullName },
         },
       });
 
@@ -217,13 +243,13 @@ serve(async (req) => {
       console.log("Generated invite link:", inviteLink);
 
       // Générer le HTML de l'email
-      const html = generateInvitationEmailHtml(inviteLink, fullName, baseUrl);
+      const html = generateInvitationEmailHtml(inviteLink, targetFullName, baseUrl);
 
       // Envoyer l'email via Resend
       const resend = new Resend(resendApiKey);
       const { error: emailError } = await resend.emails.send({
         from: "ANSUT RADAR <onboarding@resend.dev>",
-        to: [email],
+        to: [targetEmail],
         subject: "Invitation à rejoindre ANSUT RADAR",
         html,
       });
@@ -233,14 +259,14 @@ serve(async (req) => {
         // L'utilisateur est créé mais l'email n'a pas été envoyé
         // On continue quand même pour créer le rôle et le profil
       } else {
-        console.log("Custom invitation email sent successfully to:", email);
+        console.log("Custom invitation email sent successfully to:", targetEmail);
       }
     } else {
       console.log("Using default Supabase email (RESEND_API_KEY not configured)");
       
       // Fallback: utiliser l'email par défaut de Supabase
-      const { data, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
-        data: { full_name: fullName },
+      const { data, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(targetEmail, {
+        data: { full_name: targetFullName },
         redirectTo: finalRedirectUrl,
       });
 
@@ -274,7 +300,7 @@ serve(async (req) => {
         .from("profiles")
         .upsert({
           id: inviteData.user.id,
-          full_name: fullName,
+          full_name: targetFullName,
         }, { onConflict: "id" });
 
       if (profileError) {
@@ -287,8 +313,8 @@ serve(async (req) => {
         .insert({
           admin_id: user.id,
           target_user_id: inviteData.user.id,
-          action: "user_invited",
-          details: { email, role, full_name: fullName },
+          action: resend ? "user_invitation_resent" : "user_invited",
+          details: { email: targetEmail, role, full_name: targetFullName },
         });
 
       if (auditError) {
@@ -299,7 +325,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Invitation envoyée à ${email}`,
+        message: `Invitation ${resend ? 'renvoyée' : 'envoyée'} à ${targetEmail}`,
         user: inviteData.user 
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
