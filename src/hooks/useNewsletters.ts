@@ -75,11 +75,25 @@ export function useGenerateNewsletter() {
 
   return useMutation({
     mutationFn: async (params: GenerateNewsletterParams) => {
+      console.log('[useGenerateNewsletter] Appel de l\'edge function avec:', params);
+      
       const { data, error } = await supabase.functions.invoke('generer-newsletter', {
         body: params,
       });
 
-      if (error) throw error;
+      // Handle edge function errors
+      if (error) {
+        console.error('[useGenerateNewsletter] Erreur edge function:', error);
+        throw new Error(error.message || 'Erreur de connexion au serveur');
+      }
+
+      // Check for error in response body
+      if (data?.error) {
+        console.error('[useGenerateNewsletter] Erreur dans la réponse:', data.error);
+        throw new Error(data.error);
+      }
+
+      console.log('[useGenerateNewsletter] Newsletter générée:', data?.id);
       return data as Newsletter;
     },
     onSuccess: () => {
@@ -87,7 +101,19 @@ export function useGenerateNewsletter() {
       toast.success('Newsletter générée avec succès');
     },
     onError: (error: Error) => {
-      toast.error(`Erreur lors de la génération : ${error.message}`);
+      console.error('[useGenerateNewsletter] Erreur mutation:', error);
+      
+      // User-friendly error messages
+      let message = error.message;
+      if (message.includes('429') || message.includes('rate limit')) {
+        message = 'Trop de requêtes. Veuillez réessayer dans quelques minutes.';
+      } else if (message.includes('402') || message.includes('payment')) {
+        message = 'Crédits IA insuffisants. Contactez l\'administrateur.';
+      } else if (message.includes('timeout') || message.includes('network')) {
+        message = 'Problème de connexion. Vérifiez votre réseau et réessayez.';
+      }
+      
+      toast.error(`Erreur de génération : ${message}`);
     },
   });
 }
