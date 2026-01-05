@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users, ChevronDown, MoreVertical, UserX, UserCheck, Trash2, RefreshCw, Clock } from 'lucide-react';
+import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users, ChevronDown, MoreVertical, UserX, UserCheck, Trash2, RefreshCw, Clock, Search, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -81,6 +81,7 @@ export default function UsersPage() {
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'pending' | 'disabled'>('all');
   const [roleFilter, setRoleFilter] = useState<AppRole | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
 
@@ -325,6 +326,17 @@ export default function UsersPage() {
     return users.filter(user => {
       const status = usersStatus?.[user.id];
       
+      // Recherche textuelle par nom ou email
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        const fullName = (user.full_name || '').toLowerCase();
+        const email = (status?.email || '').toLowerCase();
+        
+        if (!fullName.includes(query) && !email.includes(query)) {
+          return false;
+        }
+      }
+      
       // Filtre par statut
       if (statusFilter !== 'all') {
         if (statusFilter === 'disabled' && !user.disabled) return false;
@@ -337,7 +349,7 @@ export default function UsersPage() {
       
       return true;
     });
-  }, [users, usersStatus, statusFilter, roleFilter]);
+  }, [users, usersStatus, statusFilter, roleFilter, searchQuery]);
 
   return (
     <div className="container max-w-5xl py-8">
@@ -519,6 +531,25 @@ export default function UsersPage() {
         <CardContent>
           {/* Barre de filtres */}
           <div className="flex flex-wrap items-center gap-4 mb-4">
+            {/* Recherche textuelle */}
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher par nom ou email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-9"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Statut :</span>
               <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
@@ -585,11 +616,11 @@ export default function UsersPage() {
               </Select>
             </div>
 
-            {(statusFilter !== 'all' || roleFilter !== 'all') && (
+            {(statusFilter !== 'all' || roleFilter !== 'all' || searchQuery) && (
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={() => { setStatusFilter('all'); setRoleFilter('all'); }}
+                onClick={() => { setStatusFilter('all'); setRoleFilter('all'); setSearchQuery(''); }}
               >
                 Réinitialiser
               </Button>
