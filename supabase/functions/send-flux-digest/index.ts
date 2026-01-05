@@ -296,7 +296,11 @@ function generateDigestEmail(
     <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
       <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius: 12px 12px 0 0; padding: 24px; text-align: center;">
-          <h1 style="margin: 0; color: white; font-size: 24px;">📡 ANSUT Radar</h1>
+          <img src="https://lpkfwxisranmetbtgxrv.supabase.co/storage/v1/object/public/avatars/logo-ansut.png" 
+               alt="ANSUT Logo" 
+               style="width: 80px; height: 80px; border-radius: 12px; margin-bottom: 12px; object-fit: contain; background: white; padding: 8px;"
+          />
+          <h1 style="margin: 0; color: white; font-size: 24px;">ANSUT Radar</h1>
           <p style="margin: 8px 0 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">
             Votre digest ${digestType === "quotidien" ? "quotidien" : "hebdomadaire"}
           </p>
