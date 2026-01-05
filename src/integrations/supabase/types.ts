@@ -531,6 +531,111 @@ export type Database = {
           },
         ]
       }
+      newsletter_destinataires: {
+        Row: {
+          actif: boolean | null
+          created_at: string | null
+          derniere_reception: string | null
+          email: string
+          frequence: string | null
+          id: string
+          nb_receptions: number | null
+          nom: string | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          actif?: boolean | null
+          created_at?: string | null
+          derniere_reception?: string | null
+          email: string
+          frequence?: string | null
+          id?: string
+          nb_receptions?: number | null
+          nom?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          actif?: boolean | null
+          created_at?: string | null
+          derniere_reception?: string | null
+          email?: string
+          frequence?: string | null
+          id?: string
+          nb_receptions?: number | null
+          nom?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      newsletters: {
+        Row: {
+          cible: string
+          contenu: Json
+          created_at: string | null
+          date_debut: string
+          date_envoi: string | null
+          date_fin: string
+          date_validation: string | null
+          genere_par: string | null
+          html_complet: string | null
+          html_court: string | null
+          html_social: string | null
+          id: string
+          nb_destinataires: number | null
+          numero: number
+          periode: string
+          statut: string
+          ton: string
+          updated_at: string | null
+          valide_par: string | null
+        }
+        Insert: {
+          cible?: string
+          contenu?: Json
+          created_at?: string | null
+          date_debut: string
+          date_envoi?: string | null
+          date_fin: string
+          date_validation?: string | null
+          genere_par?: string | null
+          html_complet?: string | null
+          html_court?: string | null
+          html_social?: string | null
+          id?: string
+          nb_destinataires?: number | null
+          numero: number
+          periode?: string
+          statut?: string
+          ton?: string
+          updated_at?: string | null
+          valide_par?: string | null
+        }
+        Update: {
+          cible?: string
+          contenu?: Json
+          created_at?: string | null
+          date_debut?: string
+          date_envoi?: string | null
+          date_fin?: string
+          date_validation?: string | null
+          genere_par?: string | null
+          html_complet?: string | null
+          html_court?: string | null
+          html_social?: string | null
+          id?: string
+          nb_destinataires?: number | null
+          numero?: number
+          periode?: string
+          statut?: string
+          ton?: string
+          updated_at?: string | null
+          valide_par?: string | null
+        }
+        Relationships: []
+      }
       personnalites: {
         Row: {
           actif: boolean | null
