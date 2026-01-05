@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import {
@@ -82,7 +83,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const { isAdmin, signOut, user } = useAuth();
   const { profile } = useUserProfile();
-  const { hasPermission } = useUserPermissions();
+  const { hasPermission, isLoading: permissionsLoading } = useUserPermissions();
   const collapsed = state === 'collapsed';
   
   // Filtrer les éléments de menu selon les permissions
@@ -131,26 +132,38 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {visibleMenuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={isActive(item.url)}
-                    tooltip={item.title}
-                  >
-                    <NavLink to={item.url} className="flex items-center gap-3">
-                      <item.icon className="h-5 w-5" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {permissionsLoading ? (
+                // Skeletons pendant le chargement
+                [...Array(4)].map((_, i) => (
+                  <SidebarMenuItem key={i}>
+                    <div className="flex items-center gap-3 px-3 py-2">
+                      <Skeleton className="h-5 w-5 rounded" />
+                      {!collapsed && <Skeleton className="h-4 w-24" />}
+                    </div>
+                  </SidebarMenuItem>
+                ))
+              ) : (
+                visibleMenuItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton 
+                      asChild 
+                      isActive={isActive(item.url)}
+                      tooltip={item.title}
+                    >
+                      <NavLink to={item.url} className="flex items-center gap-3">
+                        <item.icon className="h-5 w-5" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
         {/* Section Administration - visible si permissions admin */}
-        {hasAdminAccess && (
+        {!permissionsLoading && hasAdminAccess && (
           <>
             <SidebarSeparator className="my-2" />
             <SidebarGroup>
