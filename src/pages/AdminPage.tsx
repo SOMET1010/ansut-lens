@@ -108,19 +108,21 @@ export default function AdminPage() {
               />
             </CardContent>
           </Card>
-          <Card className="glass cursor-pointer hover:shadow-glow transition-shadow">
-            <CardContent className="pt-6 flex flex-col items-center text-center">
-              <Database className="h-10 w-10 text-primary mb-3" />
-              <h3 className="font-semibold">Sources</h3>
-              <p className="text-sm text-muted-foreground">Médias & flux</p>
-              <AdminStatBadge
-                value={stats?.sourcesActives ?? 0}
-                label="actives"
-                variant={stats?.sourcesActives && stats.sourcesActives > 0 ? 'success' : 'warning'}
-                loading={isLoading}
-              />
-            </CardContent>
-          </Card>
+          <Link to="/admin/sources">
+            <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full">
+              <CardContent className="pt-6 flex flex-col items-center text-center">
+                <Database className="h-10 w-10 text-primary mb-3" />
+                <h3 className="font-semibold">Sources</h3>
+                <p className="text-sm text-muted-foreground">Médias & flux</p>
+                <AdminStatBadge
+                  value={stats?.sourcesActives ?? 0}
+                  label="actives"
+                  variant={stats?.sourcesActives && stats.sourcesActives > 0 ? 'success' : 'warning'}
+                  loading={isLoading}
+                />
+              </CardContent>
+            </Card>
+          </Link>
         </div>
       </div>
 
