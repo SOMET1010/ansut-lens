@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Camera, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface AvatarUploadProps {
   currentUrl?: string | null;
@@ -39,21 +39,13 @@ export function AvatarUpload({ currentUrl, fullName, onUpload, isUploading }: Av
 
     // Validate file type
     if (!ALLOWED_TYPES.includes(file.type)) {
-      toast({
-        title: 'Format non supporté',
-        description: 'Veuillez sélectionner une image JPEG, PNG ou WebP.',
-        variant: 'destructive',
-      });
+      toast.error('Format non supporté', { description: 'Veuillez sélectionner une image JPEG, PNG ou WebP.' });
       return;
     }
 
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
-      toast({
-        title: 'Fichier trop volumineux',
-        description: 'La taille maximum est de 2 Mo.',
-        variant: 'destructive',
-      });
+      toast.error('Fichier trop volumineux', { description: 'La taille maximum est de 2 Mo.' });
       return;
     }
 

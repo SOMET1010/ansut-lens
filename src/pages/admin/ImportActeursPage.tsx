@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -50,7 +50,6 @@ const CERCLE_COLORS: Record<number, string> = {
 };
 
 export default function ImportActeursPage() {
-  const { toast } = useToast();
   const [selectedCategorie, setSelectedCategorie] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -88,7 +87,7 @@ export default function ImportActeursPage() {
 
   const handleGenerate = async () => {
     if (!selectedCategorie) {
-      toast({ title: 'Sélectionnez une catégorie', variant: 'destructive' });
+      toast.error('Sélectionnez une catégorie');
       return;
     }
 
@@ -115,18 +114,11 @@ export default function ImportActeursPage() {
       setActeursAVerifier(data.acteurs_a_verifier || []);
       setCitations(data.citations_globales || []);
 
-      toast({
-        title: 'Génération terminée',
-        description: `${acteursWithSelection.length} acteurs trouvés avec sources`
-      });
+      toast.success('Génération terminée', { description: `${acteursWithSelection.length} acteurs trouvés avec sources` });
 
     } catch (error) {
       console.error('Erreur génération:', error);
-      toast({
-        title: 'Erreur de génération',
-        description: error instanceof Error ? error.message : 'Erreur inconnue',
-        variant: 'destructive'
-      });
+      toast.error('Erreur de génération', { description: error instanceof Error ? error.message : 'Erreur inconnue' });
     } finally {
       setIsGenerating(false);
     }
@@ -136,7 +128,7 @@ export default function ImportActeursPage() {
   const handleManualSearch = async () => {
     const trimmedName = manualName.trim();
     if (!trimmedName) {
-      toast({ title: 'Entrez un nom', variant: 'destructive' });
+      toast.error('Entrez un nom');
       return;
     }
 
@@ -146,11 +138,7 @@ export default function ImportActeursPage() {
       // Vérifier d'abord si l'acteur existe déjà
       const existingDoublon = verifierDoublon(trimmedName, '');
       if (existingDoublon) {
-        toast({
-          title: 'Acteur déjà en base',
-          description: `${existingDoublon.nom} ${existingDoublon.prenom || ''} existe déjà.`,
-          variant: 'destructive'
-        });
+        toast.error('Acteur déjà en base', { description: `${existingDoublon.nom} ${existingDoublon.prenom || ''} existe déjà.` });
         setIsSearchingManual(false);
         return;
       }
@@ -177,25 +165,14 @@ export default function ImportActeursPage() {
         setCitations(prev => [...(data.citations_globales || []), ...prev]);
         setManualName('');
         
-        toast({
-          title: 'Acteur trouvé',
-          description: `${newActeurs[0].nom_complet} ajouté à la liste`
-        });
+        toast.success('Acteur trouvé', { description: `${newActeurs[0].nom_complet} ajouté à la liste` });
       } else {
-        toast({
-          title: 'Acteur non trouvé',
-          description: `Aucune information trouvée pour "${trimmedName}"`,
-          variant: 'destructive'
-        });
+        toast.error('Acteur non trouvé', { description: `Aucune information trouvée pour "${trimmedName}"` });
       }
 
     } catch (error) {
       console.error('Erreur recherche manuelle:', error);
-      toast({
-        title: 'Erreur de recherche',
-        description: error instanceof Error ? error.message : 'Erreur inconnue',
-        variant: 'destructive'
-      });
+      toast.error('Erreur de recherche', { description: error instanceof Error ? error.message : 'Erreur inconnue' });
     } finally {
       setIsSearchingManual(false);
     }
@@ -223,7 +200,7 @@ export default function ImportActeursPage() {
     const selectedActeurs = acteursAvecDoublons.filter(a => a.selected && !a.doublon);
     
     if (selectedActeurs.length === 0) {
-      toast({ title: 'Aucun acteur sélectionné (hors doublons)', variant: 'destructive' });
+      toast.error('Aucun acteur sélectionné (hors doublons)');
       return;
     }
 
@@ -258,10 +235,7 @@ export default function ImportActeursPage() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Import réussi',
-        description: `${personnalites.length} acteurs importés dans la base`
-      });
+      toast.success('Import réussi', { description: `${personnalites.length} acteurs importés dans la base` });
 
       setActeurs([]);
       setActeursAVerifier([]);
@@ -272,11 +246,7 @@ export default function ImportActeursPage() {
 
     } catch (error) {
       console.error('Erreur import:', error);
-      toast({
-        title: 'Erreur d\'import',
-        description: error instanceof Error ? error.message : 'Erreur inconnue',
-        variant: 'destructive'
-      });
+      toast.error('Erreur d\'import', { description: error instanceof Error ? error.message : 'Erreur inconnue' });
     } finally {
       setIsImporting(false);
     }
