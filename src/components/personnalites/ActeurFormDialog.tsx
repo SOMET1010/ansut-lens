@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -9,7 +10,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { useToast } from '@/hooks/use-toast';
 import { useCreatePersonnalite, useUpdatePersonnalite, CERCLE_LABELS, SOUS_CATEGORIE_LABELS } from '@/hooks/usePersonnalites';
 import { Loader2, User, Building2, MapPin, Tag, Network, StickyNote } from 'lucide-react';
 import type { CercleStrategique, CategorieActeur, SousCategorieActeur, Personnalite } from '@/types';
@@ -60,7 +60,6 @@ interface ActeurFormDialogProps {
 }
 
 export function ActeurFormDialog({ open, onOpenChange, onSuccess, acteur }: ActeurFormDialogProps) {
-  const { toast } = useToast();
   const createPersonnalite = useCreatePersonnalite();
   const updatePersonnalite = useUpdatePersonnalite();
   const isEditMode = !!acteur;
@@ -142,27 +141,17 @@ export function ActeurFormDialog({ open, onOpenChange, onSuccess, acteur }: Acte
           id: acteur.id,
           ...personnaliteData,
         });
-        toast({
-          title: 'Acteur modifié',
-          description: `Les modifications ont été enregistrées.`,
-        });
+        toast.success('Acteur modifié', { description: 'Les modifications ont été enregistrées.' });
       } else {
         await createPersonnalite.mutateAsync(personnaliteData);
-        toast({
-          title: 'Acteur créé',
-          description: `${values.prenom ? values.prenom + ' ' : ''}${values.nom} a été ajouté avec succès.`,
-        });
+        toast.success('Acteur créé', { description: `${values.prenom ? values.prenom + ' ' : ''}${values.nom} a été ajouté avec succès.` });
       }
 
       form.reset();
       onOpenChange(false);
       onSuccess?.();
     } catch (error) {
-      toast({
-        title: 'Erreur',
-        description: isEditMode ? "Impossible de modifier l'acteur." : "Impossible de créer l'acteur.",
-        variant: 'destructive',
-      });
+      toast.error('Erreur', { description: isEditMode ? "Impossible de modifier l'acteur." : "Impossible de créer l'acteur." });
     }
   };
 

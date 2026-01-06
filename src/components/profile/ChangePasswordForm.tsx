@@ -3,10 +3,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { toErrorMessage } from '@/utils/errors';
 
@@ -24,7 +24,6 @@ const changePasswordSchema = z.object({
 type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
 
 export function ChangePasswordForm() {
-  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -48,18 +47,11 @@ export function ChangePasswordForm() {
         throw error;
       }
 
-      toast({
-        title: 'Mot de passe modifié',
-        description: 'Votre mot de passe a été mis à jour avec succès.',
-      });
+      toast.success('Mot de passe modifié', { description: 'Votre mot de passe a été mis à jour avec succès.' });
 
       form.reset();
     } catch (error: unknown) {
-      toast({
-        title: 'Erreur',
-        description: toErrorMessage(error),
-        variant: 'destructive',
-      });
+      toast.error('Erreur', { description: toErrorMessage(error) });
     } finally {
       setIsSubmitting(false);
     }

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface Profile {
   id: string;
@@ -55,17 +55,10 @@ export function useUserProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
-      toast({
-        title: 'Profil mis à jour',
-        description: 'Vos modifications ont été enregistrées.',
-      });
+      toast.success('Profil mis à jour', { description: 'Vos modifications ont été enregistrées.' });
     },
     onError: (error) => {
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de mettre à jour le profil.',
-        variant: 'destructive',
-      });
+      toast.error('Erreur', { description: 'Impossible de mettre à jour le profil.' });
       console.error('Update profile error:', error);
     },
   });
@@ -82,11 +75,7 @@ export function useUserProfile() {
       .upload(filePath, file, { upsert: true });
 
     if (uploadError) {
-      toast({
-        title: 'Erreur',
-        description: "Impossible d'uploader l'image.",
-        variant: 'destructive',
-      });
+      toast.error('Erreur', { description: "Impossible d'uploader l'image." });
       throw uploadError;
     }
 

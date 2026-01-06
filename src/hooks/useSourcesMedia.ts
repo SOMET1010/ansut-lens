@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 export interface SourceMedia {
   id: string;
@@ -33,7 +33,6 @@ export function useSourcesMedia() {
 
 export function useCreateSource() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (source: SourceMediaInsert) => {
@@ -49,24 +48,16 @@ export function useCreateSource() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sources-media'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
-      toast({
-        title: 'Source créée',
-        description: 'La source a été ajoutée avec succès.',
-      });
+      toast.success('Source créée', { description: 'La source a été ajoutée avec succès.' });
     },
     onError: (error) => {
-      toast({
-        title: 'Erreur',
-        description: `Impossible de créer la source: ${error.message}`,
-        variant: 'destructive',
-      });
+      toast.error('Erreur', { description: `Impossible de créer la source: ${error.message}` });
     },
   });
 }
 
 export function useUpdateSource() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: SourceMediaUpdate) => {
@@ -83,24 +74,16 @@ export function useUpdateSource() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sources-media'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
-      toast({
-        title: 'Source mise à jour',
-        description: 'Les modifications ont été enregistrées.',
-      });
+      toast.success('Source mise à jour', { description: 'Les modifications ont été enregistrées.' });
     },
     onError: (error) => {
-      toast({
-        title: 'Erreur',
-        description: `Impossible de mettre à jour la source: ${error.message}`,
-        variant: 'destructive',
-      });
+      toast.error('Erreur', { description: `Impossible de mettre à jour la source: ${error.message}` });
     },
   });
 }
 
 export function useDeleteSource() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -114,17 +97,10 @@ export function useDeleteSource() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sources-media'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
-      toast({
-        title: 'Source supprimée',
-        description: 'La source a été supprimée avec succès.',
-      });
+      toast.success('Source supprimée', { description: 'La source a été supprimée avec succès.' });
     },
     onError: (error) => {
-      toast({
-        title: 'Erreur',
-        description: `Impossible de supprimer la source: ${error.message}`,
-        variant: 'destructive',
-      });
+      toast.error('Erreur', { description: `Impossible de supprimer la source: ${error.message}` });
     },
   });
 }

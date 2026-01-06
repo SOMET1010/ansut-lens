@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 export interface CronJob {
   jobid: number;
@@ -26,7 +26,6 @@ interface CronJobsResponse {
 }
 
 export function useCronJobs() {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data, isLoading, error, refetch } = useQuery<CronJobsResponse>({
@@ -57,17 +56,10 @@ export function useCronJobs() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cron-jobs'] });
-      toast({
-        title: 'Statut modifié',
-        description: 'Le statut du job a été mis à jour.',
-      });
+      toast.success('Statut modifié', { description: 'Le statut du job a été mis à jour.' });
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Erreur',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Erreur', { description: error.message });
     },
   });
 
@@ -81,17 +73,10 @@ export function useCronJobs() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cron-jobs'] });
-      toast({
-        title: 'Schedule modifié',
-        description: 'Le planning du job a été mis à jour.',
-      });
+      toast.success('Schedule modifié', { description: 'Le planning du job a été mis à jour.' });
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Erreur',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Erreur', { description: error.message });
     },
   });
 
@@ -105,17 +90,10 @@ export function useCronJobs() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['cron-jobs'] });
-      toast({
-        title: 'Exécution déclenchée',
-        description: data?.message || 'Le job a été lancé.',
-      });
+      toast.success('Exécution déclenchée', { description: data?.message || 'Le job a été lancé.' });
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Erreur',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast.error('Erreur', { description: error.message });
     },
   });
 
