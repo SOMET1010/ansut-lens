@@ -219,13 +219,18 @@ serve(async (req) => {
     if (resendApiKey) {
       console.log("Using custom email template with Resend");
       
-      // Générer le lien d'invitation sans envoyer l'email par défaut
+      // Déterminer le type de lien : 'recovery' pour renvoi, 'invite' pour nouvelle invitation
+      const isResend = resend as boolean;
+      const linkType = isResend ? 'recovery' : 'invite';
+      console.log(`Generating ${linkType} link for:`, targetEmail);
+      
+      // Générer le lien sans envoyer l'email par défaut
       const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
-        type: 'invite',
+        type: linkType,
         email: targetEmail,
         options: {
           redirectTo: finalRedirectUrl,
-          data: { full_name: targetFullName },
+          ...(linkType === 'invite' ? { data: { full_name: targetFullName } } : {}),
         },
       });
 
@@ -246,11 +251,11 @@ serve(async (req) => {
       const html = generateInvitationEmailHtml(inviteLink, targetFullName, baseUrl);
 
       // Envoyer l'email via Resend
-      const resend = new Resend(resendApiKey);
-      const { error: emailError } = await resend.emails.send({
+      const resendClient = new Resend(resendApiKey);
+      const { error: emailError } = await resendClient.emails.send({
         from: "ANSUT RADAR <onboarding@resend.dev>",
         to: [targetEmail],
-        subject: "Invitation à rejoindre ANSUT RADAR",
+        subject: isResend ? "Rappel : Invitation à rejoindre ANSUT RADAR" : "Invitation à rejoindre ANSUT RADAR",
         html,
       });
 
