@@ -75,8 +75,6 @@ export function useGenerateNewsletter() {
 
   return useMutation({
     mutationFn: async (params: GenerateNewsletterParams) => {
-      console.log('[useGenerateNewsletter] Appel de l\'edge function avec:', params);
-      
       const { data, error } = await supabase.functions.invoke('generer-newsletter', {
         body: params,
       });
@@ -93,7 +91,6 @@ export function useGenerateNewsletter() {
         throw new Error(data.error);
       }
 
-      console.log('[useGenerateNewsletter] Newsletter générée:', data?.id);
       return data as Newsletter;
     },
     onSuccess: () => {
