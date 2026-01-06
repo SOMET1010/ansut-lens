@@ -8,7 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ViewModeProvider } from "@/contexts/ViewModeContext";
 import { AlertNotificationProvider } from "@/components/notifications";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { ProtectedRoute, AdminRoute, PermissionRoute } from "@/components/auth";
+import { ProtectedRoute, PermissionRoute } from "@/components/auth";
 import AuthPage from "@/pages/AuthPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import RadarPage from "@/pages/RadarPage";
@@ -91,7 +91,7 @@ const App = () => (
                       <Route path="/profile" element={<ProfilePage />} />
                       
                       {/* Routes Admin avec permissions spécifiques */}
-                      <Route element={<AdminRoute />}>
+                      <Route element={<PermissionRoute permission="access_admin" />}>
                         <Route path="/admin" element={<AdminPage />} />
                         
                         <Route element={<PermissionRoute permission="manage_keywords" />}>
