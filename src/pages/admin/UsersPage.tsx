@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users, ChevronDown, MoreVertical, UserX, UserCheck, Trash2, RefreshCw, Clock, Search, X } from 'lucide-react';
+import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users, ChevronDown, MoreVertical, UserX, UserCheck, Trash2, RefreshCw, Clock, Search, X, MailCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -277,6 +277,33 @@ export default function UsersPage() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Erreur lors du renvoi de l\'invitation');
+    },
+  });
+
+  // Mutation pour confirmer l'email manuellement
+  const confirmEmailMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const response = await supabase.functions.invoke('manage-user', {
+        body: { userId, action: 'confirm_email' },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Erreur lors de la confirmation');
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Email confirmé avec succès');
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['users-status'] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erreur lors de la confirmation de l\'email');
     },
   });
 
@@ -760,6 +787,18 @@ export default function UsersPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              {!usersStatus?.[user.id]?.email_confirmed_at && !user.disabled && (
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={() => confirmEmailMutation.mutate(user.id)}
+                                    disabled={confirmEmailMutation.isPending}
+                                  >
+                                    <MailCheck className="mr-2 h-4 w-4" />
+                                    Confirmer l'email
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                </>
+                              )}
                               <DropdownMenuItem
                                 onClick={() => resendInviteMutation.mutate({ 
                                   userId: user.id, 
