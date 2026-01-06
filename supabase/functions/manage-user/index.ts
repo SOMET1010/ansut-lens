@@ -7,7 +7,7 @@ const corsHeaders = {
 
 interface ManageUserRequest {
   userId: string;
-  action: 'disable' | 'enable' | 'delete';
+  action: 'disable' | 'enable' | 'delete' | 'confirm_email';
 }
 
 Deno.serve(async (req) => {
@@ -183,6 +183,25 @@ Deno.serve(async (req) => {
         console.log(`User ${userId} deleted successfully`);
         return new Response(
           JSON.stringify({ success: true, message: 'Utilisateur supprimé définitivement' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'confirm_email': {
+        const { error: confirmError } = await adminClient.auth.admin.updateUserById(
+          userId,
+          { email_confirm: true }
+        );
+
+        if (confirmError) {
+          console.error('Error confirming email:', confirmError);
+          throw new Error('Erreur lors de la confirmation de l\'email');
+        }
+
+        await logAudit('email_confirmed');
+        console.log(`Email confirmed for user ${userId}`);
+        return new Response(
+          JSON.stringify({ success: true, message: 'Email confirmé avec succès' }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
