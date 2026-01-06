@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users, ChevronDown, MoreVertical, UserX, UserCheck, Trash2, RefreshCw, Clock, Search, X, MailCheck } from 'lucide-react';
+import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users, ChevronDown, MoreVertical, UserX, UserCheck, Trash2, RefreshCw, Clock, Search, X, MailCheck, KeyRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -304,6 +304,45 @@ export default function UsersPage() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Erreur lors de la confirmation de l\'email');
+    },
+  });
+
+  // Mutation pour générer un lien de création de mot de passe
+  const generatePasswordLinkMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const response = await supabase.functions.invoke('generate-password-link', {
+        body: { 
+          userId, 
+          redirectUrl: `${window.location.origin}/auth/reset-password` 
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Erreur lors de la génération du lien');
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      return response.data;
+    },
+    onSuccess: async (data) => {
+      if (data?.link) {
+        try {
+          await navigator.clipboard.writeText(data.link);
+          toast.success('Lien de création de mot de passe copié dans le presse-papiers');
+        } catch {
+          // Fallback: afficher le lien dans un toast
+          toast.info('Lien généré (copie auto échouée)', {
+            description: data.link,
+            duration: 15000,
+          });
+        }
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erreur lors de la génération du lien');
     },
   });
 
@@ -798,6 +837,16 @@ export default function UsersPage() {
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                 </>
+                              )}
+                              {/* Lien mot de passe pour utilisateurs jamais connectés */}
+                              {!usersStatus?.[user.id]?.last_sign_in_at && !user.disabled && (
+                                <DropdownMenuItem
+                                  onClick={() => generatePasswordLinkMutation.mutate(user.id)}
+                                  disabled={generatePasswordLinkMutation.isPending}
+                                >
+                                  <KeyRound className="mr-2 h-4 w-4" />
+                                  Copier lien mot de passe
+                                </DropdownMenuItem>
                               )}
                               <DropdownMenuItem
                                 onClick={() => resendInviteMutation.mutate({ 

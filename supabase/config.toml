@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.list-users-status]
 verify_jwt = false
+
+[functions.generate-password-link]
+verify_jwt = false
