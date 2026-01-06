@@ -5,7 +5,12 @@ import { useAuth } from '@/contexts/AuthContext';
 export function useUserPermissions() {
   const { role } = useAuth();
 
-  const { data: permissions, isLoading: queryLoading } = useQuery({
+  const { 
+    data: permissions, 
+    isPending,
+    isFetching,
+    isSuccess
+  } = useQuery({
     queryKey: ['user-permissions', role],
     queryFn: async () => {
       if (!role) return [];
@@ -24,11 +29,11 @@ export function useUserPermissions() {
       return data?.map(p => p.permission_code) ?? [];
     },
     enabled: !!role,
-    staleTime: 5 * 60 * 1000, // Cache 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Le chargement n'est terminé que si le rôle est défini ET la requête terminée
-  const isLoading = !role || queryLoading;
+  // Chargement en cours si le rôle n'est pas défini OU si les permissions ne sont pas encore chargées avec succès
+  const isLoading = !role || isPending || isFetching || !isSuccess;
 
   const hasPermission = (code: string): boolean => {
     return permissions?.includes(code) ?? false;
