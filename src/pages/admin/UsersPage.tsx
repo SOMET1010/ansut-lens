@@ -807,9 +807,29 @@ export default function UsersPage() {
                             </TooltipProvider>
                           ) : (
                             <>
-                              <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
-                                Actif
-                              </Badge>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 cursor-help">
+                                      Actif
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>
+                                      Dernière connexion :{' '}
+                                      {usersStatus?.[user.id]?.last_sign_in_at
+                                        ? new Date(usersStatus[user.id].last_sign_in_at!).toLocaleDateString('fr-FR', {
+                                            day: 'numeric',
+                                            month: 'long',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                          })
+                                        : 'Jamais'}
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                               {/* Badge Jamais connecté - utilisateur confirmé mais sans connexion */}
                               {!usersStatus?.[user.id]?.last_sign_in_at && (
                                 <TooltipProvider>
