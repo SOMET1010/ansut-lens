@@ -786,29 +786,49 @@ export default function UsersPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        {user.disabled ? (
-                          <Badge variant="secondary" className="bg-muted text-muted-foreground">
-                            Désactivé
-                          </Badge>
-                        ) : !usersStatus?.[user.id]?.email_confirmed_at ? (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 gap-1 cursor-help">
-                                  <Clock className="h-3 w-3" />
-                                  En attente
-                                </Badge>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>L'utilisateur n'a pas encore activé son compte via le lien d'invitation</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        ) : (
-                          <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
-                            Actif
-                          </Badge>
-                        )}
+                        <div className="flex flex-wrap gap-1">
+                          {user.disabled ? (
+                            <Badge variant="secondary" className="bg-muted text-muted-foreground">
+                              Désactivé
+                            </Badge>
+                          ) : !usersStatus?.[user.id]?.email_confirmed_at ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 gap-1 cursor-help">
+                                    <Clock className="h-3 w-3" />
+                                    En attente
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>L'utilisateur n'a pas encore activé son compte via le lien d'invitation</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : (
+                            <>
+                              <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                                Actif
+                              </Badge>
+                              {/* Badge Jamais connecté - utilisateur confirmé mais sans connexion */}
+                              {!usersStatus?.[user.id]?.last_sign_in_at && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-600 gap-1 cursor-help">
+                                        <Clock className="h-3 w-3" />
+                                        Jamais connecté
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>L'utilisateur n'a pas encore défini son mot de passe</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {new Date(user.created_at).toLocaleDateString('fr-FR', {
