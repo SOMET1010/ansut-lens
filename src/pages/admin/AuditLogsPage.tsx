@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ArrowLeft, ClipboardList, UserPlus, Shield, UserX, UserCheck, Trash2, Filter, Loader2, Download, CalendarIcon, X } from "lucide-react";
+import { ArrowLeft, ClipboardList, UserPlus, Shield, UserX, UserCheck, Trash2, Filter, Loader2, Download, CalendarIcon, X, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,6 +45,8 @@ const actionConfig: Record<string, { label: string; icon: typeof UserPlus; color
   user_disabled: { label: "Désactivation", icon: UserX, color: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
   user_enabled: { label: "Réactivation", icon: UserCheck, color: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30" },
   user_deleted: { label: "Suppression", icon: Trash2, color: "bg-red-500/20 text-red-400 border-red-500/30" },
+  password_reset_requested: { label: "Lien MDP envoyé", icon: KeyRound, color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
+  password_reset_completed: { label: "MDP réinitialisé", icon: KeyRound, color: "bg-green-500/20 text-green-400 border-green-500/30" },
 };
 
 const roleLabels: Record<string, string> = {
@@ -116,6 +118,10 @@ export default function AuditLogsPage() {
       case "user_enabled":
       case "user_deleted":
         return details.target_name as string || "";
+      case "password_reset_requested":
+        return `Email envoyé à ${(details.target_email as string) || "l'utilisateur"}`;
+      case "password_reset_completed":
+        return `Via ${details.method === 'recovery_link' ? 'lien de récupération' : (details.method as string) || 'lien'}`;
       default:
         return JSON.stringify(details);
     }
@@ -260,6 +266,8 @@ export default function AuditLogsPage() {
                     <SelectItem value="user_disabled">Désactivations</SelectItem>
                     <SelectItem value="user_enabled">Réactivations</SelectItem>
                     <SelectItem value="user_deleted">Suppressions</SelectItem>
+                    <SelectItem value="password_reset_requested">Liens MDP envoyés</SelectItem>
+                    <SelectItem value="password_reset_completed">MDP réinitialisés</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
