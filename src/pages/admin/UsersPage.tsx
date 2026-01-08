@@ -328,12 +328,16 @@ export default function UsersPage() {
       return response.data;
     },
     onSuccess: async (data) => {
-      if (data?.link) {
+      if (data?.emailSent) {
+        toast.success(data.message || 'Email de réinitialisation envoyé');
+      } else if (data?.link) {
+        // Fallback: copier le lien si l'email n'a pas été envoyé
         try {
           await navigator.clipboard.writeText(data.link);
-          toast.success('Lien de création de mot de passe copié dans le presse-papiers');
+          toast.warning('Email non envoyé - Lien copié dans le presse-papiers', {
+            description: data.message,
+          });
         } catch {
-          // Fallback: afficher le lien dans un toast
           toast.info('Lien généré (copie auto échouée)', {
             description: data.link,
             duration: 15000,
