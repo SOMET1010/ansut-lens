@@ -26,7 +26,6 @@ import NewslettersPage from "@/pages/admin/NewslettersPage";
 import SourcesPage from "@/pages/admin/SourcesPage";
 import RolesPage from "@/pages/admin/RolesPage";
 import AlertesHistoryPage from "@/pages/AlertesHistoryPage";
-import PresentationPage from "@/pages/PresentationPage";
 import ProfilePage from "@/pages/ProfilePage";
 import FluxPage from "@/pages/FluxPage";
 import FluxDetailPage from "@/pages/FluxDetailPage";
@@ -126,8 +125,6 @@ const App = () => (
                         <Route element={<PermissionRoute permission="manage_roles" />}>
                           <Route path="/admin/roles" element={<RolesPage />} />
                         </Route>
-                        
-                        <Route path="/admin/presentation" element={<PresentationPage />} />
                       </Route>
                     </Route>
                     
