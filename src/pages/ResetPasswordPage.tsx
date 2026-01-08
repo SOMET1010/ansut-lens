@@ -40,19 +40,61 @@ export default function ResetPasswordPage() {
     },
   });
 
-  // Vérifier si l'utilisateur a un token de récupération valide
+  // Vérifier et échanger le token de récupération
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    const handleRecoveryToken = async () => {
+      // Vérifier si on a des paramètres de récupération dans l'URL (hash ou query params)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const queryParams = new URLSearchParams(window.location.search);
       
-      // Si pas de session et pas de hash dans l'URL, rediriger vers login
-      if (!session && !window.location.hash.includes('access_token')) {
+      const accessToken = hashParams.get('access_token') || queryParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token');
+      const type = hashParams.get('type') || queryParams.get('type');
+      const tokenHash = queryParams.get('token_hash');
+      
+      // Cas 1: Token dans l'URL (format hash avec access_token)
+      if (accessToken && refreshToken && type === 'recovery') {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        
+        if (error) {
+          console.error('Erreur session:', error);
+          toast.error('Lien de réinitialisation invalide ou expiré');
+          navigate('/auth');
+          return;
+        }
+        // Session établie, l'utilisateur peut changer son mot de passe
+        return;
+      }
+      
+      // Cas 2: Token hash dans l'URL (format email link avec token_hash)
+      if (tokenHash && type === 'recovery') {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: 'recovery',
+        });
+        
+        if (error) {
+          console.error('Erreur vérification OTP:', error);
+          toast.error('Lien de réinitialisation invalide ou expiré');
+          navigate('/auth');
+          return;
+        }
+        // Session établie après vérification OTP
+        return;
+      }
+      
+      // Cas 3: Vérifier si une session existe déjà
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
         toast.error('Lien de réinitialisation invalide ou expiré');
         navigate('/auth');
       }
     };
     
-    checkSession();
+    handleRecoveryToken();
   }, [navigate]);
 
   const onSubmit = async (data: ResetPasswordFormData) => {
