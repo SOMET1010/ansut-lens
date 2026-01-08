@@ -108,6 +108,20 @@ export default function ResetPasswordPage() {
       if (error) {
         toast.error(error.message || 'Erreur lors de la réinitialisation');
       } else {
+        // Logger le succès dans admin_audit_logs
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('admin_audit_logs').insert({
+            admin_id: user.id,
+            target_user_id: user.id,
+            action: 'password_reset_completed',
+            details: {
+              method: 'recovery_link',
+              timestamp: new Date().toISOString()
+            }
+          });
+        }
+        
         setSuccess(true);
         toast.success('Mot de passe réinitialisé avec succès');
       }
