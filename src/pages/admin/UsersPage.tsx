@@ -878,14 +878,14 @@ export default function UsersPage() {
                                   <DropdownMenuSeparator />
                                 </>
                               )}
-                              {/* Lien mot de passe pour utilisateurs jamais connectés */}
-                              {!usersStatus?.[user.id]?.last_sign_in_at && !user.disabled && (
+                              {/* Réinitialiser mot de passe - visible pour tous les utilisateurs actifs */}
+                              {!user.disabled && (
                                 <DropdownMenuItem
                                   onClick={() => generatePasswordLinkMutation.mutate(user.id)}
                                   disabled={generatePasswordLinkMutation.isPending}
                                 >
                                   <KeyRound className="mr-2 h-4 w-4" />
-                                  Copier lien mot de passe
+                                  Réinitialiser mot de passe
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuItem
