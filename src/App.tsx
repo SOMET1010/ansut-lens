@@ -8,7 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ViewModeProvider } from "@/contexts/ViewModeContext";
 import { AlertNotificationProvider } from "@/components/notifications";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { ProtectedRoute, PermissionRoute } from "@/components/auth";
+import { ProtectedRoute, PermissionRoute, RecoveryTokenHandler } from "@/components/auth";
 import AuthPage from "@/pages/AuthPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import RadarPage from "@/pages/RadarPage";
@@ -45,94 +45,96 @@ const App = () => (
               <TooltipProvider>
                 <Toaster />
                 <BrowserRouter>
-                  <Routes>
-                    {/* Routes publiques */}
-                    <Route path="/auth" element={<AuthPage />} />
-                    <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-                    <Route path="/access-denied" element={<AccessDeniedPage />} />
-                    
-                    {/* Redirections */}
-                    <Route path="/" element={<Navigate to="/radar" replace />} />
-                    <Route path="/medias" element={<Navigate to="/radar" replace />} />
-                    <Route path="/presence-digitale" element={<Navigate to="/personnalites" replace />} />
-                    
-                    {/* Routes protégées */}
-                    <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-                      {/* Routes avec vérification de permission */}
-                      <Route element={<PermissionRoute permission="view_radar" />}>
-                        <Route path="/radar" element={<RadarPage />} />
-                      </Route>
+                  <RecoveryTokenHandler>
+                    <Routes>
+                      {/* Routes publiques */}
+                      <Route path="/auth" element={<AuthPage />} />
+                      <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+                      <Route path="/access-denied" element={<AccessDeniedPage />} />
                       
-                      <Route element={<PermissionRoute permission="view_actualites" />}>
-                        <Route path="/actualites" element={<ActualitesPage />} />
-                      </Route>
+                      {/* Redirections */}
+                      <Route path="/" element={<Navigate to="/radar" replace />} />
+                      <Route path="/medias" element={<Navigate to="/radar" replace />} />
+                      <Route path="/presence-digitale" element={<Navigate to="/personnalites" replace />} />
                       
-                      <Route element={<PermissionRoute permission="view_personnalites" />}>
-                        <Route path="/personnalites" element={<PersonnalitesPage />} />
-                      </Route>
-                      
-                      <Route element={<PermissionRoute permission="view_dossiers" />}>
-                        <Route path="/dossiers" element={<DossiersPage />} />
-                      </Route>
-                      
-                      <Route element={<PermissionRoute permission="use_assistant" />}>
-                        <Route path="/assistant" element={<AssistantPage />} />
-                      </Route>
-                      
-                      <Route element={<PermissionRoute permission="receive_alerts" />}>
-                        <Route path="/alertes" element={<AlertesHistoryPage />} />
-                      </Route>
-                      
-                      <Route element={<PermissionRoute permission="create_flux" />}>
-                        <Route path="/flux" element={<FluxPage />} />
-                        <Route path="/flux/:id" element={<FluxDetailPage />} />
-                      </Route>
-                      
-                      {/* Profile accessible à tous les utilisateurs connectés */}
-                      <Route path="/profile" element={<ProfilePage />} />
-                      
-                      {/* Routes Admin avec permissions spécifiques */}
-                      <Route element={<PermissionRoute permission="access_admin" />}>
-                        <Route path="/admin" element={<AdminPage />} />
-                        
-                        <Route element={<PermissionRoute permission="manage_keywords" />}>
-                          <Route path="/admin/mots-cles" element={<MotsClesPage />} />
+                      {/* Routes protégées */}
+                      <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+                        {/* Routes avec vérification de permission */}
+                        <Route element={<PermissionRoute permission="view_radar" />}>
+                          <Route path="/radar" element={<RadarPage />} />
                         </Route>
                         
-                        <Route element={<PermissionRoute permission="import_actors" />}>
-                          <Route path="/admin/import-acteurs" element={<ImportActeursPage />} />
+                        <Route element={<PermissionRoute permission="view_actualites" />}>
+                          <Route path="/actualites" element={<ActualitesPage />} />
                         </Route>
                         
-                        <Route element={<PermissionRoute permission="manage_users" />}>
-                          <Route path="/admin/users" element={<UsersPage />} />
+                        <Route element={<PermissionRoute permission="view_personnalites" />}>
+                          <Route path="/personnalites" element={<PersonnalitesPage />} />
                         </Route>
                         
-                        <Route element={<PermissionRoute permission="view_audit_logs" />}>
-                          <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
+                        <Route element={<PermissionRoute permission="view_dossiers" />}>
+                          <Route path="/dossiers" element={<DossiersPage />} />
                         </Route>
                         
-                        <Route element={<PermissionRoute permission="manage_cron_jobs" />}>
-                          <Route path="/admin/cron-jobs" element={<CronJobsPage />} />
+                        <Route element={<PermissionRoute permission="use_assistant" />}>
+                          <Route path="/assistant" element={<AssistantPage />} />
                         </Route>
                         
-                        <Route element={<PermissionRoute permission="manage_newsletters" />}>
-                          <Route path="/admin/newsletters" element={<NewslettersPage />} />
+                        <Route element={<PermissionRoute permission="receive_alerts" />}>
+                          <Route path="/alertes" element={<AlertesHistoryPage />} />
                         </Route>
                         
-                        <Route element={<PermissionRoute permission="manage_sources" />}>
-                          <Route path="/admin/sources" element={<SourcesPage />} />
+                        <Route element={<PermissionRoute permission="create_flux" />}>
+                          <Route path="/flux" element={<FluxPage />} />
+                          <Route path="/flux/:id" element={<FluxDetailPage />} />
                         </Route>
                         
-                        <Route element={<PermissionRoute permission="manage_roles" />}>
-                          <Route path="/admin/roles" element={<RolesPage />} />
-                        </Route>
+                        {/* Profile accessible à tous les utilisateurs connectés */}
+                        <Route path="/profile" element={<ProfilePage />} />
                         
-                        <Route path="/admin/presentation" element={<PresentationPage />} />
+                        {/* Routes Admin avec permissions spécifiques */}
+                        <Route element={<PermissionRoute permission="access_admin" />}>
+                          <Route path="/admin" element={<AdminPage />} />
+                          
+                          <Route element={<PermissionRoute permission="manage_keywords" />}>
+                            <Route path="/admin/mots-cles" element={<MotsClesPage />} />
+                          </Route>
+                          
+                          <Route element={<PermissionRoute permission="import_actors" />}>
+                            <Route path="/admin/import-acteurs" element={<ImportActeursPage />} />
+                          </Route>
+                          
+                          <Route element={<PermissionRoute permission="manage_users" />}>
+                            <Route path="/admin/users" element={<UsersPage />} />
+                          </Route>
+                          
+                          <Route element={<PermissionRoute permission="view_audit_logs" />}>
+                            <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
+                          </Route>
+                          
+                          <Route element={<PermissionRoute permission="manage_cron_jobs" />}>
+                            <Route path="/admin/cron-jobs" element={<CronJobsPage />} />
+                          </Route>
+                          
+                          <Route element={<PermissionRoute permission="manage_newsletters" />}>
+                            <Route path="/admin/newsletters" element={<NewslettersPage />} />
+                          </Route>
+                          
+                          <Route element={<PermissionRoute permission="manage_sources" />}>
+                            <Route path="/admin/sources" element={<SourcesPage />} />
+                          </Route>
+                          
+                          <Route element={<PermissionRoute permission="manage_roles" />}>
+                            <Route path="/admin/roles" element={<RolesPage />} />
+                          </Route>
+                          
+                          <Route path="/admin/presentation" element={<PresentationPage />} />
+                        </Route>
                       </Route>
-                    </Route>
-                    
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                      
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </RecoveryTokenHandler>
                 </BrowserRouter>
               </TooltipProvider>
             </AlertNotificationProvider>
