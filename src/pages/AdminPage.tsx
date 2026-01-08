@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, Database, Bell, Tag, UserPlus, ClipboardList, Clock, Mail, Shield } from 'lucide-react';
+import { Users, Database, Bell, Tag, UserPlus, ClipboardList, Clock, Mail, Shield, Presentation } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { AdminStatBadge } from '@/components/admin/AdminStatBadge';
@@ -105,6 +105,20 @@ export default function AdminPage() {
                   label="en attente"
                   variant={stats?.newslettersEnAttente && stats.newslettersEnAttente > 0 ? 'warning' : 'muted'}
                   loading={isLoading}
+                />
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/admin/presentation">
+            <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full">
+              <CardContent className="pt-6 flex flex-col items-center text-center">
+                <Presentation className="h-10 w-10 text-purple-400 mb-3" />
+                <h3 className="font-semibold">Présentation</h3>
+                <p className="text-sm text-muted-foreground">Slides PDF</p>
+                <AdminStatBadge
+                  value="11 slides"
+                  variant="info"
+                  loading={false}
                 />
               </CardContent>
             </Card>
