@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
     // Log action
     await adminClient.from('admin_audit_logs').insert({
       admin_id: caller.id,
-      action: 'password_link_generated',
+      action: 'password_reset_requested',
       target_user_id: userId,
       details: {
         target_email: email,
