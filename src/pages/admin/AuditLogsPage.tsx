@@ -1,13 +1,31 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ArrowLeft, ClipboardList, UserPlus, Shield, UserX, UserCheck, Trash2, Filter, Loader2, Download, CalendarIcon, X, KeyRound } from "lucide-react";
+import { 
+  ArrowLeft, 
+  ClipboardList, 
+  UserPlus, 
+  Shield, 
+  UserX, 
+  UserCheck, 
+  Trash2, 
+  Filter, 
+  Loader2, 
+  Download, 
+  CalendarIcon, 
+  X, 
+  KeyRound,
+  Search,
+  Users
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Table,
   TableBody,
@@ -56,10 +74,21 @@ const roleLabels: Record<string, string> = {
   guest: "Invité",
 };
 
+const getInitials = (name: string | null | undefined): string => {
+  if (!name) return "?";
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+};
+
 export default function AuditLogsPage() {
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: logs, isLoading } = useQuery({
     queryKey: ["admin-audit-logs", actionFilter, startDate?.toISOString(), endDate?.toISOString()],
@@ -107,6 +136,34 @@ export default function AuditLogsPage() {
     },
   });
 
+  // Calculate stats from all logs (before text filtering)
+  const stats = useMemo(() => {
+    if (!logs) return { total: 0, invitations: 0, roleChanges: 0, passwordResets: 0 };
+    return {
+      total: logs.length,
+      invitations: logs.filter((l) => l.action === "user_invited").length,
+      roleChanges: logs.filter((l) => l.action === "role_changed").length,
+      passwordResets: logs.filter(
+        (l) => l.action === "password_reset_requested" || l.action === "password_reset_completed"
+      ).length,
+    };
+  }, [logs]);
+
+  // Client-side text filtering
+  const filteredLogs = useMemo(() => {
+    if (!logs) return [];
+    if (!searchQuery.trim()) return logs;
+    const query = searchQuery.toLowerCase();
+    return logs.filter(
+      (log) =>
+        log.admin_profile?.full_name?.toLowerCase().includes(query) ||
+        log.target_profile?.full_name?.toLowerCase().includes(query) ||
+        (log.details?.target_name as string)?.toLowerCase().includes(query) ||
+        (log.details?.target_email as string)?.toLowerCase().includes(query) ||
+        (log.details?.email as string)?.toLowerCase().includes(query)
+    );
+  }, [logs, searchQuery]);
+
   const formatDetails = (log: AuditLog): string => {
     const details = log.details || {};
     switch (log.action) {
@@ -117,35 +174,37 @@ export default function AuditLogsPage() {
       case "user_disabled":
       case "user_enabled":
       case "user_deleted":
-        return details.target_name as string || "";
+        return (details.target_name as string) || "";
       case "password_reset_requested":
         return `Email envoyé à ${(details.target_email as string) || "l'utilisateur"}`;
       case "password_reset_completed":
-        return `Via ${details.method === 'recovery_link' ? 'lien de récupération' : (details.method as string) || 'lien'}`;
+        return `Via ${details.method === "recovery_link" ? "lien de récupération" : (details.method as string) || "lien"}`;
       default:
         return JSON.stringify(details);
     }
   };
 
   const exportToCSV = () => {
-    if (!logs || logs.length === 0) return;
+    if (!filteredLogs || filteredLogs.length === 0) return;
 
     const headers = ["Date", "Administrateur", "Action", "Utilisateur cible", "Détails"];
-    
-    const rows = logs.map((log) => [
+
+    const rows = filteredLogs.map((log) => [
       format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss", { locale: fr }),
       log.admin_profile?.full_name || "Inconnu",
       actionConfig[log.action]?.label || log.action,
-      log.target_profile?.full_name || 
-        (log.details?.target_name as string) || 
-        (log.details?.full_name as string) || "",
-      formatDetails(log)
+      log.target_profile?.full_name ||
+        (log.details?.target_name as string) ||
+        (log.details?.full_name as string) ||
+        "",
+      formatDetails(log),
     ]);
 
-    const csvContent = "\uFEFF" + [
-      headers.join(";"),
-      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(";"))
-    ].join("\n");
+    const csvContent =
+      "\uFEFF" +
+      [headers.join(";"), ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(";"))].join(
+        "\n"
+      );
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -156,8 +215,18 @@ export default function AuditLogsPage() {
     URL.revokeObjectURL(url);
   };
 
+  const clearFilters = () => {
+    setStartDate(undefined);
+    setEndDate(undefined);
+    setSearchQuery("");
+    setActionFilter("all");
+  };
+
+  const hasActiveFilters = startDate || endDate || searchQuery || actionFilter !== "all";
+
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Header */}
       <div className="flex items-center gap-4">
         <Link to="/admin">
           <Button variant="ghost" size="icon">
@@ -173,105 +242,180 @@ export default function AuditLogsPage() {
         </div>
       </div>
 
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="border-l-4 border-l-primary">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total</p>
+                <p className="text-2xl font-bold">{stats.total}</p>
+              </div>
+              <ClipboardList className="h-8 w-8 text-primary/50" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-emerald-500">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Invitations</p>
+                <p className="text-2xl font-bold">{stats.invitations}</p>
+              </div>
+              <UserPlus className="h-8 w-8 text-emerald-500/50" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-blue-500">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Rôles modifiés</p>
+                <p className="text-2xl font-bold">{stats.roleChanges}</p>
+              </div>
+              <Shield className="h-8 w-8 text-blue-500/50" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-purple-500">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Resets MDP</p>
+                <p className="text-2xl font-bold">{stats.passwordResets}</p>
+              </div>
+              <KeyRound className="h-8 w-8 text-purple-500/50" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters Card */}
+      <Card className="glass">
+        <CardContent className="pt-4">
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher par nom, email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            {/* Action Filter */}
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
+              <Select value={actionFilter} onValueChange={setActionFilter}>
+                <SelectTrigger className="w-full lg:w-[180px]">
+                  <SelectValue placeholder="Type d'action" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les actions</SelectItem>
+                  <SelectItem value="user_invited">Invitations</SelectItem>
+                  <SelectItem value="role_changed">Changements de rôle</SelectItem>
+                  <SelectItem value="user_disabled">Désactivations</SelectItem>
+                  <SelectItem value="user_enabled">Réactivations</SelectItem>
+                  <SelectItem value="user_deleted">Suppressions</SelectItem>
+                  <SelectItem value="password_reset_requested">Liens MDP envoyés</SelectItem>
+                  <SelectItem value="password_reset_completed">MDP réinitialisés</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Date Range */}
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "w-[130px] justify-start text-left font-normal",
+                      !startDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? format(startDate, "dd/MM/yyyy") : "Début"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={setStartDate}
+                    disabled={(date) => (endDate ? date > endDate : false)}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "w-[130px] justify-start text-left font-normal",
+                      !endDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {endDate ? format(endDate, "dd/MM/yyyy") : "Fin"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={setEndDate}
+                    disabled={(date) => (startDate ? date < startDate : false)}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 px-2">
+                  <X className="h-4 w-4 mr-1" />
+                  Effacer
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportToCSV}
+                disabled={!filteredLogs || filteredLogs.length === 0}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                CSV
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Table Card */}
       <Card className="glass">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Actions récentes</CardTitle>
-            <div className="flex items-center gap-3 flex-wrap">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={exportToCSV}
-                disabled={!logs || logs.length === 0}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Exporter CSV
-              </Button>
-
-              <div className="flex items-center gap-2">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={cn(
-                        "w-[130px] justify-start text-left font-normal",
-                        !startDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {startDate ? format(startDate, "dd/MM/yyyy") : "Date début"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={startDate}
-                      onSelect={setStartDate}
-                      disabled={(date) => endDate ? date > endDate : false}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={cn(
-                        "w-[130px] justify-start text-left font-normal",
-                        !endDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {endDate ? format(endDate, "dd/MM/yyyy") : "Date fin"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={endDate}
-                      onSelect={setEndDate}
-                      disabled={(date) => startDate ? date < startDate : false}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-
-                {(startDate || endDate) && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => { setStartDate(undefined); setEndDate(undefined); }}
-                    className="h-8 w-8 p-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <Select value={actionFilter} onValueChange={setActionFilter}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filtrer par action" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Toutes les actions</SelectItem>
-                    <SelectItem value="user_invited">Invitations</SelectItem>
-                    <SelectItem value="role_changed">Changements de rôle</SelectItem>
-                    <SelectItem value="user_disabled">Désactivations</SelectItem>
-                    <SelectItem value="user_enabled">Réactivations</SelectItem>
-                    <SelectItem value="user_deleted">Suppressions</SelectItem>
-                    <SelectItem value="password_reset_requested">Liens MDP envoyés</SelectItem>
-                    <SelectItem value="password_reset_completed">MDP réinitialisés</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Actions récentes
+            </CardTitle>
+            <Badge variant="secondary" className="font-normal">
+              {filteredLogs?.length || 0} résultat{(filteredLogs?.length || 0) > 1 ? "s" : ""}
+            </Badge>
           </div>
         </CardHeader>
         <CardContent>
@@ -279,7 +423,7 @@ export default function AuditLogsPage() {
             <div className="flex justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          ) : logs && logs.length > 0 ? (
+          ) : filteredLogs && filteredLogs.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -291,11 +435,11 @@ export default function AuditLogsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {logs.map((log) => {
-                  const config = actionConfig[log.action] || { 
-                    label: log.action, 
-                    icon: ClipboardList, 
-                    color: "bg-muted text-muted-foreground" 
+                {filteredLogs.map((log) => {
+                  const config = actionConfig[log.action] || {
+                    label: log.action,
+                    icon: ClipboardList,
+                    color: "bg-muted text-muted-foreground",
                   };
                   const Icon = config.icon;
 
@@ -305,9 +449,16 @@ export default function AuditLogsPage() {
                         {format(new Date(log.created_at), "dd/MM/yy HH:mm", { locale: fr })}
                       </TableCell>
                       <TableCell>
-                        <span className="font-medium">
-                          {log.admin_profile?.full_name || "Inconnu"}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-7 w-7">
+                            <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                              {getInitials(log.admin_profile?.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">
+                            {log.admin_profile?.full_name || "Inconnu"}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={config.color}>
@@ -316,10 +467,10 @@ export default function AuditLogsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {log.target_profile?.full_name || 
-                         (log.details?.target_name as string) || 
-                         (log.details?.full_name as string) || 
-                         "—"}
+                        {log.target_profile?.full_name ||
+                          (log.details?.target_name as string) ||
+                          (log.details?.full_name as string) ||
+                          "—"}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground max-w-[300px] truncate">
                         {formatDetails(log)}
@@ -331,7 +482,7 @@ export default function AuditLogsPage() {
             </Table>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              Aucune action enregistrée
+              {searchQuery ? "Aucun résultat pour cette recherche" : "Aucune action enregistrée"}
             </div>
           )}
         </CardContent>
