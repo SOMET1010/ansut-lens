@@ -11,7 +11,8 @@ import {
   Code,
   Download,
   Copy,
-  Check
+  Check,
+  Palette
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,10 +31,11 @@ interface NewsletterPreviewProps {
   newsletter: Newsletter;
   onBack: () => void;
   onEdit: () => void;
+  onStudio?: () => void;
   onRefresh: () => void;
 }
 
-export function NewsletterPreview({ newsletter, onBack, onEdit, onRefresh }: NewsletterPreviewProps) {
+export function NewsletterPreview({ newsletter, onBack, onEdit, onStudio, onRefresh }: NewsletterPreviewProps) {
   const [viewMode, setViewMode] = useState<'preview' | 'html'>('preview');
   const [copied, setCopied] = useState(false);
   
@@ -146,6 +148,12 @@ export function NewsletterPreview({ newsletter, onBack, onEdit, onRefresh }: New
                 <Edit className="h-4 w-4 mr-2" />
                 Modifier
               </Button>
+              {onStudio && (
+                <Button variant="outline" size="sm" onClick={onStudio} className="gap-2">
+                  <Palette className="h-4 w-4" />
+                  Studio
+                </Button>
+              )}
             </>
           )}
           

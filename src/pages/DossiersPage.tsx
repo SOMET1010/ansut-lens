@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Edit3, Send, Mail, Users, AlertTriangle, TrendingUp, Eye, Sparkles, Calendar } from 'lucide-react';
+import { FileText, Edit3, Send, Mail, Users, AlertTriangle, TrendingUp, Eye, Sparkles, Calendar, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,9 +29,10 @@ import {
   DestinataireManager,
   NewsletterScheduler
 } from '@/components/newsletter';
+import { NewsletterStudio } from '@/components/newsletter/studio';
 import type { Newsletter } from '@/types/newsletter';
 
-type NewsletterView = 'list' | 'generate' | 'preview' | 'edit';
+type NewsletterView = 'list' | 'generate' | 'preview' | 'edit' | 'studio';
 
 export default function DossiersPage() {
   const [selectedDossier, setSelectedDossier] = useState<Dossier | null>(null);
@@ -426,6 +427,7 @@ export default function DossiersPage() {
                 newsletter={selectedNewsletter}
                 onBack={handleNewsletterBack}
                 onEdit={() => setNewsletterView('edit')}
+                onStudio={() => setNewsletterView('studio')}
                 onRefresh={() => refetchNewsletter()}
               />
             )}
@@ -437,6 +439,16 @@ export default function DossiersPage() {
                 onSaved={() => {
                   refetchNewsletter();
                   setNewsletterView('preview');
+                }}
+              />
+            )}
+
+            {newsletterView === 'studio' && selectedNewsletter && (
+              <NewsletterStudio 
+                newsletter={selectedNewsletter}
+                onBack={() => setNewsletterView('preview')}
+                onSaved={() => {
+                  refetchNewsletter();
                 }}
               />
             )}
