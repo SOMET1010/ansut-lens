@@ -18,13 +18,17 @@ export type Database = {
         Row: {
           analyse_ia: string | null
           categorie: string | null
+          cluster_id: string | null
           contenu: string | null
           created_at: string
           date_publication: string | null
+          entites_entreprises: string[] | null
+          entites_personnes: string[] | null
           id: string
           importance: number | null
           pourquoi_important: string | null
           resume: string | null
+          score_pertinence: number | null
           sentiment: number | null
           source_id: string | null
           source_nom: string | null
@@ -36,13 +40,17 @@ export type Database = {
         Insert: {
           analyse_ia?: string | null
           categorie?: string | null
+          cluster_id?: string | null
           contenu?: string | null
           created_at?: string
           date_publication?: string | null
+          entites_entreprises?: string[] | null
+          entites_personnes?: string[] | null
           id?: string
           importance?: number | null
           pourquoi_important?: string | null
           resume?: string | null
+          score_pertinence?: number | null
           sentiment?: number | null
           source_id?: string | null
           source_nom?: string | null
@@ -54,13 +62,17 @@ export type Database = {
         Update: {
           analyse_ia?: string | null
           categorie?: string | null
+          cluster_id?: string | null
           contenu?: string | null
           created_at?: string
           date_publication?: string | null
+          entites_entreprises?: string[] | null
+          entites_personnes?: string[] | null
           id?: string
           importance?: number | null
           pourquoi_important?: string | null
           resume?: string | null
+          score_pertinence?: number | null
           sentiment?: number | null
           source_id?: string | null
           source_nom?: string | null
