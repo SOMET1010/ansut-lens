@@ -7,32 +7,55 @@ interface GuideViewerProps {
   className?: string;
 }
 
+// Fonction de slugification pour générer des IDs uniques
+const slugify = (text: string): string => {
+  return text
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Supprimer accents
+    .replace(/[^a-z0-9]+/g, '-')     // Remplacer espaces/spéciaux par -
+    .replace(/^-+|-+$/g, '');        // Supprimer - en début/fin
+};
+
 export function GuideViewer({ content, className }: GuideViewerProps) {
   return (
     <div className={cn("prose prose-sm max-w-none", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          h1: ({ children }) => (
-            <h1 className="text-2xl font-bold text-black mb-4 mt-6 first:mt-0 border-b border-gray-200 pb-2">
-              {children}
-            </h1>
-          ),
-          h2: ({ children }) => (
-            <h2 className="text-xl font-semibold text-black mb-3 mt-5">
-              {children}
-            </h2>
-          ),
-          h3: ({ children }) => (
-            <h3 className="text-lg font-semibold text-gray-800 mb-2 mt-4">
-              {children}
-            </h3>
-          ),
-          h4: ({ children }) => (
-            <h4 className="text-base font-semibold text-gray-800 mb-2 mt-3">
-              {children}
-            </h4>
-          ),
+          h1: ({ children }) => {
+            const id = slugify(String(children));
+            return (
+              <h1 id={id} className="text-2xl font-bold text-black mb-4 mt-6 first:mt-0 border-b border-gray-200 pb-2 scroll-mt-4">
+                {children}
+              </h1>
+            );
+          },
+          h2: ({ children }) => {
+            const id = slugify(String(children));
+            return (
+              <h2 id={id} className="text-xl font-semibold text-black mb-3 mt-5 scroll-mt-4">
+                {children}
+              </h2>
+            );
+          },
+          h3: ({ children }) => {
+            const id = slugify(String(children));
+            return (
+              <h3 id={id} className="text-lg font-semibold text-gray-800 mb-2 mt-4 scroll-mt-4">
+                {children}
+              </h3>
+            );
+          },
+          h4: ({ children }) => {
+            const id = slugify(String(children));
+            return (
+              <h4 id={id} className="text-base font-semibold text-gray-800 mb-2 mt-3 scroll-mt-4">
+                {children}
+              </h4>
+            );
+          },
           p: ({ children }) => (
             <p className="text-gray-700 mb-3 leading-relaxed text-sm">
               {children}

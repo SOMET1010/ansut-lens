@@ -8,6 +8,24 @@ import { TechDocPDFLayout } from '@/components/documentation/TechDocPDFLayout';
 import { GuideViewer } from '@/components/formation/GuideViewer';
 import { TECH_DOC_CONTENT } from '@/components/documentation/TechDocContent';
 
+// Table des matières avec IDs correspondant aux ancres générées
+const TOC_ITEMS = [
+  { id: '1-presentation-generale', label: 'Présentation', num: 1 },
+  { id: '2-architecture-technique', label: 'Architecture', num: 2 },
+  { id: '3-base-de-donnees', label: 'Base de données', num: 3 },
+  { id: '4-edge-functions', label: 'Edge Functions', num: 4 },
+  { id: '5-systeme-de-permissions', label: 'Permissions', num: 5 },
+  { id: '6-securite-conformite', label: 'Sécurité', num: 6 },
+];
+
+// Fonction de scroll fluide vers une section
+const scrollToSection = (id: string) => {
+  const element = document.getElementById(id);
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+};
+
 export default function TechDocPage() {
   const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -66,36 +84,24 @@ export default function TechDocPage() {
         </Button>
       </div>
 
-      {/* Table des matières rapide */}
+      {/* Table des matières rapide - cliquable */}
       <Card className="p-4 bg-muted/50">
         <h2 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">
           Table des matières
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">1</span>
-            <span>Présentation</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">2</span>
-            <span>Architecture</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">3</span>
-            <span>Base de données</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">4</span>
-            <span>Edge Functions</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">5</span>
-            <span>Permissions</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">6</span>
-            <span>Sécurité</span>
-          </div>
+          {TOC_ITEMS.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => scrollToSection(item.id)}
+              className="flex items-center gap-2 p-2 rounded-lg hover:bg-primary/10 transition-colors cursor-pointer text-left group"
+            >
+              <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                {item.num}
+              </span>
+              <span className="group-hover:text-primary transition-colors">{item.label}</span>
+            </button>
+          ))}
         </div>
       </Card>
 
