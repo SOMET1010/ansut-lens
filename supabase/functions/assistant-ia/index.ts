@@ -36,12 +36,46 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, context } = await req.json();
+    const { messages, context, mode } = await req.json();
+    
+    // Mode-specific prompts
+    const modePrompts: Record<string, string> = {
+      recherche: `
+
+MODE RECHERCHE ACTIVÉ:
+- Réponds de façon synthétique avec des listes à puces
+- Cite SYSTÉMATIQUEMENT tes sources avec le format [[ACTU:id|titre]] ou [[DOSSIER:id|titre]]
+- Privilégie les faits et les données concrètes
+- Structure ta réponse en sections claires`,
+      redaction: `
+
+MODE RÉDACTION ACTIVÉ:
+- Génère des documents structurés et professionnels
+- Utilise un ton formel adapté à la Direction Générale
+- Structure avec: OBJET, I. CONTEXTE, II. ANALYSE, III. RECOMMANDATIONS
+- Format adapté pour export (notes ministérielles, briefings DG, rapports)
+- Cite les sources dans le document avec le format [[ACTU:id|titre]]`,
+      analyse: `
+
+MODE ANALYSE ACTIVÉ:
+- Fournis des analyses chiffrées et des statistiques
+- Utilise des tableaux comparatifs quand pertinent
+- Identifie les tendances et signaux faibles
+- Évalue les risques et opportunités
+- Termine par des recommandations concrètes et priorisées`,
+    };
     
     // Build contextual system prompt
     let contextualPrompt = SYSTEM_PROMPT;
+    
+    // Add mode-specific instructions
+    if (mode && modePrompts[mode]) {
+      contextualPrompt += modePrompts[mode];
+    }
+    
+    // Add context
     if (context) {
-      contextualPrompt = `${SYSTEM_PROMPT}\n\n${context}\n\nUtilise ces informations contextuelles pour personnaliser et enrichir tes réponses. CITE OBLIGATOIREMENT les sources avec le format [[ACTU:id|titre]] ou [[DOSSIER:id|titre]] quand tu fais référence à une actualité ou un dossier du contexte.`;
+      contextualPrompt += `\n\n${context}\n\nUtilise ces informations contextuelles pour personnaliser et enrichir tes réponses. CITE OBLIGATOIREMENT les sources avec le format [[ACTU:id|titre]] ou [[DOSSIER:id|titre]] quand tu fais référence à une actualité ou un dossier du contexte.`;
     }
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
