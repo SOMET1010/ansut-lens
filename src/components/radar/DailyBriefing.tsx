@@ -1,49 +1,42 @@
-import { Briefcase, ShieldAlert } from 'lucide-react';
-import { Actualite, Signal } from '@/types';
+import { Briefcase, RefreshCw, ShieldAlert, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { RelativeTime } from '@/components/ui/relative-time';
+import { useDailyBriefing } from '@/hooks/useDailyBriefing';
+import { cn } from '@/lib/utils';
 
-interface DailyBriefingProps {
-  actualites: Actualite[];
-  signaux: Signal[];
-  isLoading?: boolean;
-}
+export function DailyBriefing() {
+  const {
+    briefing,
+    generatedAt,
+    alertsCount,
+    isLoading,
+    isGenerating,
+    error,
+    regenerate,
+  } = useDailyBriefing();
 
-export function DailyBriefing({ actualites, signaux, isLoading }: DailyBriefingProps) {
+  // Loading skeleton state
   if (isLoading) {
     return (
-      <div className="rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 border border-primary/20 animate-pulse">
+      <div className="rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 border border-primary/20">
         <div className="flex items-start gap-4">
-          <div className="h-10 w-10 rounded-lg bg-primary/20" />
+          <div className="h-10 w-10 shrink-0 rounded-lg bg-primary/20 animate-pulse" />
           <div className="flex-1 space-y-3">
-            <div className="h-5 bg-primary/10 rounded w-40" />
-            <div className="h-4 bg-primary/10 rounded w-full" />
-            <div className="h-4 bg-primary/10 rounded w-3/4" />
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
           </div>
         </div>
       </div>
     );
   }
 
-  const criticalAlerts = signaux.filter(s => s.niveau === 'critical');
-  const topArticles = actualites.slice(0, 3);
-  
-  // Generate briefing summary
-  const generateSummary = () => {
-    if (topArticles.length === 0) {
-      return "Aucun sujet majeur détecté sur la période. Le système de veille continue de surveiller les sources.";
-    }
-    
-    const subjects = topArticles.map(a => {
-      // Extract first part of title (before : or -)
-      const cleanTitle = a.titre.split(/[:\-–]/)[0].trim();
-      return cleanTitle.length > 50 ? cleanTitle.substring(0, 50) + '...' : cleanTitle;
-    });
-    
-    return `${topArticles.length} sujet${topArticles.length > 1 ? 's' : ''} majeur${topArticles.length > 1 ? 's' : ''} : ${subjects.join(', ')}.`;
-  };
-
-  const alertMessage = criticalAlerts.length > 0 
-    ? `Attention : ${criticalAlerts.length} alerte${criticalAlerts.length > 1 ? 's' : ''} critique${criticalAlerts.length > 1 ? 's' : ''} en cours.`
-    : null;
+  // Fallback message if no briefing and error
+  const displayBriefing = briefing || (error 
+    ? "Le briefing n'a pas pu être généré. Le système de veille continue de surveiller les sources." 
+    : "Aucune actualité récente. Le système de veille est actif.");
 
   return (
     <div className="rounded-xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 border border-primary/20">
@@ -53,18 +46,58 @@ export function DailyBriefing({ actualites, signaux, isLoading }: DailyBriefingP
         </div>
         
         <div className="flex-1 min-w-0">
-          <h2 className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">
-            📍 Briefing du jour
-          </h2>
+          {/* Header with title and regenerate button */}
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">
+              📍 Briefing du jour
+            </h2>
+            
+            <div className="flex items-center gap-2">
+              {generatedAt && (
+                <span className="text-xs text-muted-foreground hidden sm:inline">
+                  Généré <RelativeTime date={generatedAt} />
+                </span>
+              )}
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={regenerate}
+                disabled={isGenerating}
+                title="Régénérer le briefing"
+              >
+                <RefreshCw 
+                  className={cn(
+                    "h-4 w-4 text-muted-foreground",
+                    isGenerating && "animate-spin"
+                  )} 
+                />
+              </Button>
+            </div>
+          </div>
           
-          <p className="text-foreground leading-relaxed">
-            {generateSummary()}
+          {/* Briefing content */}
+          <p className={cn(
+            "text-foreground leading-relaxed",
+            isGenerating && "opacity-50"
+          )}>
+            {displayBriefing}
           </p>
           
-          {alertMessage && (
-            <p className="mt-2 text-signal-critical font-medium flex items-center gap-2">
+          {/* Critical alerts indicator */}
+          {alertsCount > 0 && (
+            <p className="mt-3 text-signal-critical font-medium flex items-center gap-2">
               <ShieldAlert className="h-4 w-4" />
-              {alertMessage}
+              Attention : {alertsCount} alerte{alertsCount > 1 ? 's' : ''} critique{alertsCount > 1 ? 's' : ''} en cours.
+            </p>
+          )}
+          
+          {/* Error indicator (subtle) */}
+          {error && !briefing && (
+            <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              Service temporairement indisponible
             </p>
           )}
         </div>

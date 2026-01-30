@@ -78,12 +78,8 @@ export default function RadarPage() {
         </TabsList>
       </Tabs>
 
-      {/* Daily Briefing */}
-      <DailyBriefing 
-        actualites={actualites || []}
-        signaux={signaux || []}
-        isLoading={actualitesLoading || signauxLoading}
-      />
+      {/* Daily Briefing - Now uses its own data fetching via hook */}
+      <DailyBriefing />
 
       {/* Critical Alert Banner */}
       <CriticalAlertBanner 
