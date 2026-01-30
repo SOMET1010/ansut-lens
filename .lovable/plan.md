@@ -1,254 +1,303 @@
 
 
-# Ajout des fonctionnalités Archiver et Supprimer pour les Acteurs
+# Transformation de la page Acteurs en "Cartographie d'Influence Dynamique"
 
-## Vue d'ensemble
+## Diagnostic
 
-Ajouter la possibilité d'archiver (soft delete via `actif = false`) ou de supprimer définitivement un acteur depuis l'interface utilisateur, avec confirmation et feedback visuel.
+La page actuelle souffre de **triple redondance visuelle** sur les cercles :
+1. `StatsBar` : 4 KPI cards + breakdown cercles en bas
+2. `ActeurFilters` : chips cercles cliquables avec compteurs
+3. `Tabs` : onglets Tous/C1/C2/C3/C4
+
+De plus, les cartes sont "mortes" - elles n'affichent que des informations statiques sans indicateurs de veille en temps réel.
+
+---
+
+## Architecture de la transformation
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  ACTEUR CARD (Hover Actions)                                                    │
-│  ┌───────────────────────────────────────────────────────────────────────────┐ │
-│  │                                                                           │ │
-│  │  [Avatar]  Jean Dupont                                                   │ │
-│  │            Directeur Général - ANSUT                                      │ │
-│  │                                                                           │ │
-│  │  [Cercle 1] [Régulateur]                           [✏️] [📦] [⋮]         │ │
-│  │                                                     Edit Archive More     │ │
-│  │                                                                           │ │
-│  └───────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                 │
-│  Menu déroulant "⋮" :                                                          │
-│  ┌──────────────────┐                                                          │
-│  │ 📦 Archiver      │ ← Soft delete (actif = false)                           │
-│  │ 🗑️ Supprimer     │ ← Hard delete (confirmation requise)                    │
-│  └──────────────────┘                                                          │
-└─────────────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  PANNEAU DÉTAIL (Sheet) - Actions Admin                                        │
-│  ┌───────────────────────────────────────────────────────────────────────────┐ │
-│  │  [Avatar]  Jean Dupont                [Modifier] [⋮]                      │ │
-│  │            Directeur Général                                              │ │
-│  │            ...                                                            │ │
-│  │                                                                           │ │
-│  │  ─────────────────────────────────────────────────────────               │ │
-│  │                                                                           │ │
-│  │  Zone Danger (en bas du panneau)                                         │ │
-│  │  ┌─────────────────────────────────────────────────────────────────────┐ │ │
-│  │  │  ⚠️ Zone sensible                                                   │ │ │
-│  │  │  [📦 Archiver cet acteur]  [🗑️ Supprimer définitivement]           │ │ │
-│  │  └─────────────────────────────────────────────────────────────────────┘ │ │
-│  └───────────────────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│  AVANT (Redondance x3)                                                               │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐│
+│  │ [Stats 4 cards] + [Breakdown cercles]                                           ││
+│  │ [Chips C1 C2 C3 C4] + [Dropdowns]                                               ││
+│  │ [Tabs: Tous | C1 | C2 | C3 | C4]                                                ││
+│  └─────────────────────────────────────────────────────────────────────────────────┘│
+│                                                                                      │
+│  APRES (Barre unifiée)                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────────────────┐│
+│  │ Header: Titre + Stats compactes + [+ Ajouter]                                   ││
+│  │ UnifiedFilterBar: [🔍 Search] [Tabs: Tous|C1|C2|C3|C4] [Filtres avancés]       ││
+│  └─────────────────────────────────────────────────────────────────────────────────┘│
+└──────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Fichiers à modifier
 
-| Fichier | Modifications |
-|---------|---------------|
-| `src/components/personnalites/ActeurCard.tsx` | Ajouter menu dropdown avec options archiver/supprimer |
-| `src/components/personnalites/ActeurDetail.tsx` | Ajouter zone "Danger" avec boutons archiver/supprimer |
-| `src/pages/PersonnalitesPage.tsx` | Ajouter dialog de confirmation de suppression + logique |
+| Fichier | Action | Description |
+|---------|--------|-------------|
+| `src/pages/PersonnalitesPage.tsx` | Modifier | Refonte du layout avec header compact et barre unifiée |
+| `src/components/personnalites/ActeurCard.tsx` | Modifier | Ajout Heat indicator, score influence, réseau mini |
+| `src/components/personnalites/StatsBar.tsx` | Supprimer/Remplacer | Intégrer les stats dans le header compact |
+| `src/components/personnalites/ActeurFilters.tsx` | Modifier | Fusionner avec les tabs dans une barre unifiée |
 
 ---
 
-## Logique métier
+## Nouvelles fonctionnalités par composant
 
-### Archiver (Soft Delete)
-- Met à jour `actif = false` via `useUpdatePersonnalite`
-- L'acteur n'apparaît plus dans la liste par défaut (filtre `actif: true`)
-- Réversible : peut être restauré ultérieurement
+### 1. Header compact avec stats intégrées
 
-### Supprimer (Hard Delete)  
-- Supprime définitivement via `useDeletePersonnalite` (hook existant)
-- Requiert une confirmation explicite
-- Action irréversible
+Remplacer les 4 grosses cards par des badges compacts :
 
----
-
-## Composants à implémenter
-
-### 1. Menu d'actions dans ActeurCard
-
-Ajout d'un `DropdownMenu` avec les options :
-- Modifier (existant)
-- Archiver
-- Supprimer
-
-```tsx
-// ActeurCard.tsx - Menu contextuel
-<DropdownMenu>
-  <DropdownMenuTrigger asChild>
-    <Button variant="ghost" size="icon" className="h-8 w-8">
-      <MoreHorizontal className="h-4 w-4" />
-    </Button>
-  </DropdownMenuTrigger>
-  <DropdownMenuContent align="end">
-    <DropdownMenuItem onClick={onEdit}>
-      <Pencil className="h-4 w-4 mr-2" />
-      Modifier
-    </DropdownMenuItem>
-    <DropdownMenuSeparator />
-    <DropdownMenuItem onClick={onArchive}>
-      <Archive className="h-4 w-4 mr-2" />
-      Archiver
-    </DropdownMenuItem>
-    <DropdownMenuItem onClick={onDelete} className="text-destructive">
-      <Trash2 className="h-4 w-4 mr-2" />
-      Supprimer
-    </DropdownMenuItem>
-  </DropdownMenuContent>
-</DropdownMenu>
+```text
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│  🎯 Cartographie des Acteurs                                                        │
+│  Suivi de l'influence et des interactions du secteur                               │
+│                                                              [Stats compactes]      │
+│                                                              ┌───────┐ ┌───────┐   │
+│                                                              │ 42    │ │ 85%   │   │
+│                                                              │Acteurs│ │Compl. │   │
+│                                                              └───────┘ └───────┘   │
+│                                              [Liste/Radar]   [+ Ajouter un acteur]  │
+└─────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2. Zone Danger dans ActeurDetail
+### 2. Barre de filtres unifiée (UnifiedFilterBar)
 
-Section en bas du panneau de détail (visible uniquement pour les admins) :
+Fusion recherche + tabs cercles + dropdowns en une seule ligne :
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│  [🔍 Rechercher un acteur...]  [Tous] [C1] [C2] [C3] [C4]   [Catégorie▼] [⚙️ Plus] │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 3. ActeurCard "Smart" avec indicateurs dynamiques
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│  NOUVELLE CARTE ACTEUR                                                              │
+│  ┌────────────────────────────────────────────────────────────────────────────────┐│
+│  │                                                                                ││
+│  │  [Avatar]──[🔴85%] ← Heat indicator (météo médiatique)                        ││
+│  │     │                                                                          ││
+│  │     ├── Nom Prénom                                                            ││
+│  │     ├── [Cercle 1] [Régulateur]                                               ││
+│  │     │                                                                          ││
+│  │     ├── Fonction @ Organisation                                               ││
+│  │     │                                                                          ││
+│  │     ├── [#5G] [#Digitalisation] [#Startups] ← Tags thématiques                ││
+│  │     │                                                                          ││
+│  │  ───────────────────────────────────────────────────────────────────────────  ││
+│  │                                                                                ││
+│  │  [👤👤👤+4 Connexions]                              [████████░░ 85] Influence ││
+│  │   ↑ Mini-réseau                                                                ││
+│  │                                                                                ││
+│  └────────────────────────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Détails techniques
+
+### Heat Indicator (Météo médiatique)
+
+Basé sur `derniere_activite` et un futur champ `nb_mentions_recent` :
 
 ```tsx
-// ActeurDetail.tsx - Zone Danger
-{isAdmin && (
-  <>
-    <Separator className="my-4" />
-    <div className="p-4 rounded-lg border border-destructive/20 bg-destructive/5">
-      <h3 className="text-sm font-semibold text-destructive mb-3 flex items-center gap-2">
-        <AlertTriangle className="h-4 w-4" />
-        Zone sensible
-      </h3>
-      <div className="flex gap-2">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={onArchive}
-          className="gap-1"
-        >
-          <Archive className="h-3.5 w-3.5" />
-          Archiver
-        </Button>
-        <Button 
-          variant="destructive" 
-          size="sm" 
-          onClick={onDelete}
-          className="gap-1"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-          Supprimer
-        </Button>
-      </div>
+// Calcul du "Heat" - Visibilité médiatique récente
+const calculateMediaHeat = (personnalite: Personnalite): number => {
+  // Pour l'instant, basé sur score_influence + activité récente
+  const baseScore = personnalite.score_influence;
+  const hasRecentActivity = personnalite.derniere_activite && 
+    new Date(personnalite.derniere_activite) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  
+  if (hasRecentActivity) return Math.min(baseScore + 20, 100);
+  return baseScore;
+};
+
+// Affichage conditionnel (seulement si heat > 50)
+{mediaHeat > 50 && (
+  <div className="absolute -bottom-1 -right-1 bg-background p-0.5 rounded-full">
+    <div className="flex items-center gap-0.5 bg-destructive text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+      <TrendingUp className="h-2 w-2" />
+      {mediaHeat}%
     </div>
-  </>
+  </div>
 )}
 ```
 
-### 3. Dialog de confirmation
+### Mini-réseau de connexions
 
-Ajout d'un `AlertDialog` dans `PersonnalitesPage.tsx` :
+Simulation basée sur les acteurs du même cercle/catégorie :
 
 ```tsx
-// PersonnalitesPage.tsx - État
-const [deletingActeur, setDeletingActeur] = useState<Personnalite | null>(null);
-const deletePersonnalite = useDeletePersonnalite();
-const updatePersonnalite = useUpdatePersonnalite();
-
-// Fonctions
-const handleArchive = async (acteur: Personnalite) => {
-  await updatePersonnalite.mutateAsync({ id: acteur.id, actif: false });
-  toast.success('Acteur archivé', { 
-    description: `${acteur.prenom || ''} ${acteur.nom} a été archivé.` 
-  });
-  setDetailOpen(false);
+// Connexions simulées (à terme, table de relations dans DB)
+const getConnections = (personnalite: Personnalite, all: Personnalite[]): Personnalite[] => {
+  return all
+    .filter(p => p.id !== personnalite.id)
+    .filter(p => p.cercle === personnalite.cercle || p.organisation === personnalite.organisation)
+    .slice(0, 3);
 };
 
-const confirmDelete = async () => {
-  if (deletingActeur) {
-    await deletePersonnalite.mutateAsync(deletingActeur.id);
-    toast.success('Acteur supprimé', { 
-      description: `${deletingActeur.prenom || ''} ${deletingActeur.nom} a été supprimé définitivement.` 
-    });
-    setDeletingActeur(null);
-    setDetailOpen(false);
-  }
-};
-
-// Dialog de confirmation
-<AlertDialog open={!!deletingActeur} onOpenChange={(open) => !open && setDeletingActeur(null)}>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>Supprimer cet acteur ?</AlertDialogTitle>
-      <AlertDialogDescription>
-        L'acteur "{deletingActeur?.prenom} {deletingActeur?.nom}" sera 
-        définitivement supprimé. Cette action est irréversible.
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <AlertDialogCancel>Annuler</AlertDialogCancel>
-      <AlertDialogAction 
-        onClick={confirmDelete} 
-        className="bg-destructive text-destructive-foreground"
-      >
-        Supprimer
-      </AlertDialogAction>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+// Affichage
+<div className="flex -space-x-2">
+  {connections.slice(0, 3).map(c => (
+    <Avatar key={c.id} className="h-6 w-6 border-2 border-background">
+      <AvatarFallback className="text-[8px]">{c.nom[0]}</AvatarFallback>
+    </Avatar>
+  ))}
+  {remainingCount > 0 && (
+    <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[9px] border-2 border-background">
+      +{remainingCount}
+    </div>
+  )}
+</div>
 ```
 
----
-
-## Props à ajouter
-
-### ActeurCard
+### Barre d'influence visuelle
 
 ```tsx
-interface ActeurCardProps {
-  personnalite: Personnalite;
-  onClick?: () => void;
-  onEdit?: () => void;
-  onArchive?: () => void;  // NOUVEAU
-  onDelete?: () => void;   // NOUVEAU
-}
+// Jauge d'influence compacte
+<div className="flex items-center gap-2">
+  <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+    <div 
+      className="h-full bg-primary rounded-full transition-all" 
+      style={{ width: `${personnalite.score_influence}%` }}
+    />
+  </div>
+  <span className="text-xs font-bold text-primary">
+    {personnalite.score_influence}
+  </span>
+</div>
 ```
 
-### ActeurDetail
+---
+
+## Restructuration de la page
+
+### Avant (PersonnalitesPage)
+1. Header avec titre
+2. StatsBar (4 cards + breakdown)
+3. ActeurFilters (recherche + chips + dropdowns)
+4. Tabs (Tous/C1/C2/C3/C4)
+5. Grid de cartes par cercle
+
+### Après (PersonnalitesPage)
+1. **Header compact** avec stats inline + toggle vue + bouton ajouter
+2. **UnifiedFilterBar** combinant recherche + tabs + filtres avancés
+3. **Grid directe** sans headers de cercle répétitifs
+
+---
+
+## Composant UnifiedFilterBar
+
+Nouveau composant fusionnant `ActeurFilters` et les `Tabs` :
 
 ```tsx
-interface ActeurDetailProps {
-  personnalite: Personnalite | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onEdit?: () => void;
-  onArchive?: () => void;  // NOUVEAU
-  onDelete?: () => void;   // NOUVEAU
+interface UnifiedFilterBarProps {
+  filters: PersonnalitesFilters;
+  onFiltersChange: (f: PersonnalitesFilters) => void;
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+  stats: PersonnalitesStats;
 }
+
+// Structure
+<div className="bg-card p-2 rounded-xl border shadow-sm flex flex-col sm:flex-row gap-3 items-center">
+  
+  {/* Zone de recherche */}
+  <div className="relative flex-1 min-w-[200px]">
+    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+    <Input placeholder="Rechercher..." className="pl-10" />
+  </div>
+
+  {/* Tabs Cercles intégrés */}
+  <div className="flex bg-muted/50 p-1 rounded-lg">
+    <button className={cn(activeTab === 'all' && 'bg-background shadow-sm')}>
+      Tous <Badge>{stats.total}</Badge>
+    </button>
+    {[1,2,3,4].map(c => (
+      <button key={c} className={cn(activeTab === c.toString() && 'bg-background shadow-sm')}>
+        <div className={cn('h-2 w-2 rounded-full', CERCLE_COLORS[c])} />
+        C{c}
+      </button>
+    ))}
+  </div>
+
+  {/* Filtres additionnels */}
+  <Select value={filters.categorie || 'all'}>...</Select>
+  
+  <Button variant="ghost" size="sm">
+    <Filter className="h-4 w-4" /> Plus
+  </Button>
+</div>
 ```
 
 ---
 
-## Flux utilisateur
+## Impact sur les fichiers existants
 
-### Archivage
-1. Clic sur "Archiver" (card ou détail)
-2. Action immédiate avec toast de confirmation
-3. L'acteur disparaît de la liste (car filtre `actif: true`)
+### StatsBar.tsx
+- **Action** : Simplifier en composant `CompactStats`
+- Garder uniquement : Total acteurs + Complétude en badges inline
 
-### Suppression
-1. Clic sur "Supprimer" (card ou détail)
-2. Dialog de confirmation s'affiche
-3. Confirmation → suppression + toast
-4. L'acteur est définitivement supprimé
+### ActeurFilters.tsx
+- **Action** : Fusionner dans `UnifiedFilterBar`
+- Supprimer les chips cercles (intégrés aux tabs)
+- Garder la recherche et les dropdowns catégorie/alerte
+
+### CercleHeader.tsx
+- **Action** : Conserver mais simplifier (retirer la progress bar redondante)
+- Utiliser uniquement quand `activeTab === 'all'` pour séparer les sections
+
+### ActeurCard.tsx
+- **Action** : Enrichir avec :
+  - Heat indicator sur l'avatar
+  - Mini-réseau de connexions dans le footer
+  - Barre d'influence visuelle
+  - Tags thématiques plus visibles
 
 ---
 
-## Récapitulatif des changements
+## Récapitulatif des améliorations UX
 
-| Composant | Changement |
-|-----------|------------|
-| `ActeurCard.tsx` | Ajouter `DropdownMenu` avec Archiver/Supprimer |
-| `ActeurDetail.tsx` | Ajouter zone "Danger" avec boutons d'action |
-| `PersonnalitesPage.tsx` | Ajouter état `deletingActeur`, hooks, AlertDialog, handlers |
-| `usePersonnalites.ts` | Aucun changement (hooks déjà existants) |
+| Problème | Solution |
+|----------|----------|
+| Triple redondance cercles | Barre unifiée avec tabs intégrés |
+| Stats trop volumineuses | Badges compacts dans le header |
+| Cartes statiques "annuaire" | Indicateurs Heat + Influence + Connexions |
+| Pas de contexte thématique | Tags thématiques mis en avant |
+| Actions cachées | Menu contextuel conservé mais plus visible au hover |
+
+---
+
+## Structure finale de la page
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│  🎯 Cartographie des Acteurs                    [42 Acteurs] [85%]  [Liste▼] [+Add] │
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│  [🔍 Rechercher...] [Tous(42)] [●C1(12)] [●C2(15)] [●C3(8)] [●C4(7)]  [Catégorie▼] │
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                      │
+│  Cercle 1 - Institutionnels Nationaux (12 acteurs)                                  │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐                    │
+│  │ [Avatar]🔥85│ │ [Avatar]    │ │ [Avatar]🔥72│ │ [Avatar]    │                    │
+│  │ I. Konaté  │ │ G. Beugré   │ │ Y. Bamba    │ │ ...         │                    │
+│  │ [C1][Régul]│ │ [C1][Expert]│ │ [C1][Opér.] │ │             │                    │
+│  │ Ministre   │ │ DG ANSUT    │ │ PCA ANSUT   │ │             │                    │
+│  │ #Digit #5G │ │ #Infra #SU  │ │ #Stratégie  │ │             │                    │
+│  │────────────│ │────────────│ │────────────│ │             │                    │
+│  │👤👤👤+4    │ │👤👤+2       │ │👤👤👤+1    │ │             │                    │
+│  │██████░ 92  │ │█████░░ 88  │ │████░░░ 75  │ │             │                    │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘                    │
+│                                                                                      │
+│  Cercle 2 - Opérateurs & Connectivité (15 acteurs)                                  │
+│  ...                                                                                 │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+```
 
