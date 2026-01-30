@@ -10,6 +10,7 @@ import { ActualitesSlide } from '@/components/presentation/slides/ActualitesSlid
 import { FluxSlide } from '@/components/presentation/slides/FluxSlide';
 import { ActeursSlide } from '@/components/presentation/slides/ActeursSlide';
 import { DossiersSlide } from '@/components/presentation/slides/DossiersSlide';
+import { NewsletterStudioSlide } from '@/components/presentation/slides/NewsletterStudioSlide';
 import { AssistantSlide } from '@/components/presentation/slides/AssistantSlide';
 import { AlertesSlide } from '@/components/presentation/slides/AlertesSlide';
 import { ArchitectureSlide } from '@/components/presentation/slides/ArchitectureSlide';
@@ -22,7 +23,8 @@ const slides = [
   { component: ActualitesSlide, title: 'Actualités' },
   { component: FluxSlide, title: 'Flux de Veille' },
   { component: ActeursSlide, title: 'Acteurs' },
-  { component: DossiersSlide, title: 'Dossiers' },
+  { component: DossiersSlide, title: 'Studio Publication' },
+  { component: NewsletterStudioSlide, title: 'Studio Newsletter' },
   { component: AssistantSlide, title: 'Assistant IA' },
   { component: AlertesSlide, title: 'Alertes' },
   { component: ArchitectureSlide, title: 'Architecture' },
