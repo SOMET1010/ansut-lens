@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, ExternalLink, Share2, MessageSquare, Layers, User, Building, Sparkles, Loader2, ArrowRight, FileText, AlertCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, ExternalLink, Share2, MessageSquare, Layers, User, Building, Sparkles, Loader2, ArrowRight, FileText, AlertCircle, Cpu, TrendingUp, Scale, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -296,18 +296,38 @@ export function ArticleCluster({
                         <div>
                           <p className="text-xs text-muted-foreground mb-2">Répartition par quadrant</p>
                           <div className="space-y-2">
-                            {Object.entries(analyseData.quadrant_distribution).map(([quadrant, score]) => (
-                              <div key={quadrant} className="flex items-center gap-2">
-                                <span className="w-24 text-xs capitalize">{quadrant}</span>
-                                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                                  <div 
-                                    className="h-full bg-primary/70 transition-all" 
-                                    style={{ width: `${score}%` }}
-                                  />
-                                </div>
-                                <span className="text-xs w-8 text-right">{score}%</span>
-                              </div>
-                            ))}
+                            {(() => {
+                              const quadrantConfig: Record<string, { icon: React.ElementType; label: string }> = {
+                                tech: { icon: Cpu, label: 'Tech' },
+                                market: { icon: TrendingUp, label: 'Market' },
+                                regulation: { icon: Scale, label: 'Regulation' },
+                                reputation: { icon: Star, label: 'Reputation' }
+                              };
+                              
+                              return Object.entries(analyseData.quadrant_distribution).map(([quadrant, score]) => {
+                                const config = quadrantConfig[quadrant.toLowerCase()] ?? { 
+                                  icon: null, 
+                                  label: quadrant 
+                                };
+                                const IconComponent = config.icon;
+                                
+                                return (
+                                  <div key={quadrant} className="flex items-center gap-2">
+                                    <span className="w-28 text-xs flex items-center gap-1.5">
+                                      {IconComponent && <IconComponent className="h-3.5 w-3.5 text-muted-foreground" />}
+                                      <span className="capitalize">{config.label}</span>
+                                    </span>
+                                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                                      <div 
+                                        className="h-full bg-primary/70 transition-all" 
+                                        style={{ width: `${score}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-xs w-8 text-right">{score}%</span>
+                                  </div>
+                                );
+                              });
+                            })()}
                           </div>
                         </div>
                       )}
