@@ -1,138 +1,183 @@
 
-# Génération de Guides de Formation PDF Téléchargeables
 
-## Objectif
+# Transformation de la Page Utilisateurs en Centre de Gouvernance des Équipes
 
-Créer une nouvelle page d'administration `/admin/formation` permettant de visualiser et télécharger les guides de formation en format PDF pour les Administrateurs et les Utilisateurs.
+## Vision
 
-## Approche technique
+Transformer la page `/admin/users` d'une simple liste CRUD en un **Centre de Gouvernance Visuel** qui répond aux questions essentielles :
+- **Qui est cette personne ?** (Rôle métier + Département)
+- **Que fait-elle sur la plateforme ?** (Dernière activité)
+- **Est-ce sécurisé ?** (Indicateurs de connexion)
 
-La bibliothèque `react-to-pdf` est déjà installée et utilisée dans le projet (voir `PresentationPage.tsx`). Nous allons réutiliser cette approche pour générer les PDFs des guides de formation.
+## Analyse de l'existant
 
-Le contenu Markdown sera rendu avec `react-markdown` + `remark-gfm` (déjà utilisés dans `MarkdownEditor.tsx` et `DossierView.tsx`).
+### Points forts actuels
+- KPIs de comptage (Total, Actifs, En attente, Désactivés)
+- Filtres par statut et rôle
+- Actions complètes (invitation, désactivation, suppression)
+- Tooltips informatifs sur les statuts
+
+### Améliorations proposées
+- Vue "Cartes" plus humaine en plus de la table
+- Indicateurs de présence en temps réel
+- Affichage du département (champ existant mais non utilisé)
+- KPIs de sécurité enrichis
+- Carte d'invitation rapide
+
+## Modifications planifiées
+
+### 1. Nouveau composant `UserCard`
+
+Créer un composant carte "visite" pour chaque utilisateur :
+
+```text
+┌─────────────────────────────────────────┐
+│  [⋮]                          En ligne ●│
+│                                         │
+│     ┌──────┐                            │
+│     │  SP  │ ●                          │
+│     └──────┘                            │
+│                                         │
+│     SOMET PATRICK                       │
+│     patrick.somet@ansut.ci              │
+│                                         │
+│  [Administrateur]  [Direction Générale] │
+│                                         │
+│  Dernière activité          Statut      │
+│  Il y a 5 min               ● Actif     │
+└─────────────────────────────────────────┘
+```
+
+### 2. KPIs de sécurité enrichis
+
+Ajouter des métriques de gouvernance :
+
+| KPI | Description |
+|-----|-------------|
+| Licences actives | X/Y format avec plan |
+| Connectés maintenant | Nombre de sessions < 15 min |
+| Invitations en attente | Avec délai d'expiration |
+| Administrateurs | Nombre de comptes admin |
+
+### 3. Toggle Vue Carte/Table
+
+Permettre de basculer entre :
+- **Vue Cartes** : Présentation visuelle, idéale pour petites équipes
+- **Vue Table** : Liste compacte, idéale pour recherche rapide
+
+### 4. Indicateurs de dernière activité
+
+Remplacer "Date de création" par "Dernière activité" avec formatage intelligent :
+- "À l'instant" (< 5 min)
+- "Il y a 15 min"
+- "Il y a 2h"
+- "Hier 14:30"
+- "Jamais connecté"
+
+### 5. Affichage du département
+
+Exploiter le champ `department` existant dans la table `profiles` :
+- Badge secondaire sur les cartes
+- Colonne dans la vue table
+- Possibilité de filtrer par département
 
 ## Fichiers à créer
 
 | Fichier | Description |
 |---------|-------------|
-| `src/pages/admin/FormationPage.tsx` | Page principale avec visualisation et export PDF |
-| `src/components/formation/GuideViewer.tsx` | Composant de visualisation Markdown stylisé pour PDF |
-| `src/components/formation/GuidePDFLayout.tsx` | Layout PDF avec en-tête ANSUT et pagination |
+| `src/components/admin/UserCard.tsx` | Carte utilisateur visuelle avec indicateurs |
+| `src/components/admin/SecurityKpiCards.tsx` | KPIs de sécurité enrichis |
+| `src/components/admin/InviteQuickCard.tsx` | Carte d'invitation rapide (placeholder visuel) |
 
 ## Fichiers à modifier
 
 | Fichier | Modification |
 |---------|--------------|
-| `src/App.tsx` | Ajouter la route `/admin/formation` |
-| `src/pages/AdminPage.tsx` | Ajouter le lien vers la page Formation |
-
-## Architecture de la page
-
-```text
-┌─────────────────────────────────────────────────────────────┐
-│  Guides de Formation                    [PDF Admin] [PDF User]│
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐  ┌─────────────────────────────────────┤
-│  │ 📚 Guides       │  │                                     │
-│  │                 │  │    [Rendu Markdown du guide]        │
-│  │ ● Administrateur│  │                                     │
-│  │ ○ Utilisateur   │  │    - Table des matières             │
-│  │                 │  │    - Sections avec icônes           │
-│  │                 │  │    - Tableaux formatés              │
-│  │                 │  │    - Code blocks                    │
-│  │                 │  │                                     │
-│  └─────────────────┘  └─────────────────────────────────────┘
-└─────────────────────────────────────────────────────────────┘
-```
-
-## Fonctionnalités
-
-### 1. Sélection du guide
-- Boutons ou onglets pour choisir entre "Administrateur" et "Utilisateur"
-- Affichage du contenu Markdown formaté dans la zone principale
-
-### 2. Prévisualisation PDF
-- Le contenu affiché correspond exactement au rendu PDF
-- Layout optimisé pour impression A4 portrait
-
-### 3. Export PDF
-- Bouton "Télécharger PDF Administrateur" → `ANSUT-RADAR-Guide-Admin.pdf`
-- Bouton "Télécharger PDF Utilisateur" → `ANSUT-RADAR-Guide-User.pdf`
-- En-tête ANSUT sur chaque page avec logo
-- Pied de page avec numéro de page et date de génération
+| `src/pages/admin/UsersPage.tsx` | Intégrer vue carte, toggle, KPIs enrichis, département |
 
 ## Détails techniques
 
-### FormationPage.tsx
+### UserCard.tsx
 
-Structure principale :
-```typescript
-// Import du contenu Markdown directement
-import { useState } from 'react';
-import { usePDF } from 'react-to-pdf';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Download, BookOpen, Shield } from 'lucide-react';
-import { GuideViewer } from '@/components/formation/GuideViewer';
-import { GuidePDFLayout } from '@/components/formation/GuidePDFLayout';
+```text
+Props :
+- user: UserWithProfile (id, full_name, avatar_url, role, disabled, department)
+- status: UserStatus (email, email_confirmed_at, last_sign_in_at)
+- isCurrentUser: boolean
+- onRoleChange, onToggle, onDelete, etc.
 
-// Contenu des guides (importés comme chaînes raw)
-const ADMIN_GUIDE = `...`; // Contenu de ADMIN.md
-const USER_GUIDE = `...`;  // Contenu de USER.md
+Features :
+- Avatar avec indicateur de présence (point vert si < 15 min)
+- Badge rôle coloré
+- Badge département
+- Dernière activité formatée intelligemment
+- Menu actions (3 points)
 ```
 
-### GuidePDFLayout.tsx
+### SecurityKpiCards.tsx
 
-Layout PDF avec :
-- En-tête avec logo ANSUT et titre du guide
-- Zone de contenu avec styles optimisés pour impression
-- Pied de page avec date et version
+4 cartes horizontales :
+1. **Licences actives** - X utilisateurs actifs
+2. **Sessions récentes** - Connectés < 15 min
+3. **En attente** - Invitations non confirmées
+4. **Administrateurs** - Compteur sécurité
 
-### GuideViewer.tsx
+### UsersPage.tsx modifications
 
-Composant de rendu Markdown avec :
-- `ReactMarkdown` + `remarkGfm`
-- Styles prose Tailwind adaptés
-- Support des tableaux, listes, code blocks
+1. Ajouter state `viewMode: 'cards' | 'table'`
+2. Ajouter toggle dans le header
+3. Récupérer `department` dans la query profiles
+4. Calculer "sessions récentes" (last_sign_in_at < 15 min)
+5. Conditionnel : afficher Grid de UserCard ou Table existante
 
-## Intégration
+## Schéma de l'interface finale
 
-### Route dans App.tsx
-
-```typescript
-<Route element={<PermissionRoute permission="access_admin" />}>
-  {/* ... autres routes admin ... */}
-  <Route path="/admin/formation" element={<FormationPage />} />
-</Route>
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│  ← Retour    Gouvernance des Accès           [Inviter un membre]   │
+│              Gérez les membres et la sécurité                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌────────────┐ │
+│  │ 4 Utilisat.  │ │ 2 En ligne   │ │ 1 En attente │ │ 1 Admin    │ │
+│  │ sur 10 lic.  │ │ session <15m │ │ expire 48h   │ │ privilégié │ │
+│  └──────────────┘ └──────────────┘ └──────────────┘ └────────────┘ │
+│                                                                     │
+│  [🔍 Rechercher...]  [Statut: Tous ▾]  [Rôle: Tous ▾]  [□ ≡]      │
+│                                                                     │
+│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐       │
+│  │   [SP] ●        │ │   [DJ]          │ │   [NH]          │       │
+│  │ SOMET PATRICK   │ │ DJEKE JOSEPH    │ │ NGORAN HERVE    │       │
+│  │ Administrateur  │ │ Analyste        │ │ Observateur     │       │
+│  │ Dir. Générale   │ │ Stratégie       │ │ Communication   │       │
+│  │ Il y a 5 min    │ │ Il y a 2h       │ │ Jamais connecté │       │
+│  └─────────────────┘ └─────────────────┘ └─────────────────┘       │
+│                                                                     │
+│  ┌─────────────────┐                                                │
+│  │      [+]        │                                                │
+│  │   Ajouter un    │                                                │
+│  │   collaborateur │                                                │
+│  └─────────────────┘                                                │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Lien dans AdminPage.tsx
+## Labels de rôles enrichis
 
-Ajouter une carte dans la grille d'administration :
-```typescript
-{
-  title: 'Guides de Formation',
-  description: 'Documentation PDF téléchargeable',
-  icon: GraduationCap,
-  href: '/admin/formation',
-  permission: 'access_admin'
-}
-```
+Mapper les rôles techniques vers des libellés métier :
 
-## Styles PDF optimisés
-
-Pour garantir un rendu PDF de qualité :
-- Fond blanc forcé (`bg-white`)
-- Texte noir (`text-black`)
-- Marges généreuses pour impression
-- Police système pour compatibilité
-- Tableaux avec bordures visibles
-- Breaks de page automatiques
+| Rôle technique | Label actuel | Label proposé |
+|----------------|--------------|---------------|
+| `admin` | Administrateur | Administrateur |
+| `user` | Utilisateur | Analyste |
+| `council_user` | Membre du conseil | Décideur |
+| `guest` | Invité | Observateur |
 
 ## Résultat attendu
 
-Les administrateurs pourront :
-1. Accéder à `/admin/formation`
-2. Prévisualiser les guides Administrateur et Utilisateur
-3. Télécharger les PDFs formatés avec branding ANSUT
-4. Distribuer ces PDFs aux nouveaux utilisateurs pour la formation
+1. **Interface plus humaine** - Les utilisateurs sont présentés comme des membres d'équipe
+2. **Contexte métier** - Département et rôle visibles immédiatement
+3. **Sécurité visible** - Indicateurs de sessions et invitations en attente
+4. **Flexibilité** - Toggle entre vue cartes (petites équipes) et table (grandes équipes)
+5. **Backwards compatible** - Toutes les actions existantes restent disponibles
+
