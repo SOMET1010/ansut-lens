@@ -1,98 +1,97 @@
 
-# Mise à jour de la Présentation avec les nouvelles fonctionnalités
+# Ajout de la Section Permissions Granulaires dans la Documentation Administrateur
 
-## Contexte
+## Objectif
 
-La présentation actuelle ne reflète pas les dernières fonctionnalités majeures ajoutées à la plateforme :
+Documenter le système de permissions granulaires disponible dans ANSUT RADAR, en détaillant les 17 permissions existantes organisées en 3 catégories.
 
-1. **Studio de Publication** - Le nouveau workflow unifié pour Notes Stratégiques et Newsletters
-2. **Newsletter Studio** - L'éditeur visuel WYSIWYG avec drag-and-drop de blocs
-3. **Prévisualisation Responsive** - Le sélecteur Desktop/Tablette/Mobile dans le Studio
+## Contenu à ajouter
 
-## Modifications proposées
+### Nouvelle section "Système de Permissions"
 
-### 1. Créer une nouvelle slide "Studio Newsletter"
+Insérer après la section "Les 4 rôles" (ligne 92) une nouvelle section détaillant :
 
-Nouvelle slide dédiée au Studio Newsletter avec ses 3 fonctionnalités clés :
-- **Éditeur de blocs** - Drag-and-drop avec @dnd-kit
-- **Blocs ANSUT** - Header, Édito, Articles, Tech, Agenda, Footer
-- **Prévisualisation responsive** - Desktop, Tablette, Mobile
+1. **Présentation du système** - Explication du fonctionnement basé sur les permissions
+2. **Catégorie Consultation** - 4 permissions de lecture
+3. **Catégorie Actions** - 4 permissions d'interaction
+4. **Catégorie Administration** - 9 permissions de gestion
 
-### 2. Mettre à jour la slide "Dossiers"
+### Permissions à documenter
 
-Renommer en "Studio de Publication" et mettre à jour le contenu :
-- **Notes Stratégiques** - Rédaction Markdown avec génération IA
-- **Newsletters** - Production et édition visuelle
-- **Workflow unifié** - Génération, édition, validation, envoi
+| Code | Catégorie | Libellé | Description |
+|------|-----------|---------|-------------|
+| `view_radar` | Consultation | Voir le radar | Accès au tableau de bord radar |
+| `view_actualites` | Consultation | Voir les actualités | Accès à la liste des actualités |
+| `view_personnalites` | Consultation | Voir les personnalités | Accès aux fiches acteurs clés |
+| `view_dossiers` | Consultation | Voir les dossiers | Accès aux dossiers stratégiques |
+| `create_flux` | Actions | Créer des flux | Créer ses propres flux de veille |
+| `edit_dossiers` | Actions | Modifier les dossiers | Créer et modifier des dossiers |
+| `use_assistant` | Actions | Utiliser l'assistant IA | Poser des questions à l'IA |
+| `receive_alerts` | Actions | Recevoir des alertes | Notifications et emails d'alerte |
+| `access_admin` | Admin | Accès administration | Permet d'accéder à la section admin |
+| `manage_users` | Admin | Gérer les utilisateurs | Inviter, désactiver, supprimer |
+| `manage_roles` | Admin | Gérer les rôles | Modifier les permissions |
+| `view_audit_logs` | Admin | Voir les logs d'audit | Consulter l'historique |
+| `manage_cron_jobs` | Admin | Gérer les tâches CRON | Activer/désactiver collectes |
+| `manage_keywords` | Admin | Gérer les mots-clés | Configurer la veille |
+| `manage_sources` | Admin | Gérer les sources | Configurer sources média |
+| `import_actors` | Admin | Importer des acteurs | Import en masse CSV |
+| `manage_newsletters` | Admin | Gérer les newsletters | Créer et envoyer newsletters |
 
-### 3. Ajouter la nouvelle slide dans la navigation
-
-Insérer la slide "Studio Newsletter" après "Studio de Publication" dans la liste des slides.
-
-## Fichiers à créer
-
-| Fichier | Description |
-|---------|-------------|
-| `src/components/presentation/slides/NewsletterStudioSlide.tsx` | Nouvelle slide présentant le Studio Newsletter visuel |
-
-## Fichiers à modifier
+## Fichier à modifier
 
 | Fichier | Modification |
 |---------|--------------|
-| `src/components/presentation/slides/DossiersSlide.tsx` | Renommer en "Studio de Publication" et mettre à jour le contenu |
-| `src/pages/PresentationPage.tsx` | Ajouter NewsletterStudioSlide dans la liste des slides |
+| `docs/formation/ADMIN.md` | Ajouter la section "Système de Permissions" après la ligne 92 |
 
-## Détails techniques
+## Structure de la nouvelle section
 
-### NewsletterStudioSlide.tsx
+```markdown
+---
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                    Studio Newsletter                            │
-│                                                                 │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌───────────────┐ │
-│  │                  │  │                  │  │               │ │
-│  │  [GripVertical]  │  │  [LayoutGrid]    │  │  [Monitor]    │ │
-│  │  Drag & Drop     │  │  Blocs visuels   │  │  Responsive   │ │
-│  │                  │  │                  │  │               │ │
-│  │  Réorganisation  │  │  Header, Édito,  │  │  Desktop,     │ │
-│  │  intuitive des   │  │  Articles, Tech, │  │  Tablette,    │ │
-│  │  contenus        │  │  Agenda, Footer  │  │  Mobile       │ │
-│  │                  │  │                  │  │               │ │
-│  └──────────────────┘  └──────────────────┘  └───────────────┘ │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+## 🔐 Système de Permissions
+
+### Fonctionnement
+
+ANSUT RADAR utilise un système de permissions granulaires permettant de contrôler 
+précisément les accès de chaque rôle. Chaque permission peut être activée ou 
+désactivée individuellement par rôle.
+
+### Accès
+Menu Administration → **Rôles & Permissions** (`/admin/roles`)
+
+### Interface de configuration
+
+La matrice de permissions affiche :
+- En lignes : les permissions disponibles
+- En colonnes : les 4 rôles (Admin, User, Council User, Guest)
+- Cochez/décochez pour activer/désactiver
+
+> ⚠️ **Note** : Les permissions du rôle Admin ne peuvent pas être désactivées.
+
+### Permissions de Consultation
+
+[Tableau des 4 permissions consultation]
+
+### Permissions d'Actions
+
+[Tableau des 4 permissions actions]
+
+### Permissions d'Administration
+
+[Tableau des 9 permissions admin]
+
+### Bonnes pratiques
+
+- Principe du moindre privilège
+- Tester après modification
+- Documentation des changements
 ```
-
-Icônes utilisées : `GripVertical`, `LayoutGrid`, `Smartphone`
-
-### DossiersSlide.tsx (mis à jour)
-
-Nouveau titre : "Studio de Publication"
-
-Nouvelles sections :
-1. **Notes Stratégiques** - Icône `FileText`, description du workflow de rédaction
-2. **Newsletters** - Icône `Mail`, lien vers le studio visuel
-3. **Génération IA** - Icône `Sparkles`, génération automatique de contenu
 
 ## Résultat attendu
 
-La présentation PDF inclura :
-- Une slide "Studio de Publication" présentant le workflow global
-- Une slide "Studio Newsletter" mettant en avant l'éditeur visuel WYSIWYG
-- Navigation mise à jour avec les 2 nouvelles slides dans l'ordre logique
-
-## Ordre final des slides
-
-1. Couverture
-2. Objectifs
-3. Tableau de Bord
-4. Actualités
-5. Flux de Veille
-6. Acteurs
-7. **Studio de Publication** (anciennement "Dossiers")
-8. **Studio Newsletter** (nouvelle)
-9. Assistant IA
-10. Alertes
-11. Architecture
-12. Contact
+La documentation administrateur inclura une section complète sur :
+- Le fonctionnement du système de permissions
+- La liste exhaustive des 17 permissions avec codes et descriptions
+- Les bonnes pratiques de configuration
+- L'accès à l'interface de gestion (`/admin/roles`)
