@@ -33,56 +33,62 @@ export function SmartSidebar({
 
   return (
     <div className="space-y-5">
-      {/* Widget : Analyse de Sentiment (Corrigé) */}
+      {/* Widget : Analyse de Sentiment (Structure corrigée) */}
       <Card className="border-border/50">
         <CardContent className="p-5">
-          <h3 className="text-xs font-bold text-muted-foreground uppercase mb-6 flex items-center gap-2">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase mb-4 flex items-center gap-2">
             <BarChart2 className="h-3.5 w-3.5" /> Tonalité du jour
           </h3>
           
-          {/* Graphique avec hauteur augmentée et labels hover */}
-          <div className="flex items-end justify-between gap-3 h-24 px-2">
+          {/* Zone des barres - hauteur fixe avec position relative */}
+          <div className="flex items-end justify-between gap-3 h-24 px-2 mb-2">
             {/* Barre Positif */}
-            <div className="flex flex-col items-center w-1/3 group cursor-pointer">
-              <span className="text-xs font-bold text-signal-positive mb-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 transform translate-y-2 group-hover:translate-y-0">
+            <div className="flex-1 h-full relative group cursor-pointer">
+              {/* Pourcentage au hover */}
+              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-signal-positive opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
                 {sentimentDistribution.positive}%
               </span>
-              <div className="w-full bg-signal-positive/20 rounded-lg relative h-full overflow-hidden">
+              {/* Conteneur de la barre */}
+              <div className="absolute inset-0 bg-signal-positive/20 rounded-lg overflow-hidden">
                 <div 
                   className="absolute bottom-0 w-full bg-signal-positive rounded-lg transition-all duration-500 group-hover:brightness-110"
-                  style={{ height: `${sentimentDistribution.positive}%` }}
+                  style={{ height: `${Math.max(sentimentDistribution.positive, 5)}%` }}
                 />
               </div>
-              <span className="text-xs text-muted-foreground mt-2 font-medium">Positif</span>
             </div>
 
             {/* Barre Neutre */}
-            <div className="flex flex-col items-center w-1/3 group cursor-pointer">
-              <span className="text-xs font-bold text-muted-foreground mb-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 transform translate-y-2 group-hover:translate-y-0">
+            <div className="flex-1 h-full relative group cursor-pointer">
+              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
                 {sentimentDistribution.neutral}%
               </span>
-              <div className="w-full bg-muted-foreground/20 rounded-lg relative h-full overflow-hidden">
+              <div className="absolute inset-0 bg-muted-foreground/20 rounded-lg overflow-hidden">
                 <div 
                   className="absolute bottom-0 w-full bg-muted-foreground rounded-lg transition-all duration-500 group-hover:brightness-110"
-                  style={{ height: `${sentimentDistribution.neutral}%` }}
+                  style={{ height: `${Math.max(sentimentDistribution.neutral, 5)}%` }}
                 />
               </div>
-              <span className="text-xs text-muted-foreground mt-2 font-medium">Neutre</span>
             </div>
 
             {/* Barre Négatif */}
-            <div className="flex flex-col items-center w-1/3 group cursor-pointer">
-              <span className="text-xs font-bold text-signal-critical mb-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 transform translate-y-2 group-hover:translate-y-0">
+            <div className="flex-1 h-full relative group cursor-pointer">
+              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-signal-critical opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
                 {sentimentDistribution.negative}%
               </span>
-              <div className="w-full bg-signal-critical/20 rounded-lg relative h-full overflow-hidden">
+              <div className="absolute inset-0 bg-signal-critical/20 rounded-lg overflow-hidden">
                 <div 
                   className="absolute bottom-0 w-full bg-signal-critical rounded-lg transition-all duration-500 group-hover:brightness-110"
-                  style={{ height: `${sentimentDistribution.negative}%` }}
+                  style={{ height: `${Math.max(sentimentDistribution.negative, 5)}%` }}
                 />
               </div>
-              <span className="text-xs text-muted-foreground mt-2 font-medium">Négatif</span>
             </div>
+          </div>
+          
+          {/* Labels séparés en bas */}
+          <div className="flex justify-between px-2">
+            <span className="flex-1 text-center text-xs text-muted-foreground font-medium">Positif</span>
+            <span className="flex-1 text-center text-xs text-muted-foreground font-medium">Neutre</span>
+            <span className="flex-1 text-center text-xs text-muted-foreground font-medium">Négatif</span>
           </div>
         </CardContent>
       </Card>
