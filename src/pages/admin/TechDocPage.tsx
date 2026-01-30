@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, FileCode, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { usePDF } from 'react-to-pdf';
 import { TechDocPDFLayout } from '@/components/documentation/TechDocPDFLayout';
 import { GuideViewer } from '@/components/formation/GuideViewer';
 import { TECH_DOC_CONTENT } from '@/components/documentation/TechDocContent';
+import { cn } from '@/lib/utils';
 
 // Table des matières avec IDs correspondant aux ancres générées
 const TOC_ITEMS = [
@@ -29,6 +30,8 @@ const scrollToSection = (id: string) => {
 export default function TechDocPage() {
   const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>(TOC_ITEMS[0].id);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   const { toPDF, targetRef } = usePDF({
     filename: `ANSUT-RADAR-Documentation-Technique-${new Date().toISOString().split('T')[0]}.pdf`,
@@ -46,6 +49,36 @@ export default function TechDocPage() {
       setIsGenerating(false);
     }
   };
+
+  // IntersectionObserver pour détecter la section visible
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntries = entries.filter(e => e.isIntersecting);
+        if (visibleEntries.length > 0) {
+          const mostVisible = visibleEntries.reduce((prev, curr) => 
+            curr.intersectionRatio > prev.intersectionRatio ? curr : prev
+          );
+          setActiveSection(mostVisible.target.id);
+        }
+      },
+      {
+        root: scrollContainer,
+        rootMargin: '-10% 0px -80% 0px',
+        threshold: [0, 0.25, 0.5, 0.75, 1]
+      }
+    );
+
+    TOC_ITEMS.forEach((item) => {
+      const element = document.getElementById(item.id);
+      if (element) observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -94,12 +127,27 @@ export default function TechDocPage() {
             <button
               key={item.id}
               onClick={() => scrollToSection(item.id)}
-              className="flex items-center gap-2 p-2 rounded-lg hover:bg-primary/10 transition-colors cursor-pointer text-left group"
+              className={cn(
+                "flex items-center gap-2 p-2 rounded-lg transition-all cursor-pointer text-left group",
+                activeSection === item.id
+                  ? "bg-primary/20 ring-2 ring-primary/50"
+                  : "hover:bg-primary/10"
+              )}
             >
-              <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+              <span className={cn(
+                "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors",
+                activeSection === item.id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground"
+              )}>
                 {item.num}
               </span>
-              <span className="group-hover:text-primary transition-colors">{item.label}</span>
+              <span className={cn(
+                "transition-colors",
+                activeSection === item.id ? "text-primary font-medium" : "group-hover:text-primary"
+              )}>
+                {item.label}
+              </span>
             </button>
           ))}
         </div>
@@ -111,7 +159,7 @@ export default function TechDocPage() {
           <span className="text-xs text-muted-foreground font-medium">Prévisualisation du document</span>
           <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">Format A4</span>
         </div>
-        <div className="max-h-[70vh] overflow-y-auto bg-gray-200 dark:bg-gray-900 p-4">
+        <div ref={scrollContainerRef} className="max-h-[70vh] overflow-y-auto bg-gray-200 dark:bg-gray-900 p-4">
           <div className="mx-auto shadow-xl">
             <TechDocPDFLayout ref={targetRef}>
               <GuideViewer content={TECH_DOC_CONTENT} />
