@@ -1,59 +1,77 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { useState, useCallback } from 'react';
+import { TrendingUp, Loader2, Newspaper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RefreshCw, Search, TrendingUp, AlertTriangle, Newspaper, Clock, Sparkles, Loader2, ExternalLink } from 'lucide-react';
-import { useActualites, useLastCollecte, useTriggerCollecte, useEnrichActualite, calculateFreshness } from '@/hooks/useActualites';
-import { FreshnessIndicator, CollecteStatus } from '@/components/actualites/FreshnessIndicator';
-import { useCategoriesVeille } from '@/hooks/useMotsClesVeille';
+import { Card, CardContent } from '@/components/ui/card';
+import { useActualites, useTriggerCollecte, useEnrichActualite } from '@/hooks/useActualites';
+import { useArticleClusters } from '@/hooks/useArticleClusters';
+import { useSidebarAnalytics } from '@/hooks/useSidebarAnalytics';
+import { ArticleCluster } from '@/components/actualites/ArticleCluster';
+import { SmartSidebar } from '@/components/actualites/SmartSidebar';
+import { WatchHeader } from '@/components/actualites/WatchHeader';
+import { BigSearchBar } from '@/components/actualites/BigSearchBar';
+import { toast } from 'sonner';
 
-const quadrantLabels: Record<string, string> = {
-  tech: 'Technologie',
-  regulation: 'Régulation',
-  market: 'Marché',
-  reputation: 'Réputation',
+// Map période vers maxAgeHours
+const periodToMaxAge: Record<string, number | undefined> = {
+  '24h': 24,
+  '72h': 72,
+  '7d': 168,
+  '30d': 720,
+  'all': undefined
 };
 
 export default function ActualitesPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategorie, setSelectedCategorie] = useState<string>('all');
-  const [freshnessFilter, setFreshnessFilter] = useState<string>('all');
-  const [importanceFilter, setImportanceFilter] = useState<string>('all');
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('72h');
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [enrichingId, setEnrichingId] = useState<string | null>(null);
 
-  const { data: categories } = useCategoriesVeille();
-  const { data: lastCollecte, isLoading: isLoadingCollecte } = useLastCollecte();
+  const maxAgeHours = periodToMaxAge[selectedPeriod];
+
+  const { data: actualites, isLoading, refetch } = useActualites({
+    maxAgeHours,
+  });
+
   const triggerCollecte = useTriggerCollecte();
   const enrichActualite = useEnrichActualite();
 
-  // Calculer les filtres basés sur la fraîcheur
-  const maxAgeHours = freshnessFilter === '24h' ? 24 : freshnessFilter === '72h' ? 72 : freshnessFilter === '7d' ? 168 : undefined;
-  const minImportance = importanceFilter === 'high' ? 70 : importanceFilter === 'medium' ? 50 : undefined;
-
-  const { data: actualites, isLoading, refetch } = useActualites({
-    categorie: selectedCategorie !== 'all' ? selectedCategorie : undefined,
-    maxAgeHours,
-    minImportance,
-  });
-
-  // Filtrer par recherche
+  // Filtrer par recherche et tags actifs
   const filteredActualites = actualites?.filter(actu => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      actu.titre.toLowerCase().includes(searchLower) ||
-      actu.resume?.toLowerCase().includes(searchLower) ||
-      actu.source_nom?.toLowerCase().includes(searchLower) ||
-      actu.tags?.some(tag => tag.toLowerCase().includes(searchLower))
-    );
+    // Filtre recherche texte
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = 
+        actu.titre.toLowerCase().includes(searchLower) ||
+        actu.resume?.toLowerCase().includes(searchLower) ||
+        actu.source_nom?.toLowerCase().includes(searchLower) ||
+        actu.tags?.some(tag => tag.toLowerCase().includes(searchLower));
+      
+      if (!matchesSearch) return false;
+    }
+
+    // Filtre par tags actifs
+    if (activeFilters.length > 0) {
+      const hasTags = activeFilters.every(filter => 
+        actu.tags?.some(tag => tag.toLowerCase() === filter.toLowerCase()) ||
+        actu.source_nom?.toLowerCase() === filter.toLowerCase()
+      );
+      if (!hasTags) return false;
+    }
+
+    return true;
   });
+
+  // Clustering des articles
+  const clusters = useArticleClusters(filteredActualites);
+  
+  // Analytics pour la sidebar
+  const analytics = useSidebarAnalytics(filteredActualites, activeFilters);
 
   const handleRefresh = () => {
-    triggerCollecte.mutate('critique');
+    triggerCollecte.mutate('critique', {
+      onSuccess: () => refetch()
+    });
   };
 
   const handleEnrich = async (id: string) => {
@@ -65,406 +83,146 @@ export default function ActualitesPage() {
     }
   };
 
-  const needsEnrichment = (actu: { importance: number | null; analyse_ia: string | null }) => {
-    return actu.importance === null || actu.importance === 0;
+  const handleFilterChange = useCallback((tag: string) => {
+    setActiveFilters(prev => 
+      prev.includes(tag) 
+        ? prev.filter(f => f !== tag)
+        : [...prev, tag]
+    );
+  }, []);
+
+  const handleClearFilter = useCallback((filter: string) => {
+    setActiveFilters(prev => prev.filter(f => f !== filter));
+  }, []);
+
+  const handleExport = () => {
+    toast.info('Export en cours de développement');
   };
 
-  const parseAnalyseIA = (analyseIA: string | null) => {
-    if (!analyseIA) return null;
-    try {
-      return JSON.parse(analyseIA);
-    } catch {
-      return null;
-    }
+  const handlePersonClick = (name: string) => {
+    setSearchTerm(name);
+  };
+
+  const handleSourceClick = (source: string) => {
+    handleFilterChange(source);
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="min-h-screen bg-muted/20 animate-fade-in">
       {/* En-tête */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Actualités du Jour</h1>
-          <p className="text-muted-foreground">Veille temps réel secteur télécoms Côte d'Ivoire</p>
-        </div>
+      <WatchHeader
+        newArticlesCount={actualites?.length ?? 0}
+        selectedPeriod={selectedPeriod}
+        onPeriodChange={setSelectedPeriod}
+        onRefresh={handleRefresh}
+        onExport={handleExport}
+        isRefreshing={triggerCollecte.isPending}
+      />
 
-        <div className="flex items-center gap-3">
-          <CollecteStatus 
-            lastCollecteDate={lastCollecte?.created_at || null}
-            status={triggerCollecte.isPending ? 'loading' : lastCollecte?.statut === 'success' ? 'success' : 'error'}
-            nbResultats={lastCollecte?.nb_resultats || undefined}
-          />
-          <Button 
-            onClick={handleRefresh} 
-            disabled={triggerCollecte.isPending}
-            size="sm"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${triggerCollecte.isPending ? 'animate-spin' : ''}`} />
-            Rafraîchir
-          </Button>
-        </div>
-      </div>
+      {/* Barre de recherche principale */}
+      <BigSearchBar
+        value={searchTerm}
+        onChange={setSearchTerm}
+        activeFilters={activeFilters}
+        onClearFilter={handleClearFilter}
+      />
 
-      {/* Filtres */}
-      <Card className="glass">
-        <CardContent className="pt-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher par titre, source, tags..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            <Select value={selectedCategorie} onValueChange={setSelectedCategorie}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Catégorie" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les catégories</SelectItem>
-                {categories?.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.nom}>{cat.nom}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={freshnessFilter} onValueChange={setFreshnessFilter}>
-              <SelectTrigger className="w-[150px]">
-                <Clock className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Fraîcheur" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes</SelectItem>
-                <SelectItem value="24h">🟢 Moins de 24h</SelectItem>
-                <SelectItem value="72h">🟡 Moins de 72h</SelectItem>
-                <SelectItem value="7d">Moins de 7 jours</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={importanceFilter} onValueChange={setImportanceFilter}>
-              <SelectTrigger className="w-[150px]">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Importance" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes</SelectItem>
-                <SelectItem value="high">Haute (70%+)</SelectItem>
-                <SelectItem value="medium">Moyenne (50%+)</SelectItem>
-              </SelectContent>
-            </Select>
+      {/* Layout 2 colonnes */}
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+        {/* Colonne principale (70%) - Flux d'articles */}
+        <main className="w-full lg:w-3/4 space-y-4">
+          {/* Label de section */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              Les immanquables
+            </h2>
+            <span className="text-xs text-muted-foreground">
+              {clusters.length} sujet{clusters.length > 1 ? 's' : ''} • Trié par pertinence
+            </span>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Statistiques rapides */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="glass">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <Newspaper className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-2xl font-bold">{actualites?.length || 0}</p>
-                <p className="text-xs text-muted-foreground">Actualités</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="glass">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🟢</span>
-              <div>
-                <p className="text-2xl font-bold">
-                  {actualites?.filter(a => calculateFreshness(a.date_publication).level === 'fresh').length || 0}
-                </p>
-                <p className="text-xs text-muted-foreground">Moins de 24h</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="glass">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-signal-positive" />
-              <div>
-                <p className="text-2xl font-bold">
-                  {actualites?.filter(a => (a.importance || 0) >= 70).length || 0}
-                </p>
-                <p className="text-xs text-muted-foreground">Haute importance</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="glass">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-signal-warning" />
-              <div>
-                <p className="text-2xl font-bold">
-                  {actualites?.filter(a => {
-                    const analyse = parseAnalyseIA(a.analyse_ia);
-                    return analyse?.alertes_declenchees?.length > 0;
-                  }).length || 0}
-                </p>
-                <p className="text-xs text-muted-foreground">Alertes</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Liste des actualités */}
-      <Tabs defaultValue="list" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="list">Liste</TabsTrigger>
-          <TabsTrigger value="cards">Cartes</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="list" className="space-y-4">
+          {/* États de chargement */}
           {isLoading ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <Card key={i} className="glass">
-                <CardContent className="pt-4">
-                  <Skeleton className="h-6 w-3/4 mb-2" />
-                  <Skeleton className="h-4 w-1/2 mb-4" />
-                  <Skeleton className="h-4 w-full" />
-                </CardContent>
-              </Card>
-            ))
-          ) : filteredActualites?.length === 0 ? (
-            <Card className="glass">
+            <div className="space-y-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i} className="overflow-hidden">
+                  <CardContent className="p-5">
+                    <div className="flex justify-between mb-3">
+                      <Skeleton className="h-5 w-24" />
+                      <Skeleton className="h-5 w-32" />
+                    </div>
+                    <Skeleton className="h-6 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-full mb-1" />
+                    <Skeleton className="h-4 w-2/3" />
+                    <div className="flex gap-2 mt-4">
+                      <Skeleton className="h-6 w-20" />
+                      <Skeleton className="h-6 w-20" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : clusters.length === 0 ? (
+            <Card className="border-dashed">
               <CardContent className="py-12 text-center">
                 <Newspaper className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Aucune actualité trouvée</p>
-                <Button onClick={handleRefresh} className="mt-4" variant="outline">
-                  Lancer une collecte
-                </Button>
+                <p className="text-muted-foreground mb-4">
+                  {searchTerm || activeFilters.length > 0 
+                    ? "Aucun article ne correspond à vos critères" 
+                    : "Aucune actualité disponible"
+                  }
+                </p>
+                <div className="flex gap-3 justify-center">
+                  {(searchTerm || activeFilters.length > 0) && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setSearchTerm('');
+                        setActiveFilters([]);
+                      }}
+                    >
+                      Réinitialiser les filtres
+                    </Button>
+                  )}
+                  <Button onClick={handleRefresh} disabled={triggerCollecte.isPending}>
+                    {triggerCollecte.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Lancer une collecte
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ) : (
-            filteredActualites?.map((actu) => {
-              const analyse = parseAnalyseIA(actu.analyse_ia);
-              const hasAlerts = analyse?.alertes_declenchees?.length > 0;
-
-              return (
-                <Card 
-                  key={actu.id} 
-                  className={`glass hover:shadow-glow transition-all cursor-pointer ${hasAlerts ? 'border-signal-warning/50' : ''}`}
-                >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <FreshnessIndicator 
-                            datePublication={actu.date_publication}
-                            sourceUrl={actu.source_url}
-                          />
-                          {hasAlerts && (
-                            <Badge variant="destructive" className="animate-pulse">
-                              <AlertTriangle className="h-3 w-3 mr-1" />
-                              Alerte
-                            </Badge>
-                          )}
-                        </div>
-                        {actu.source_url ? (
-                          <a 
-                            href={actu.source_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="group"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <CardTitle className="text-lg leading-tight group-hover:text-primary transition-colors flex items-center gap-2">
-                              {actu.titre}
-                              <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </CardTitle>
-                          </a>
-                        ) : (
-                          <CardTitle className="text-lg leading-tight">{actu.titre}</CardTitle>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <Badge variant={actu.importance && actu.importance > 70 ? 'default' : 'secondary'}>
-                          {actu.importance || 50}%
-                        </Badge>
-                        {analyse?.quadrant_dominant && (
-                          <Badge variant="outline" className="text-xs">
-                            {quadrantLabels[analyse.quadrant_dominant] || analyse.quadrant_dominant}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {actu.resume && (
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                        {actu.resume}
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm text-muted-foreground">{actu.source_nom}</span>
-                        {actu.categorie && (
-                          <Badge variant="outline">{actu.categorie}</Badge>
-                        )}
-                        {actu.tags?.slice(0, 4).map((tag) => (
-                          <Badge key={tag} variant="secondary" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                        {actu.tags && actu.tags.length > 4 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{actu.tags.length - 4}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {actu.source_url && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                          >
-                            <a 
-                              href={actu.source_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <ExternalLink className="h-4 w-4 mr-2" />
-                              Voir la source
-                            </a>
-                          </Button>
-                        )}
-                        <Button
-                          variant={needsEnrichment(actu) ? "default" : "ghost"}
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEnrich(actu.id);
-                          }}
-                          disabled={enrichingId === actu.id}
-                          className={needsEnrichment(actu) ? "animate-pulse" : ""}
-                        >
-                          {enrichingId === actu.id ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <Sparkles className="h-4 w-4 mr-2" />
-                          )}
-                          {needsEnrichment(actu) ? "Enrichir" : "Ré-enrichir"}
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
-        </TabsContent>
-
-        <TabsContent value="cards" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {isLoading ? (
-            Array.from({ length: 6 }).map((_, i) => (
-              <Card key={i} className="glass">
-                <CardContent className="pt-4">
-                  <Skeleton className="h-6 w-3/4 mb-2" />
-                  <Skeleton className="h-20 w-full mb-4" />
-                  <Skeleton className="h-4 w-1/2" />
-                </CardContent>
-              </Card>
+            clusters.map(cluster => (
+              <ArticleCluster
+                key={cluster.mainArticle.id}
+                mainArticle={cluster.mainArticle}
+                relatedArticles={cluster.relatedArticles}
+                onEnrich={handleEnrich}
+                isEnriching={enrichingId === cluster.mainArticle.id}
+              />
             ))
-          ) : (
-            filteredActualites?.map((actu) => {
-              const analyse = parseAnalyseIA(actu.analyse_ia);
-              const hasAlerts = analyse?.alertes_declenchees?.length > 0;
-
-              return (
-                <Card 
-                  key={actu.id} 
-                  className={`glass hover:shadow-glow transition-all cursor-pointer h-full ${hasAlerts ? 'border-signal-warning/50' : ''}`}
-                >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <FreshnessIndicator datePublication={actu.date_publication} />
-                      <Badge variant={actu.importance && actu.importance > 70 ? 'default' : 'secondary'}>
-                        {actu.importance || 50}%
-                      </Badge>
-                    </div>
-                    {actu.source_url ? (
-                      <a 
-                        href={actu.source_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="group"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <CardTitle className="text-base leading-tight line-clamp-2 group-hover:text-primary transition-colors">
-                          {actu.titre}
-                        </CardTitle>
-                      </a>
-                    ) : (
-                      <CardTitle className="text-base leading-tight line-clamp-2">{actu.titre}</CardTitle>
-                    )}
-                  </CardHeader>
-                  <CardContent>
-                    {actu.resume && (
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-3">
-                        {actu.resume}
-                      </p>
-                    )}
-                    <div className="flex flex-wrap gap-1 mt-3 pt-2 border-t border-border/50">
-                      {actu.tags?.slice(0, 3).map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex justify-between items-center mt-3">
-                      {actu.source_url ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          asChild
-                        >
-                          <a 
-                            href={actu.source_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <ExternalLink className="h-4 w-4 mr-2" />
-                            Source
-                          </a>
-                        </Button>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">{actu.source_nom}</span>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEnrich(actu.id);
-                        }}
-                        disabled={enrichingId === actu.id}
-                        title={needsEnrichment(actu) ? "Enrichir cette actualité" : "Ré-enrichir"}
-                      >
-                        {enrichingId === actu.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Sparkles className={`h-4 w-4 ${needsEnrichment(actu) ? "text-primary" : ""}`} />
-                        )}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
           )}
-        </TabsContent>
-      </Tabs>
+
+          {/* Indicateur de fin */}
+          {!isLoading && clusters.length > 0 && (
+            <p className="text-center text-xs text-muted-foreground py-4">
+              {clusters.length} sujet{clusters.length > 1 ? 's' : ''} affiché{clusters.length > 1 ? 's' : ''}
+            </p>
+          )}
+        </main>
+
+        {/* Sidebar (30%) - Analytics */}
+        <aside className="hidden lg:block w-full lg:w-1/4 lg:sticky lg:top-6 self-start">
+          <SmartSidebar
+            analytics={analytics}
+            activeFilters={activeFilters}
+            onFilterChange={handleFilterChange}
+            onPersonClick={handlePersonClick}
+            onSourceClick={handleSourceClick}
+          />
+        </aside>
+      </div>
     </div>
   );
 }
