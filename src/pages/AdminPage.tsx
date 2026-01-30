@@ -1,4 +1,4 @@
-import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus } from 'lucide-react';
+import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode } from 'lucide-react';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { SystemHealthWidget } from '@/components/admin/SystemHealthWidget';
 import { AdminNavCard } from '@/components/admin/AdminNavCard';
@@ -153,6 +153,16 @@ export default function AdminPage() {
             badgeVariant="info"
             subtitle="Slides PDF pour présenter le projet ANSUT Radar."
             to="/admin/presentation"
+            loading={isLoading}
+          />
+          <AdminNavCard
+            color="slate"
+            icon={<FileCode size={24} />}
+            title="Documentation Technique"
+            badge="PDF"
+            badgeVariant="info"
+            subtitle="Manuel technique complet de la plateforme."
+            to="/admin/documentation"
             loading={isLoading}
           />
         </div>
