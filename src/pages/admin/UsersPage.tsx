@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users, ChevronDown, MoreVertical, UserX, UserCheck, Trash2, RefreshCw, Clock, Search, X, MailCheck, KeyRound } from 'lucide-react';
+import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users, ChevronDown, MoreVertical, UserX, UserCheck, Trash2, RefreshCw, Clock, Search, X, MailCheck, KeyRound, LayoutGrid, List } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,10 +17,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Database } from '@/integrations/supabase/types';
+import { UserCard, SecurityKpiCards, InviteQuickCard } from '@/components/admin';
 
 interface UserStatus {
   id: string;
@@ -53,19 +55,20 @@ interface UserWithProfile {
   created_at: string;
   role: AppRole;
   disabled: boolean;
+  department: string | null;
 }
 
 const roleLabels: Record<AppRole, string> = {
   admin: 'Administrateur',
-  user: 'Utilisateur',
-  council_user: 'Membre du conseil',
-  guest: 'Invité',
+  user: 'Analyste',
+  council_user: 'Décideur',
+  guest: 'Observateur',
 };
 
 const roleColors: Record<AppRole, string> = {
-  admin: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+  admin: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
   user: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  council_user: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+  council_user: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
   guest: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
 };
 
@@ -76,12 +79,22 @@ const roleIcons: Record<AppRole, React.ReactNode> = {
   guest: <Mail className="h-4 w-4" />,
 };
 
+// Fonction utilitaire pour vérifier si un utilisateur est en ligne (< 15 min)
+function isUserOnline(lastSignInAt: string | null): boolean {
+  if (!lastSignInAt) return false;
+  const now = new Date();
+  const lastActive = new Date(lastSignInAt);
+  const diffMs = now.getTime() - lastActive.getTime();
+  return diffMs < 15 * 60 * 1000;
+}
+
 export default function UsersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'pending' | 'disabled'>('all');
   const [roleFilter, setRoleFilter] = useState<AppRole | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
 
@@ -94,13 +107,13 @@ export default function UsersPage() {
     },
   });
 
-  // Récupérer les utilisateurs avec leurs rôles
+  // Récupérer les utilisateurs avec leurs rôles et département
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, created_at, disabled');
+        .select('id, full_name, avatar_url, created_at, disabled, department');
 
       if (profilesError) throw profilesError;
 
@@ -119,6 +132,7 @@ export default function UsersPage() {
           created_at: profile.created_at,
           role: (userRole?.role as AppRole) || 'user',
           disabled: profile.disabled || false,
+          department: profile.department,
         };
       });
 
@@ -251,13 +265,12 @@ export default function UsersPage() {
   // Mutation pour renvoyer une invitation
   const resendInviteMutation = useMutation({
     mutationFn: async ({ userId, fullName, role }: { userId: string; fullName: string; role: AppRole }) => {
-      // On utilise l'edge function invite-user qui gère aussi le renvoi
       const response = await supabase.functions.invoke('invite-user', {
         body: {
-          email: '', // sera ignoré, on utilise l'userId
+          email: '',
           fullName,
           role,
-          userId, // pour identifier que c'est un renvoi
+          userId,
           resend: true,
         },
       });
@@ -331,7 +344,6 @@ export default function UsersPage() {
       if (data?.emailSent) {
         toast.success(data.message || 'Email de réinitialisation envoyé');
       } else if (data?.link) {
-        // Fallback: copier le lien si l'email n'a pas été envoyé
         try {
           await navigator.clipboard.writeText(data.link);
           toast.warning('Email non envoyé - Lien copié dans le presse-papiers', {
@@ -368,25 +380,34 @@ export default function UsersPage() {
       .slice(0, 2);
   };
 
-  // Calculer les compteurs
+  // Calculer les compteurs enrichis
   const userCounts = useMemo(() => {
-    if (!users) return { total: 0, active: 0, pending: 0, disabled: 0 };
+    if (!users) return { total: 0, active: 0, pending: 0, disabled: 0, online: 0, admins: 0 };
     
     let active = 0;
     let pending = 0;
     let disabled = 0;
+    let online = 0;
+    let admins = 0;
     
     users.forEach(user => {
+      // Compteur admins
+      if (user.role === 'admin') admins++;
+      
       if (user.disabled) {
         disabled++;
       } else if (usersStatus?.[user.id]?.email_confirmed_at) {
         active++;
+        // Vérifier si en ligne (< 15 min)
+        if (isUserOnline(usersStatus[user.id]?.last_sign_in_at || null)) {
+          online++;
+        }
       } else {
         pending++;
       }
     });
     
-    return { total: users.length, active, pending, disabled };
+    return { total: users.length, active, pending, disabled, online, admins };
   }, [users, usersStatus]);
 
   // Filtrer les utilisateurs
@@ -401,8 +422,9 @@ export default function UsersPage() {
         const query = searchQuery.toLowerCase().trim();
         const fullName = (user.full_name || '').toLowerCase();
         const email = (status?.email || '').toLowerCase();
+        const department = (user.department || '').toLowerCase();
         
-        if (!fullName.includes(query) && !email.includes(query)) {
+        if (!fullName.includes(query) && !email.includes(query) && !department.includes(query)) {
           return false;
         }
       }
@@ -422,541 +444,532 @@ export default function UsersPage() {
   }, [users, usersStatus, statusFilter, roleFilter, searchQuery]);
 
   return (
-    <div className="container max-w-5xl py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <Button variant="ghost" asChild className="gap-2 -ml-2 mb-2">
-            <Link to="/admin">
-              <ArrowLeft className="h-4 w-4" />
-              Retour à l'administration
-            </Link>
-          </Button>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Users className="h-8 w-8" />
-            Gestion des utilisateurs
-          </h1>
+    <div className="container max-w-6xl py-8">
+      {/* Header avec titre et bouton d'invitation */}
+      <div className="mb-6">
+        <Button variant="ghost" asChild className="gap-2 -ml-2 mb-2">
+          <Link to="/admin">
+            <ArrowLeft className="h-4 w-4" />
+            Retour à l'administration
+          </Link>
+        </Button>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Users className="h-7 w-7" />
+              Gouvernance des Accès
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Gérez les membres de l'équipe, leurs rôles et la sécurité du compte.
+            </p>
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <UserPlus className="h-4 w-4" />
+                Inviter un membre
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Inviter un nouvel utilisateur</DialogTitle>
+                <DialogDescription>
+                  L'utilisateur recevra un email avec un lien pour créer son mot de passe.
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="fullName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nom complet</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Jean Dupont" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="jean.dupont@ansut.ci" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Rôle</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionner un rôle" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="user">
+                              <div className="flex items-center gap-2">
+                                <User className="h-4 w-4" />
+                                Analyste
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="council_user">
+                              <div className="flex items-center gap-2">
+                                <Users className="h-4 w-4" />
+                                Décideur
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="admin">
+                              <div className="flex items-center gap-2">
+                                <Shield className="h-4 w-4" />
+                                Administrateur
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="guest">
+                              <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4" />
+                                Observateur
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                    >
+                      Annuler
+                    </Button>
+                    <Button type="submit" disabled={inviteMutation.isPending}>
+                      {inviteMutation.isPending && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      Envoyer l'invitation
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
-      {/* Compteurs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Card className="border-l-4 border-l-primary">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total</p>
-                <p className="text-2xl font-bold">{userCounts.total}</p>
-              </div>
-              <Users className="h-8 w-8 text-muted-foreground/50" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-green-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Actifs</p>
-                <p className="text-2xl font-bold text-green-600">{userCounts.active}</p>
-              </div>
-              <UserCheck className="h-8 w-8 text-green-500/50" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-amber-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">En attente</p>
-                <p className="text-2xl font-bold text-amber-600">{userCounts.pending}</p>
-              </div>
-              <Clock className="h-8 w-8 text-amber-500/50" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-gray-400">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Désactivés</p>
-                <p className="text-2xl font-bold text-muted-foreground">{userCounts.disabled}</p>
-              </div>
-              <UserX className="h-8 w-8 text-muted-foreground/50" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* KPIs de sécurité enrichis */}
+      <div className="mb-6">
+        <SecurityKpiCards
+          totalUsers={userCounts.total}
+          activeUsers={userCounts.active}
+          onlineUsers={userCounts.online}
+          pendingInvitations={userCounts.pending}
+          adminCount={userCounts.admins}
+          isLoading={isLoading}
+        />
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <UserPlus className="h-4 w-4" />
-              Inviter un utilisateur
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Inviter un nouvel utilisateur</DialogTitle>
-              <DialogDescription>
-                L'utilisateur recevra un email avec un lien pour créer son mot de passe.
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nom complet</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Jean Dupont" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="jean.dupont@ansut.ci" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Rôle</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner un rôle" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="user">
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4" />
-                              Utilisateur
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="council_user">
-                            <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4" />
-                              Membre du conseil
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="admin">
-                            <div className="flex items-center gap-2">
-                              <Shield className="h-4 w-4" />
-                              Administrateur
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="guest">
-                            <div className="flex items-center gap-2">
-                              <Mail className="h-4 w-4" />
-                              Invité
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                  >
-                    Annuler
-                  </Button>
-                  <Button type="submit" disabled={inviteMutation.isPending}>
-                    {inviteMutation.isPending && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    Envoyer l'invitation
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Utilisateurs</CardTitle>
-          <CardDescription>
-            Liste des utilisateurs ayant accès à la plateforme
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Barre de filtres */}
-          <div className="flex flex-wrap items-center gap-4 mb-4">
-            {/* Recherche textuelle */}
-            <div className="relative flex-1 min-w-[200px] max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher par nom ou email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-9"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Statut :</span>
-              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tous</SelectItem>
-                  <SelectItem value="active">
-                    <div className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-green-500" />
-                      Actifs
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="pending">
-                    <div className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-amber-500" />
-                      En attente
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="disabled">
-                    <div className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-gray-400" />
-                      Désactivés
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Rôle :</span>
-              <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as typeof roleFilter)}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tous les rôles</SelectItem>
-                  <SelectItem value="admin">
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      Administrateur
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="user">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      Utilisateur
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="council_user">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Membre du conseil
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="guest">
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      Invité
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {(statusFilter !== 'all' || roleFilter !== 'all' || searchQuery) && (
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => { setStatusFilter('all'); setRoleFilter('all'); setSearchQuery(''); }}
-              >
-                Réinitialiser
-              </Button>
-            )}
-          </div>
-
-          {/* Compteur de résultats */}
-          {users && filteredUsers.length !== users.length && (
-            <p className="text-sm text-muted-foreground mb-4">
-              Affichage de {filteredUsers.length} sur {users.length} utilisateurs
-            </p>
+      {/* Barre de filtres avec toggle vue */}
+      <div className="flex flex-wrap items-center gap-4 mb-6">
+        {/* Recherche textuelle */}
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher par nom, email ou département..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-9"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
           )}
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : filteredUsers.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Utilisateur</TableHead>
-                  <TableHead>Rôle</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Date de création</TableHead>
-                  <TableHead className="w-[70px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.map((user) => {
-                  const isCurrentUser = user.id === currentUser?.id;
-                  
-                  return (
-                    <TableRow key={user.id} className={user.disabled ? 'opacity-60' : ''}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={user.avatar_url || undefined} />
-                            <AvatarFallback className="text-xs">
-                              {getInitials(user.full_name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex flex-col">
-                            <span className="font-medium">
-                              {user.full_name || 'Sans nom'}
-                            </span>
-                            {isCurrentUser && (
-                              <span className="text-xs text-muted-foreground">(vous)</span>
-                            )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Statut :</span>
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous</SelectItem>
+              <SelectItem value="active">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Actifs
+                </div>
+              </SelectItem>
+              <SelectItem value="pending">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-amber-500" />
+                  En attente
+                </div>
+              </SelectItem>
+              <SelectItem value="disabled">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-gray-400" />
+                  Désactivés
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Rôle :</span>
+          <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as typeof roleFilter)}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les rôles</SelectItem>
+              <SelectItem value="admin">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Administrateur
+                </div>
+              </SelectItem>
+              <SelectItem value="user">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Analyste
+                </div>
+              </SelectItem>
+              <SelectItem value="council_user">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Décideur
+                </div>
+              </SelectItem>
+              <SelectItem value="guest">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Observateur
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {(statusFilter !== 'all' || roleFilter !== 'all' || searchQuery) && (
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => { setStatusFilter('all'); setRoleFilter('all'); setSearchQuery(''); }}
+          >
+            Réinitialiser
+          </Button>
+        )}
+
+        {/* Toggle Vue Cartes/Table */}
+        <div className="ml-auto">
+          <ToggleGroup type="single" value={viewMode} onValueChange={(v) => v && setViewMode(v as 'cards' | 'table')}>
+            <ToggleGroupItem value="cards" aria-label="Vue cartes" className="px-3">
+              <LayoutGrid className="h-4 w-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="table" aria-label="Vue table" className="px-3">
+              <List className="h-4 w-4" />
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+      </div>
+
+      {/* Compteur de résultats */}
+      {users && filteredUsers.length !== users.length && (
+        <p className="text-sm text-muted-foreground mb-4">
+          Affichage de {filteredUsers.length} sur {users.length} utilisateurs
+        </p>
+      )}
+
+      {/* Contenu principal */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : viewMode === 'cards' ? (
+        /* Vue Cartes */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredUsers.map((user) => (
+            <UserCard
+              key={user.id}
+              user={user}
+              status={usersStatus?.[user.id]}
+              isCurrentUser={user.id === currentUser?.id}
+              onToggle={(userId, action) => toggleUserMutation.mutate({ userId, action })}
+              onDelete={(userId) => setDeleteUserId(userId)}
+              onResendInvite={(userId, fullName, role) => resendInviteMutation.mutate({ userId, fullName, role })}
+              onConfirmEmail={(userId) => confirmEmailMutation.mutate(userId)}
+              onGeneratePasswordLink={(userId) => generatePasswordLinkMutation.mutate(userId)}
+            />
+          ))}
+          {/* Carte d'invitation rapide */}
+          <InviteQuickCard onClick={() => setIsDialogOpen(true)} />
+        </div>
+      ) : (
+        /* Vue Table */
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Liste des utilisateurs</CardTitle>
+            <CardDescription>
+              Cliquez sur le rôle pour le modifier
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {filteredUsers.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Utilisateur</TableHead>
+                    <TableHead>Département</TableHead>
+                    <TableHead>Rôle</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead>Dernière activité</TableHead>
+                    <TableHead className="w-[70px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map((user) => {
+                    const isCurrentUser = user.id === currentUser?.id;
+                    const status = usersStatus?.[user.id];
+                    const isOnline = isUserOnline(status?.last_sign_in_at || null);
+                    
+                    return (
+                      <TableRow key={user.id} className={user.disabled ? 'opacity-60' : ''}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="relative">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={user.avatar_url || undefined} />
+                                <AvatarFallback className="text-xs">
+                                  {getInitials(user.full_name)}
+                                </AvatarFallback>
+                              </Avatar>
+                              {isOnline && (
+                                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-background" />
+                              )}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium">
+                                {user.full_name || 'Sans nom'}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {status?.email || '—'}
+                                {isCurrentUser && ' (vous)'}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {isCurrentUser || user.disabled ? (
-                          <Badge className={roleColors[user.role]} variant="secondary">
-                            {roleLabels[user.role]}
-                          </Badge>
-                        ) : (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-auto p-0 hover:bg-transparent"
-                                disabled={updateRoleMutation.isPending}
-                              >
-                                <Badge 
-                                  className={`${roleColors[user.role]} cursor-pointer hover:opacity-80`} 
-                                  variant="secondary"
-                                >
-                                  {updateRoleMutation.isPending ? (
-                                    <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                                  ) : null}
-                                  {roleLabels[user.role]}
-                                  <ChevronDown className="ml-1 h-3 w-3" />
-                                </Badge>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start">
-                              {(Object.keys(roleLabels) as AppRole[]).map((role) => (
-                                <DropdownMenuItem
-                                  key={role}
-                                  onClick={() => handleRoleChange(user.id, role)}
-                                  className="flex items-center gap-2"
-                                  disabled={role === user.role}
-                                >
-                                  {roleIcons[role]}
-                                  <span className={role === user.role ? 'font-semibold' : ''}>
-                                    {roleLabels[role]}
-                                  </span>
-                                  {role === user.role && (
-                                    <span className="text-xs text-muted-foreground ml-auto">actuel</span>
-                                  )}
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {user.disabled ? (
-                            <Badge variant="secondary" className="bg-muted text-muted-foreground">
-                              Désactivé
+                        </TableCell>
+                        <TableCell>
+                          {user.department ? (
+                            <Badge variant="secondary" className="text-xs">
+                              {user.department}
                             </Badge>
-                          ) : !usersStatus?.[user.id]?.email_confirmed_at ? (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 gap-1 cursor-help">
-                                    <Clock className="h-3 w-3" />
-                                    En attente
-                                  </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>L'utilisateur n'a pas encore activé son compte via le lien d'invitation</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
                           ) : (
-                            <>
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {isCurrentUser || user.disabled ? (
+                            <Badge className={roleColors[user.role]} variant="secondary">
+                              {roleLabels[user.role]}
+                            </Badge>
+                          ) : (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-auto p-0 hover:bg-transparent"
+                                  disabled={updateRoleMutation.isPending}
+                                >
+                                  <Badge 
+                                    className={`${roleColors[user.role]} cursor-pointer hover:opacity-80`} 
+                                    variant="secondary"
+                                  >
+                                    {updateRoleMutation.isPending ? (
+                                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                    ) : null}
+                                    {roleLabels[user.role]}
+                                    <ChevronDown className="ml-1 h-3 w-3" />
+                                  </Badge>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start">
+                                {(Object.keys(roleLabels) as AppRole[]).map((role) => (
+                                  <DropdownMenuItem
+                                    key={role}
+                                    onClick={() => handleRoleChange(user.id, role)}
+                                    className="flex items-center gap-2"
+                                    disabled={role === user.role}
+                                  >
+                                    {roleIcons[role]}
+                                    <span className={role === user.role ? 'font-semibold' : ''}>
+                                      {roleLabels[role]}
+                                    </span>
+                                    {role === user.role && (
+                                      <span className="text-xs text-muted-foreground ml-auto">actuel</span>
+                                    )}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {user.disabled ? (
+                              <Badge variant="secondary" className="bg-muted text-muted-foreground">
+                                Désactivé
+                              </Badge>
+                            ) : !status?.email_confirmed_at ? (
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100 cursor-help">
-                                      Actif
+                                    <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 gap-1 cursor-help">
+                                      <Clock className="h-3 w-3" />
+                                      En attente
                                     </Badge>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>
-                                      Dernière connexion :{' '}
-                                      {usersStatus?.[user.id]?.last_sign_in_at
-                                        ? new Date(usersStatus[user.id].last_sign_in_at!).toLocaleDateString('fr-FR', {
-                                            day: 'numeric',
-                                            month: 'long',
-                                            year: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                          })
-                                        : 'Jamais'}
-                                    </p>
+                                    <p>L'utilisateur n'a pas encore activé son compte</p>
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
-                              {/* Badge Jamais connecté - utilisateur confirmé mais sans connexion */}
-                              {!usersStatus?.[user.id]?.last_sign_in_at && (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-600 gap-1 cursor-help">
-                                        <Clock className="h-3 w-3" />
-                                        Jamais connecté
-                                      </Badge>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>L'utilisateur n'a pas encore défini son mot de passe</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
-                            </>
+                            ) : (
+                              <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                Actif
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {status?.last_sign_in_at ? (
+                            <span className={isOnline ? 'text-emerald-600 dark:text-emerald-400 font-medium' : ''}>
+                              {isOnline ? 'En ligne' : new Date(status.last_sign_in_at).toLocaleDateString('fr-FR', {
+                                day: 'numeric',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          ) : (
+                            <span className="text-amber-600 dark:text-amber-400">Jamais</span>
                           )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(user.created_at).toLocaleDateString('fr-FR', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        {!isCurrentUser && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              {!usersStatus?.[user.id]?.email_confirmed_at && !user.disabled && (
-                                <>
+                        </TableCell>
+                        <TableCell>
+                          {!isCurrentUser && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {!status?.email_confirmed_at && !user.disabled && (
+                                  <>
+                                    <DropdownMenuItem
+                                      onClick={() => confirmEmailMutation.mutate(user.id)}
+                                      disabled={confirmEmailMutation.isPending}
+                                    >
+                                      <MailCheck className="mr-2 h-4 w-4" />
+                                      Confirmer l'email
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                  </>
+                                )}
+                                {!user.disabled && (
                                   <DropdownMenuItem
-                                    onClick={() => confirmEmailMutation.mutate(user.id)}
-                                    disabled={confirmEmailMutation.isPending}
+                                    onClick={() => generatePasswordLinkMutation.mutate(user.id)}
+                                    disabled={generatePasswordLinkMutation.isPending}
                                   >
-                                    <MailCheck className="mr-2 h-4 w-4" />
-                                    Confirmer l'email
+                                    <KeyRound className="mr-2 h-4 w-4" />
+                                    Réinitialiser mot de passe
                                   </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                </>
-                              )}
-                              {/* Réinitialiser mot de passe - visible pour tous les utilisateurs actifs */}
-                              {!user.disabled && (
+                                )}
                                 <DropdownMenuItem
-                                  onClick={() => generatePasswordLinkMutation.mutate(user.id)}
-                                  disabled={generatePasswordLinkMutation.isPending}
+                                  onClick={() => resendInviteMutation.mutate({ 
+                                    userId: user.id, 
+                                    fullName: user.full_name || 'Utilisateur',
+                                    role: user.role 
+                                  })}
+                                  disabled={resendInviteMutation.isPending}
                                 >
-                                  <KeyRound className="mr-2 h-4 w-4" />
-                                  Réinitialiser mot de passe
+                                  <RefreshCw className="mr-2 h-4 w-4" />
+                                  Renvoyer l'invitation
                                 </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem
-                                onClick={() => resendInviteMutation.mutate({ 
-                                  userId: user.id, 
-                                  fullName: user.full_name || 'Utilisateur',
-                                  role: user.role 
-                                })}
-                                disabled={resendInviteMutation.isPending}
-                              >
-                                <RefreshCw className="mr-2 h-4 w-4" />
-                                Renvoyer l'invitation
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              {user.disabled ? (
+                                <DropdownMenuSeparator />
+                                {user.disabled ? (
+                                  <DropdownMenuItem
+                                    onClick={() => toggleUserMutation.mutate({ userId: user.id, action: 'enable' })}
+                                    disabled={toggleUserMutation.isPending}
+                                  >
+                                    <UserCheck className="mr-2 h-4 w-4" />
+                                    Réactiver
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onClick={() => toggleUserMutation.mutate({ userId: user.id, action: 'disable' })}
+                                    disabled={toggleUserMutation.isPending}
+                                  >
+                                    <UserX className="mr-2 h-4 w-4" />
+                                    Désactiver
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
                                 <DropdownMenuItem
-                                  onClick={() => toggleUserMutation.mutate({ userId: user.id, action: 'enable' })}
-                                  disabled={toggleUserMutation.isPending}
+                                  onClick={() => setDeleteUserId(user.id)}
+                                  className="text-destructive focus:text-destructive"
                                 >
-                                  <UserCheck className="mr-2 h-4 w-4" />
-                                  Réactiver
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Supprimer
                                 </DropdownMenuItem>
-                              ) : (
-                                <DropdownMenuItem
-                                  onClick={() => toggleUserMutation.mutate({ userId: user.id, action: 'disable' })}
-                                  disabled={toggleUserMutation.isPending}
-                                >
-                                  <UserX className="mr-2 h-4 w-4" />
-                                  Désactiver
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => setDeleteUserId(user.id)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Supprimer
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              {users && users.length > 0 ? (
-                <>
-                  <p>Aucun utilisateur ne correspond aux filtres sélectionnés</p>
-                  <Button 
-                    variant="link" 
-                    onClick={() => { setStatusFilter('all'); setRoleFilter('all'); }}
-                  >
-                    Réinitialiser les filtres
-                  </Button>
-                </>
-              ) : (
-                <p>Aucun utilisateur trouvé</p>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                {users && users.length > 0 ? (
+                  <>
+                    <p>Aucun utilisateur ne correspond aux filtres sélectionnés</p>
+                    <Button 
+                      variant="link" 
+                      onClick={() => { setStatusFilter('all'); setRoleFilter('all'); setSearchQuery(''); }}
+                    >
+                      Réinitialiser les filtres
+                    </Button>
+                  </>
+                ) : (
+                  <p>Aucun utilisateur trouvé</p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Dialog de confirmation de suppression */}
       <AlertDialog open={!!deleteUserId} onOpenChange={(open) => !open && setDeleteUserId(null)}>
