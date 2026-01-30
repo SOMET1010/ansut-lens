@@ -1,387 +1,254 @@
 
 
-# Smart Feed Builder - Pop-up de Configuration Avancée
+# Ajout des fonctionnalités Archiver et Supprimer pour les Acteurs
 
-## Vision
+## Vue d'ensemble
 
-Transformer le formulaire de création de flux d'une simple liste de champs en une **expérience de briefing d'agent IA**. L'utilisateur ne remplit pas un formulaire technique, il **configure une mission de surveillance**.
+Ajouter la possibilité d'archiver (soft delete via `actif = false`) ou de supprimer définitivement un acteur depuis l'interface utilisateur, avec confirmation et feedback visuel.
 
 ```text
-┌────────────────────────────────────────────────────────────────────────────────┐
-│  ✕  Configurer un nouvel agent                                                 │
-│     Définissez les paramètres de surveillance pour votre flux.                 │
-├────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                │
-│  ⚡  [ Nom du flux__________________________________ ]                         │
-│      Ex: Concurrence Fintech, E-Réputation...                                  │
-│                                                                                │
-│  ┌────────────────────────────────────────────────────────────────────────┐   │
-│  │  🔍 Requête de surveillance                    [✨ Générer avec l'IA]  │   │
-│  │  ┌──────────────────────────────────────────────────────────────────┐  │   │
-│  │  │ (ANSUT OR "Service Universel") AND 5G -Corruption               │  │   │
-│  │  └──────────────────────────────────────────────────────────────────┘  │   │
-│  │                                                                        │   │
-│  │  Volume estimé: ██████░░░░░░ Modéré (~15 articles/sem)                │   │
-│  └────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                │
-│  📊 Quadrants Radar                                                            │
-│  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐                  │
-│  │ 💻 Tech    │ │ 📈 Market  │ │ ⚖️ Régul.  │ │ ⭐ Réputa. │                  │
-│  │    ✓       │ │            │ │     ✓      │ │            │                  │
-│  └────────────┘ └────────────┘ └────────────┘ └────────────┘                  │
-│                                                                                │
-│  🎯 Seuil d'importance                                                         │
-│  ░░░░░░░░░██████████████████████████████████░░░░░░░░░  ≥ 50%                  │
-│                                                                                │
-│  ┌────────────────────────────────────────────────────────────────────────┐   │
-│  │  🔔 Notifications en temps réel                              [━━━●]   │   │
-│  │     Alerte dès qu'un article critique est détecté                     │   │
-│  │                                                                        │   │
-│  │     ○ Instantané  ● Quotidien  ○ Hebdomadaire                         │   │
-│  │                                                                        │   │
-│  │  📧 Alertes par email                                        [●━━━]   │   │
-│  └────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                │
-├────────────────────────────────────────────────────────────────────────────────┤
-│                                                 [ Annuler ]  [⚡ Lancer ]      │
-└────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  ACTEUR CARD (Hover Actions)                                                    │
+│  ┌───────────────────────────────────────────────────────────────────────────┐ │
+│  │                                                                           │ │
+│  │  [Avatar]  Jean Dupont                                                   │ │
+│  │            Directeur Général - ANSUT                                      │ │
+│  │                                                                           │ │
+│  │  [Cercle 1] [Régulateur]                           [✏️] [📦] [⋮]         │ │
+│  │                                                     Edit Archive More     │ │
+│  │                                                                           │ │
+│  └───────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                 │
+│  Menu déroulant "⋮" :                                                          │
+│  ┌──────────────────┐                                                          │
+│  │ 📦 Archiver      │ ← Soft delete (actif = false)                           │
+│  │ 🗑️ Supprimer     │ ← Hard delete (confirmation requise)                    │
+│  └──────────────────┘                                                          │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  PANNEAU DÉTAIL (Sheet) - Actions Admin                                        │
+│  ┌───────────────────────────────────────────────────────────────────────────┐ │
+│  │  [Avatar]  Jean Dupont                [Modifier] [⋮]                      │ │
+│  │            Directeur Général                                              │ │
+│  │            ...                                                            │ │
+│  │                                                                           │ │
+│  │  ─────────────────────────────────────────────────────────               │ │
+│  │                                                                           │ │
+│  │  Zone Danger (en bas du panneau)                                         │ │
+│  │  ┌─────────────────────────────────────────────────────────────────────┐ │ │
+│  │  │  ⚠️ Zone sensible                                                   │ │ │
+│  │  │  [📦 Archiver cet acteur]  [🗑️ Supprimer définitivement]           │ │ │
+│  │  └─────────────────────────────────────────────────────────────────────┘ │ │
+│  └───────────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Fichiers à modifier/créer
+## Fichiers à modifier
 
-| Fichier | Action | Description |
-|---------|--------|-------------|
-| `src/components/flux/FluxFormDialog.tsx` | Remplacer | Nouveau design "Smart Feed Builder" |
-| `supabase/functions/generer-requete-flux/index.ts` | Créer | Edge function pour générer les mots-clés via IA |
+| Fichier | Modifications |
+|---------|---------------|
+| `src/components/personnalites/ActeurCard.tsx` | Ajouter menu dropdown avec options archiver/supprimer |
+| `src/components/personnalites/ActeurDetail.tsx` | Ajouter zone "Danger" avec boutons archiver/supprimer |
+| `src/pages/PersonnalitesPage.tsx` | Ajouter dialog de confirmation de suppression + logique |
 
 ---
 
-## Fonctionnalités clés
+## Logique métier
 
-### 1. Génération IA des mots-clés ("Killer Feature")
+### Archiver (Soft Delete)
+- Met à jour `actif = false` via `useUpdatePersonnalite`
+- L'acteur n'apparaît plus dans la liste par défaut (filtre `actif: true`)
+- Réversible : peut être restauré ultérieurement
 
-L'utilisateur décrit son besoin en langage naturel, l'IA génère une requête booléenne structurée.
+### Supprimer (Hard Delete)  
+- Supprime définitivement via `useDeletePersonnalite` (hook existant)
+- Requiert une confirmation explicite
+- Action irréversible
 
-**Flux utilisateur :**
-1. L'utilisateur saisit un nom descriptif (ex: "Concurrence Mobile Money")
-2. Clique sur "Générer avec l'IA"
-3. L'IA analyse le contexte et génère :
-   - Une liste de mots-clés pertinents
-   - Les quadrants recommandés
-   - Un seuil d'importance suggéré
+---
 
-**Edge Function `generer-requete-flux` :**
-```typescript
-// Prompt système pour l'IA
-const SYSTEM_PROMPT = `Tu es un expert en veille stratégique télécom pour l'ANSUT (Côte d'Ivoire).
-À partir du nom/description d'un flux, génère une configuration de surveillance optimale.
+## Composants à implémenter
 
-Retourne UNIQUEMENT un JSON valide avec cette structure :
-{
-  "mots_cles": ["mot1", "mot2", ...],
-  "quadrants": ["tech", "market", "regulation", "reputation"],
-  "importance_min": 50,
-  "description": "Description courte du flux"
-}
+### 1. Menu d'actions dans ActeurCard
 
-Contexte : opérateurs Orange CI, MTN, Moov ; régulateur ARTCI ; enjeux 5G, fibre, satellites.`;
-```
-
-### 2. Sections du formulaire restructurées
-
-| Section | Contenu | Style |
-|---------|---------|-------|
-| **Identité** | Nom du flux avec icône | Input moderne avec icône zap |
-| **Ciblage IA** | Zone de requête + bouton génération | Bloc surélevé bg-slate-50, style terminal |
-| **Quadrants** | Grille 4 boutons visuels | Cards cliquables avec icônes |
-| **Importance** | Slider avec valeur affichée | Slider + badge pourcentage |
-| **Alertes** | Section groupée notifications | Cards avec switches intégrés |
-
-### 3. Volume estimé (feedback visuel)
-
-Barre de progression indicative basée sur les critères :
-- **Faible** (vert clair) : Requête très spécifique
-- **Modéré** (vert) : Équilibre optimal
-- **Élevé** (orange) : Risque de bruit
+Ajout d'un `DropdownMenu` avec les options :
+- Modifier (existant)
+- Archiver
+- Supprimer
 
 ```tsx
-const estimateVolume = (keywords: string[], quadrants: string[], importance: number) => {
-  // Logique d'estimation basée sur les critères
-  const score = keywords.length * 10 + (4 - quadrants.length) * 15 + (100 - importance);
-  if (score < 30) return { level: 1, label: 'Faible', color: 'bg-yellow-500' };
-  if (score < 70) return { level: 2, label: 'Modéré', color: 'bg-green-500' };
-  return { level: 3, label: 'Élevé', color: 'bg-orange-500' };
-};
+// ActeurCard.tsx - Menu contextuel
+<DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="ghost" size="icon" className="h-8 w-8">
+      <MoreHorizontal className="h-4 w-4" />
+    </Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent align="end">
+    <DropdownMenuItem onClick={onEdit}>
+      <Pencil className="h-4 w-4 mr-2" />
+      Modifier
+    </DropdownMenuItem>
+    <DropdownMenuSeparator />
+    <DropdownMenuItem onClick={onArchive}>
+      <Archive className="h-4 w-4 mr-2" />
+      Archiver
+    </DropdownMenuItem>
+    <DropdownMenuItem onClick={onDelete} className="text-destructive">
+      <Trash2 className="h-4 w-4 mr-2" />
+      Supprimer
+    </DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
 ```
 
-### 4. Quadrants visuels avec icônes
+### 2. Zone Danger dans ActeurDetail
+
+Section en bas du panneau de détail (visible uniquement pour les admins) :
 
 ```tsx
-const quadrantOptions = [
-  { id: 'tech', label: 'Technologie', icon: Cpu, color: 'bg-blue-500', hoverColor: 'hover:border-blue-500' },
-  { id: 'market', label: 'Marché', icon: TrendingUp, color: 'bg-green-500', hoverColor: 'hover:border-green-500' },
-  { id: 'regulation', label: 'Régulation', icon: Scale, color: 'bg-purple-500', hoverColor: 'hover:border-purple-500' },
-  { id: 'reputation', label: 'Réputation', icon: Star, color: 'bg-orange-500', hoverColor: 'hover:border-orange-500' },
-];
+// ActeurDetail.tsx - Zone Danger
+{isAdmin && (
+  <>
+    <Separator className="my-4" />
+    <div className="p-4 rounded-lg border border-destructive/20 bg-destructive/5">
+      <h3 className="text-sm font-semibold text-destructive mb-3 flex items-center gap-2">
+        <AlertTriangle className="h-4 w-4" />
+        Zone sensible
+      </h3>
+      <div className="flex gap-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={onArchive}
+          className="gap-1"
+        >
+          <Archive className="h-3.5 w-3.5" />
+          Archiver
+        </Button>
+        <Button 
+          variant="destructive" 
+          size="sm" 
+          onClick={onDelete}
+          className="gap-1"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          Supprimer
+        </Button>
+      </div>
+    </div>
+  </>
+)}
 ```
 
----
+### 3. Dialog de confirmation
 
-## Détail de l'implémentation
+Ajout d'un `AlertDialog` dans `PersonnalitesPage.tsx` :
 
-### Edge Function `generer-requete-flux`
+```tsx
+// PersonnalitesPage.tsx - État
+const [deletingActeur, setDeletingActeur] = useState<Personnalite | null>(null);
+const deletePersonnalite = useDeletePersonnalite();
+const updatePersonnalite = useUpdatePersonnalite();
 
-```typescript
-serve(async (req) => {
-  const { nom, description } = await req.json();
-  
-  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: `Nom du flux: ${nom}\nDescription: ${description || 'Non fournie'}` }
-      ],
-      response_format: { type: 'json_object' }
-    }),
+// Fonctions
+const handleArchive = async (acteur: Personnalite) => {
+  await updatePersonnalite.mutateAsync({ id: acteur.id, actif: false });
+  toast.success('Acteur archivé', { 
+    description: `${acteur.prenom || ''} ${acteur.nom} a été archivé.` 
   });
-  
-  // Parse et retourne la configuration générée
-});
-```
+  setDetailOpen(false);
+};
 
-### Composant FluxFormDialog refactoré
+const confirmDelete = async () => {
+  if (deletingActeur) {
+    await deletePersonnalite.mutateAsync(deletingActeur.id);
+    toast.success('Acteur supprimé', { 
+      description: `${deletingActeur.prenom || ''} ${deletingActeur.nom} a été supprimé définitivement.` 
+    });
+    setDeletingActeur(null);
+    setDetailOpen(false);
+  }
+};
 
-**Structure principale :**
-```tsx
-<Dialog open={open} onOpenChange={onOpenChange}>
-  <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-    
-    {/* Header distinctif */}
-    <DialogHeader className="border-b pb-4">
-      <DialogTitle className="text-xl flex items-center gap-2">
-        <Zap className="h-5 w-5 text-primary" />
-        {flux ? 'Modifier l\'agent' : 'Configurer un nouvel agent'}
-      </DialogTitle>
-      <DialogDescription>
-        Définissez les paramètres de surveillance pour votre flux.
-      </DialogDescription>
-    </DialogHeader>
-    
-    {/* Corps scrollable */}
-    <div className="flex-1 overflow-y-auto p-6 space-y-6">
-      
-      {/* Section 1: Nom */}
-      <section className="space-y-2">
-        <Label className="font-semibold">Nom du flux</Label>
-        <div className="flex gap-3">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-            <Zap className="h-6 w-6" />
-          </div>
-          <Input 
-            placeholder="Ex: Concurrence Fintech, E-Réputation..." 
-            className="h-12 text-base"
-            autoFocus
-          />
-        </div>
-      </section>
-      
-      {/* Section 2: Ciblage IA */}
-      <section className="bg-muted/50 rounded-xl p-5 border space-y-4">
-        <div className="flex items-center justify-between">
-          <Label className="font-semibold flex items-center gap-2">
-            <Search className="h-4 w-4" />
-            Requête de surveillance
-          </Label>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleAiGenerate}
-            disabled={isGenerating}
-            className="gap-2 text-purple-600 border-purple-200 hover:bg-purple-50"
-          >
-            {isGenerating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4" />
-            )}
-            Générer avec l'IA
-          </Button>
-        </div>
-        
-        {/* Zone de mots-clés avec style terminal */}
-        <Textarea 
-          className="font-mono text-sm bg-background"
-          placeholder="Saisissez vos mots-clés ou laissez l'IA le faire..."
-        />
-        
-        {/* Indicateur de volume */}
-        <VolumeIndicator keywords={formData.mots_cles} quadrants={formData.quadrants} />
-      </section>
-      
-      {/* Section 3: Quadrants visuels */}
-      <section className="space-y-3">
-        <Label className="font-semibold">Quadrants Radar</Label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {quadrantOptions.map(q => (
-            <QuadrantButton 
-              key={q.id} 
-              {...q} 
-              active={formData.quadrants.includes(q.id)}
-              onClick={() => handleToggleQuadrant(q.id)}
-            />
-          ))}
-        </div>
-      </section>
-      
-      {/* Section 4: Importance */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label className="font-semibold">Seuil d'importance minimum</Label>
-          <Badge variant="secondary">≥ {formData.importance_min}%</Badge>
-        </div>
-        <Slider value={[formData.importance_min]} onValueChange={...} max={100} />
-      </section>
-      
-      {/* Section 5: Alertes (groupées) */}
-      <section className="rounded-xl border p-4 space-y-4">
-        <AlertOption 
-          icon={Bell}
-          title="Notifications en temps réel"
-          description="Alerte dans l'app dès qu'un article critique est détecté"
-          checked={formData.alerte_push}
-          onChange={...}
-        />
-        
-        {formData.alerte_push && (
-          <RadioGroup value={formData.frequence_digest} className="flex gap-4 pl-10">
-            <RadioOption value="instantane" label="Instantané" />
-            <RadioOption value="quotidien" label="Quotidien" />
-            <RadioOption value="hebdo" label="Hebdomadaire" />
-          </RadioGroup>
-        )}
-        
-        <Separator />
-        
-        <AlertOption 
-          icon={Mail}
-          title="Alertes par email"
-          description="Recevoir un email pour chaque article critique"
-          checked={formData.alerte_email}
-          onChange={...}
-        />
-      </section>
-      
-    </div>
-    
-    {/* Footer avec CTA fort */}
-    <DialogFooter className="border-t pt-4 bg-muted/30">
-      <Button variant="ghost" onClick={() => onOpenChange(false)}>
-        Annuler
-      </Button>
-      <Button onClick={handleSubmit} disabled={isLoading} className="gap-2">
-        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-        {flux ? 'Mettre à jour' : 'Lancer la surveillance'}
-      </Button>
-    </DialogFooter>
-    
-  </DialogContent>
-</Dialog>
+// Dialog de confirmation
+<AlertDialog open={!!deletingActeur} onOpenChange={(open) => !open && setDeletingActeur(null)}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Supprimer cet acteur ?</AlertDialogTitle>
+      <AlertDialogDescription>
+        L'acteur "{deletingActeur?.prenom} {deletingActeur?.nom}" sera 
+        définitivement supprimé. Cette action est irréversible.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Annuler</AlertDialogCancel>
+      <AlertDialogAction 
+        onClick={confirmDelete} 
+        className="bg-destructive text-destructive-foreground"
+      >
+        Supprimer
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
 ```
 
 ---
 
-## Composants helper
+## Props à ajouter
 
-### QuadrantButton
+### ActeurCard
 
 ```tsx
-function QuadrantButton({ id, label, icon: Icon, color, active, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all",
-        active 
-          ? `border-current ${color.replace('bg-', 'text-')} bg-current/10` 
-          : "border-muted hover:border-muted-foreground/30"
-      )}
-    >
-      <Icon className={cn("h-5 w-5 mb-2", active ? "" : "text-muted-foreground")} />
-      <span className={cn("text-xs font-medium", active ? "" : "text-muted-foreground")}>
-        {label}
-      </span>
-    </button>
-  );
+interface ActeurCardProps {
+  personnalite: Personnalite;
+  onClick?: () => void;
+  onEdit?: () => void;
+  onArchive?: () => void;  // NOUVEAU
+  onDelete?: () => void;   // NOUVEAU
 }
 ```
 
-### VolumeIndicator
+### ActeurDetail
 
 ```tsx
-function VolumeIndicator({ keywords, quadrants, importance }) {
-  const { level, label, color } = estimateVolume(keywords, quadrants, importance);
-  
-  return (
-    <div className="flex items-center gap-2 text-xs">
-      <span className="text-muted-foreground font-medium">Volume estimé :</span>
-      <div className="flex gap-0.5">
-        {[1, 2, 3].map(i => (
-          <div 
-            key={i} 
-            className={cn(
-              "w-6 h-1.5 rounded-full transition-colors",
-              i <= level ? color : "bg-muted"
-            )} 
-          />
-        ))}
-      </div>
-      <span className={cn("font-medium", color.replace('bg-', 'text-'))}>
-        {label}
-      </span>
-    </div>
-  );
-}
-```
-
-### AlertOption
-
-```tsx
-function AlertOption({ icon: Icon, title, description, checked, onChange }) {
-  return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10 text-primary">
-          <Icon className="h-5 w-5" />
-        </div>
-        <div>
-          <h4 className="font-medium text-sm">{title}</h4>
-          <p className="text-xs text-muted-foreground">{description}</p>
-        </div>
-      </div>
-      <Switch checked={checked} onCheckedChange={onChange} />
-    </div>
-  );
+interface ActeurDetailProps {
+  personnalite: Personnalite | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onEdit?: () => void;
+  onArchive?: () => void;  // NOUVEAU
+  onDelete?: () => void;   // NOUVEAU
 }
 ```
 
 ---
 
-## Récapitulatif des améliorations UX
+## Flux utilisateur
 
-| Avant | Après |
-|-------|-------|
-| Champs texte basiques | Sections visuellement distinctes |
-| Mots-clés manuels uniquement | Bouton "Générer avec l'IA" |
-| Checkboxes quadrants | Boutons visuels avec icônes |
-| Pas de feedback | Indicateur de volume estimé |
-| Notifications séparées | Section alertes groupée avec switches |
-| Bouton "Créer le flux" | "Lancer la surveillance" (vocabulaire agent) |
+### Archivage
+1. Clic sur "Archiver" (card ou détail)
+2. Action immédiate avec toast de confirmation
+3. L'acteur disparaît de la liste (car filtre `actif: true`)
+
+### Suppression
+1. Clic sur "Supprimer" (card ou détail)
+2. Dialog de confirmation s'affiche
+3. Confirmation → suppression + toast
+4. L'acteur est définitivement supprimé
+
+---
+
+## Récapitulatif des changements
+
+| Composant | Changement |
+|-----------|------------|
+| `ActeurCard.tsx` | Ajouter `DropdownMenu` avec Archiver/Supprimer |
+| `ActeurDetail.tsx` | Ajouter zone "Danger" avec boutons d'action |
+| `PersonnalitesPage.tsx` | Ajouter état `deletingActeur`, hooks, AlertDialog, handlers |
+| `usePersonnalites.ts` | Aucun changement (hooks déjà existants) |
 
