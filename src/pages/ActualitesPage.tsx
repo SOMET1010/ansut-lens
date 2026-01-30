@@ -3,7 +3,7 @@ import { TrendingUp, Loader2, Newspaper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
-import { useActualites, useTriggerCollecte, useEnrichActualite } from '@/hooks/useActualites';
+import { useActualites, useTriggerCollecte, useEnrichActualite, useYesterdayArticles } from '@/hooks/useActualites';
 import { useArticleClusters } from '@/hooks/useArticleClusters';
 import { useSidebarAnalytics } from '@/hooks/useSidebarAnalytics';
 import { ArticleCluster } from '@/components/actualites/ArticleCluster';
@@ -32,6 +32,8 @@ export default function ActualitesPage() {
   const { data: actualites, isLoading, refetch } = useActualites({
     maxAgeHours,
   });
+
+  const { data: yesterdayArticles } = useYesterdayArticles();
 
   const triggerCollecte = useTriggerCollecte();
   const enrichActualite = useEnrichActualite();
@@ -65,8 +67,8 @@ export default function ActualitesPage() {
   // Clustering des articles
   const clusters = useArticleClusters(filteredActualites);
   
-  // Analytics pour la sidebar
-  const analytics = useSidebarAnalytics(filteredActualites, activeFilters);
+  // Analytics pour la sidebar (avec données d'hier pour les tendances)
+  const analytics = useSidebarAnalytics(filteredActualites, yesterdayArticles, activeFilters);
 
   const handleRefresh = () => {
     triggerCollecte.mutate('critique', {
