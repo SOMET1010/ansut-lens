@@ -1,87 +1,26 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Send, Bot, User, Loader2, Signal, Brain, Users, FileText, RefreshCw, Settings2, History } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Send, Bot, Loader2, RefreshCw, Settings2, History, Sparkles, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { useActualites } from '@/hooks/useActualites';
 import { useDossiers } from '@/hooks/useDossiers';
 import { useConversationsIA, type ConversationMessage, type Conversation } from '@/hooks/useConversationsIA';
-import { MessageContent } from '@/components/assistant/MessageContent';
 import { ContextSelector } from '@/components/assistant/ContextSelector';
 import { ConversationHistory } from '@/components/assistant/ConversationHistory';
+import { ChatMessage } from '@/components/assistant/ChatMessage';
+import { ModeSelector, type AssistantMode } from '@/components/assistant/ModeSelector';
+import { DocumentWorkspace, detectDocument, type GeneratedDocument } from '@/components/assistant/DocumentWorkspace';
 import { useAuth } from '@/contexts/AuthContext';
-
-interface PromptCategory {
-  category: string;
-  icon: React.ElementType;
-  colorClass: string;
-  bgClass: string;
-  prompts: string[];
-}
-
-const promptCategories: PromptCategory[] = [
-  {
-    category: 'Service Universel',
-    icon: Signal,
-    colorClass: 'text-blue-500',
-    bgClass: 'bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20',
-    prompts: [
-      'Résume les dernières actualités SUT',
-      'Quels sont les projets de connectivité rurale en cours ?',
-      'Analyse les tendances de couverture réseau',
-    ]
-  },
-  {
-    category: 'Intelligence Artificielle',
-    icon: Brain,
-    colorClass: 'text-orange-500',
-    bgClass: 'bg-orange-500/10 hover:bg-orange-500/20 border-orange-500/20',
-    prompts: [
-      'Génère une note de synthèse sur l\'IA en Afrique',
-      'Quelles régulations IA sont en discussion ?',
-      'Quels pays africains avancent sur l\'IA ?',
-    ]
-  },
-  {
-    category: 'Acteurs clés',
-    icon: Users,
-    colorClass: 'text-green-500',
-    bgClass: 'bg-green-500/10 hover:bg-green-500/20 border-green-500/20',
-    prompts: [
-      'Quels acteurs clés surveiller cette semaine ?',
-      'Y a-t-il des nominations récentes dans le secteur ?',
-      'Résume l\'activité des opérateurs télécoms',
-    ]
-  },
-  {
-    category: 'Synthèses & Notes',
-    icon: FileText,
-    colorClass: 'text-purple-500',
-    bgClass: 'bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/20',
-    prompts: [
-      'Génère un briefing DG pour aujourd\'hui',
-      'Prépare une note pour le Conseil sur le SUT',
-      'Résume les 5 signaux faibles de la semaine',
-    ]
-  }
-];
-
-const inlineSuggestions = [
-  { text: 'Actualités SUT', prompt: 'Résume les dernières actualités SUT' },
-  { text: 'Briefing DG', prompt: 'Génère un briefing DG pour aujourd\'hui' },
-  { text: 'Acteurs à surveiller', prompt: 'Quels acteurs clés surveiller cette semaine ?' },
-  { text: 'Note IA', prompt: 'Génère une note de synthèse sur l\'IA en Afrique' },
-];
 
 const WELCOME_MESSAGE: ConversationMessage = { 
   role: 'assistant', 
-  content: 'Bonjour ! Je suis votre assistant IA ANSUT RADAR. J\'ai accès aux actualités récentes et dossiers stratégiques pour contextualiser mes réponses. Comment puis-je vous aider ?' 
+  content: 'Bonjour ! Je suis **SUTA**, votre assistant IA spécialisé dans l\'analyse télécom. J\'ai accès aux actualités récentes et dossiers stratégiques.\n\nChoisissez un mode ci-dessus selon votre besoin :\n- **Recherche** : trouver rapidement des informations\n- **Rédaction** : générer des notes et briefings\n- **Analyse** : obtenir des analyses chiffrées' 
 };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/assistant-ia`;
@@ -89,12 +28,14 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/assistant-ia
 async function streamChat({
   messages,
   context,
+  mode,
   onDelta,
   onDone,
   onError,
 }: {
   messages: ConversationMessage[];
   context: string;
+  mode: AssistantMode;
   onDelta: (deltaText: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
@@ -106,7 +47,7 @@ async function streamChat({
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ messages, context }),
+      body: JSON.stringify({ messages, context, mode }),
     });
 
     if (!resp.ok) {
@@ -189,11 +130,13 @@ async function streamChat({
 
 export default function AssistantPage() {
   const { user } = useAuth();
+  const [mode, setMode] = useState<AssistantMode>('redaction');
   const [messages, setMessages] = useState<ConversationMessage[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [generatedDocument, setGeneratedDocument] = useState<GeneratedDocument | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { 
@@ -304,11 +247,21 @@ export default function AssistantPage() {
     }
   }, [messages]);
 
+  // Detect document in last assistant message
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.role === 'assistant' && mode === 'redaction' && !isLoading) {
+      const doc = detectDocument(lastMessage.content);
+      if (doc) {
+        setGeneratedDocument(doc);
+      }
+    }
+  }, [messages, mode, isLoading]);
+
   // Save conversation after each message exchange
   const saveConversation = useCallback(async (newMessages: ConversationMessage[]) => {
     if (!user) return;
     
-    // Filter out welcome message for storage
     const messagesToSave = newMessages.filter(m => m !== WELCOME_MESSAGE && m.content !== WELCOME_MESSAGE.content);
     if (messagesToSave.length === 0) return;
 
@@ -328,6 +281,7 @@ export default function AssistantPage() {
     setMessages(newMessages);
     setInput('');
     setIsLoading(true);
+    setGeneratedDocument(null); // Clear previous document
 
     let assistantContent = '';
 
@@ -340,15 +294,23 @@ export default function AssistantPage() {
         }
         return [...prev.slice(0, -1), userMessage, { role: 'assistant', content: assistantContent }];
       });
+      
+      // Detect document while streaming in redaction mode
+      if (mode === 'redaction') {
+        const doc = detectDocument(assistantContent);
+        if (doc) {
+          setGeneratedDocument(doc);
+        }
+      }
     };
 
     await streamChat({
       messages: newMessages.map(m => ({ role: m.role, content: m.content })),
       context,
+      mode,
       onDelta: updateAssistant,
       onDone: () => {
         setIsLoading(false);
-        // Save after response complete
         const finalMessages = [...newMessages, { role: 'assistant' as const, content: assistantContent }];
         saveConversation(finalMessages);
       },
@@ -366,20 +328,18 @@ export default function AssistantPage() {
     });
   };
 
-  const handleQuickPrompt = (prompt: string) => {
-    setInput(prompt);
-  };
-
   const handleNewConversation = useCallback(() => {
     setMessages([WELCOME_MESSAGE]);
     setCurrentConversationId(null);
     setHistoryOpen(false);
+    setGeneratedDocument(null);
   }, []);
 
   const handleSelectConversation = useCallback((conv: Conversation) => {
     setMessages([WELCOME_MESSAGE, ...conv.messages]);
     setCurrentConversationId(conv.id);
     setHistoryOpen(false);
+    setGeneratedDocument(null);
   }, []);
 
   const handleDeleteConversation = useCallback((id: string) => {
@@ -389,24 +349,30 @@ export default function AssistantPage() {
     }
   }, [deleteConversation, currentConversationId, handleNewConversation]);
 
-  const isEmptyConversation = messages.length === 1 && messages[0].role === 'assistant';
-
-  const handleSuggestionClick = (prompt: string) => {
+  const handleSuggestionClick = useCallback((prompt: string) => {
     setInput(prompt);
+  }, []);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   return (
     <TooltipProvider>
-      <div className="h-[calc(100vh-8rem)] flex gap-4 animate-fade-in">
+      <div className="h-[calc(100vh-6rem)] flex gap-6 p-2 lg:p-6 animate-fade-in">
+        
         {/* History Sidebar - Desktop */}
-        <Card className="w-72 glass hidden xl:flex xl:flex-col">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
+        <div className="w-64 bg-card rounded-2xl border shadow-sm hidden xl:flex xl:flex-col overflow-hidden">
+          <div className="px-4 py-3 border-b bg-muted/30">
+            <h3 className="text-sm font-bold flex items-center gap-2">
               <History className="h-4 w-4" />
               Historique
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 p-0 overflow-hidden">
+            </h3>
+          </div>
+          <div className="flex-1 overflow-hidden">
             <ConversationHistory
               conversations={conversations}
               isLoading={loadingConversations}
@@ -415,46 +381,56 @@ export default function AssistantPage() {
               onNewConversation={handleNewConversation}
               onDeleteConversation={handleDeleteConversation}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Main Chat Area */}
-        <Card className="flex-1 glass flex flex-col">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {/* Mobile History Button */}
-                <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
-                  <SheetTrigger asChild>
-                    <Button variant="ghost" size="icon" className="xl:hidden">
-                      <History className="h-5 w-5" />
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left" className="w-80 p-0">
-                    <SheetHeader className="p-4 border-b">
-                      <SheetTitle className="flex items-center gap-2">
-                        <History className="h-4 w-4" />
-                        Historique
-                      </SheetTitle>
-                    </SheetHeader>
-                    <div className="h-[calc(100vh-5rem)]">
-                      <ConversationHistory
-                        conversations={conversations}
-                        isLoading={loadingConversations}
-                        currentConversationId={currentConversationId}
-                        onSelectConversation={handleSelectConversation}
-                        onNewConversation={handleNewConversation}
-                        onDeleteConversation={handleDeleteConversation}
-                      />
-                    </div>
-                  </SheetContent>
-                </Sheet>
+        {/* MAIN CHAT ZONE (60%) */}
+        <div className="flex-1 flex flex-col bg-card rounded-2xl border shadow-sm overflow-hidden">
+          
+          {/* Header with Mode Selector */}
+          <div className="px-4 lg:px-6 py-4 border-b bg-muted/30 flex flex-wrap gap-3 justify-between items-center">
+            <div className="flex items-center gap-3">
+              {/* Mobile History Button */}
+              <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="xl:hidden h-9 w-9">
+                    <History className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-80 p-0">
+                  <SheetHeader className="p-4 border-b">
+                    <SheetTitle className="flex items-center gap-2">
+                      <History className="h-4 w-4" />
+                      Historique
+                    </SheetTitle>
+                  </SheetHeader>
+                  <div className="h-[calc(100vh-5rem)]">
+                    <ConversationHistory
+                      conversations={conversations}
+                      isLoading={loadingConversations}
+                      currentConversationId={currentConversationId}
+                      onSelectConversation={handleSelectConversation}
+                      onNewConversation={handleNewConversation}
+                      onDeleteConversation={handleDeleteConversation}
+                    />
+                  </div>
+                </SheetContent>
+              </Sheet>
 
-                <CardTitle className="flex items-center gap-2">
-                  <Bot className="h-5 w-5 text-primary" />
-                  Assistant IA
-                </CardTitle>
+              <div className="bg-primary text-primary-foreground p-2 rounded-lg">
+                <Sparkles className="h-4 w-4" />
               </div>
+              <div>
+                <h2 className="font-bold text-sm">Assistant SUTA</h2>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  En ligne • Base documentaire
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <ModeSelector mode={mode} onModeChange={setMode} />
               
               {/* Context Indicator */}
               <Popover>
@@ -468,8 +444,8 @@ export default function AssistantPage() {
                     ) : (
                       <Settings2 className="h-3.5 w-3.5 text-primary" />
                     )}
-                    <span className="text-xs">
-                      {contextStats.actualites} actualités • {contextStats.dossiers} dossiers
+                    <span className="text-xs hidden sm:inline">
+                      {contextStats.actualites} actu • {contextStats.dossiers} dossiers
                     </span>
                   </Badge>
                 </PopoverTrigger>
@@ -482,7 +458,7 @@ export default function AssistantPage() {
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Sélectionnez les actualités et dossiers que l'assistant utilisera pour contextualiser ses réponses.
+                      Sélectionnez les actualités et dossiers que l'assistant utilisera.
                     </p>
                     <ContextSelector
                       actualites={availableActualites}
@@ -499,131 +475,82 @@ export default function AssistantPage() {
                 </PopoverContent>
               </Popover>
             </div>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col min-h-0">
-            <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
-              <div className="space-y-4 pb-4">
-                {messages.map((msg, i) => (
-                  <div key={i}>
-                    <div className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                      <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
-                        msg.role === 'assistant' ? 'bg-primary/20 text-primary' : 'bg-secondary/20 text-secondary'
-                      }`}>
-                        {msg.role === 'assistant' ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
-                      </div>
-                      <div className={`max-w-[80%] p-3 rounded-lg whitespace-pre-wrap ${
-                        msg.role === 'assistant' ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'
-                      }`}>
-                        {msg.role === 'assistant' ? (
-                          <MessageContent content={msg.content} />
-                        ) : (
-                          msg.content
-                        )}
-                        {isLoading && i === messages.length - 1 && msg.role === 'assistant' && (
-                          <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
-                        )}
-                      </div>
-                    </div>
-                    
-                    {isEmptyConversation && i === 0 && msg.role === 'assistant' && (
-                      <div className="mt-4 ml-11 grid grid-cols-2 gap-2 max-w-md">
-                        {inlineSuggestions.map((suggestion, idx) => (
-                          <Button
-                            key={idx}
-                            variant="outline"
-                            size="sm"
-                            className="justify-start text-xs h-auto py-2.5 px-3 border-dashed hover:border-primary hover:bg-primary/5 transition-colors"
-                            onClick={() => handleSuggestionClick(suggestion.prompt)}
-                            disabled={isLoading}
-                          >
-                            {suggestion.text}
-                          </Button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {isLoading && messages[messages.length - 1]?.role === 'user' && (
-                  <div className="flex gap-3">
-                    <div className="h-8 w-8 rounded-full flex items-center justify-center bg-primary/20 text-primary">
-                      <Bot className="h-4 w-4" />
-                    </div>
-                    <div className="bg-muted p-3 rounded-lg">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-            
-            <div className="flex gap-2 overflow-x-auto py-2 lg:hidden">
-              {inlineSuggestions.map((suggestion, idx) => (
-                <Button
-                  key={idx}
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0 text-xs h-8 px-3 border-dashed"
-                  onClick={() => handleSuggestionClick(suggestion.prompt)}
-                  disabled={isLoading}
-                >
-                  {suggestion.text}
-                </Button>
+          </div>
+          
+          {/* Messages Area */}
+          <ScrollArea className="flex-1 p-4 lg:p-6" ref={scrollRef}>
+            <div className="space-y-2">
+              {messages.map((msg, i) => (
+                <ChatMessage
+                  key={i}
+                  role={msg.role}
+                  content={msg.content}
+                  isStreaming={isLoading && i === messages.length - 1 && msg.role === 'assistant'}
+                />
               ))}
+              {isLoading && messages[messages.length - 1]?.role === 'user' && (
+                <div className="flex gap-4 mb-6">
+                  <div className="shrink-0 h-10 w-10 rounded-full flex items-center justify-center bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm">
+                    <Bot className="h-5 w-5" />
+                  </div>
+                  <div className="bg-card border rounded-2xl rounded-tl-none p-5">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  </div>
+                </div>
+              )}
             </div>
-            
-            <div className="flex gap-2 mt-2 pt-4 border-t border-border">
-              <Input 
-                value={input} 
-                onChange={(e) => setInput(e.target.value)} 
-                placeholder="Posez votre question..." 
-                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+          </ScrollArea>
+          
+          {/* Input Area */}
+          <div className="p-4 border-t bg-background">
+            <div className="relative">
+              <Textarea 
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Posez votre question ou demandez une rédaction..."
+                className="min-h-[60px] pr-24 resize-none bg-muted/50 border-border"
                 disabled={isLoading}
-                className="flex-1"
               />
-              <Button onClick={handleSend} disabled={isLoading || !input.trim()}>
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Sidebar with prompts */}
-        <Card className="w-80 glass hidden lg:flex lg:flex-col">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Suggestions par thème</CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-hidden">
-            <ScrollArea className="h-full pr-2">
-              <div className="space-y-4">
-                {promptCategories.map((cat, catIdx) => {
-                  const IconComponent = cat.icon;
-                  return (
-                    <div key={catIdx} className="space-y-2">
-                      <div className={`flex items-center gap-2 text-xs font-medium ${cat.colorClass}`}>
-                        <IconComponent className="h-3.5 w-3.5" />
-                        {cat.category}
-                      </div>
-                      <div className="space-y-1.5">
-                        {cat.prompts.map((prompt, promptIdx) => (
-                          <Button
-                            key={promptIdx}
-                            variant="outline"
-                            size="sm"
-                            className={`w-full justify-start text-xs h-auto py-2 px-3 whitespace-normal text-left border ${cat.bgClass} transition-colors`}
-                            onClick={() => handleQuickPrompt(prompt)}
-                            disabled={isLoading}
-                          >
-                            {prompt}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="absolute right-2 bottom-2 flex gap-1">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-muted-foreground hover:text-primary"
+                  disabled
+                  title="Joindre un fichier (bientôt)"
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
+                <Button 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={handleSend}
+                  disabled={isLoading || !input.trim()}
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+            </div>
+            <p className="text-[10px] text-center text-muted-foreground mt-2">
+              L'IA peut faire des erreurs. Vérifiez toujours les sources citées.
+            </p>
+          </div>
+        </div>
+        
+        {/* DOCUMENT WORKSPACE (40%) - Desktop only */}
+        <div className="hidden lg:block">
+          <DocumentWorkspace
+            document={generatedDocument}
+            isGenerating={isLoading && mode === 'redaction'}
+            onClose={() => setGeneratedDocument(null)}
+            onSuggestionClick={handleSuggestionClick}
+          />
+        </div>
       </div>
     </TooltipProvider>
   );
