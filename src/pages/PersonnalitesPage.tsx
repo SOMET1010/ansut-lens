@@ -4,9 +4,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Users, Sparkles, UserPlus, Plus, List, Target } from 'lucide-react';
+import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePersonnalites, CERCLE_LABELS, type PersonnalitesFilters } from '@/hooks/usePersonnalites';
+import { usePersonnalites, useUpdatePersonnalite, useDeletePersonnalite, CERCLE_LABELS, type PersonnalitesFilters } from '@/hooks/usePersonnalites';
 import { StatsBar } from '@/components/personnalites/StatsBar';
 import { ActeurFilters } from '@/components/personnalites/ActeurFilters';
 import { ActeurCard } from '@/components/personnalites/ActeurCard';
@@ -26,9 +37,12 @@ export default function PersonnalitesPage() {
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [editingActeur, setEditingActeur] = useState<Personnalite | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [deletingActeur, setDeletingActeur] = useState<Personnalite | null>(null);
   const { isAdmin } = useAuth();
 
   const { data: personnalites, isLoading } = usePersonnalites(filters);
+  const updatePersonnalite = useUpdatePersonnalite();
+  const deletePersonnalite = useDeletePersonnalite();
 
   // Grouper par cercle
   const parCercle = useMemo(() => {
@@ -59,6 +73,37 @@ export default function PersonnalitesPage() {
   const handleDialogClose = (open: boolean) => {
     setFormDialogOpen(open);
     if (!open) setEditingActeur(null);
+  };
+
+  const handleArchive = async (acteur: Personnalite) => {
+    try {
+      await updatePersonnalite.mutateAsync({ id: acteur.id, actif: false });
+      toast.success('Acteur archivé', { 
+        description: `${acteur.prenom || ''} ${acteur.nom} a été archivé.` 
+      });
+      setDetailOpen(false);
+    } catch (error) {
+      toast.error('Erreur lors de l\'archivage');
+    }
+  };
+
+  const handleDeleteRequest = (acteur: Personnalite) => {
+    setDeletingActeur(acteur);
+  };
+
+  const confirmDelete = async () => {
+    if (deletingActeur) {
+      try {
+        await deletePersonnalite.mutateAsync(deletingActeur.id);
+        toast.success('Acteur supprimé', { 
+          description: `${deletingActeur.prenom || ''} ${deletingActeur.nom} a été supprimé définitivement.` 
+        });
+        setDeletingActeur(null);
+        setDetailOpen(false);
+      } catch (error) {
+        toast.error('Erreur lors de la suppression');
+      }
+    }
   };
 
   const filteredPersonnalites = useMemo(() => {
@@ -174,6 +219,8 @@ export default function PersonnalitesPage() {
                           personnalite={acteur}
                           onClick={() => handleActeurClick(acteur)}
                           onEdit={isAdmin ? () => openEditDialog(acteur) : undefined}
+                          onArchive={isAdmin ? () => handleArchive(acteur) : undefined}
+                          onDelete={isAdmin ? () => handleDeleteRequest(acteur) : undefined}
                         />
                       ))}
                     </div>
@@ -201,6 +248,8 @@ export default function PersonnalitesPage() {
                           personnalite={acteur}
                           onClick={() => handleActeurClick(acteur)}
                           onEdit={isAdmin ? () => openEditDialog(acteur) : undefined}
+                          onArchive={isAdmin ? () => handleArchive(acteur) : undefined}
+                          onDelete={isAdmin ? () => handleDeleteRequest(acteur) : undefined}
                         />
                       ))}
                     </div>
@@ -223,6 +272,8 @@ export default function PersonnalitesPage() {
             openEditDialog(selectedActeur);
           }
         }}
+        onArchive={selectedActeur ? () => handleArchive(selectedActeur) : undefined}
+        onDelete={selectedActeur ? () => handleDeleteRequest(selectedActeur) : undefined}
       />
 
       {/* Form dialog */}
@@ -231,6 +282,28 @@ export default function PersonnalitesPage() {
         onOpenChange={handleDialogClose}
         acteur={editingActeur ?? undefined}
       />
+
+      {/* Dialog de confirmation de suppression */}
+      <AlertDialog open={!!deletingActeur} onOpenChange={(open) => !open && setDeletingActeur(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cet acteur ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              L'acteur « {deletingActeur?.prenom} {deletingActeur?.nom} » sera 
+              définitivement supprimé. Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
