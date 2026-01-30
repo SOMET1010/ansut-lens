@@ -128,23 +128,27 @@ export default function TechDocPage() {
               key={item.id}
               onClick={() => scrollToSection(item.id)}
               className={cn(
-                "flex items-center gap-2 p-2 rounded-lg transition-all cursor-pointer text-left group",
+                "flex items-center gap-2 p-2 rounded-lg cursor-pointer text-left group",
+                "transition-all duration-300 ease-out",
                 activeSection === item.id
-                  ? "bg-primary/20 ring-2 ring-primary/50"
-                  : "hover:bg-primary/10"
+                  ? "bg-primary/20 ring-2 ring-primary/50 shadow-[0_0_12px_hsl(var(--primary)/0.3)]"
+                  : "hover:bg-primary/10 ring-0 ring-transparent shadow-none"
               )}
             >
               <span className={cn(
-                "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors",
+                "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
+                "transition-all duration-300 ease-out",
                 activeSection === item.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground"
+                  ? "bg-primary text-primary-foreground scale-110 shadow-md"
+                  : "bg-primary/10 text-primary scale-100 group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-105"
               )}>
                 {item.num}
               </span>
               <span className={cn(
-                "transition-colors",
-                activeSection === item.id ? "text-primary font-medium" : "group-hover:text-primary"
+                "transition-all duration-200 ease-out",
+                activeSection === item.id 
+                  ? "text-primary font-semibold translate-x-0.5" 
+                  : "text-foreground group-hover:text-primary"
               )}>
                 {item.label}
               </span>
