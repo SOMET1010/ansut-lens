@@ -1,9 +1,9 @@
 
 
-## Plan : Ajouter un graphique d'évolution des actions admin (30 jours)
+## Plan : Ajouter la pagination au tableau du Journal d'audit
 
 ### Objectif
-Ajouter un graphique de type **AreaChart** montrant l'évolution quotidienne des actions administratives sur les 30 derniers jours, permettant de visualiser les tendances d'activité.
+Implémenter une pagination complète pour le tableau des logs d'audit, permettant de naviguer au-delà des 100 premiers résultats avec un comptage exact et des contrôles de navigation.
 
 ---
 
@@ -11,207 +11,218 @@ Ajouter un graphique de type **AreaChart** montrant l'évolution quotidienne des
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│  Journal d'audit                                             │
+│  Actions récentes                           50 résultat(s)  │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐  ← Compteurs existants │
-│  │Total │ │Invit.│ │Rôles │ │Reset │                        │
-│  └──────┘ └──────┘ └──────┘ └──────┘                        │
-│                                                              │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │ Activité sur 30 jours                    Tendance: +12% ││  ← NOUVEAU
-│  │ ▄▄                                                      ││
-│  │ ██▄   ▄▄        ▄▄▄                                     ││
-│  │ ███▄▄███▄▄▄▄▄▄▄▄████▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄││
-│  │ 01/01  05/01  10/01  15/01  20/01  25/01  30/01         ││
-│  └─────────────────────────────────────────────────────────┘│
-│                                                              │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │ Filtres...                                              ││
-│  └─────────────────────────────────────────────────────────┘│
+│  Date       │ Admin    │ Action    │ Cible     │ Détails   │
+│─────────────┼──────────┼───────────┼───────────┼───────────│
+│  28/01/26   │ Admin A  │ Invitation│ User X    │ ...       │
+│  ...        │ ...      │ ...       │ ...       │ ...       │
+│  (25 lignes par page)                                       │
+├─────────────────────────────────────────────────────────────┤
+│         ◀ Précédent  │ 1 │ 2 │ ... │ Suivant ▶             │  ← NOUVEAU
+│                   Page 1 sur 2                              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### Fonctionnalités du graphique
+### Fonctionnalités
 
 | Fonctionnalité | Description |
 |----------------|-------------|
-| **Type** | AreaChart avec dégradé (comme SPDIEvolutionChart) |
-| **Période** | 30 derniers jours |
-| **Données** | Nombre d'actions par jour, groupé par type |
-| **Couleurs** | Vert (invitations), Bleu (rôles), Violet (MDP), Gris (autres) |
-| **Tooltip** | Date complète + détail par type d'action |
-| **Tendance** | Badge indiquant la variation vs période précédente |
+| **Pagination côté serveur** | Utilise `.range()` de Supabase pour charger uniquement la page courante |
+| **Comptage exact** | Affiche le total réel de résultats (pas limité à 100) |
+| **25 éléments par page** | Taille de page standard pour une bonne lisibilité |
+| **Navigation intelligente** | Affiche jusqu'à 5 numéros de pages avec ellipsis si nécessaire |
+| **Reset automatique** | Retour à la page 1 quand les filtres changent |
+| **Indicateur de position** | Affiche "Page X sur Y" sous les contrôles |
 
 ---
 
 ### Implémentation technique
 
-#### 1. Requête pour les données 30 jours
+#### 1. Nouveaux états
 
-Ajouter une nouvelle requête pour récupérer les logs des 30 derniers jours sans limite :
+Ajouter l'état de pagination et la constante de taille de page :
 
 ```typescript
-const thirtyDaysAgo = new Date();
-thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+const PAGE_SIZE = 25;
+const [page, setPage] = useState(1);
+```
 
-const { data: chartLogs } = useQuery({
-  queryKey: ["audit-logs-chart"],
+#### 2. Modification de la requête
+
+Remplacer `.limit(100)` par une pagination avec comptage :
+
+```typescript
+const { data: logsData, isLoading } = useQuery({
+  queryKey: ["admin-audit-logs", actionFilter, startDate?.toISOString(), endDate?.toISOString(), page],
   queryFn: async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from("admin_audit_logs")
-      .select("action, created_at")
-      .gte("created_at", thirtyDaysAgo.toISOString())
-      .order("created_at", { ascending: true });
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false });
+
+    if (actionFilter !== "all") {
+      query = query.eq("action", actionFilter);
+    }
+
+    if (startDate) {
+      query = query.gte("created_at", startDate.toISOString());
+    }
+
+    if (endDate) {
+      const endOfDay = new Date(endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      query = query.lte("created_at", endOfDay.toISOString());
+    }
+
+    // Pagination
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    query = query.range(from, to);
+
+    const { data, error, count } = await query;
     if (error) throw error;
-    return data;
+
+    // Fetch profiles...
+    return {
+      logs: enrichedLogs,
+      total: count ?? 0,
+      totalPages: Math.ceil((count ?? 0) / PAGE_SIZE),
+    };
   },
 });
 ```
 
-#### 2. Transformation des données pour le graphique
+#### 3. Reset de la page lors du changement de filtres
 
-Regrouper les logs par jour :
+Ajouter un effet pour réinitialiser la page :
 
 ```typescript
-const chartData = useMemo(() => {
-  if (!chartLogs) return [];
-  
-  const dayMap = new Map<string, { 
-    date: string; 
-    total: number;
-    invitations: number;
-    roles: number;
-    passwords: number;
-    autres: number;
-  }>();
-  
-  // Initialiser les 30 derniers jours
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const key = format(d, "yyyy-MM-dd");
-    dayMap.set(key, { 
-      date: key, 
-      total: 0, 
-      invitations: 0, 
-      roles: 0, 
-      passwords: 0, 
-      autres: 0 
-    });
-  }
-  
-  // Remplir avec les données réelles
-  chartLogs.forEach(log => {
-    const dayKey = format(new Date(log.created_at), "yyyy-MM-dd");
-    const entry = dayMap.get(dayKey);
-    if (entry) {
-      entry.total++;
-      if (log.action === "user_invited") entry.invitations++;
-      else if (log.action === "role_changed") entry.roles++;
-      else if (log.action.includes("password")) entry.passwords++;
-      else entry.autres++;
-    }
-  });
-  
-  return Array.from(dayMap.values());
-}, [chartLogs]);
+// Reset page when filters change
+useEffect(() => {
+  setPage(1);
+}, [actionFilter, startDate, endDate, searchQuery]);
 ```
 
-#### 3. Calcul de la tendance
+#### 4. Extraction des données
 
-Comparer les 15 derniers jours vs les 15 précédents :
+Adapter l'accès aux données :
 
 ```typescript
-const tendance = useMemo(() => {
-  if (chartData.length < 30) return 0;
-  const recent = chartData.slice(-15).reduce((sum, d) => sum + d.total, 0);
-  const previous = chartData.slice(0, 15).reduce((sum, d) => sum + d.total, 0);
-  if (previous === 0) return recent > 0 ? 100 : 0;
-  return Math.round(((recent - previous) / previous) * 100);
-}, [chartData]);
+const logs = logsData?.logs ?? [];
+const totalCount = logsData?.total ?? 0;
+const totalPages = logsData?.totalPages ?? 1;
 ```
 
-#### 4. Composant graphique
+#### 5. Mise à jour des stats
 
-Utiliser les composants Recharts existants avec le style du projet :
+Les stats doivent utiliser le count total, pas la longueur des logs paginés :
 
 ```typescript
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
-<Card className="glass">
-  <CardHeader className="pb-2">
-    <div className="flex items-center justify-between">
-      <CardTitle className="text-sm font-medium flex items-center gap-2">
-        <TrendingUp className="h-4 w-4" />
-        Activité sur 30 jours
-      </CardTitle>
-      <Badge variant={tendance >= 0 ? "default" : "secondary"}>
-        {tendance >= 0 ? "+" : ""}{tendance}%
-      </Badge>
-    </div>
-  </CardHeader>
-  <CardContent>
-    <div className="h-48">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={chartData}>
-          <defs>
-            <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-              <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-          <XAxis 
-            dataKey="date" 
-            tickFormatter={(d) => format(new Date(d), "dd/MM")}
-            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-          />
-          <YAxis 
-            allowDecimals={false}
-            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Area 
-            type="monotone" 
-            dataKey="total" 
-            stroke="hsl(var(--primary))" 
-            fillOpacity={1} 
-            fill="url(#colorTotal)" 
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
-  </CardContent>
-</Card>
+const stats = useMemo(() => {
+  if (!logs) return { total: totalCount, invitations: 0, roleChanges: 0, passwordResets: 0 };
+  return {
+    total: totalCount,
+    invitations: logs.filter((l) => l.action === "user_invited").length,
+    roleChanges: logs.filter((l) => l.action === "role_changed").length,
+    passwordResets: logs.filter((l) => l.action.includes("password")).length,
+  };
+}, [logs, totalCount]);
 ```
 
-#### 5. Tooltip personnalisé
+Note : Les stats comptent uniquement la page actuelle. Pour des stats globales précises, une requête séparée serait nécessaire.
 
-Afficher le détail par type d'action :
+#### 6. Composant de pagination
+
+Utiliser le pattern existant de `AlertesHistoryPage` :
 
 ```typescript
-const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    return (
-      <div className="bg-popover border rounded-lg p-3 shadow-lg">
-        <p className="text-xs text-muted-foreground mb-2">
-          {format(new Date(data.date), "EEEE d MMMM", { locale: fr })}
-        </p>
-        <p className="font-bold text-primary">{data.total} action{data.total > 1 ? "s" : ""}</p>
-        <div className="text-xs mt-1 space-y-1">
-          {data.invitations > 0 && <p className="text-emerald-400">• {data.invitations} invitation(s)</p>}
-          {data.roles > 0 && <p className="text-blue-400">• {data.roles} rôle(s)</p>}
-          {data.passwords > 0 && <p className="text-purple-400">• {data.passwords} MDP</p>}
-          {data.autres > 0 && <p className="text-muted-foreground">• {data.autres} autre(s)</p>}
-        </div>
-      </div>
-    );
-  }
-  return null;
-};
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
+
+// Après le tableau, dans CardContent :
+{totalPages > 1 && (
+  <div className="mt-6 flex flex-col items-center gap-2">
+    <Pagination>
+      <PaginationContent>
+        <PaginationItem>
+          <PaginationPrevious
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+          />
+        </PaginationItem>
+        
+        {/* Première page */}
+        <PaginationItem>
+          <PaginationLink
+            onClick={() => setPage(1)}
+            isActive={page === 1}
+            className="cursor-pointer"
+          >
+            1
+          </PaginationLink>
+        </PaginationItem>
+        
+        {/* Ellipsis début */}
+        {page > 3 && <PaginationEllipsis />}
+        
+        {/* Pages autour de la courante */}
+        {[...Array(totalPages)].map((_, i) => {
+          const pageNum = i + 1;
+          if (pageNum === 1 || pageNum === totalPages) return null;
+          if (pageNum < page - 1 || pageNum > page + 1) return null;
+          return (
+            <PaginationItem key={pageNum}>
+              <PaginationLink
+                onClick={() => setPage(pageNum)}
+                isActive={page === pageNum}
+                className="cursor-pointer"
+              >
+                {pageNum}
+              </PaginationLink>
+            </PaginationItem>
+          );
+        })}
+        
+        {/* Ellipsis fin */}
+        {page < totalPages - 2 && <PaginationEllipsis />}
+        
+        {/* Dernière page */}
+        {totalPages > 1 && (
+          <PaginationItem>
+            <PaginationLink
+              onClick={() => setPage(totalPages)}
+              isActive={page === totalPages}
+              className="cursor-pointer"
+            >
+              {totalPages}
+            </PaginationLink>
+          </PaginationItem>
+        )}
+        
+        <PaginationItem>
+          <PaginationNext
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+          />
+        </PaginationItem>
+      </PaginationContent>
+    </Pagination>
+    
+    <p className="text-xs text-muted-foreground">
+      Page {page} sur {totalPages} • {totalCount} résultat{totalCount > 1 ? "s" : ""}
+    </p>
+  </div>
+)}
 ```
 
 ---
@@ -219,21 +230,29 @@ const CustomTooltip = ({ active, payload }: any) => {
 ### Imports à ajouter
 
 ```typescript
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp } from "lucide-react";
+import { useEffect } from "react"; // Ajouter useEffect aux imports existants
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
 ```
 
 ---
 
-### Position dans la page
+### Mise à jour du badge de résultats
 
-Le graphique sera inséré **entre les cartes statistiques et les filtres** :
+Modifier l'affichage pour montrer le total réel :
 
-1. Header (existant)
-2. Stats Cards (existant)
-3. **Graphique d'activité** (nouveau)
-4. Filters Card (existant)
-5. Table Card (existant)
+```typescript
+<Badge variant="secondary" className="font-normal">
+  {totalCount} résultat{totalCount > 1 ? "s" : ""} • Page {page}/{totalPages}
+</Badge>
+```
 
 ---
 
@@ -241,5 +260,5 @@ Le graphique sera inséré **entre les cartes statistiques et les filtres** :
 
 | Fichier | Modifications |
 |---------|---------------|
-| `src/pages/admin/AuditLogsPage.tsx` | Ajouter requête, calculs, et composant graphique |
+| `src/pages/admin/AuditLogsPage.tsx` | Ajouter état page, modifier requête avec range/count, ajouter composant Pagination |
 
