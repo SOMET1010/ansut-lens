@@ -10,6 +10,10 @@ export interface AdminStats {
   sourcesActives: number;
   derniereCollecte: string | null;
   actionsAudit24h: number;
+  // New metrics for system health
+  lastCollecteStatus: 'success' | 'error' | null;
+  lastCollecteDuration: number | null;
+  articlesLast24h: number;
 }
 
 export function useAdminStats() {
@@ -27,7 +31,8 @@ export function useAdminStats() {
         alertesResult,
         sourcesResult,
         collecteResult,
-        auditResult
+        auditResult,
+        articlesResult
       ] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('disabled', false),
         supabase.from('personnalites').select('id', { count: 'exact', head: true }),
@@ -35,9 +40,12 @@ export function useAdminStats() {
         supabase.from('newsletters').select('id', { count: 'exact', head: true }).eq('statut', 'brouillon'),
         supabase.from('alertes').select('id', { count: 'exact', head: true }).eq('lue', false),
         supabase.from('sources_media').select('id', { count: 'exact', head: true }).eq('actif', true),
-        supabase.from('collectes_log').select('created_at').order('created_at', { ascending: false }).limit(1),
-        supabase.from('admin_audit_logs').select('id', { count: 'exact', head: true }).gte('created_at', yesterday)
+        supabase.from('collectes_log').select('created_at, duree_ms, statut').order('created_at', { ascending: false }).limit(1),
+        supabase.from('admin_audit_logs').select('id', { count: 'exact', head: true }).gte('created_at', yesterday),
+        supabase.from('actualites').select('id', { count: 'exact', head: true }).gte('created_at', yesterday)
       ]);
+
+      const lastCollecte = collecteResult.data?.[0];
 
       return {
         usersActifs: usersResult.count ?? 0,
@@ -46,8 +54,12 @@ export function useAdminStats() {
         newslettersEnAttente: newslettersResult.count ?? 0,
         alertesNonLues: alertesResult.count ?? 0,
         sourcesActives: sourcesResult.count ?? 0,
-        derniereCollecte: collecteResult.data?.[0]?.created_at ?? null,
-        actionsAudit24h: auditResult.count ?? 0
+        derniereCollecte: lastCollecte?.created_at ?? null,
+        actionsAudit24h: auditResult.count ?? 0,
+        lastCollecteStatus: lastCollecte?.statut === 'success' ? 'success' : 
+                           lastCollecte?.statut === 'error' ? 'error' : null,
+        lastCollecteDuration: lastCollecte?.duree_ms ?? null,
+        articlesLast24h: articlesResult.count ?? 0
       };
     },
     staleTime: 30 * 1000, // 30 seconds

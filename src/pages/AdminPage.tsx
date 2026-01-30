@@ -1,18 +1,9 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { Users, Database, Bell, Tag, UserPlus, ClipboardList, Clock, Mail, Shield, Presentation, GraduationCap } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus } from 'lucide-react';
 import { useAdminStats } from '@/hooks/useAdminStats';
-import { AdminStatBadge } from '@/components/admin/AdminStatBadge';
+import { SystemHealthWidget } from '@/components/admin/SystemHealthWidget';
+import { AdminNavCard } from '@/components/admin/AdminNavCard';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-
-function getCollecteVariant(derniereCollecte: string | null): 'success' | 'warning' | 'error' | 'muted' {
-  if (!derniereCollecte) return 'muted';
-  const heuresDepuis = (Date.now() - new Date(derniereCollecte).getTime()) / (1000 * 60 * 60);
-  if (heuresDepuis < 6) return 'success';
-  if (heuresDepuis < 24) return 'warning';
-  return 'error';
-}
 
 export default function AdminPage() {
   const { data: stats, isLoading } = useAdminStats();
@@ -23,189 +14,178 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-8 animate-fade-in">
+      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">Administration</h1>
-        <p className="text-muted-foreground">Configuration et gestion du système</p>
+        <p className="text-muted-foreground">
+          Configuration globale, sécurité et maintenance de la plateforme.
+        </p>
       </div>
 
-      {/* Section Gestion Opérationnelle */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <div className="h-1 w-1 rounded-full bg-primary" />
-          <h2 className="text-lg font-semibold text-foreground">Gestion opérationnelle</h2>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Link to="/admin/users">
-            <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full">
-              <CardContent className="pt-6 flex flex-col items-center text-center">
-                <Users className="h-10 w-10 text-chart-3 mb-3" />
-                <h3 className="font-semibold">Utilisateurs</h3>
-                <p className="text-sm text-muted-foreground">Inviter & gérer</p>
-                <AdminStatBadge
-                  value={stats?.usersActifs ?? 0}
-                  label="actifs"
-                  variant={stats?.usersActifs && stats.usersActifs > 0 ? 'success' : 'warning'}
-                  loading={isLoading}
-                />
-              </CardContent>
-            </Card>
-          </Link>
-          <Link to="/admin/roles">
-            <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full">
-              <CardContent className="pt-6 flex flex-col items-center text-center">
-                <Shield className="h-10 w-10 text-red-400 mb-3" />
-                <h3 className="font-semibold">Rôles & Permissions</h3>
-                <p className="text-sm text-muted-foreground">RBAC configurable</p>
-                <AdminStatBadge
-                  value="4 rôles"
-                  variant="info"
-                  loading={false}
-                />
-              </CardContent>
-            </Card>
-          </Link>
-          <Link to="/admin/import-acteurs">
-            <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full">
-              <CardContent className="pt-6 flex flex-col items-center text-center">
-                <UserPlus className="h-10 w-10 text-primary mb-3" />
-                <h3 className="font-semibold">Import Acteurs</h3>
-                <p className="text-sm text-muted-foreground">Via Perplexity</p>
-                <AdminStatBadge
-                  value={stats?.totalActeurs ?? 0}
-                  label="acteurs"
-                  variant="info"
-                  loading={isLoading}
-                />
-              </CardContent>
-            </Card>
-          </Link>
-          <Link to="/admin/mots-cles">
-            <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full">
-              <CardContent className="pt-6 flex flex-col items-center text-center">
-                <Tag className="h-10 w-10 text-secondary mb-3" />
-                <h3 className="font-semibold">Mots-Clés</h3>
-                <p className="text-sm text-muted-foreground">Veille & alertes</p>
-                <AdminStatBadge
-                  value={stats?.motsClesActifs ?? 0}
-                  label="actifs"
-                  variant="info"
-                  loading={isLoading}
-                />
-              </CardContent>
-            </Card>
-          </Link>
-          <Link to="/admin/newsletters">
-            <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full">
-              <CardContent className="pt-6 flex flex-col items-center text-center">
-                <Mail className="h-10 w-10 text-chart-1 mb-3" />
-                <h3 className="font-semibold">Newsletters</h3>
-                <p className="text-sm text-muted-foreground">Génération IA</p>
-                <AdminStatBadge
-                  value={stats?.newslettersEnAttente ?? 0}
-                  label="en attente"
-                  variant={stats?.newslettersEnAttente && stats.newslettersEnAttente > 0 ? 'warning' : 'muted'}
-                  loading={isLoading}
-                />
-              </CardContent>
-            </Card>
-          </Link>
-          <Link to="/admin/presentation">
-            <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full">
-              <CardContent className="pt-6 flex flex-col items-center text-center">
-                <Presentation className="h-10 w-10 text-purple-400 mb-3" />
-                <h3 className="font-semibold">Présentation</h3>
-                <p className="text-sm text-muted-foreground">Slides PDF</p>
-                <AdminStatBadge
-                  value="11 slides"
-                  variant="info"
-                  loading={false}
-                />
-              </CardContent>
-            </Card>
-          </Link>
-          <Link to="/admin/formation">
-            <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full">
-              <CardContent className="pt-6 flex flex-col items-center text-center">
-                <GraduationCap className="h-10 w-10 text-emerald-400 mb-3" />
-                <h3 className="font-semibold">Formation</h3>
-                <p className="text-sm text-muted-foreground">Guides PDF</p>
-                <AdminStatBadge
-                  value="2 guides"
-                  variant="info"
-                  loading={false}
-                />
-              </CardContent>
-            </Card>
-          </Link>
-          <Card className="glass cursor-pointer hover:shadow-glow transition-shadow">
-            <CardContent className="pt-6 flex flex-col items-center text-center">
-              <Bell className="h-10 w-10 text-chart-4 mb-3" />
-              <h3 className="font-semibold">Alertes</h3>
-              <p className="text-sm text-muted-foreground">Configurer seuils</p>
-              <AdminStatBadge
-                value={stats?.alertesNonLues ?? 0}
-                label="non lues"
-                variant={stats?.alertesNonLues && stats.alertesNonLues > 0 ? 'warning' : 'muted'}
-                loading={isLoading}
-              />
-            </CardContent>
-          </Card>
-          <Link to="/admin/sources">
-            <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full">
-              <CardContent className="pt-6 flex flex-col items-center text-center">
-                <Database className="h-10 w-10 text-primary mb-3" />
-                <h3 className="font-semibold">Sources</h3>
-                <p className="text-sm text-muted-foreground">Médias & flux</p>
-                <AdminStatBadge
-                  value={stats?.sourcesActives ?? 0}
-                  label="actives"
-                  variant={stats?.sourcesActives && stats.sourcesActives > 0 ? 'success' : 'warning'}
-                  loading={isLoading}
-                />
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
-      </div>
+      {/* System Health Widget */}
+      <SystemHealthWidget
+        lastCollecteTime={stats?.derniereCollecte ?? null}
+        lastCollecteStatus={stats?.lastCollecteStatus ?? null}
+        lastCollecteDuration={stats?.lastCollecteDuration ?? null}
+        articlesLast24h={stats?.articlesLast24h ?? 0}
+        isLoading={isLoading}
+      />
 
-      {/* Section Supervision Technique */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <div className="h-1 w-1 rounded-full bg-muted-foreground" />
-          <h2 className="text-lg font-semibold text-muted-foreground">Supervision technique</h2>
+      {/* Section: Organisation */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-bold text-muted-foreground uppercase flex items-center gap-2">
+          <Users size={16} /> Organisation
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <AdminNavCard
+            color="blue"
+            icon={<Users size={24} />}
+            title="Utilisateurs"
+            badge={stats?.usersActifs ? `${stats.usersActifs} actifs` : undefined}
+            badgeVariant="success"
+            subtitle="Invitez des collaborateurs et gérez les accès à la plateforme."
+            to="/admin/users"
+            loading={isLoading}
+          />
+          <AdminNavCard
+            color="purple"
+            icon={<Shield size={24} />}
+            title="Rôles & Permissions"
+            badge="RBAC"
+            badgeVariant="info"
+            subtitle="Définissez finement qui peut voir, éditer ou supprimer les données."
+            to="/admin/roles"
+            loading={isLoading}
+          />
+          <AdminNavCard
+            color="blue"
+            icon={<ClipboardList size={24} />}
+            title="Audit Logs"
+            badge={stats?.actionsAudit24h ? `${stats.actionsAudit24h}/24h` : undefined}
+            badgeVariant="default"
+            subtitle="Traçabilité complète des actions effectuées sur le système."
+            to="/admin/audit-logs"
+            loading={isLoading}
+          />
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Link to="/admin/cron-jobs">
-            <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full border-muted">
-              <CardContent className="pt-6 flex flex-col items-center text-center">
-                <Clock className="h-10 w-10 text-chart-2 mb-3" />
-                <h3 className="font-semibold">Tâches CRON</h3>
-                <p className="text-sm text-muted-foreground">Collecte automatisée</p>
-                <AdminStatBadge
-                  value={collecteLabel}
-                  variant={getCollecteVariant(stats?.derniereCollecte ?? null)}
-                  loading={isLoading}
-                />
-              </CardContent>
-            </Card>
-          </Link>
-          <Link to="/admin/audit-logs">
-            <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full border-muted">
-              <CardContent className="pt-6 flex flex-col items-center text-center">
-                <ClipboardList className="h-10 w-10 text-chart-5 mb-3" />
-                <h3 className="font-semibold">Historique d'audit</h3>
-                <p className="text-sm text-muted-foreground">Actions admin</p>
-                <AdminStatBadge
-                  value={stats?.actionsAudit24h ?? 0}
-                  label="actions (24h)"
-                  variant="muted"
-                  loading={isLoading}
-                />
-              </CardContent>
-            </Card>
-          </Link>
+      </section>
+
+      {/* Section: Moteur de Veille */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-bold text-muted-foreground uppercase flex items-center gap-2">
+          <Database size={16} /> Moteur de Veille
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <AdminNavCard
+            color="orange"
+            icon={<Tag size={24} />}
+            title="Mots-clés & Thèmes"
+            badge={stats?.motsClesActifs ? `${stats.motsClesActifs} actifs` : undefined}
+            badgeVariant="info"
+            subtitle="Gérez le dictionnaire sémantique utilisé par l'IA."
+            to="/admin/mots-cles"
+            loading={isLoading}
+          />
+          <AdminNavCard
+            color="emerald"
+            icon={<Database size={24} />}
+            title="Sources & Médias"
+            badge={stats?.sourcesActives ? `${stats.sourcesActives} actives` : undefined}
+            badgeVariant="success"
+            subtitle="Configurez les URLs cibles, flux RSS et comptes sociaux."
+            to="/admin/sources"
+            loading={isLoading}
+          />
+          <AdminNavCard
+            color="orange"
+            icon={<Bell size={24} />}
+            title="Alertes"
+            badge={stats?.alertesNonLues ? `${stats.alertesNonLues} non lues` : undefined}
+            badgeVariant={stats?.alertesNonLues && stats.alertesNonLues > 0 ? 'warning' : 'default'}
+            subtitle="Définissez la sensibilité de détection des crises."
+            to="/alertes"
+            loading={isLoading}
+          />
+          <AdminNavCard
+            color="emerald"
+            icon={<UserPlus size={24} />}
+            title="Import Acteurs"
+            badge={stats?.totalActeurs ? `${stats.totalActeurs} acteurs` : undefined}
+            badgeVariant="info"
+            subtitle="Import et génération d'acteurs via Perplexity IA."
+            to="/admin/import-acteurs"
+            loading={isLoading}
+          />
         </div>
-      </div>
+      </section>
+
+      {/* Section: Communication */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-bold text-muted-foreground uppercase flex items-center gap-2">
+          <Mail size={16} /> Communication
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <AdminNavCard
+            color="blue"
+            icon={<Mail size={24} />}
+            title="Newsletters"
+            badge={stats?.newslettersEnAttente ? `${stats.newslettersEnAttente} en attente` : undefined}
+            badgeVariant={stats?.newslettersEnAttente && stats.newslettersEnAttente > 0 ? 'warning' : 'default'}
+            subtitle="Génération IA de newsletters à partir des actualités."
+            to="/admin/newsletters"
+            loading={isLoading}
+          />
+          <AdminNavCard
+            color="emerald"
+            icon={<GraduationCap size={24} />}
+            title="Formation"
+            badge="2 guides"
+            badgeVariant="info"
+            subtitle="Guides PDF pour les différents profils utilisateurs."
+            to="/admin/formation"
+            loading={isLoading}
+          />
+          <AdminNavCard
+            color="purple"
+            icon={<Presentation size={24} />}
+            title="Présentation"
+            badge="11 slides"
+            badgeVariant="info"
+            subtitle="Slides PDF pour présenter le projet ANSUT Radar."
+            to="/admin/presentation"
+            loading={isLoading}
+          />
+        </div>
+      </section>
+
+      {/* Section: Supervision Technique */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-bold text-muted-foreground uppercase flex items-center gap-2">
+          <Clock size={16} /> Supervision Technique
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <AdminNavCard
+            color="slate"
+            icon={<Clock size={24} />}
+            title="Tâches CRON"
+            badge={collecteLabel}
+            badgeVariant="default"
+            subtitle="Collecte automatisée et planification des tâches système."
+            to="/admin/cron-jobs"
+            loading={isLoading}
+          />
+        </div>
+      </section>
+
+      {/* Footer Technique */}
+      <footer className="pt-8 border-t border-border text-center">
+        <p className="text-xs text-muted-foreground">
+          ANSUT RADAR v2.1.0 • Hébergé sur Lovable Cloud •{' '}
+          <a href="/docs" className="hover:text-primary hover:underline transition-colors">
+            Documentation Technique
+          </a>
+        </p>
+      </footer>
     </div>
   );
 }
