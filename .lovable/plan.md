@@ -1,264 +1,160 @@
 
+# Plan de Refonte UI/UX - Page "Acteurs Clés"
 
-## Plan : Ajouter la pagination au tableau du Journal d'audit
+## Diagnostic confirmé
 
-### Objectif
-Implémenter une pagination complète pour le tableau des logs d'audit, permettant de naviguer au-delà des 100 premiers résultats avec un comptage exact et des contrôles de navigation.
+Après analyse du code existant, je confirme les points soulevés :
+- **ActeurCard** : Utilise `border-l-4` (bordure latérale gauche) qui est un pattern daté
+- **StatsBar** : Affichage minimaliste "4 acteurs" avec petits cercles, manque d'impact visuel
+- **ActeurFilters** : Dropdowns standards, barre de recherche perdue dans le flux
+- **Absence de visualisation "Radar"** : Aucune dimension visuelle de cartographie
 
 ---
 
-### Aperçu visuel
+## Plan d'amélioration en 5 phases
 
-```text
+### Phase 1 : Refonte des KPIs (StatsBar)
+Transformer la barre de stats en cartes de statistiques modernes et impactantes.
+
+| Avant | Après |
+|-------|-------|
+| Ligne compacte avec cercles | 4 cartes KPI avec icônes, chiffres grands, tendances |
+
+**Modifications :**
+- Créer 4 cartes horizontales avec design "glass" moderne
+- Ajouter des icônes distinctives pour chaque métrique
+- Intégrer un indicateur de complétude des profils (% avec photo, bio, etc.)
+- Afficher les alertes de manière plus visible
+
+```
+┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+│   👥 12      │ │   🔵 4       │ │   ⚠️ 2       │ │   📊 85%     │
+│   Acteurs    │ │   Cercle 1   │ │   Alertes    │ │   Complétude │
+└──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘
+```
+
+---
+
+### Phase 2 : Redesign complet de ActeurCard
+Transformer les cartes en profils modernes inspirés LinkedIn/CRM.
+
+**Changements majeurs :**
+1. **Supprimer la bordure latérale** : Remplacer par `shadow-sm hover:shadow-lg`
+2. **Avatar dynamique** : Couleurs de fond par cercle (bleu C1, orange C2, vert C3, violet C4)
+3. **Badge cercle repositionné** : En haut à droite, plus visible, style `rounded-full`
+4. **Titre avec tooltip** : Gestion propre de la troncature avec `line-clamp-2`
+5. **Footer avec actions** : Score étoiles + bouton "Voir le profil"
+6. **Coins plus arrondis** : `rounded-xl` au lieu de `rounded-lg`
+7. **Transition fluide** : `transition-all duration-200`
+
+```
+┌─────────────────────────────────────────┐
+│  ┌────┐  Ibrahim Kalil Konaté    [C1]  │
+│  │ IK │  Cercle 1 • Régulateur         │
+│  └────┘                                 │
+│                                         │
+│  [Régulateur] [Institutionnel]          │
+│                                         │
+│  Ministre de la Transition Numérique    │
+│  et de la Digitalisation                │
+│─────────────────────────────────────────│
+│  ★★★★★                   Voir le profil │
+└─────────────────────────────────────────┘
+```
+
+---
+
+### Phase 3 : Amélioration des Filtres
+Rendre la navigation plus intuitive et réduire les clics.
+
+**Changements :**
+1. **Barre de recherche centrale** : Plus large, icône plus visible, placeholder explicite
+2. **Filtres cercles en chips/boutons** : Boutons toggle au lieu de dropdown
+3. **Badges de comptage** : Nombre d'acteurs par cercle directement sur les chips
+4. **Suppression du dropdown cercles** (redondant avec les onglets)
+
+```
 ┌─────────────────────────────────────────────────────────────┐
-│  Actions récentes                           50 résultat(s)  │
-├─────────────────────────────────────────────────────────────┤
-│  Date       │ Admin    │ Action    │ Cible     │ Détails   │
-│─────────────┼──────────┼───────────┼───────────┼───────────│
-│  28/01/26   │ Admin A  │ Invitation│ User X    │ ...       │
-│  ...        │ ...      │ ...       │ ...       │ ...       │
-│  (25 lignes par page)                                       │
-├─────────────────────────────────────────────────────────────┤
-│         ◀ Précédent  │ 1 │ 2 │ ... │ Suivant ▶             │  ← NOUVEAU
-│                   Page 1 sur 2                              │
+│  🔍 Rechercher un acteur, une fonction, une organisation... │
 └─────────────────────────────────────────────────────────────┘
+
+[C1 (4)] [C2 (3)] [C3 (2)] [C4 (3)]  |  Catégorie ▼  |  Alerte ▼
 ```
 
 ---
 
-### Fonctionnalités
+### Phase 4 : Visualisation Radar (nouvelle fonctionnalité)
+Ajouter une dimension visuelle "radar" avec un graphique en cercles concentriques.
 
-| Fonctionnalité | Description |
-|----------------|-------------|
-| **Pagination côté serveur** | Utilise `.range()` de Supabase pour charger uniquement la page courante |
-| **Comptage exact** | Affiche le total réel de résultats (pas limité à 100) |
-| **25 éléments par page** | Taille de page standard pour une bonne lisibilité |
-| **Navigation intelligente** | Affiche jusqu'à 5 numéros de pages avec ellipsis si nécessaire |
-| **Reset automatique** | Retour à la page 1 quand les filtres changent |
-| **Indicateur de position** | Affiche "Page X sur Y" sous les contrôles |
+**Nouveau composant : `RadarVisualization`**
+- Représentation en cible (target chart) avec 4 cercles concentriques
+- Points représentant les acteurs, positionnés par cercle
+- Taille des points proportionnelle au score d'influence
+- Couleur selon la catégorie
+- Tooltip au survol avec infos de l'acteur
+- Toggle pour basculer entre vue Liste et vue Radar
+
+**Intégration :**
+- Ajout d'un onglet ou toggle "Vue Liste" / "Vue Radar"
+- Utilisation de Recharts (déjà installé) avec RadarChart ou graphique custom
 
 ---
 
-### Implémentation technique
+### Phase 5 : Amélioration de l'en-tête de cercle (CercleHeader)
+Moderniser les séparateurs de sections.
 
-#### 1. Nouveaux états
+**Changements :**
+- Supprimer les emojis (style moins institutionnel)
+- Ajouter une ligne de progression (barre indiquant le % du cercle)
+- Design plus épuré avec badge coloré
 
-Ajouter l'état de pagination et la constante de taille de page :
-
-```typescript
-const PAGE_SIZE = 25;
-const [page, setPage] = useState(1);
 ```
-
-#### 2. Modification de la requête
-
-Remplacer `.limit(100)` par une pagination avec comptage :
-
-```typescript
-const { data: logsData, isLoading } = useQuery({
-  queryKey: ["admin-audit-logs", actionFilter, startDate?.toISOString(), endDate?.toISOString(), page],
-  queryFn: async () => {
-    let query = supabase
-      .from("admin_audit_logs")
-      .select("*", { count: "exact" })
-      .order("created_at", { ascending: false });
-
-    if (actionFilter !== "all") {
-      query = query.eq("action", actionFilter);
-    }
-
-    if (startDate) {
-      query = query.gte("created_at", startDate.toISOString());
-    }
-
-    if (endDate) {
-      const endOfDay = new Date(endDate);
-      endOfDay.setHours(23, 59, 59, 999);
-      query = query.lte("created_at", endOfDay.toISOString());
-    }
-
-    // Pagination
-    const from = (page - 1) * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
-    query = query.range(from, to);
-
-    const { data, error, count } = await query;
-    if (error) throw error;
-
-    // Fetch profiles...
-    return {
-      logs: enrichedLogs,
-      total: count ?? 0,
-      totalPages: Math.ceil((count ?? 0) / PAGE_SIZE),
-    };
-  },
-});
-```
-
-#### 3. Reset de la page lors du changement de filtres
-
-Ajouter un effet pour réinitialiser la page :
-
-```typescript
-// Reset page when filters change
-useEffect(() => {
-  setPage(1);
-}, [actionFilter, startDate, endDate, searchQuery]);
-```
-
-#### 4. Extraction des données
-
-Adapter l'accès aux données :
-
-```typescript
-const logs = logsData?.logs ?? [];
-const totalCount = logsData?.total ?? 0;
-const totalPages = logsData?.totalPages ?? 1;
-```
-
-#### 5. Mise à jour des stats
-
-Les stats doivent utiliser le count total, pas la longueur des logs paginés :
-
-```typescript
-const stats = useMemo(() => {
-  if (!logs) return { total: totalCount, invitations: 0, roleChanges: 0, passwordResets: 0 };
-  return {
-    total: totalCount,
-    invitations: logs.filter((l) => l.action === "user_invited").length,
-    roleChanges: logs.filter((l) => l.action === "role_changed").length,
-    passwordResets: logs.filter((l) => l.action.includes("password")).length,
-  };
-}, [logs, totalCount]);
-```
-
-Note : Les stats comptent uniquement la page actuelle. Pour des stats globales précises, une requête séparée serait nécessaire.
-
-#### 6. Composant de pagination
-
-Utiliser le pattern existant de `AlertesHistoryPage` :
-
-```typescript
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-  PaginationEllipsis,
-} from "@/components/ui/pagination";
-
-// Après le tableau, dans CardContent :
-{totalPages > 1 && (
-  <div className="mt-6 flex flex-col items-center gap-2">
-    <Pagination>
-      <PaginationContent>
-        <PaginationItem>
-          <PaginationPrevious
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-          />
-        </PaginationItem>
-        
-        {/* Première page */}
-        <PaginationItem>
-          <PaginationLink
-            onClick={() => setPage(1)}
-            isActive={page === 1}
-            className="cursor-pointer"
-          >
-            1
-          </PaginationLink>
-        </PaginationItem>
-        
-        {/* Ellipsis début */}
-        {page > 3 && <PaginationEllipsis />}
-        
-        {/* Pages autour de la courante */}
-        {[...Array(totalPages)].map((_, i) => {
-          const pageNum = i + 1;
-          if (pageNum === 1 || pageNum === totalPages) return null;
-          if (pageNum < page - 1 || pageNum > page + 1) return null;
-          return (
-            <PaginationItem key={pageNum}>
-              <PaginationLink
-                onClick={() => setPage(pageNum)}
-                isActive={page === pageNum}
-                className="cursor-pointer"
-              >
-                {pageNum}
-              </PaginationLink>
-            </PaginationItem>
-          );
-        })}
-        
-        {/* Ellipsis fin */}
-        {page < totalPages - 2 && <PaginationEllipsis />}
-        
-        {/* Dernière page */}
-        {totalPages > 1 && (
-          <PaginationItem>
-            <PaginationLink
-              onClick={() => setPage(totalPages)}
-              isActive={page === totalPages}
-              className="cursor-pointer"
-            >
-              {totalPages}
-            </PaginationLink>
-          </PaginationItem>
-        )}
-        
-        <PaginationItem>
-          <PaginationNext
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-          />
-        </PaginationItem>
-      </PaginationContent>
-    </Pagination>
-    
-    <p className="text-xs text-muted-foreground">
-      Page {page} sur {totalPages} • {totalCount} résultat{totalCount > 1 ? "s" : ""}
-    </p>
-  </div>
-)}
+──── Cercle 1 • Institutionnels Nationaux (4 acteurs) ────────────
+     [████████░░] 40% du total
 ```
 
 ---
 
-### Imports à ajouter
-
-```typescript
-import { useEffect } from "react"; // Ajouter useEffect aux imports existants
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-  PaginationEllipsis,
-} from "@/components/ui/pagination";
-```
-
----
-
-### Mise à jour du badge de résultats
-
-Modifier l'affichage pour montrer le total réel :
-
-```typescript
-<Badge variant="secondary" className="font-normal">
-  {totalCount} résultat{totalCount > 1 ? "s" : ""} • Page {page}/{totalPages}
-</Badge>
-```
-
----
-
-### Fichier à modifier
+## Fichiers à modifier
 
 | Fichier | Modifications |
 |---------|---------------|
-| `src/pages/admin/AuditLogsPage.tsx` | Ajouter état page, modifier requête avec range/count, ajouter composant Pagination |
+| `src/components/personnalites/StatsBar.tsx` | Refonte complète en cartes KPI |
+| `src/components/personnalites/ActeurCard.tsx` | Redesign moderne sans bordure latérale |
+| `src/components/personnalites/ActeurFilters.tsx` | Barre de recherche centrale + chips cercles |
+| `src/components/personnalites/CercleHeader.tsx` | Design épuré sans emojis |
+| `src/components/personnalites/RadarVisualization.tsx` | **Nouveau** - Vue graphique radar |
+| `src/pages/PersonnalitesPage.tsx` | Intégrer toggle vue Liste/Radar |
+
+---
+
+## Récapitulatif des améliorations visuelles
+
+### Palette de couleurs par cercle (conservée et renforcée)
+- **Cercle 1** : Bleu (`#3B82F6`) - Institutionnels
+- **Cercle 2** : Orange (`#F97316`) - Opérateurs
+- **Cercle 3** : Vert (`#22C55E`) - Bailleurs
+- **Cercle 4** : Violet (`#A855F7`) - Experts
+
+### Nouveaux patterns visuels
+- **Ombre au survol** au lieu de bordure latérale
+- **Coins arrondis** (`rounded-xl`)
+- **Badges modernes** (`rounded-full` avec couleurs pastel)
+- **Cartes KPI** avec icônes et tendances
+- **Visualisation radar** pour impact immédiat
+
+### Typographie améliorée
+- Nom en `font-bold text-base` (plus grand)
+- Fonction en `text-sm text-muted-foreground line-clamp-2`
+- Badges en `text-xs font-semibold`
+
+---
+
+## Priorité d'implémentation
+
+1. **ActeurCard** (impact visuel immédiat le plus fort)
+2. **StatsBar** (KPIs plus impactants)
+3. **ActeurFilters** (UX améliorée)
+4. **CercleHeader** (cohérence visuelle)
+5. **RadarVisualization** (fonctionnalité bonus)
 
