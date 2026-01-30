@@ -1,97 +1,138 @@
 
-# Ajout de la Section Permissions Granulaires dans la Documentation Administrateur
+# Génération de Guides de Formation PDF Téléchargeables
 
 ## Objectif
 
-Documenter le système de permissions granulaires disponible dans ANSUT RADAR, en détaillant les 17 permissions existantes organisées en 3 catégories.
+Créer une nouvelle page d'administration `/admin/formation` permettant de visualiser et télécharger les guides de formation en format PDF pour les Administrateurs et les Utilisateurs.
 
-## Contenu à ajouter
+## Approche technique
 
-### Nouvelle section "Système de Permissions"
+La bibliothèque `react-to-pdf` est déjà installée et utilisée dans le projet (voir `PresentationPage.tsx`). Nous allons réutiliser cette approche pour générer les PDFs des guides de formation.
 
-Insérer après la section "Les 4 rôles" (ligne 92) une nouvelle section détaillant :
+Le contenu Markdown sera rendu avec `react-markdown` + `remark-gfm` (déjà utilisés dans `MarkdownEditor.tsx` et `DossierView.tsx`).
 
-1. **Présentation du système** - Explication du fonctionnement basé sur les permissions
-2. **Catégorie Consultation** - 4 permissions de lecture
-3. **Catégorie Actions** - 4 permissions d'interaction
-4. **Catégorie Administration** - 9 permissions de gestion
+## Fichiers à créer
 
-### Permissions à documenter
+| Fichier | Description |
+|---------|-------------|
+| `src/pages/admin/FormationPage.tsx` | Page principale avec visualisation et export PDF |
+| `src/components/formation/GuideViewer.tsx` | Composant de visualisation Markdown stylisé pour PDF |
+| `src/components/formation/GuidePDFLayout.tsx` | Layout PDF avec en-tête ANSUT et pagination |
 
-| Code | Catégorie | Libellé | Description |
-|------|-----------|---------|-------------|
-| `view_radar` | Consultation | Voir le radar | Accès au tableau de bord radar |
-| `view_actualites` | Consultation | Voir les actualités | Accès à la liste des actualités |
-| `view_personnalites` | Consultation | Voir les personnalités | Accès aux fiches acteurs clés |
-| `view_dossiers` | Consultation | Voir les dossiers | Accès aux dossiers stratégiques |
-| `create_flux` | Actions | Créer des flux | Créer ses propres flux de veille |
-| `edit_dossiers` | Actions | Modifier les dossiers | Créer et modifier des dossiers |
-| `use_assistant` | Actions | Utiliser l'assistant IA | Poser des questions à l'IA |
-| `receive_alerts` | Actions | Recevoir des alertes | Notifications et emails d'alerte |
-| `access_admin` | Admin | Accès administration | Permet d'accéder à la section admin |
-| `manage_users` | Admin | Gérer les utilisateurs | Inviter, désactiver, supprimer |
-| `manage_roles` | Admin | Gérer les rôles | Modifier les permissions |
-| `view_audit_logs` | Admin | Voir les logs d'audit | Consulter l'historique |
-| `manage_cron_jobs` | Admin | Gérer les tâches CRON | Activer/désactiver collectes |
-| `manage_keywords` | Admin | Gérer les mots-clés | Configurer la veille |
-| `manage_sources` | Admin | Gérer les sources | Configurer sources média |
-| `import_actors` | Admin | Importer des acteurs | Import en masse CSV |
-| `manage_newsletters` | Admin | Gérer les newsletters | Créer et envoyer newsletters |
-
-## Fichier à modifier
+## Fichiers à modifier
 
 | Fichier | Modification |
 |---------|--------------|
-| `docs/formation/ADMIN.md` | Ajouter la section "Système de Permissions" après la ligne 92 |
+| `src/App.tsx` | Ajouter la route `/admin/formation` |
+| `src/pages/AdminPage.tsx` | Ajouter le lien vers la page Formation |
 
-## Structure de la nouvelle section
+## Architecture de la page
 
-```markdown
----
-
-## 🔐 Système de Permissions
-
-### Fonctionnement
-
-ANSUT RADAR utilise un système de permissions granulaires permettant de contrôler 
-précisément les accès de chaque rôle. Chaque permission peut être activée ou 
-désactivée individuellement par rôle.
-
-### Accès
-Menu Administration → **Rôles & Permissions** (`/admin/roles`)
-
-### Interface de configuration
-
-La matrice de permissions affiche :
-- En lignes : les permissions disponibles
-- En colonnes : les 4 rôles (Admin, User, Council User, Guest)
-- Cochez/décochez pour activer/désactiver
-
-> ⚠️ **Note** : Les permissions du rôle Admin ne peuvent pas être désactivées.
-
-### Permissions de Consultation
-
-[Tableau des 4 permissions consultation]
-
-### Permissions d'Actions
-
-[Tableau des 4 permissions actions]
-
-### Permissions d'Administration
-
-[Tableau des 9 permissions admin]
-
-### Bonnes pratiques
-
-- Principe du moindre privilège
-- Tester après modification
-- Documentation des changements
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  Guides de Formation                    [PDF Admin] [PDF User]│
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐  ┌─────────────────────────────────────┤
+│  │ 📚 Guides       │  │                                     │
+│  │                 │  │    [Rendu Markdown du guide]        │
+│  │ ● Administrateur│  │                                     │
+│  │ ○ Utilisateur   │  │    - Table des matières             │
+│  │                 │  │    - Sections avec icônes           │
+│  │                 │  │    - Tableaux formatés              │
+│  │                 │  │    - Code blocks                    │
+│  │                 │  │                                     │
+│  └─────────────────┘  └─────────────────────────────────────┘
+└─────────────────────────────────────────────────────────────┘
 ```
+
+## Fonctionnalités
+
+### 1. Sélection du guide
+- Boutons ou onglets pour choisir entre "Administrateur" et "Utilisateur"
+- Affichage du contenu Markdown formaté dans la zone principale
+
+### 2. Prévisualisation PDF
+- Le contenu affiché correspond exactement au rendu PDF
+- Layout optimisé pour impression A4 portrait
+
+### 3. Export PDF
+- Bouton "Télécharger PDF Administrateur" → `ANSUT-RADAR-Guide-Admin.pdf`
+- Bouton "Télécharger PDF Utilisateur" → `ANSUT-RADAR-Guide-User.pdf`
+- En-tête ANSUT sur chaque page avec logo
+- Pied de page avec numéro de page et date de génération
+
+## Détails techniques
+
+### FormationPage.tsx
+
+Structure principale :
+```typescript
+// Import du contenu Markdown directement
+import { useState } from 'react';
+import { usePDF } from 'react-to-pdf';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Download, BookOpen, Shield } from 'lucide-react';
+import { GuideViewer } from '@/components/formation/GuideViewer';
+import { GuidePDFLayout } from '@/components/formation/GuidePDFLayout';
+
+// Contenu des guides (importés comme chaînes raw)
+const ADMIN_GUIDE = `...`; // Contenu de ADMIN.md
+const USER_GUIDE = `...`;  // Contenu de USER.md
+```
+
+### GuidePDFLayout.tsx
+
+Layout PDF avec :
+- En-tête avec logo ANSUT et titre du guide
+- Zone de contenu avec styles optimisés pour impression
+- Pied de page avec date et version
+
+### GuideViewer.tsx
+
+Composant de rendu Markdown avec :
+- `ReactMarkdown` + `remarkGfm`
+- Styles prose Tailwind adaptés
+- Support des tableaux, listes, code blocks
+
+## Intégration
+
+### Route dans App.tsx
+
+```typescript
+<Route element={<PermissionRoute permission="access_admin" />}>
+  {/* ... autres routes admin ... */}
+  <Route path="/admin/formation" element={<FormationPage />} />
+</Route>
+```
+
+### Lien dans AdminPage.tsx
+
+Ajouter une carte dans la grille d'administration :
+```typescript
+{
+  title: 'Guides de Formation',
+  description: 'Documentation PDF téléchargeable',
+  icon: GraduationCap,
+  href: '/admin/formation',
+  permission: 'access_admin'
+}
+```
+
+## Styles PDF optimisés
+
+Pour garantir un rendu PDF de qualité :
+- Fond blanc forcé (`bg-white`)
+- Texte noir (`text-black`)
+- Marges généreuses pour impression
+- Police système pour compatibilité
+- Tableaux avec bordures visibles
+- Breaks de page automatiques
 
 ## Résultat attendu
 
-La documentation administrateur inclura une section complète sur :
-- Le fonctionnement du système de permissions
-- La liste exhaustive des 17 permissions avec codes et descriptions
-- Les bonnes pratiques de configuration
-- L'accès à l'interface de gestion (`/admin/roles`)
+Les administrateurs pourront :
+1. Accéder à `/admin/formation`
+2. Prévisualiser les guides Administrateur et Utilisateur
+3. Télécharger les PDFs formatés avec branding ANSUT
+4. Distribuer ces PDFs aux nouveaux utilisateurs pour la formation
