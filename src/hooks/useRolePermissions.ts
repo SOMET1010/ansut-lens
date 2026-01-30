@@ -48,6 +48,31 @@ export function useRolePermissions() {
     },
   });
 
+  // Compter les membres par rôle
+  const userCountByRoleQuery = useQuery({
+    queryKey: ['user-count-by-role'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role');
+      
+      if (error) throw error;
+      
+      const counts: Record<string, number> = {
+        admin: 0,
+        user: 0,
+        council_user: 0,
+        guest: 0,
+      };
+      
+      data?.forEach(({ role }) => {
+        if (role in counts) counts[role as keyof typeof counts]++;
+      });
+      
+      return counts;
+    },
+  });
+
   // Mutation pour activer/désactiver une permission
   const togglePermission = useMutation({
     mutationFn: async ({ 
@@ -118,6 +143,7 @@ export function useRolePermissions() {
     rolePermissions: rolePermissionsQuery.data ?? [],
     hasRolePermission,
     togglePermission,
-    isLoading: permissionsQuery.isLoading || rolePermissionsQuery.isLoading,
+    userCountByRole: userCountByRoleQuery.data ?? { admin: 0, user: 0, council_user: 0, guest: 0 },
+    isLoading: permissionsQuery.isLoading || rolePermissionsQuery.isLoading || userCountByRoleQuery.isLoading,
   };
 }
