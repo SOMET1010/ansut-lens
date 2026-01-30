@@ -1,5 +1,5 @@
 import { 
-  LayoutDashboard, 
+  Radar,
   Newspaper, 
   Users, 
   FileText,
@@ -35,10 +35,10 @@ import logoAnsut from '@/assets/logo-ansut.jpg';
 // Menu avec permissions associées
 const menuItems = [
   { 
-    title: 'Tableau de bord', 
+    title: 'Centre de Veille', 
     url: '/radar', 
-    icon: LayoutDashboard,
-    description: 'Vue exécutive',
+    icon: Radar,
+    description: 'Flux d\'intelligence',
     permission: 'view_radar'
   },
   { 
