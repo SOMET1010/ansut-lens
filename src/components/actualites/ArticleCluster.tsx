@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, ExternalLink, Share2, MessageSquare, Layers, User, Building, Sparkles, Loader2, ArrowRight } from 'lucide-react';
+import { ChevronDown, ChevronUp, ExternalLink, Share2, MessageSquare, Layers, User, Building, Sparkles, Loader2, ArrowRight, FileText, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import ReactMarkdown from 'react-markdown';
 import { calculateFreshness, type Actualite } from '@/hooks/useActualites';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +27,7 @@ export function ArticleCluster({
   isEnriching 
 }: ArticleClusterProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const freshness = calculateFreshness(mainArticle.date_publication);
   const score = mainArticle.score_pertinence ?? mainArticle.importance ?? 50;
   
@@ -205,12 +208,45 @@ export function ArticleCluster({
             variant="default" 
             size="sm" 
             className="text-xs font-bold gap-1"
+            onClick={() => setIsAnalysisOpen(true)}
           >
             Lire l'analyse
             <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
+
+      {/* Modale d'analyse IA */}
+      <Dialog open={isAnalysisOpen} onOpenChange={setIsAnalysisOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Analyse IA
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <h3 className="font-bold text-lg leading-tight">{mainArticle.titre}</h3>
+            
+            <div className="border-t pt-4">
+              {mainArticle.analyse_ia ? (
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <ReactMarkdown>{mainArticle.analyse_ia}</ReactMarkdown>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                  <AlertCircle className="h-8 w-8 mb-2" />
+                  <p className="text-center">
+                    Cet article n'a pas encore été analysé.<br />
+                    Cliquez sur "Enrichir" pour générer l'analyse.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
