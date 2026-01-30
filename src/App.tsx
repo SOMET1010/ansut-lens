@@ -17,6 +17,7 @@ import PersonnalitesPage from "@/pages/PersonnalitesPage";
 import DossiersPage from "@/pages/DossiersPage";
 import AssistantPage from "@/pages/AssistantPage";
 import AdminPage from "@/pages/AdminPage";
+import TechDocPage from "@/pages/admin/TechDocPage";
 import FormationPage from "@/pages/admin/FormationPage";
 import MotsClesPage from "@/pages/admin/MotsClesPage";
 import ImportActeursPage from "@/pages/admin/ImportActeursPage";
@@ -131,6 +132,7 @@ const App = () => (
                           
                           <Route path="/admin/presentation" element={<PresentationPage />} />
                           <Route path="/admin/formation" element={<FormationPage />} />
+                          <Route path="/admin/documentation" element={<TechDocPage />} />
                         </Route>
                       </Route>
                       
