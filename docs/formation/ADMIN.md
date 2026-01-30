@@ -92,6 +92,93 @@ L'utilisateur reçoit un email personnalisé avec le logo ANSUT.
 
 ---
 
+## 🔐 Système de Permissions Granulaires
+
+### Fonctionnement
+
+ANSUT RADAR utilise un système de permissions granulaires permettant de contrôler précisément les accès de chaque rôle. Chaque permission peut être activée ou désactivée individuellement par rôle.
+
+### Accès
+Menu Administration → **Rôles & Permissions** (`/admin/roles`)
+
+### Interface de configuration
+
+La matrice de permissions affiche :
+- **En lignes** : les permissions disponibles, groupées par catégorie
+- **En colonnes** : les 4 rôles (Admin, User, Council User, Guest)
+- **Interaction** : Cochez/décochez pour activer/désactiver une permission
+
+> ⚠️ **Note de sécurité** : Les permissions du rôle **Admin** ne peuvent pas être désactivées. Les modifications sont appliquées immédiatement.
+
+---
+
+### Permissions de Consultation
+
+| Code | Libellé | Description |
+|------|---------|-------------|
+| `view_radar` | Voir le radar | Accès au tableau de bord et radar stratégique |
+| `view_actualites` | Voir les actualités | Accès au fil d'actualités enrichies |
+| `view_personnalites` | Voir les personnalités | Accès aux fiches acteurs clés |
+| `view_dossiers` | Voir les dossiers | Accès aux notes stratégiques |
+
+---
+
+### Permissions d'Actions
+
+| Code | Libellé | Description |
+|------|---------|-------------|
+| `create_flux` | Créer des flux | Créer ses propres flux de veille personnalisés |
+| `edit_dossiers` | Modifier les dossiers | Créer et modifier des notes stratégiques |
+| `use_assistant` | Utiliser l'assistant IA | Interagir avec le chatbot intelligent |
+| `receive_alerts` | Recevoir des alertes | Recevoir les notifications et emails d'alerte |
+
+---
+
+### Permissions d'Administration
+
+| Code | Libellé | Description |
+|------|---------|-------------|
+| `access_admin` | Accès administration | Permet d'accéder à la section admin |
+| `manage_users` | Gérer les utilisateurs | Inviter, désactiver, supprimer des comptes |
+| `manage_roles` | Gérer les rôles | Modifier les permissions par rôle |
+| `view_audit_logs` | Voir les logs d'audit | Consulter l'historique des actions |
+| `manage_cron_jobs` | Gérer les tâches CRON | Activer/désactiver les collectes automatiques |
+| `manage_keywords` | Gérer les mots-clés | Configurer la veille thématique |
+| `manage_sources` | Gérer les sources | Configurer les sources média |
+| `import_actors` | Importer des acteurs | Import en masse via CSV |
+| `manage_newsletters` | Gérer les newsletters | Créer, éditer et envoyer des newsletters |
+
+---
+
+### Matrice par défaut
+
+| Permission | Admin | User | Council | Guest |
+|------------|:-----:|:----:|:-------:|:-----:|
+| **Consultation** |
+| view_radar | ✅ | ✅ | ✅ | ✅ |
+| view_actualites | ✅ | ✅ | ✅ | ✅ |
+| view_personnalites | ✅ | ✅ | ❌ | ❌ |
+| view_dossiers | ✅ | ✅ | ❌ | ❌ |
+| **Actions** |
+| create_flux | ✅ | ✅ | ✅ | ❌ |
+| edit_dossiers | ✅ | ✅ | ❌ | ❌ |
+| use_assistant | ✅ | ✅ | ✅ | ❌ |
+| receive_alerts | ✅ | ✅ | ✅ | ❌ |
+| **Administration** |
+| access_admin | ✅ | ❌ | ❌ | ❌ |
+| manage_* | ✅ | ❌ | ❌ | ❌ |
+
+---
+
+### Bonnes pratiques
+
+1. **Principe du moindre privilège** : N'accordez que les permissions nécessaires
+2. **Tester après modification** : Vérifiez l'impact sur un utilisateur test
+3. **Documenter les changements** : Notez les raisons des modifications
+4. **Révision régulière** : Auditez les permissions trimestriellement
+
+---
+
 ## 🔤 Configuration des Mots-clés
 
 ### Accès
