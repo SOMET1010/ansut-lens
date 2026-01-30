@@ -262,3 +262,31 @@ export function useToggleFluxActive() {
     },
   });
 }
+
+// Get count of NEW (unnotified) actualites per flux
+export function useFluxNewActualitesCount(fluxIds: string[]) {
+  return useQuery({
+    queryKey: ['flux-new-actualites-count', fluxIds],
+    queryFn: async () => {
+      if (!fluxIds.length) return {};
+
+      const counts: Record<string, number> = {};
+      
+      for (const fluxId of fluxIds) {
+        const { count, error } = await supabase
+          .from('flux_actualites')
+          .select('*', { count: 'exact', head: true })
+          .eq('flux_id', fluxId)
+          .eq('notifie', false);
+        
+        if (!error && count !== null) {
+          counts[fluxId] = count;
+        }
+      }
+      
+      return counts;
+    },
+    enabled: fluxIds.length > 0,
+    refetchInterval: 60000, // Refresh every minute
+  });
+}

@@ -16,6 +16,7 @@ interface FluxFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   flux?: FluxVeille | null;
+  initialData?: Partial<FluxFormData> | null;
 }
 
 const quadrantOptions = [
@@ -25,7 +26,7 @@ const quadrantOptions = [
   { id: 'reputation', label: 'Réputation', color: 'bg-orange-500' },
 ];
 
-export function FluxFormDialog({ open, onOpenChange, flux }: FluxFormDialogProps) {
+export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFormDialogProps) {
   const { data: categories } = useCategoriesVeille();
   const createFlux = useCreateFlux();
   const updateFlux = useUpdateFlux();
@@ -44,7 +45,7 @@ export function FluxFormDialog({ open, onOpenChange, flux }: FluxFormDialogProps
 
   const [keywordInput, setKeywordInput] = useState('');
 
-  // Reset form when flux changes
+  // Reset form when flux or initialData changes
   useEffect(() => {
     if (flux) {
       setFormData({
@@ -57,6 +58,18 @@ export function FluxFormDialog({ open, onOpenChange, flux }: FluxFormDialogProps
         alerte_email: flux.alerte_email,
         alerte_push: flux.alerte_push,
         frequence_digest: flux.frequence_digest,
+      });
+    } else if (initialData) {
+      setFormData({
+        nom: initialData.nom || '',
+        description: initialData.description || '',
+        mots_cles: initialData.mots_cles || [],
+        categories_ids: initialData.categories_ids || [],
+        quadrants: initialData.quadrants || [],
+        importance_min: initialData.importance_min || 0,
+        alerte_email: initialData.alerte_email ?? false,
+        alerte_push: initialData.alerte_push ?? true,
+        frequence_digest: initialData.frequence_digest || 'instantane',
       });
     } else {
       setFormData({
@@ -72,7 +85,7 @@ export function FluxFormDialog({ open, onOpenChange, flux }: FluxFormDialogProps
       });
     }
     setKeywordInput('');
-  }, [flux, open]);
+  }, [flux, initialData, open]);
 
   const handleAddKeyword = () => {
     const keywords = keywordInput.split(',').map(k => k.trim()).filter(k => k);
