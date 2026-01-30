@@ -1,88 +1,98 @@
 
-# Ajout de la Prévisualisation Responsive dans le Studio Newsletter
+# Mise à jour de la Présentation avec les nouvelles fonctionnalités
 
-## Objectif
+## Contexte
 
-Ajouter un sélecteur de viewport (Desktop / Tablette / Mobile) dans le Studio Newsletter pour permettre de prévisualiser la newsletter dans différentes tailles d'écran, particulièrement utile pour vérifier le rendu sur mobile avant envoi.
+La présentation actuelle ne reflète pas les dernières fonctionnalités majeures ajoutées à la plateforme :
 
-## Interface utilisateur proposée
+1. **Studio de Publication** - Le nouveau workflow unifié pour Notes Stratégiques et Newsletters
+2. **Newsletter Studio** - L'éditeur visuel WYSIWYG avec drag-and-drop de blocs
+3. **Prévisualisation Responsive** - Le sélecteur Desktop/Tablette/Mobile dans le Studio
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────────────┐
-│  Studio Newsletter #5                                                               │
-│                                                                                     │
-│  [✏️ Édition] [👁 Aperçu] [</> HTML]    [🖥️ Desktop] [📱 Tablet] [📱 Mobile]        │
-│                                                                                     │
-├─────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                     │
-│  BLOCS       │           ┌─────────────────┐           │  PROPRIÉTÉS                │
-│              │           │                 │           │                            │
-│  [Header]    │           │  CANVAS         │           │  Couleur fond: [■]         │
-│  [Edito]     │           │  (width: 375px) │           │  Padding: [20px]           │
-│  [Article]   │           │                 │           │                            │
-│  ...         │           └─────────────────┘           │                            │
-│              │                                         │                            │
-└─────────────────────────────────────────────────────────────────────────────────────┘
-```
+## Modifications proposées
 
-## Solution technique
+### 1. Créer une nouvelle slide "Studio Newsletter"
 
-### Définition des breakpoints
+Nouvelle slide dédiée au Studio Newsletter avec ses 3 fonctionnalités clés :
+- **Éditeur de blocs** - Drag-and-drop avec @dnd-kit
+- **Blocs ANSUT** - Header, Édito, Articles, Tech, Agenda, Footer
+- **Prévisualisation responsive** - Desktop, Tablette, Mobile
 
-| Viewport | Largeur | Icône |
-|----------|---------|-------|
-| Desktop | 650px (maxWidth actuel) | Monitor |
-| Tablette | 768px | Tablet |
-| Mobile | 375px | Smartphone |
+### 2. Mettre à jour la slide "Dossiers"
 
-### Modifications
+Renommer en "Studio de Publication" et mettre à jour le contenu :
+- **Notes Stratégiques** - Rédaction Markdown avec génération IA
+- **Newsletters** - Production et édition visuelle
+- **Workflow unifié** - Génération, édition, validation, envoi
 
-Le sélecteur de viewport sera ajouté dans la barre d'en-tête du Studio, à côté des onglets Edition/Aperçu/HTML. Il sera visible en mode **Édition** et **Aperçu**.
+### 3. Ajouter la nouvelle slide dans la navigation
 
-La largeur du canvas central s'adaptera dynamiquement au viewport sélectionné.
+Insérer la slide "Studio Newsletter" après "Studio de Publication" dans la liste des slides.
 
-## Fichier à modifier
+## Fichiers à créer
+
+| Fichier | Description |
+|---------|-------------|
+| `src/components/presentation/slides/NewsletterStudioSlide.tsx` | Nouvelle slide présentant le Studio Newsletter visuel |
+
+## Fichiers à modifier
 
 | Fichier | Modification |
 |---------|--------------|
-| `src/components/newsletter/studio/NewsletterStudio.tsx` | Ajouter l'état `previewViewport`, le sélecteur de viewport dans le header, et passer la largeur au CanvasArea et à l'aperçu |
-| `src/components/newsletter/studio/CanvasArea.tsx` | Accepter une prop `viewportWidth` optionnelle pour surcharger la maxWidth du canvas |
+| `src/components/presentation/slides/DossiersSlide.tsx` | Renommer en "Studio de Publication" et mettre à jour le contenu |
+| `src/pages/PresentationPage.tsx` | Ajouter NewsletterStudioSlide dans la liste des slides |
 
 ## Détails techniques
 
-### 1. NewsletterStudio.tsx
+### NewsletterStudioSlide.tsx
 
-Ajouter un nouvel état pour le viewport :
-```typescript
-const [previewViewport, setPreviewViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-
-const viewportWidths = {
-  desktop: document.globalStyles.maxWidth,
-  tablet: '768px',
-  mobile: '375px'
-};
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                    Studio Newsletter                            │
+│                                                                 │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌───────────────┐ │
+│  │                  │  │                  │  │               │ │
+│  │  [GripVertical]  │  │  [LayoutGrid]    │  │  [Monitor]    │ │
+│  │  Drag & Drop     │  │  Blocs visuels   │  │  Responsive   │ │
+│  │                  │  │                  │  │               │ │
+│  │  Réorganisation  │  │  Header, Édito,  │  │  Desktop,     │ │
+│  │  intuitive des   │  │  Articles, Tech, │  │  Tablette,    │ │
+│  │  contenus        │  │  Agenda, Footer  │  │  Mobile       │ │
+│  │                  │  │                  │  │               │ │
+│  └──────────────────┘  └──────────────────┘  └───────────────┘ │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-Ajouter un groupe de boutons avec des icônes Lucide (`Monitor`, `Tablet`, `Smartphone`) dans le header, à droite des onglets de mode.
+Icônes utilisées : `GripVertical`, `LayoutGrid`, `Smartphone`
 
-Passer la largeur calculée au `CanvasArea` et à la zone d'aperçu.
+### DossiersSlide.tsx (mis à jour)
 
-### 2. CanvasArea.tsx
+Nouveau titre : "Studio de Publication"
 
-Ajouter une prop optionnelle `viewportWidth` :
-```typescript
-interface CanvasAreaProps {
-  // ... existing props
-  viewportWidth?: string;
-}
-```
-
-Utiliser cette prop pour surcharger le `maxWidth` du canvas si elle est fournie.
+Nouvelles sections :
+1. **Notes Stratégiques** - Icône `FileText`, description du workflow de rédaction
+2. **Newsletters** - Icône `Mail`, lien vers le studio visuel
+3. **Génération IA** - Icône `Sparkles`, génération automatique de contenu
 
 ## Résultat attendu
 
-1. L'utilisateur voit 3 boutons (Desktop / Tablette / Mobile) dans le header du Studio
-2. Cliquer sur Mobile réduit le canvas à 375px de large
-3. L'aperçu en mode Preview utilise également la largeur sélectionnée
-4. Le viewport sélectionné est conservé lors du passage entre modes Edition et Aperçu
-5. Les blocs restent entièrement fonctionnels quelle que soit la taille
+La présentation PDF inclura :
+- Une slide "Studio de Publication" présentant le workflow global
+- Une slide "Studio Newsletter" mettant en avant l'éditeur visuel WYSIWYG
+- Navigation mise à jour avec les 2 nouvelles slides dans l'ordre logique
+
+## Ordre final des slides
+
+1. Couverture
+2. Objectifs
+3. Tableau de Bord
+4. Actualités
+5. Flux de Veille
+6. Acteurs
+7. **Studio de Publication** (anciennement "Dossiers")
+8. **Studio Newsletter** (nouvelle)
+9. Assistant IA
+10. Alertes
+11. Architecture
+12. Contact
