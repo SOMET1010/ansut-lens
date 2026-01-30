@@ -51,18 +51,42 @@ const calculateTagOverlap = (tags1: string[] = [], tags2: string[] = []): number
   return intersection / minLength;
 };
 
-// Critères de regroupement
-const shouldCluster = (article1: Actualite, article2: Actualite): boolean => {
-  // Similarité de titre > 40%
+// Vérifier si deux articles partagent des entités nommées
+const hasSharedEntities = (a1: ExtendedActualite, a2: ExtendedActualite): boolean => {
+  const people1 = new Set(a1.entites_personnes ?? []);
+  const people2 = new Set(a2.entites_personnes ?? []);
+  const companies1 = new Set(a1.entites_entreprises ?? []);
+  const companies2 = new Set(a2.entites_entreprises ?? []);
+  
+  // Au moins une personne en commun
+  for (const p of people1) {
+    if (people2.has(p)) return true;
+  }
+  
+  // Au moins une entreprise en commun
+  for (const c of companies1) {
+    if (companies2.has(c)) return true;
+  }
+  
+  return false;
+};
+
+// Critères de regroupement (seuils ajustés)
+const shouldCluster = (article1: ExtendedActualite, article2: ExtendedActualite): boolean => {
   const titleSimilarity = calculateSimilarity(article1.titre, article2.titre);
-  if (titleSimilarity > 0.4) return true;
+  
+  // Similarité de titre > 30% (abaissé depuis 40%)
+  if (titleSimilarity > 0.30) return true;
   
   // Chevauchement de tags > 60%
   const tagOverlap = calculateTagOverlap(article1.tags ?? [], article2.tags ?? []);
   if (tagOverlap > 0.6) return true;
   
-  // Même catégorie + titre partiellement similaire
-  if (article1.categorie && article1.categorie === article2.categorie && titleSimilarity > 0.25) {
+  // NOUVEAU: Entités partagées (personnes ou entreprises)
+  if (hasSharedEntities(article1, article2)) return true;
+  
+  // Même catégorie + titre > 20%
+  if (article1.categorie && article1.categorie === article2.categorie && titleSimilarity > 0.20) {
     return true;
   }
   

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, ExternalLink, Share2, MessageSquare, Layers, User, Building, Sparkles, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, ExternalLink, Share2, MessageSquare, Layers, User, Building, Sparkles, Loader2, ArrowRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -168,8 +168,9 @@ export function ArticleCluster({
         </div>
       )}
       
-      {/* Footer Actions */}
+      {/* Footer Actions - Hiérarchie corrigée */}
       <div className="bg-muted/30 px-5 py-2.5 border-t border-border/50 flex justify-between items-center">
+        {/* Actions sociales (inchangées) */}
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground">
             <Share2 className="h-3.5 w-3.5 mr-1" /> Partager
@@ -178,14 +179,17 @@ export function ArticleCluster({
             <MessageSquare className="h-3.5 w-3.5 mr-1" /> Commenter
           </Button>
         </div>
+        
+        {/* Actions principales (hiérarchie inversée) */}
         <div className="flex items-center gap-2">
+          {/* Enrichir = discret maintenant */}
           {onEnrich && (
             <Button
-              variant={needsEnrichment ? "default" : "ghost"}
+              variant="ghost"
               size="sm"
               onClick={() => onEnrich(mainArticle.id)}
               disabled={isEnriching}
-              className={cn("text-xs", needsEnrichment && "animate-pulse")}
+              className="text-xs text-primary hover:bg-primary/10"
             >
               {isEnriching ? (
                 <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
@@ -195,8 +199,15 @@ export function ArticleCluster({
               {needsEnrichment ? "Enrichir" : "Ré-analyser"}
             </Button>
           )}
-          <Button variant="link" size="sm" className="text-xs font-bold text-primary">
-            Voir l'analyse →
+          
+          {/* Lire l'analyse = primaire maintenant */}
+          <Button 
+            variant="default" 
+            size="sm" 
+            className="text-xs font-bold gap-1"
+          >
+            Lire l'analyse
+            <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
