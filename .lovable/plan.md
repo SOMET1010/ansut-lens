@@ -1,196 +1,150 @@
 
-
-# Ajout d'un Indicateur Visuel de Section Active
+# Animation de Transition Fluide pour la Table des Matières
 
 ## Objectif
 
-Ajouter un indicateur visuel dynamique dans la table des matières qui met en évidence la section actuellement visible lors du scroll dans la prévisualisation du document.
+Améliorer les animations de transition lors du changement de section active dans la table des matières pour un rendu plus fluide et professionnel.
 
 ## Analyse de l'existant
 
-### Structure actuelle
-- **Container de scroll** : `div` avec `className="max-h-[70vh] overflow-y-auto"` (ligne 114)
-- **TOC** : Grille de boutons avec hover effects mais sans état actif
-- **Sections** : Titres avec IDs générés par `GuideViewer` (ex: `1-presentation-generale`)
+### Classes actuelles
+- `transition-all` sur le bouton (ligne 131)
+- `transition-colors` sur le numéro et le label (lignes 138, 146)
+- Pas de durée explicite (utilise le défaut Tailwind de 150ms)
+- Pas d'easing personnalisé
 
-### Défi technique
-Le scroll se fait dans un conteneur interne (`overflow-y-auto`), pas sur `window`. Il faut donc :
-1. Obtenir une référence au conteneur scrollable
-2. Écouter les événements de scroll sur ce conteneur
-3. Calculer quelle section est visible en fonction du scroll
+### Limitations
+- Transitions trop rapides (150ms par défaut)
+- Pas d'animation de scale pour le numéro actif
+- Pas d'effet de "glow" animé sur le ring
 
 ## Solution
 
-### 1. Utiliser IntersectionObserver
+### 1. Durées et easing personnalisés
 
-L'API `IntersectionObserver` est idéale pour détecter quelle section est visible :
+Remplacer les transitions génériques par des durées explicites :
+
+| Propriété | Avant | Après |
+|-----------|-------|-------|
+| Durée | 150ms (défaut) | 300ms |
+| Easing | ease (défaut) | ease-out / cubic-bezier |
+| Propriétés | all/colors | Ciblées (bg, ring, transform) |
+
+### 2. Animation de scale sur le numéro actif
+
+Ajouter un effet de scale subtil quand le numéro devient actif :
 
 ```typescript
-useEffect(() => {
-  const scrollContainer = scrollContainerRef.current;
-  if (!scrollContainer) return;
+// État actif
+"bg-primary text-primary-foreground scale-110"
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setActiveSection(entry.target.id);
-        }
-      });
-    },
-    {
-      root: scrollContainer,
-      rootMargin: '-20% 0px -70% 0px', // Zone de détection centrée en haut
-      threshold: 0
-    }
-  );
-
-  TOC_ITEMS.forEach((item) => {
-    const element = document.getElementById(item.id);
-    if (element) observer.observe(element);
-  });
-
-  return () => observer.disconnect();
-}, []);
+// État normal
+"bg-primary/10 text-primary scale-100"
 ```
 
-### 2. État actif dans le composant
+### 3. Animation du ring avec glow
+
+Ajouter un effet de glow animé sur l'élément actif :
 
 ```typescript
-const [activeSection, setActiveSection] = useState<string>(TOC_ITEMS[0].id);
-const scrollContainerRef = useRef<HTMLDivElement>(null);
+activeSection === item.id
+  ? "bg-primary/20 ring-2 ring-primary/50 shadow-glow"
+  : "hover:bg-primary/10"
 ```
 
-### 3. Styling conditionnel du TOC
+### 4. Classes de transition améliorées
 
 ```typescript
-<button
-  className={cn(
-    "flex items-center gap-2 p-2 rounded-lg transition-all cursor-pointer text-left group",
-    activeSection === item.id
-      ? "bg-primary/20 ring-2 ring-primary/50"
-      : "hover:bg-primary/10"
-  )}
->
-  <span className={cn(
-    "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors",
-    activeSection === item.id
-      ? "bg-primary text-primary-foreground"
-      : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground"
-  )}>
-    {item.num}
-  </span>
-  <span className={cn(
-    "transition-colors",
-    activeSection === item.id ? "text-primary font-medium" : "group-hover:text-primary"
-  )}>
-    {item.label}
-  </span>
-</button>
+// Bouton principal
+"transition-all duration-300 ease-out"
+
+// Numéro
+"transition-all duration-300 ease-out"
+
+// Label
+"transition-all duration-200 ease-out"
 ```
 
 ## Fichier à modifier
 
 | Fichier | Modification |
 |---------|--------------|
-| `src/pages/admin/TechDocPage.tsx` | Ajouter IntersectionObserver et styles actifs |
+| `src/pages/admin/TechDocPage.tsx` | Améliorer les classes de transition |
 
-## Détails de l'implémentation
+## Détails des modifications
 
-### Nouveaux imports
-
-```typescript
-import { useState, useEffect, useRef } from 'react';
-import { cn } from '@/lib/utils';
-```
-
-### Nouveau state et ref
+### Bouton TOC (lignes 127-152)
 
 ```typescript
-const [activeSection, setActiveSection] = useState<string>(TOC_ITEMS[0].id);
-const scrollContainerRef = useRef<HTMLDivElement>(null);
-```
-
-### Hook useEffect pour l'observer
-
-```typescript
-useEffect(() => {
-  const scrollContainer = scrollContainerRef.current;
-  if (!scrollContainer) return;
-
-  const observer = new IntersectionObserver(
-    (entries) => {
-      // Trouver la section la plus visible
-      const visibleEntries = entries.filter(e => e.isIntersecting);
-      if (visibleEntries.length > 0) {
-        // Prendre celle avec le ratio le plus élevé
-        const mostVisible = visibleEntries.reduce((prev, curr) => 
-          curr.intersectionRatio > prev.intersectionRatio ? curr : prev
-        );
-        setActiveSection(mostVisible.target.id);
-      }
-    },
-    {
-      root: scrollContainer,
-      rootMargin: '-10% 0px -80% 0px',
-      threshold: [0, 0.25, 0.5, 0.75, 1]
-    }
-  );
-
-  TOC_ITEMS.forEach((item) => {
-    const element = document.getElementById(item.id);
-    if (element) observer.observe(element);
-  });
-
-  return () => observer.disconnect();
-}, []);
-```
-
-### Container scrollable avec ref
-
-```typescript
-<div 
-  ref={scrollContainerRef}
-  className="max-h-[70vh] overflow-y-auto bg-gray-200 dark:bg-gray-900 p-4"
+<button
+  key={item.id}
+  onClick={() => scrollToSection(item.id)}
+  className={cn(
+    "flex items-center gap-2 p-2 rounded-lg cursor-pointer text-left group",
+    "transition-all duration-300 ease-out",
+    activeSection === item.id
+      ? "bg-primary/20 ring-2 ring-primary/50 shadow-[0_0_12px_hsl(var(--primary)/0.3)]"
+      : "hover:bg-primary/10 ring-0 ring-transparent shadow-none"
+  )}
 >
 ```
 
-## Rendu visuel
+### Numéro avec scale (lignes 137-144)
 
-```text
-État normal :
-┌─────────────────────────────────────────────────────────────────────┐
-│  TABLE DES MATIÈRES                                                 │
-├─────────────────────────────────────────────────────────────────────┤
-│  (1) Présentation   (2) Architecture   (3) Base de données         │
-│  (4) Edge Functions (5) Permissions    (6) Sécurité                │
-└─────────────────────────────────────────────────────────────────────┘
-
-État avec section 3 active :
-┌─────────────────────────────────────────────────────────────────────┐
-│  TABLE DES MATIÈRES                                                 │
-├─────────────────────────────────────────────────────────────────────┤
-│  (1) Présentation   (2) Architecture  ┌[3] Base de données┐        │
-│  (4) Edge Functions (5) Permissions   │   Fond coloré     │        │
-│                                       │   Ring visible    │        │
-│                                       └───────────────────┘        │
-└─────────────────────────────────────────────────────────────────────┘
+```typescript
+<span className={cn(
+  "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
+  "transition-all duration-300 ease-out",
+  activeSection === item.id
+    ? "bg-primary text-primary-foreground scale-110 shadow-md"
+    : "bg-primary/10 text-primary scale-100 group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-105"
+)}>
 ```
 
-### Indicateurs visuels pour la section active
+### Label avec effet (lignes 145-150)
 
-| Élément | État normal | État actif |
-|---------|-------------|------------|
-| **Fond** | Transparent | `bg-primary/20` |
-| **Bordure** | Aucune | `ring-2 ring-primary/50` |
-| **Numéro** | `bg-primary/10` | `bg-primary text-white` |
-| **Label** | Couleur normale | `text-primary font-medium` |
+```typescript
+<span className={cn(
+  "transition-all duration-200 ease-out",
+  activeSection === item.id 
+    ? "text-primary font-semibold translate-x-0.5" 
+    : "text-foreground group-hover:text-primary"
+)}>
+```
+
+## Rendu visuel des transitions
+
+```text
+Transition d'activation (300ms ease-out) :
+┌────────────────────────────────────────────────────────────────┐
+│  t=0ms        t=100ms       t=200ms       t=300ms             │
+│  ┌─────┐      ┌─────┐       ┌─────┐       ┌─────┐             │
+│  │ (3) │  →   │ (3) │   →   │ [3] │   →   │ [3] │  ← Actif   │
+│  │     │      │░░░░░│       │▓▓▓▓▓│       │█████│             │
+│  └─────┘      └─────┘       └─────┘       └─────┘             │
+│                                                                │
+│  Effets progressifs :                                          │
+│  - Background : transparent → primary/20                       │
+│  - Ring : 0 → 2px primary/50                                   │
+│  - Numéro : scale(1) → scale(1.1)                              │
+│  - Shadow : none → glow effect                                 │
+│  - Label : normal → semibold + translate                       │
+└────────────────────────────────────────────────────────────────┘
+```
+
+## Timeline des animations
+
+| Élément | Durée | Easing | Propriétés animées |
+|---------|-------|--------|-------------------|
+| Bouton | 300ms | ease-out | background, ring, shadow |
+| Numéro | 300ms | ease-out | background, color, scale, shadow |
+| Label | 200ms | ease-out | color, font-weight, transform |
 
 ## Résultat attendu
 
-1. **Détection automatique** : La section visible est détectée lors du scroll
-2. **Feedback visuel clair** : L'élément actif dans le TOC est mis en évidence
-3. **Transition fluide** : Les changements d'état sont animés
-4. **Performance** : IntersectionObserver est optimisé pour le scroll
-5. **Synchronisation** : Clic sur TOC → scroll → mise à jour de l'indicateur
-
+1. **Transitions fluides** : Durée de 300ms pour un effet visuel agréable
+2. **Effet de scale** : Le numéro grossit légèrement quand actif
+3. **Glow effect** : Halo lumineux subtil autour de l'élément actif
+4. **Micro-interaction** : Le label se décale légèrement vers la droite
+5. **Cohérence** : Tous les éléments s'animent de manière synchronisée
+6. **Performance** : Utilisation de `transform` et `opacity` (GPU-accelerated)
