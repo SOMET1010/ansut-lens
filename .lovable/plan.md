@@ -1,310 +1,235 @@
 
 
-# Transformation de la Page des Rôles en "Cartes d'Accréditation"
+# Transformation de la Page Admin en Cockpit Administrateur
 
-## Vision
+## Objectif
 
-Remplacer l'approche actuelle "matrice de permissions Excel" par une interface visuelle **"Cartes d'Accréditation"** où chaque rôle est présenté comme un badge de sécurité autonome, avec un résumé visuel des pouvoirs et un compteur de membres.
+Transformer la page d'accueil de l'administration d'une grille de boutons "plate" en un **Tableau de Bord Technique** avec indicateurs de santé système en temps réel.
 
 ## Analyse de l'existant
 
-### Points faibles actuels
-- Interface sous forme de tableaux avec cases à cocher (cognitif lourd)
-- Orientation "par permission" plutôt que "par rôle"
-- Pas de contexte humain (combien de personnes ont ce rôle ?)
-- Pas de hiérarchie visuelle des niveaux d'accès
+### Données disponibles pour le widget santé
+- **Table `collectes_log`** : durée des collectes (duree_ms), statut, erreurs, nombre de résultats
+- **Table `admin_audit_logs`** : actions des dernières 24h
+- **Hook `useAdminStats`** : statistiques agrégées déjà en place
+- **`derniereCollecte`** : timestamp de la dernière collecte
 
-### Données disponibles
-- 17 permissions organisées en 3 catégories (consultation, actions, admin)
-- 4 rôles prédéfinis (admin, user, council_user, guest)
-- Comptage des membres par rôle (actuellement 3 admins, 2 users dans la base)
-- Système de toggle existant fonctionnel
+### Organisation actuelle
+- 2 sections : "Gestion opérationnelle" et "Supervision technique"
+- Cartes centrées avec icônes et badges de comptage
+- Pas de vue d'ensemble de l'état du système
 
-## Architecture proposée
+## Modifications planifiées
+
+### 1. Nouveau composant `SystemHealthWidget`
+
+Widget noir en haut de page affichant l'état du système :
 
 ```text
-┌─────────────────────────────────────────────────────────────────────┐
-│  ← Retour    Rôles & Accréditations           [Documentation]      │
-│              Définissez les niveaux d'accès aux données sensibles  │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌─ Note RBAC ──────────────────────────────────────────────────┐  │
-│  │  Les permissions sont appliquées immédiatement...            │  │
-│  └──────────────────────────────────────────────────────────────┘  │
-│                                                                     │
-│  ┌────────────────┐ ┌────────────────┐ ┌────────────────┐          │
-│  │ 🛡️ ADMIN       │ │ 📊 ANALYSTE    │ │ 🎯 DÉCIDEUR    │          │
-│  │ Violet         │ │ Bleu           │ │ Orange         │          │
-│  │                │ │                │ │                │          │
-│  │ 3 membres      │ │ 2 membres      │ │ 0 membres      │          │
-│  │                │ │                │ │                │          │
-│  │ Accès autorisés│ │ Accès autorisés│ │ Accès autorisés│          │
-│  │ ✓ Consultation │ │ ✓ Consultation │ │ ✓ Consultation │          │
-│  │ ✓ Actions      │ │ ✓ Actions      │ │ ○ Actions      │          │
-│  │ ✓ Admin        │ │ ○ Admin        │ │ ○ Admin        │          │
-│  │                │ │                │ │                │          │
-│  │ [🔒 Protégé]   │ │ [Configurer]   │ │ [Configurer]   │          │
-│  └────────────────┘ └────────────────┘ └────────────────┘          │
-│                                                                     │
-│  ┌────────────────┐                                                 │
-│  │ 👁️ OBSERVATEUR │                                                 │
-│  │ Gris           │                                                 │
-│  │ 0 membres      │                                                 │
-│  │ [Configurer]   │                                                 │
-│  └────────────────┘                                                 │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ●  Système Opérationnel                 │ Scrapers   │ DB Response │ API   │
+│    Dernier check: Il y a 30s v2.1.0     │ 12%        │ 840ms       │ 200 OK│
+│                                          ─────────────────────────────────────
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+Données à afficher :
+- **Statut global** : Basé sur la dernière collecte (success/warning/error)
+- **Durée collecte** : `duree_ms` de la dernière collecte (indicateur de performance)
+- **Timestamp** : "Il y a X minutes"
+- **Version** : Statique "v2.1.0"
+- **Lien vers logs** : Navigation vers `/admin/cron-jobs`
+
+### 2. Nouveau composant `AdminNavCard`
+
+Carte de navigation horizontale remplaçant les cartes centrées :
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│ ┌──────────┐                                                     │
+│ │   👥     │  Utilisateurs                         [3 actifs]   │
+│ └──────────┘  Invitez des collaborateurs et gérez les accès     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+Props :
+- icon : Lucide icon
+- title : Nom de la fonctionnalité
+- subtitle : Description courte
+- badge : Compteur ou label
+- color : theme de couleur (blue, purple, orange, emerald)
+- to : URL de navigation
+
+### 3. Réorganisation des sections
+
+Nouvelle structure en 3 sections logiques :
+
+| Section | Icône | Contenu |
+|---------|-------|---------|
+| **Organisation** | Users | Utilisateurs, Rôles, Audit Logs |
+| **Moteur de Veille** | Database | Mots-clés, Sources, Alertes, Templates |
+| **Supervision** | Activity | Tâches CRON (déjà existant) |
+
+### 4. Footer technique
+
+Bandeau discret en bas de page :
+- Version de l'application
+- Lien vers la documentation technique
 
 ## Fichiers à créer
 
 | Fichier | Description |
 |---------|-------------|
-| `src/components/admin/RoleAccreditationCard.tsx` | Carte d'accréditation pour chaque rôle |
-| `src/components/admin/RolePermissionsDialog.tsx` | Dialog pour configurer les permissions d'un rôle |
+| `src/components/admin/SystemHealthWidget.tsx` | Widget de santé système avec métriques temps réel |
+| `src/components/admin/AdminNavCard.tsx` | Carte de navigation horizontale |
 
 ## Fichiers à modifier
 
 | Fichier | Modification |
 |---------|--------------|
-| `src/pages/admin/RolesPage.tsx` | Refonte complète avec vue cartes |
-| `src/hooks/useRolePermissions.ts` | Ajouter le comptage des membres par rôle |
-| `src/components/admin/index.ts` | Exporter les nouveaux composants |
+| `src/pages/AdminPage.tsx` | Refonte complète avec nouveau layout |
+| `src/hooks/useAdminStats.ts` | Ajouter données de collecte (durée, statut) |
+| `src/components/admin/index.ts` | Exporter nouveaux composants |
 
 ## Détails des composants
 
-### 1. RoleAccreditationCard.tsx
-
-Carte visuelle pour chaque rôle avec :
+### SystemHealthWidget.tsx
 
 ```text
-Props:
-- role: { value, label, description, theme, userCount, isSystem }
-- permissions: Permission[]
-- rolePermissions: RolePermission[]
-- onConfigure: () => void
-
-Structure visuelle:
-┌───────────────────────────────────────┐
-│ [🔒]                     3 membres 👥 │  <- Badge compteur
-│                                       │
-│  ┌────────┐                           │
-│  │  🛡️   │  ADMINISTRATEUR           │  <- Icône + Titre
-│  └────────┘  Accès complet            │  <- Description
-│                                       │
-│  ACCÈS AUTORISÉS                      │
-│  ✓ Consultation (4/4)    Complet      │  <- Résumé catégorie
-│  ✓ Actions (4/4)         Complet      │
-│  ✓ Administration (9/9)  Complet      │
-│                                       │
-│  ─────────────────────────────────    │
-│  [         Configurer         ]       │  <- Bouton action
-└───────────────────────────────────────┘
+Structure :
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ┌──────────┐                                                               │
+│  │ ●        │  Système Opérationnel                                         │
+│  │ Activity │  Dernière collecte: Il y a 5 min • v2.1.0                     │
+│  └──────────┘                                                               │
+│                                                                             │
+│  ─────────────────────────────────────────────────────────────────────────  │
+│                                                                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌───────────────────┐  │
+│  │ SCRAPERS    │  │ COLLECTE    │  │ ARTICLES    │  │                   │  │
+│  │ ✓ Actifs    │  │ 1.2s        │  │ 24 (24h)    │  │  [Voir les logs]  │  │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └───────────────────┘  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Couleurs sémantiques :
-- Admin : Violet (pouvoir royal)
-- Analyste (user) : Bleu (travail standard)
-- Décideur (council_user) : Orange/Ambre (VIP consultation)
-- Observateur (guest) : Gris (accès minimal)
+Props utilisant useAdminStats enrichi :
+- statusGlobal : 'operational' | 'degraded' | 'error'
+- lastCollecteTime : formatDistanceToNow
+- lastCollecteDuration : en ms → secondes
+- articlesCount24h : nombre d'actualités des 24h
 
-### 2. RolePermissionsDialog.tsx
-
-Dialog pour modifier les permissions d'un rôle spécifique :
-
-```text
-┌─────────────────────────────────────────────────────┐
-│ Configurer : Analyste                          [X]  │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  👁️ CONSULTATION                                    │
-│  ┌─────────────────────────────────────────────┐   │
-│  │ [✓] Voir le radar           Accès au tableau│   │
-│  │ [✓] Voir les actualités     Liste des news  │   │
-│  │ [✓] Voir les personnalités  Fiches acteurs  │   │
-│  │ [✓] Voir les dossiers       Dossiers strat. │   │
-│  └─────────────────────────────────────────────┘   │
-│                                                     │
-│  ⚡ ACTIONS                                         │
-│  ┌─────────────────────────────────────────────┐   │
-│  │ [✓] Créer des flux          Propres flux    │   │
-│  │ [✓] Modifier les dossiers   Créer/modifier  │   │
-│  │ [✓] Utiliser l'assistant    Questions IA    │   │
-│  │ [ ] Recevoir des alertes    Notifications   │   │
-│  └─────────────────────────────────────────────┘   │
-│                                                     │
-│  ⚙️ ADMINISTRATION                                  │
-│  ┌─────────────────────────────────────────────┐   │
-│  │ [ ] Accès administration                    │   │
-│  │ [ ] Gérer les utilisateurs                  │   │
-│  │ [ ] ...                                     │   │
-│  └─────────────────────────────────────────────┘   │
-│                                                     │
-│                            [Annuler]  [Enregistrer] │
-└─────────────────────────────────────────────────────┘
-```
-
-### 3. Modification de useRolePermissions.ts
-
-Ajouter une query pour compter les membres par rôle :
+### AdminNavCard.tsx
 
 ```typescript
-// Nouvelle query pour le comptage
-const userCountByRoleQuery = useQuery({
-  queryKey: ['user-count-by-role'],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role');
-    
-    if (error) throw error;
-    
-    // Compter par rôle
-    const counts: Record<string, number> = {
-      admin: 0,
-      user: 0,
-      council_user: 0,
-      guest: 0,
-    };
-    
-    data?.forEach(({ role }) => {
-      if (role in counts) counts[role]++;
-    });
-    
-    return counts;
-  },
-});
-
-// Ajouter dans le return
-return {
-  // ...existing
-  userCountByRole: userCountByRoleQuery.data ?? { admin: 0, user: 0, council_user: 0, guest: 0 },
-};
-```
-
-### 4. Refonte de RolesPage.tsx
-
-Structure principale :
-
-```typescript
-export default function RolesPage() {
-  const { 
-    permissions,
-    permissionsByCategory, 
-    hasRolePermission, 
-    togglePermission,
-    userCountByRole,
-    isLoading 
-  } = useRolePermissions();
-
-  const [selectedRole, setSelectedRole] = useState<string | null>(null);
-
-  const ROLES_CONFIG = [
-    { 
-      value: 'admin', 
-      label: 'Administrateur', 
-      description: 'Accès complet à la configuration et aux données',
-      theme: 'purple',
-      icon: Shield,
-      isSystem: true,
-    },
-    { 
-      value: 'user', 
-      label: 'Analyste', 
-      description: 'Peut créer des veilles et rédiger des notes',
-      theme: 'blue',
-      icon: BarChart3,
-      isSystem: false,
-    },
-    { 
-      value: 'council_user', 
-      label: 'Décideur', 
-      description: 'Consultation des rapports finaux uniquement',
-      theme: 'amber',
-      icon: Crown,
-      isSystem: false,
-    },
-    { 
-      value: 'guest', 
-      label: 'Observateur', 
-      description: 'Accès temporaire restreint',
-      theme: 'slate',
-      icon: Eye,
-      isSystem: false,
-    },
-  ];
-
-  return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      {/* Note RBAC */}
-      
-      {/* Grille des cartes d'accréditation */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {ROLES_CONFIG.map(role => (
-          <RoleAccreditationCard
-            key={role.value}
-            role={role}
-            userCount={userCountByRole[role.value] || 0}
-            permissionsByCategory={permissionsByCategory}
-            hasRolePermission={hasRolePermission}
-            onConfigure={() => setSelectedRole(role.value)}
-          />
-        ))}
-      </div>
-
-      {/* Dialog de configuration */}
-      <RolePermissionsDialog
-        open={!!selectedRole}
-        onOpenChange={() => setSelectedRole(null)}
-        role={ROLES_CONFIG.find(r => r.value === selectedRole)}
-        permissions={permissions}
-        permissionsByCategory={permissionsByCategory}
-        hasRolePermission={hasRolePermission}
-        onToggle={togglePermission.mutate}
-        isLoading={togglePermission.isPending}
-      />
-    </div>
-  );
+interface AdminNavCardProps {
+  icon: React.ElementType;
+  title: string;
+  subtitle: string;
+  badge?: string | number;
+  badgeVariant?: 'default' | 'success' | 'warning';
+  color: 'blue' | 'purple' | 'orange' | 'emerald';
+  to: string;
 }
 ```
 
+Couleurs sémantiques :
+- **Blue** : Utilisateurs, Audit
+- **Purple** : Rôles/Sécurité
+- **Orange** : Mots-clés, Alertes, Templates
+- **Emerald** : Sources, Données
+
+### Enrichissement useAdminStats.ts
+
+Ajouter à l'interface `AdminStats` :
+```typescript
+lastCollecteStatus: 'success' | 'error' | null;
+lastCollecteDuration: number | null; // en ms
+articlesLast24h: number;
+```
+
+Nouvelles queries :
+```typescript
+// Dernière collecte avec détails
+const collecteResult = await supabase
+  .from('collectes_log')
+  .select('created_at, duree_ms, statut')
+  .order('created_at', { ascending: false })
+  .limit(1);
+
+// Actualités des dernières 24h
+const articlesResult = await supabase
+  .from('actualites')
+  .select('id', { count: 'exact', head: true })
+  .gte('created_at', yesterday);
+```
+
+## Layout final de la page
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Administration                                                              │
+│  Configuration globale, sécurité et maintenance de la plateforme            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌─────────────────────────────── SANTÉ SYSTÈME ───────────────────────────┐│
+│  │ ● Opérationnel  •  Il y a 5 min  •  v2.1.0    │ Collecte │ Articles     ││
+│  │                                               │  1.2s    │  24/24h      ││
+│  └──────────────────────────────────────────────────────────────────────────┘│
+│                                                                              │
+│  ── 👥 ORGANISATION ─────────────────────────────────────────────────────── │
+│  ┌─────────────────────┐ ┌─────────────────────┐ ┌─────────────────────┐    │
+│  │ 👥 Utilisateurs     │ │ 🛡️ Rôles           │ │ 📋 Audit Logs       │    │
+│  │ 3 actifs            │ │ RBAC               │ │ 12 actions/24h      │    │
+│  └─────────────────────┘ └─────────────────────┘ └─────────────────────┘    │
+│                                                                              │
+│  ── 🗄️ MOTEUR DE VEILLE ─────────────────────────────────────────────────── │
+│  ┌────────────────┐ ┌────────────────┐ ┌────────────────┐ ┌────────────────┐│
+│  │ 🏷️ Mots-clés   │ │ 📡 Sources     │ │ 🔔 Alertes     │ │ 📁 Import      ││
+│  │ 112 actifs     │ │ 8 actives      │ │ 2 non lues     │ │ Acteurs IA     ││
+│  └────────────────┘ └────────────────┘ └────────────────┘ └────────────────┘│
+│                                                                              │
+│  ── 📧 COMMUNICATION ────────────────────────────────────────────────────── │
+│  ┌────────────────┐ ┌────────────────┐ ┌────────────────┐                   │
+│  │ 📧 Newsletters │ │ 🎓 Formation   │ │ 📊 Présentation││                   │
+│  │ 1 en attente   │ │ 2 guides       │ │ 11 slides      ││                   │
+│  └────────────────┘ └────────────────┘ └────────────────┘                   │
+│                                                                              │
+│  ── ⚙️ SUPERVISION TECHNIQUE ────────────────────────────────────────────── │
+│  ┌─────────────────────┐                                                     │
+│  │ ⏰ Tâches CRON       │                                                     │
+│  │ Dernière: Il y a 5m │                                                     │
+│  └─────────────────────┘                                                     │
+│                                                                              │
+│  ─────────────────────────────────────────────────────────────────────────── │
+│  ANSUT RADAR v2.1.0 • Documentation Technique                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Sections réorganisées
+
+| Section | Éléments | Couleur dominante |
+|---------|----------|-------------------|
+| **Organisation** | Utilisateurs, Rôles, Audit | Bleu/Violet |
+| **Moteur de Veille** | Mots-clés, Sources, Alertes, Import Acteurs | Orange/Emerald |
+| **Communication** | Newsletters, Formation, Présentation | Bleu/Emerald |
+| **Supervision** | Tâches CRON | Gris/Muted |
+
 ## Avantages de la nouvelle approche
 
-| Aspect | Avant (Matrice) | Après (Cartes) |
-|--------|-----------------|----------------|
-| **Orientation** | Par permission | Par rôle |
-| **Compréhension** | Technique (codes) | Métier (niveaux) |
-| **Contexte humain** | Aucun | Compteur membres |
-| **Charge cognitive** | Élevée (17×4 cases) | Faible (4 cartes) |
-| **Sécurité visuelle** | Abstraite | Couleurs + icônes |
-| **Actions** | Dans le tableau | Dans un dialog dédié |
-
-## Labels métier enrichis
-
-Cohérence avec la page UsersPage :
-
-| Rôle technique | Label affiché | Icône | Couleur |
-|----------------|---------------|-------|---------|
-| `admin` | Administrateur | Shield | Violet |
-| `user` | Analyste | BarChart3 | Bleu |
-| `council_user` | Décideur | Crown | Orange/Ambre |
-| `guest` | Observateur | Eye | Gris |
-
-## Résumé des permissions par catégorie
-
-Sur chaque carte, afficher un résumé :
-- ✓ Consultation (4/4) → Complet
-- ✓ Consultation (2/4) → Partiel
-- ○ Consultation (0/4) → Aucun
-
-Cela permet de voir en un coup d'œil le niveau d'accès sans ouvrir le détail.
+| Aspect | Avant | Après |
+|--------|-------|-------|
+| **Vue d'ensemble** | Aucune | Widget santé système en temps réel |
+| **Organisation** | 2 sections floues | 4 sections logiques métier |
+| **Navigation** | Cartes centrées | Cartes horizontales avec description |
+| **Métriques** | Badges isolés | Indicateurs contextuels |
+| **Cohérence** | Variable | Couleurs sémantiques par domaine |
 
 ## Résultat attendu
 
-1. **Vue d'ensemble claire** - 4 cartes représentant les 4 niveaux d'accréditation
-2. **Contexte humain** - Combien de personnes ont chaque rôle
-3. **Hiérarchie visuelle** - Couleurs sémantiques indiquant le niveau de pouvoir
-4. **Configuration séparée** - Dialog dédié pour modifier les permissions
-5. **Protection visible** - Badge "Protégé" sur le rôle Admin
-6. **Cohérence UI** - Même style que les UserCard de la page utilisateurs
+1. **Vision immédiate** de l'état du système en haut de page
+2. **Organisation logique** séparant humain (Organisation) de machine (Veille)
+3. **Navigation claire** avec descriptions et badges informatifs
+4. **Cohérence visuelle** avec les pages utilisateurs et rôles redesignées
+5. **Footer technique** discret avec version et documentation
 
