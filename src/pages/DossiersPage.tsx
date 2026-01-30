@@ -28,7 +28,7 @@ export default function DossiersPage() {
   const [editingDossier, setEditingDossier] = useState<Dossier | null>(null);
   
   const { isAdmin } = useAuth();
-  const { mode } = useViewMode();
+  const { mode, setMode } = useViewMode();
   const { data: dossiers, isLoading: isLoadingDossiers } = useDossiers();
   const { data: newsletters, isLoading: isLoadingNewsletters } = useNewsletters();
 
@@ -105,50 +105,86 @@ export default function DossiersPage() {
       {/* MODE: DG - Vue synthétique */}
       {mode === 'dg' && (
         <div className="space-y-6">
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Notes publiées</p>
-                    <p className="text-3xl font-bold text-primary">{publies.length}</p>
-                  </div>
-                  <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center">
-                    <Send className="h-6 w-6 text-primary" />
-                  </div>
-                </div>
-              </CardContent>
+          {/* Empty State when no published content */}
+          {publies.length === 0 && !isLoadingDossiers && (
+            <Card className="p-12 text-center border-dashed border-2">
+              <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+              <h3 className="text-lg font-bold mb-2">Bienvenue dans le Studio de Publication</h3>
+              <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
+                Le tableau de bord stratégique affiche les documents validés. 
+                Passez en mode Analyste pour créer et publier du contenu.
+              </p>
+              <Button onClick={() => setMode('analyste')}>
+                <FileText className="h-4 w-4 mr-2" />
+                Passer en mode Analyste
+              </Button>
             </Card>
-            
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">En préparation</p>
-                    <p className="text-3xl font-bold text-orange-500">{brouillons.length}</p>
-                  </div>
-                  <div className="h-12 w-12 bg-orange-500/10 rounded-full flex items-center justify-center">
-                    <Edit3 className="h-6 w-6 text-orange-500" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Newsletters envoyées</p>
-                    <p className="text-3xl font-bold text-blue-500">{recentSentNewsletters.length}</p>
-                  </div>
-                  <div className="h-12 w-12 bg-blue-500/10 rounded-full flex items-center justify-center">
-                    <Mail className="h-6 w-6 text-blue-500" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          )}
+
+          {/* KPI Cards - only show when there's data */}
+          {(publies.length > 0 || brouillons.length > 0 || recentSentNewsletters.length > 0) && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Notes publiées</p>
+                        <p className="text-3xl font-bold text-primary">{publies.length}</p>
+                      </div>
+                      <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center">
+                        <Send className="h-6 w-6 text-primary" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">En préparation</p>
+                        <p className="text-3xl font-bold text-orange-500">{brouillons.length}</p>
+                      </div>
+                      <div className="h-12 w-12 bg-orange-500/10 rounded-full flex items-center justify-center">
+                        <Edit3 className="h-6 w-6 text-orange-500" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Newsletters envoyées</p>
+                        <p className="text-3xl font-bold text-blue-500">{recentSentNewsletters.length}</p>
+                      </div>
+                      <div className="h-12 w-12 bg-blue-500/10 rounded-full flex items-center justify-center">
+                        <Mail className="h-6 w-6 text-blue-500" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Recent published documents only */}
+              <section>
+                <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2 mb-4">
+                  <Send className="h-4 w-4" /> Derniers documents validés
+                </h2>
+                
+                {isLoadingDossiers ? (
+                  <Skeleton className="h-[200px]" />
+                ) : (
+                  <RecentSendsTable 
+                    dossiers={publies} 
+                    onSelect={setSelectedDossier} 
+                  />
+                )}
+              </section>
+            </>
+          )}
 
           {/* Recent published documents only */}
           <section>
