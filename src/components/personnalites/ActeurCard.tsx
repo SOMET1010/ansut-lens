@@ -2,8 +2,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Wifi, Wallet, Building2, Landmark, GraduationCap, Newspaper, AlertTriangle, Star, ExternalLink, Pencil } from 'lucide-react';
-import { CERCLE_LABELS, SOUS_CATEGORIE_LABELS } from '@/hooks/usePersonnalites';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Wifi, Wallet, Building2, Landmark, GraduationCap, Newspaper, AlertTriangle, Star, Eye, Pencil } from 'lucide-react';
+import { CERCLE_LABELS } from '@/hooks/usePersonnalites';
 import type { Personnalite, CercleStrategique } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -13,12 +19,28 @@ interface ActeurCardProps {
   onEdit?: () => void;
 }
 
-const getCercleColors = (cercle: CercleStrategique) => {
+const getCercleStyles = (cercle: CercleStrategique) => {
   switch (cercle) {
-    case 1: return { border: 'border-l-blue-500', bg: 'bg-blue-500/10', text: 'text-blue-500' };
-    case 2: return { border: 'border-l-orange-500', bg: 'bg-orange-500/10', text: 'text-orange-500' };
-    case 3: return { border: 'border-l-green-500', bg: 'bg-green-500/10', text: 'text-green-500' };
-    case 4: return { border: 'border-l-purple-500', bg: 'bg-purple-500/10', text: 'text-purple-500' };
+    case 1: return { 
+      badge: 'bg-blue-100 text-blue-700 border-blue-200', 
+      avatar: 'bg-blue-100 text-blue-700',
+      dot: 'bg-blue-500'
+    };
+    case 2: return { 
+      badge: 'bg-orange-100 text-orange-700 border-orange-200', 
+      avatar: 'bg-orange-100 text-orange-700',
+      dot: 'bg-orange-500'
+    };
+    case 3: return { 
+      badge: 'bg-green-100 text-green-700 border-green-200', 
+      avatar: 'bg-green-100 text-green-700',
+      dot: 'bg-green-500'
+    };
+    case 4: return { 
+      badge: 'bg-purple-100 text-purple-700 border-purple-200', 
+      avatar: 'bg-purple-100 text-purple-700',
+      dot: 'bg-purple-500'
+    };
   }
 };
 
@@ -36,148 +58,156 @@ const getCategorieIcon = (categorie?: string) => {
   }
 };
 
-const getNiveauAlerteStyle = (niveau?: string) => {
-  switch (niveau) {
-    case 'critique': return 'bg-destructive/20 text-destructive border-destructive/30';
-    case 'eleve': return 'bg-signal-warning/20 text-signal-warning border-signal-warning/30';
-    default: return '';
-  }
+const getCategorieLabel = (categorie?: string) => {
+  const labels: Record<string, string> = {
+    regulateur: 'Régulateur',
+    politique: 'Politique',
+    operateur: 'Opérateur',
+    fai: 'FAI',
+    fintech: 'Fintech',
+    bailleur: 'Bailleur',
+    expert: 'Expert',
+    media: 'Média',
+    autre: 'Autre',
+  };
+  return labels[categorie || 'autre'] || 'Autre';
 };
 
 export function ActeurCard({ personnalite, onClick, onEdit }: ActeurCardProps) {
-  const cercleColors = getCercleColors(personnalite.cercle);
+  const cercleStyles = getCercleStyles(personnalite.cercle);
   const CategorieIcon = getCategorieIcon(personnalite.categorie);
   const initials = `${personnalite.prenom?.[0] || ''}${personnalite.nom[0]}`.toUpperCase();
-  const alerteStyle = getNiveauAlerteStyle(personnalite.niveau_alerte);
-
+  
   // Score d'influence (1-5 étoiles)
   const stars = Math.round((personnalite.score_influence / 100) * 5);
+  
+  // Alerte critique ou élevée
+  const hasAlert = personnalite.niveau_alerte === 'critique' || personnalite.niveau_alerte === 'eleve';
 
   return (
     <Card 
       className={cn(
-        'glass hover:shadow-lg transition-all cursor-pointer border-l-4 group relative',
-        cercleColors.border,
-        alerteStyle && 'border',
-        alerteStyle
+        'bg-card rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer group relative border border-border/50',
+        hasAlert && personnalite.niveau_alerte === 'critique' && 'ring-2 ring-destructive/30',
+        hasAlert && personnalite.niveau_alerte === 'eleve' && 'ring-2 ring-yellow-500/30'
       )}
       onClick={onClick}
     >
-      {/* Bouton modifier au survol */}
-      {onEdit && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit();
-          }}
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
-      )}
-      <CardContent className="pt-4 pb-4">
-        <div className="flex items-start gap-3">
-          {/* Avatar */}
-          <Avatar className="h-12 w-12 shrink-0">
-            {personnalite.photo_url && (
-              <AvatarImage src={personnalite.photo_url} alt={personnalite.nom} />
-            )}
-            <AvatarFallback className={cn(cercleColors.bg, cercleColors.text, 'font-bold text-sm')}>
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+      <CardContent className="p-5">
+        {/* Header avec Avatar et Badge Cercle */}
+        <div className="flex justify-between items-start gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <Avatar className="h-12 w-12 shrink-0 ring-2 ring-background shadow-sm">
+              {personnalite.photo_url && (
+                <AvatarImage src={personnalite.photo_url} alt={personnalite.nom} />
+              )}
+              <AvatarFallback className={cn(cercleStyles.avatar, 'font-bold text-sm')}>
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div className="min-w-0 flex-1">
+              <h3 className="font-bold text-base text-foreground truncate">
+                {personnalite.prenom} {personnalite.nom}
+              </h3>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className={cn('inline-flex text-xs font-medium px-2 py-0.5 rounded-full border', cercleStyles.badge)}>
+                  Cercle {personnalite.cercle}
+                </span>
+                {hasAlert && (
+                  <AlertTriangle className={cn(
+                    'h-3.5 w-3.5',
+                    personnalite.niveau_alerte === 'critique' ? 'text-destructive' : 'text-yellow-500'
+                  )} />
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Bouton modifier au survol */}
+          {onEdit && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
 
-          {/* Infos principales */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h3 className="font-semibold text-sm leading-tight truncate">
-                  {personnalite.prenom} {personnalite.nom}
-                </h3>
-                <p className="text-xs text-muted-foreground truncate mt-0.5">
+        {/* Tags alignés */}
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          {personnalite.categorie && (
+            <Badge variant="secondary" className="text-xs font-semibold gap-1 rounded-md">
+              <CategorieIcon className="h-3 w-3" />
+              {getCategorieLabel(personnalite.categorie)}
+            </Badge>
+          )}
+          {personnalite.sous_categorie && (
+            <Badge variant="outline" className="text-xs rounded-md text-muted-foreground">
+              {personnalite.sous_categorie.replace(/_/g, ' ')}
+            </Badge>
+          )}
+        </div>
+
+        {/* Fonction avec tooltip pour texte tronqué */}
+        {personnalite.fonction && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p className="text-sm text-muted-foreground line-clamp-2 mt-3 leading-snug min-h-[2.5rem]">
                   {personnalite.fonction}
+                  {personnalite.organisation && ` • ${personnalite.organisation}`}
                 </p>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs">
+                <p>{personnalite.fonction}</p>
                 {personnalite.organisation && (
-                  <p className="text-xs text-muted-foreground/70 truncate">
-                    {personnalite.organisation}
-                  </p>
+                  <p className="text-muted-foreground">{personnalite.organisation}</p>
                 )}
-              </div>
-              
-              {/* Niveau alerte */}
-              {personnalite.niveau_alerte && personnalite.niveau_alerte !== 'normal' && (
-                <AlertTriangle className={cn(
-                  'h-4 w-4 shrink-0',
-                  personnalite.niveau_alerte === 'critique' ? 'text-destructive' : 'text-signal-warning'
-                )} />
-              )}
-            </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
 
-            {/* Badges */}
-            <div className="flex flex-wrap items-center gap-1.5 mt-2">
-              {/* Badge cercle */}
-              <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0', cercleColors.bg, cercleColors.text)}>
-                C{personnalite.cercle}
-              </Badge>
-
-              {/* Badge catégorie */}
-              {personnalite.categorie && (
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5">
-                  <CategorieIcon className="h-2.5 w-2.5" />
-                  {personnalite.categorie}
-                </Badge>
-              )}
-
-              {/* Score influence */}
-              <div className="flex items-center gap-0.5 ml-auto">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={cn(
-                      'h-3 w-3',
-                      i < stars ? 'fill-secondary text-secondary' : 'text-muted-foreground/30'
-                    )}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Thématiques */}
-            {personnalite.thematiques && personnalite.thematiques.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {personnalite.thematiques.slice(0, 3).map((theme) => (
-                  <Badge key={theme} variant="outline" className="text-[9px] px-1 py-0 text-muted-foreground">
-                    {theme}
-                  </Badge>
-                ))}
-                {personnalite.thematiques.length > 3 && (
-                  <Badge variant="outline" className="text-[9px] px-1 py-0 text-muted-foreground">
-                    +{personnalite.thematiques.length - 3}
-                  </Badge>
-                )}
-              </div>
-            )}
-
-            {/* Réseaux sociaux */}
-            {personnalite.reseaux && Object.keys(personnalite.reseaux).length > 0 && (
-              <div className="flex items-center gap-2 mt-2">
-                {Object.entries(personnalite.reseaux).map(([network, url]) => (
-                  <a
-                    key={network}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                ))}
-              </div>
+        {/* Thématiques */}
+        {personnalite.thematiques && personnalite.thematiques.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-3">
+            {personnalite.thematiques.slice(0, 2).map((theme) => (
+              <span key={theme} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                {theme}
+              </span>
+            ))}
+            {personnalite.thematiques.length > 2 && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                +{personnalite.thematiques.length - 2}
+              </span>
             )}
           </div>
+        )}
+
+        {/* Footer : Score étoiles + Voir le profil */}
+        <div className="pt-4 mt-4 border-t border-border/50 flex items-center justify-between">
+          <div className="flex items-center gap-0.5">
+            {[...Array(5)].map((_, i) => (
+              <Star
+                key={i}
+                className={cn(
+                  'h-3.5 w-3.5',
+                  i < stars ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground/30'
+                )}
+              />
+            ))}
+          </div>
+          <span className="text-sm font-medium text-primary flex items-center gap-1 group-hover:underline">
+            <Eye className="h-3.5 w-3.5" />
+            Voir le profil
+          </span>
         </div>
       </CardContent>
     </Card>
