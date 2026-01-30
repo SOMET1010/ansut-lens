@@ -1,215 +1,88 @@
 
-# Integration d'un Editeur Visuel de Newsletter (Studio Pro)
+# Ajout de la Prévisualisation Responsive dans le Studio Newsletter
 
-## Analyse de l'existant
+## Objectif
 
-L'architecture actuelle du workflow newsletter est :
+Ajouter un sélecteur de viewport (Desktop / Tablette / Mobile) dans le Studio Newsletter pour permettre de prévisualiser la newsletter dans différentes tailles d'écran, particulièrement utile pour vérifier le rendu sur mobile avant envoi.
 
-1. **Generation IA** : `NewsletterGenerator.tsx` configure les parametres et appelle l'edge function
-2. **Edge Function** : `generer-newsletter/index.ts` genere le contenu JSON + HTML statique
-3. **Edition** : `NewsletterEditor.tsx` permet de modifier le contenu JSON via formulaires
-4. **Preview** : `NewsletterPreview.tsx` rend le HTML avec des templates React fixes
-
-**Limitation actuelle** : L'edition est limitee a la modification du texte dans des champs de formulaire. Pas de modification de la mise en page visuelle (couleurs, disposition, styles).
-
----
-
-## Solution proposee : Editeur WYSIWYG Block-Based
-
-Plutot qu'un editeur externe lourd (Unlayer = iframe + API payante), je propose un **editeur de blocs drag-and-drop natif React** base sur le concept de "newsletter builder" :
+## Interface utilisateur proposée
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│  📧 Studio Newsletter - Edition Visuelle                                [Apercu] [Sauver]  │
-├─────────────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                             │
-│  BARRE OUTILS BLOCS                ZONE CANVAS                    PANNEAU PROPRIETES       │
-│  ┌──────────────────┐  ┌──────────────────────────────────┐  ┌────────────────────────┐    │
-│  │                  │  │                                  │  │                        │    │
-│  │  [📝 Texte    ]  │  │  ┌──────────────────────────┐   │  │  📐 Proprietes         │    │
-│  │  [🖼️ Image   ]  │  │  │  HEADER ANSUT (editable) │   │  │                        │    │
-│  │  [📊 Chiffre ]  │  │  └──────────────────────────┘   │  │  Couleur fond: [■    ] │    │
-│  │  [📰 Article ]  │  │                                  │  │  Padding:      [20px ] │    │
-│  │  [➗ Separateur]│  │  ┌──────────────────────────┐   │  │  Taille texte: [16px ] │    │
-│  │  [📅 Evenement] │  │  │  "Cet été, la Côte..."   │   │  │                        │    │
-│  │  [🔗 Bouton   ] │  │  │         EDITO            │   │  │  ⚡ Actions rapides    │    │
-│  │                  │  │  └──────────────────────────┘   │  │  [Dupliquer]           │    │
-│  │  ─────────────  │  │                                  │  │  [Supprimer]           │    │
-│  │                  │  │  ┌──────────────────────────┐   │  │  [Monter] [Descendre]  │    │
-│  │  Templates:      │  │  │  🎯 L'ESSENTIEL ANSUT   │   │  │                        │    │
-│  │  [Section ANSUT] │  │  │  ┌────┐ ┌────┐ ┌────┐   │   │  └────────────────────────┘    │
-│  │  [Tech Block  ]  │  │  │  │ 1  │ │ 2  │ │ 3  │   │   │                                │
-│  │  [Footer      ]  │  │  └──────────────────────────┘   │                                │
-│  │                  │  │                                  │                                │
-│  └──────────────────┘  └──────────────────────────────────┘                                │
-│                                                                                             │
-└─────────────────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│  Studio Newsletter #5                                                               │
+│                                                                                     │
+│  [✏️ Édition] [👁 Aperçu] [</> HTML]    [🖥️ Desktop] [📱 Tablet] [📱 Mobile]        │
+│                                                                                     │
+├─────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                     │
+│  BLOCS       │           ┌─────────────────┐           │  PROPRIÉTÉS                │
+│              │           │                 │           │                            │
+│  [Header]    │           │  CANVAS         │           │  Couleur fond: [■]         │
+│  [Edito]     │           │  (width: 375px) │           │  Padding: [20px]           │
+│  [Article]   │           │                 │           │                            │
+│  ...         │           └─────────────────┘           │                            │
+│              │                                         │                            │
+└─────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
----
+## Solution technique
 
-## Architecture technique
+### Définition des breakpoints
 
-### Option 1 : Editeur de blocs custom (Recommande)
+| Viewport | Largeur | Icône |
+|----------|---------|-------|
+| Desktop | 650px (maxWidth actuel) | Monitor |
+| Tablette | 768px | Tablet |
+| Mobile | 375px | Smartphone |
 
-Creer un systeme de blocs React avec :
-- Drag-and-drop via `@dnd-kit/core` (gratuit, leger)
-- Blocs pre-definis adaptes au format newsletter ANSUT
-- Edition inline (contentEditable ou Textarea)
-- Export HTML inline vers la base
+### Modifications
 
-**Avantages** :
-- 100% gratuit et controle total
-- Adapte exactement aux besoins ANSUT
-- Pas de dependance externe
-- Performance optimale
+Le sélecteur de viewport sera ajouté dans la barre d'en-tête du Studio, à côté des onglets Edition/Aperçu/HTML. Il sera visible en mode **Édition** et **Aperçu**.
 
-### Option 2 : Integration react-email-editor (Unlayer)
+La largeur du canvas central s'adaptera dynamiquement au viewport sélectionné.
 
-Utiliser la librairie open-source `react-email-editor` :
-```typescript
-import EmailEditor from 'react-email-editor';
-const ref = useRef<EditorRef>(null);
-ref.current?.editor?.exportHtml((data) => { /* save */ });
-```
-
-**Inconvenients** :
-- Interface en anglais
-- Design non adapte (generique)
-- Iframe lourd (~3MB)
-- Version gratuite limitee
-
----
-
-## Implementation proposee (Option 1)
-
-### Nouveaux composants
-
-| Composant | Description |
-|-----------|-------------|
-| `NewsletterStudio.tsx` | Layout principal 3 colonnes (blocs/canvas/proprietes) |
-| `BlockToolbar.tsx` | Liste des blocs disponibles a glisser |
-| `CanvasArea.tsx` | Zone centrale de drop avec rendu des blocs |
-| `BlockRenderer.tsx` | Rendu d'un bloc individuel (texte, image, article...) |
-| `PropertiesPanel.tsx` | Panneau de modification des proprietes du bloc selectionne |
-| `blocks/*.tsx` | Composants individuels par type de bloc |
-
-### Types de blocs
-
-```typescript
-type NewsletterBlock = {
-  id: string;
-  type: 'header' | 'edito' | 'article' | 'tech' | 'chiffre' | 'agenda' | 'image' | 'separator' | 'button' | 'footer';
-  content: Record<string, string | number | boolean>;
-  style: {
-    backgroundColor?: string;
-    padding?: string;
-    textColor?: string;
-    borderRadius?: string;
-  };
-  order: number;
-};
-
-type NewsletterDocument = {
-  blocks: NewsletterBlock[];
-  globalStyles: {
-    primaryColor: string;
-    secondaryColor: string;
-    fontFamily: string;
-    maxWidth: string;
-  };
-};
-```
-
-### Flux de donnees
-
-```text
-┌────────────────┐     ┌───────────────────┐     ┌────────────────┐
-│  Newsletter    │     │  NewsletterStudio │     │  HTML Export   │
-│  contenu JSON  │ ──► │  (Edition blocs)  │ ──► │  html_court    │
-│  essentiel...  │     │  NewsletterDoc    │     │  (inlined)     │
-└────────────────┘     └───────────────────┘     └────────────────┘
-```
-
-1. **Conversion entree** : Le JSON `contenu` existant est converti en `NewsletterDocument` avec des blocs
-2. **Edition** : L'utilisateur manipule les blocs visuellement
-3. **Export** : A la sauvegarde, les blocs sont :
-   - Reconvertis en `contenu` JSON (pour compatibilite)
-   - Exportes en HTML inline (pour envoi email)
-
----
-
-## Fichiers a creer
-
-| Fichier | Description |
-|---------|-------------|
-| `src/components/newsletter/studio/NewsletterStudio.tsx` | Layout principal du studio |
-| `src/components/newsletter/studio/BlockToolbar.tsx` | Sidebar des blocs disponibles |
-| `src/components/newsletter/studio/CanvasArea.tsx` | Zone de drop avec DnD |
-| `src/components/newsletter/studio/BlockRenderer.tsx` | Rendu conditionnel des blocs |
-| `src/components/newsletter/studio/PropertiesPanel.tsx` | Panneau de proprietes |
-| `src/components/newsletter/studio/blocks/HeaderBlock.tsx` | Bloc header ANSUT |
-| `src/components/newsletter/studio/blocks/EditoBlock.tsx` | Bloc edito |
-| `src/components/newsletter/studio/blocks/ArticleBlock.tsx` | Bloc article essentiel |
-| `src/components/newsletter/studio/blocks/TechBlock.tsx` | Bloc tendance tech |
-| `src/components/newsletter/studio/blocks/ChiffreBlock.tsx` | Bloc chiffre marquant |
-| `src/components/newsletter/studio/blocks/AgendaBlock.tsx` | Bloc agenda |
-| `src/components/newsletter/studio/blocks/ImageBlock.tsx` | Bloc image libre |
-| `src/components/newsletter/studio/blocks/SeparatorBlock.tsx` | Separateur |
-| `src/components/newsletter/studio/blocks/ButtonBlock.tsx` | Bouton CTA |
-| `src/components/newsletter/studio/blocks/FooterBlock.tsx` | Footer ANSUT |
-| `src/components/newsletter/studio/utils/blockConverter.ts` | Conversion JSON <> Blocs |
-| `src/components/newsletter/studio/utils/htmlExporter.ts` | Export HTML inline |
-| `src/components/newsletter/studio/index.ts` | Exports |
-| `src/types/newsletter-studio.ts` | Types pour le studio |
-
-### Fichiers a modifier
+## Fichier à modifier
 
 | Fichier | Modification |
 |---------|--------------|
-| `src/pages/DossiersPage.tsx` | Ajouter vue 'studio' dans le workflow newsletter |
-| `src/components/newsletter/NewsletterPreview.tsx` | Ajouter bouton "Ouvrir dans le Studio" |
-| `package.json` | Ajouter dependance `@dnd-kit/core` et `@dnd-kit/sortable` |
+| `src/components/newsletter/studio/NewsletterStudio.tsx` | Ajouter l'état `previewViewport`, le sélecteur de viewport dans le header, et passer la largeur au CanvasArea et à l'aperçu |
+| `src/components/newsletter/studio/CanvasArea.tsx` | Accepter une prop `viewportWidth` optionnelle pour surcharger la maxWidth du canvas |
 
----
+## Détails techniques
 
-## Dependances a installer
+### 1. NewsletterStudio.tsx
 
-```json
-{
-  "@dnd-kit/core": "^6.1.0",
-  "@dnd-kit/sortable": "^8.0.0",
-  "@dnd-kit/utilities": "^3.2.2"
+Ajouter un nouvel état pour le viewport :
+```typescript
+const [previewViewport, setPreviewViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+
+const viewportWidths = {
+  desktop: document.globalStyles.maxWidth,
+  tablet: '768px',
+  mobile: '375px'
+};
+```
+
+Ajouter un groupe de boutons avec des icônes Lucide (`Monitor`, `Tablet`, `Smartphone`) dans le header, à droite des onglets de mode.
+
+Passer la largeur calculée au `CanvasArea` et à la zone d'aperçu.
+
+### 2. CanvasArea.tsx
+
+Ajouter une prop optionnelle `viewportWidth` :
+```typescript
+interface CanvasAreaProps {
+  // ... existing props
+  viewportWidth?: string;
 }
 ```
 
----
+Utiliser cette prop pour surcharger le `maxWidth` du canvas si elle est fournie.
 
-## Workflow utilisateur final
+## Résultat attendu
 
-1. **Generer** : L'utilisateur genere une newsletter via IA (existant)
-2. **Preview** : Il voit l'apercu (existant)
-3. **Studio** : Clic sur "Modifier la mise en page" ouvre le Studio visuel
-4. **Edition** : Il peut :
-   - Reordonner les blocs par drag-and-drop
-   - Modifier le texte en inline
-   - Changer les couleurs et styles
-   - Ajouter/supprimer des blocs
-   - Ajouter des images
-5. **Sauvegarder** : Les modifications mettent a jour `contenu` + `html_court`
-6. **Valider/Envoyer** : Workflow existant
-
----
-
-## Recapitulatif
-
-| Aspect | Valeur |
-|--------|--------|
-| Approche | Editeur de blocs custom avec @dnd-kit |
-| Nouveaux fichiers | ~18 fichiers |
-| Dependances | 3 packages @dnd-kit |
-| Cout | Gratuit |
-| Integration | Ajoute vue "studio" au workflow existant |
-| Export | HTML inline compatible email |
-| Complexite | Moyenne (3-4 heures de dev) |
-
+1. L'utilisateur voit 3 boutons (Desktop / Tablette / Mobile) dans le header du Studio
+2. Cliquer sur Mobile réduit le canvas à 375px de large
+3. L'aperçu en mode Preview utilise également la largeur sélectionnée
+4. Le viewport sélectionné est conservé lors du passage entre modes Edition et Aperçu
+5. Les blocs restent entièrement fonctionnels quelle que soit la taille
