@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
-import { ArrowLeft, Save, Eye, Code, Loader2, Undo2 } from 'lucide-react';
+import { ArrowLeft, Save, Eye, Code, Loader2, Undo2, Monitor, Tablet, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
@@ -32,6 +32,13 @@ export function NewsletterStudio({ newsletter, onBack, onSaved }: NewsletterStud
   const [activeId, setActiveId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'html'>('edit');
   const [hasChanges, setHasChanges] = useState(false);
+  const [previewViewport, setPreviewViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+
+  const viewportWidths = {
+    desktop: document.globalStyles.maxWidth,
+    tablet: '768px',
+    mobile: '375px'
+  };
 
   const updateNewsletter = useUpdateNewsletter();
 
@@ -261,6 +268,37 @@ export function NewsletterStudio({ newsletter, onBack, onSaved }: NewsletterStud
             </TabsList>
           </Tabs>
 
+          {/* Viewport selector */}
+          <div className="flex items-center gap-1 ml-2 border-l pl-3">
+            <Button
+              variant={previewViewport === 'desktop' ? 'default' : 'ghost'}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setPreviewViewport('desktop')}
+              title="Desktop (650px)"
+            >
+              <Monitor className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={previewViewport === 'tablet' ? 'default' : 'ghost'}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setPreviewViewport('tablet')}
+              title="Tablette (768px)"
+            >
+              <Tablet className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={previewViewport === 'mobile' ? 'default' : 'ghost'}
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setPreviewViewport('mobile')}
+              title="Mobile (375px)"
+            >
+              <Smartphone className="h-4 w-4" />
+            </Button>
+          </div>
+
           {hasChanges && (
             <Button variant="outline" size="sm" onClick={handleReset}>
               <Undo2 className="h-4 w-4 mr-1" />
@@ -313,6 +351,7 @@ export function NewsletterStudio({ newsletter, onBack, onSaved }: NewsletterStud
                 onDuplicateBlock={handleDuplicateBlock}
                 onMoveBlock={handleMoveBlock}
                 globalStyles={document.globalStyles}
+                viewportWidth={viewportWidths[previewViewport]}
               />
             </ResizablePanel>
 
@@ -342,8 +381,8 @@ export function NewsletterStudio({ newsletter, onBack, onSaved }: NewsletterStud
       ) : viewMode === 'preview' ? (
         <div className="flex-1 overflow-y-auto p-8 bg-muted/30">
           <div 
-            className="mx-auto shadow-xl rounded-lg overflow-hidden"
-            style={{ maxWidth: document.globalStyles.maxWidth }}
+            className="mx-auto shadow-xl rounded-lg overflow-hidden transition-all duration-300"
+            style={{ maxWidth: viewportWidths[previewViewport] }}
             dangerouslySetInnerHTML={{ __html: previewHtml }}
           />
         </div>

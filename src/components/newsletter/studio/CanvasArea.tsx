@@ -16,6 +16,7 @@ interface CanvasAreaProps {
   onDuplicateBlock: (id: string) => void;
   onMoveBlock: (id: string, direction: 'up' | 'down') => void;
   globalStyles: GlobalStyles;
+  viewportWidth?: string;
 }
 
 function SortableBlock({ 
@@ -141,7 +142,8 @@ export function CanvasArea({
   onDeleteBlock,
   onDuplicateBlock,
   onMoveBlock,
-  globalStyles
+  globalStyles,
+  viewportWidth
 }: CanvasAreaProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: 'canvas-drop-zone'
@@ -157,11 +159,11 @@ export function CanvasArea({
     >
       <div 
         ref={setNodeRef}
-        className={`mx-auto shadow-xl rounded-lg overflow-hidden transition-all ${
+        className={`mx-auto shadow-xl rounded-lg overflow-hidden transition-all duration-300 ${
           isOver ? 'ring-2 ring-primary ring-offset-2' : ''
         }`}
         style={{ 
-          maxWidth: globalStyles.maxWidth,
+          maxWidth: viewportWidth || globalStyles.maxWidth,
           backgroundColor: globalStyles.backgroundColor 
         }}
       >
