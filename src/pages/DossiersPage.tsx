@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { FileText, Edit3, Send, Mail, Users, AlertTriangle, TrendingUp, Eye } from 'lucide-react';
+import { FileText, Edit3, Send, Mail, Users, AlertTriangle, TrendingUp, Eye, Sparkles, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { NavLink } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   useDossiers, 
   type Dossier 
 } from '@/hooks/useDossiers';
-import { useNewsletters } from '@/hooks/useNewsletters';
+import { useNewsletters, useNewsletter } from '@/hooks/useNewsletters';
 import { useAuth } from '@/contexts/AuthContext';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { 
@@ -21,16 +21,33 @@ import {
   RecentSendsTable,
   NewsletterHistoryItem
 } from '@/components/dossiers';
+import {
+  NewsletterList,
+  NewsletterGenerator,
+  NewsletterPreview,
+  NewsletterEditor,
+  DestinataireManager,
+  NewsletterScheduler
+} from '@/components/newsletter';
+import type { Newsletter } from '@/types/newsletter';
+
+type NewsletterView = 'list' | 'generate' | 'preview' | 'edit';
 
 export default function DossiersPage() {
   const [selectedDossier, setSelectedDossier] = useState<Dossier | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingDossier, setEditingDossier] = useState<Dossier | null>(null);
+  const [activeTab, setActiveTab] = useState<'notes' | 'newsletters'>('notes');
+  
+  // Newsletter management states
+  const [newsletterView, setNewsletterView] = useState<NewsletterView>('list');
+  const [selectedNewsletterId, setSelectedNewsletterId] = useState<string | null>(null);
   
   const { isAdmin } = useAuth();
   const { mode, setMode } = useViewMode();
   const { data: dossiers, isLoading: isLoadingDossiers } = useDossiers();
   const { data: newsletters, isLoading: isLoadingNewsletters } = useNewsletters();
+  const { data: selectedNewsletter, refetch: refetchNewsletter } = useNewsletter(selectedNewsletterId || undefined);
 
   // Filter dossiers by status
   const brouillons = dossiers?.filter(d => d.statut === 'brouillon') || [];
@@ -54,6 +71,22 @@ export default function DossiersPage() {
   const handleNewDossier = () => {
     setEditingDossier(null);
     setIsFormOpen(true);
+  };
+
+  // Newsletter handlers
+  const handleSelectNewsletter = (newsletter: Newsletter) => {
+    setSelectedNewsletterId(newsletter.id);
+    setNewsletterView('preview');
+  };
+
+  const handleNewsletterGenerated = (newsletter: Newsletter) => {
+    setSelectedNewsletterId(newsletter.id);
+    setNewsletterView('preview');
+  };
+
+  const handleNewsletterBack = () => {
+    setSelectedNewsletterId(null);
+    setNewsletterView('list');
   };
 
   // Mode-specific titles and descriptions
@@ -185,155 +218,230 @@ export default function DossiersPage() {
               </section>
             </>
           )}
-
-          {/* Recent published documents only */}
-          <section>
-            <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2 mb-4">
-              <Send className="h-4 w-4" /> Derniers documents validés
-            </h2>
-            
-            {isLoadingDossiers ? (
-              <Skeleton className="h-[200px]" />
-            ) : (
-              <RecentSendsTable 
-                dossiers={publies} 
-                onSelect={setSelectedDossier} 
-              />
-            )}
-          </section>
         </div>
       )}
 
-      {/* MODE: ANALYSTE - Vue complète */}
+      {/* MODE: ANALYSTE - Vue complète avec onglets */}
       {mode === 'analyste' && (
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* COLONNE GAUCHE : Notes & Briefings (65%) */}
-          <div className="flex-1 space-y-8">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'notes' | 'newsletters')} className="space-y-6">
+          <div className="flex items-center justify-between">
+            <TabsList>
+              <TabsTrigger value="notes" className="gap-2">
+                <FileText className="h-4 w-4" />
+                Notes Stratégiques
+              </TabsTrigger>
+              <TabsTrigger value="newsletters" className="gap-2">
+                <Mail className="h-4 w-4" />
+                Newsletters
+              </TabsTrigger>
+            </TabsList>
             
-            {/* Section Brouillons */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2">
-                  <Edit3 className="h-4 w-4" /> Brouillons & En cours
-                </h2>
-                {isAdmin && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-primary hover:text-primary"
-                    onClick={handleNewDossier}
-                  >
-                    + Nouvelle Note
-                  </Button>
-                )}
+            {activeTab === 'notes' && isAdmin && (
+              <Button onClick={handleNewDossier} size="sm">
+                <FileText className="h-4 w-4 mr-2" />
+                Nouvelle Note
+              </Button>
+            )}
+            
+            {activeTab === 'newsletters' && newsletterView === 'list' && (
+              <Button onClick={() => setNewsletterView('generate')} size="sm">
+                <Sparkles className="h-4 w-4 mr-2" />
+                Générer Newsletter
+              </Button>
+            )}
+          </div>
+
+          {/* Onglet Notes Stratégiques */}
+          <TabsContent value="notes" className="space-y-8">
+            <div className="flex flex-col lg:flex-row gap-8">
+              {/* COLONNE GAUCHE : Notes & Briefings (65%) */}
+              <div className="flex-1 space-y-8">
+                
+                {/* Section Brouillons */}
+                <section>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2">
+                      <Edit3 className="h-4 w-4" /> Brouillons & En cours
+                    </h2>
+                  </div>
+                  
+                  {isLoadingDossiers ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {[1, 2, 3].map(i => (
+                        <Skeleton key={i} className="h-[180px]" />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {brouillons.map(dossier => (
+                        <BriefingCard 
+                          key={dossier.id} 
+                          dossier={dossier} 
+                          onClick={() => setSelectedDossier(dossier)}
+                          onEdit={() => handleEditDossier(dossier)}
+                        />
+                      ))}
+                      
+                      {isAdmin && <CreateCard onClick={handleNewDossier} />}
+                      
+                      {brouillons.length === 0 && !isAdmin && (
+                        <div className="col-span-full text-center py-8 text-muted-foreground">
+                          <Edit3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">Aucun brouillon en cours</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </section>
+                
+                {/* Section Derniers envois */}
+                <section>
+                  <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2 mb-4">
+                    <Send className="h-4 w-4" /> Derniers envois au Conseil
+                  </h2>
+                  
+                  {isLoadingDossiers ? (
+                    <Skeleton className="h-[200px]" />
+                  ) : (
+                    <RecentSendsTable 
+                      dossiers={publies} 
+                      onSelect={setSelectedDossier} 
+                    />
+                  )}
+                </section>
               </div>
               
-              {isLoadingDossiers ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {[1, 2, 3].map(i => (
-                    <Skeleton key={i} className="h-[180px]" />
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {brouillons.map(dossier => (
-                    <BriefingCard 
-                      key={dossier.id} 
-                      dossier={dossier} 
-                      onClick={() => setSelectedDossier(dossier)}
-                      onEdit={() => handleEditDossier(dossier)}
-                    />
-                  ))}
+              {/* COLONNE DROITE : Newsletter Quick View (35%) */}
+              <div className="w-full lg:w-[380px] space-y-6">
+                
+                <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2">
+                  <Mail className="h-4 w-4" /> Hebdo Télécoms
+                </h2>
+                
+                <NewsletterWidget />
+                
+                {/* Brouillons de newsletters */}
+                {recentDraftNewsletters.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold uppercase text-orange-500 flex items-center gap-1">
+                      <Edit3 className="h-3 w-3" /> Brouillons à finaliser
+                    </h3>
+                    {recentDraftNewsletters.map(newsletter => (
+                      <NewsletterHistoryItem 
+                        key={newsletter.id} 
+                        newsletter={newsletter}
+                        onClick={() => {
+                          setActiveTab('newsletters');
+                          setSelectedNewsletterId(newsletter.id);
+                          setNewsletterView('preview');
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+                
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold uppercase text-muted-foreground">
+                    Derniers envois
+                  </h3>
                   
-                  {isAdmin && <CreateCard onClick={handleNewDossier} />}
-                  
-                  {brouillons.length === 0 && !isAdmin && (
-                    <div className="col-span-full text-center py-8 text-muted-foreground">
-                      <Edit3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Aucun brouillon en cours</p>
+                  {isLoadingNewsletters ? (
+                    <>
+                      <Skeleton className="h-[80px]" />
+                      <Skeleton className="h-[80px]" />
+                    </>
+                  ) : recentSentNewsletters.length > 0 ? (
+                    recentSentNewsletters.map(newsletter => (
+                      <NewsletterHistoryItem 
+                        key={newsletter.id} 
+                        newsletter={newsletter}
+                        onClick={() => {
+                          setActiveTab('newsletters');
+                          setSelectedNewsletterId(newsletter.id);
+                          setNewsletterView('preview');
+                        }}
+                      />
+                    ))
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground text-sm">
+                      <Mail className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                      Aucune newsletter envoyée
                     </div>
                   )}
                 </div>
-              )}
-            </section>
-            
-            {/* Section Derniers envois */}
-            <section>
-              <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2 mb-4">
-                <Send className="h-4 w-4" /> Derniers envois au Conseil
-              </h2>
-              
-              {isLoadingDossiers ? (
-                <Skeleton className="h-[200px]" />
-              ) : (
-                <RecentSendsTable 
-                  dossiers={publies} 
-                  onSelect={setSelectedDossier} 
-                />
-              )}
-            </section>
-          </div>
-          
-          {/* COLONNE DROITE : Newsletter Studio (35%) */}
-          <div className="w-full lg:w-[380px] space-y-6">
-            
-            <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2">
-              <Mail className="h-4 w-4" /> Hebdo Télécoms
-            </h2>
-            
-            <NewsletterWidget />
-            
-            {/* Brouillons de newsletters */}
-            {recentDraftNewsletters.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-xs font-bold uppercase text-orange-500 flex items-center gap-1">
-                  <Edit3 className="h-3 w-3" /> Brouillons à finaliser
-                </h3>
-                {recentDraftNewsletters.map(newsletter => (
-                  <NewsletterHistoryItem 
-                    key={newsletter.id} 
-                    newsletter={newsletter}
-                    onClick={() => window.location.href = `/admin/newsletters`}
-                  />
-                ))}
+                
+                <div className="pt-4 text-center border-t border-border">
+                  <button 
+                    onClick={() => setActiveTab('newsletters')}
+                    className="text-xs text-muted-foreground hover:text-primary flex items-center justify-center gap-1 transition-colors w-full"
+                  >
+                    <Users className="h-3 w-3" /> Gérer les newsletters & abonnés
+                  </button>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Onglet Newsletters - Gestion complète */}
+          <TabsContent value="newsletters" className="space-y-6">
+            {newsletterView === 'list' && (
+              <Tabs defaultValue="newsletters" className="space-y-6">
+                <TabsList>
+                  <TabsTrigger value="newsletters">Toutes les newsletters</TabsTrigger>
+                  <TabsTrigger value="destinataires">
+                    <Users className="h-4 w-4 mr-1" />
+                    Destinataires
+                  </TabsTrigger>
+                  <TabsTrigger value="programmation">
+                    <Calendar className="h-4 w-4 mr-1" />
+                    Programmation
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="newsletters">
+                  <NewsletterList onSelect={handleSelectNewsletter} />
+                </TabsContent>
+
+                <TabsContent value="destinataires">
+                  <DestinataireManager />
+                </TabsContent>
+
+                <TabsContent value="programmation">
+                  <NewsletterScheduler />
+                </TabsContent>
+              </Tabs>
+            )}
+
+            {newsletterView === 'generate' && (
+              <div className="max-w-2xl mx-auto">
+                <Button variant="ghost" onClick={handleNewsletterBack} className="mb-4 gap-2">
+                  ← Retour
+                </Button>
+                <NewsletterGenerator onGenerated={handleNewsletterGenerated} />
               </div>
             )}
-            
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold uppercase text-muted-foreground">
-                Derniers envois
-              </h3>
-              
-              {isLoadingNewsletters ? (
-                <>
-                  <Skeleton className="h-[80px]" />
-                  <Skeleton className="h-[80px]" />
-                </>
-              ) : recentSentNewsletters.length > 0 ? (
-                recentSentNewsletters.map(newsletter => (
-                  <NewsletterHistoryItem 
-                    key={newsletter.id} 
-                    newsletter={newsletter}
-                  />
-                ))
-              ) : (
-                <div className="text-center py-6 text-muted-foreground text-sm">
-                  <Mail className="h-6 w-6 mx-auto mb-2 opacity-50" />
-                  Aucune newsletter envoyée
-                </div>
-              )}
-            </div>
-            
-            <div className="pt-4 text-center border-t border-border">
-              <NavLink 
-                to="/admin/newsletters" 
-                className="text-xs text-muted-foreground hover:text-primary flex items-center justify-center gap-1 transition-colors"
-              >
-                <Users className="h-3 w-3" /> Gérer les abonnés & modèles
-              </NavLink>
-            </div>
-          </div>
-        </div>
+
+            {newsletterView === 'preview' && selectedNewsletter && (
+              <NewsletterPreview 
+                newsletter={selectedNewsletter}
+                onBack={handleNewsletterBack}
+                onEdit={() => setNewsletterView('edit')}
+                onRefresh={() => refetchNewsletter()}
+              />
+            )}
+
+            {newsletterView === 'edit' && selectedNewsletter && (
+              <NewsletterEditor 
+                newsletter={selectedNewsletter}
+                onBack={() => setNewsletterView('preview')}
+                onSaved={() => {
+                  refetchNewsletter();
+                  setNewsletterView('preview');
+                }}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
       )}
 
       {/* MODE: CRISE - Vue alertes */}
