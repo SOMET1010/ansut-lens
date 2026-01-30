@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -17,10 +16,10 @@ import {
 import { Users, Sparkles, UserPlus, Plus, List, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePersonnalites, useUpdatePersonnalite, useDeletePersonnalite, CERCLE_LABELS, type PersonnalitesFilters } from '@/hooks/usePersonnalites';
-import { StatsBar } from '@/components/personnalites/StatsBar';
-import { ActeurFilters } from '@/components/personnalites/ActeurFilters';
-import { ActeurCard } from '@/components/personnalites/ActeurCard';
+import { usePersonnalites, usePersonnalitesStats, useUpdatePersonnalite, useDeletePersonnalite, CERCLE_LABELS, type PersonnalitesFilters } from '@/hooks/usePersonnalites';
+import { UnifiedFilterBar } from '@/components/personnalites/UnifiedFilterBar';
+import { CompactStats } from '@/components/personnalites/CompactStats';
+import { SmartActeurCard } from '@/components/personnalites/SmartActeurCard';
 import { CercleHeader } from '@/components/personnalites/CercleHeader';
 import { ActeurDetail } from '@/components/personnalites/ActeurDetail';
 import { ActeurFormDialog } from '@/components/personnalites/ActeurFormDialog';
@@ -41,6 +40,7 @@ export default function PersonnalitesPage() {
   const { isAdmin } = useAuth();
 
   const { data: personnalites, isLoading } = usePersonnalites(filters);
+  const { data: stats } = usePersonnalitesStats();
   const updatePersonnalite = useUpdatePersonnalite();
   const deletePersonnalite = useDeletePersonnalite();
 
@@ -114,18 +114,22 @@ export default function PersonnalitesPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Header compact avec stats intégrées */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <Users className="h-8 w-8 text-primary" />
-            Acteurs Clés
+          <h1 className="text-2xl font-bold flex items-center gap-3">
+            <Target className="h-7 w-7 text-primary" />
+            Cartographie des Acteurs
           </h1>
-          <p className="text-muted-foreground mt-1">
-            Suivi des personnalités stratégiques du secteur numérique
+          <p className="text-muted-foreground mt-1 text-sm">
+            Suivi de l'influence et des interactions du secteur
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Stats compactes */}
+          <CompactStats />
+          
           {/* Toggle Vue Liste / Radar */}
           <ToggleGroup 
             type="single" 
@@ -133,30 +137,33 @@ export default function PersonnalitesPage() {
             onValueChange={(value) => value && setViewMode(value as ViewMode)}
             className="bg-muted/50 p-1 rounded-lg"
           >
-            <ToggleGroupItem value="list" aria-label="Vue liste" className="gap-1.5 px-3">
+            <ToggleGroupItem value="list" aria-label="Vue liste" className="gap-1.5 px-3 text-xs">
               <List className="h-4 w-4" />
               <span className="hidden sm:inline">Liste</span>
             </ToggleGroupItem>
-            <ToggleGroupItem value="radar" aria-label="Vue radar" className="gap-1.5 px-3">
+            <ToggleGroupItem value="radar" aria-label="Vue radar" className="gap-1.5 px-3 text-xs">
               <Target className="h-4 w-4" />
               <span className="hidden sm:inline">Radar</span>
             </ToggleGroupItem>
           </ToggleGroup>
           
           {isAdmin && (
-            <Button onClick={openCreateDialog} className="gap-2">
+            <Button onClick={openCreateDialog} className="gap-2" size="sm">
               <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Ajouter un acteur</span>
+              <span className="hidden sm:inline">Ajouter</span>
             </Button>
           )}
         </div>
       </div>
 
-      {/* Stats */}
-      <StatsBar />
-
-      {/* Filters */}
-      <ActeurFilters filters={filters} onFiltersChange={setFilters} />
+      {/* Barre de filtres unifiée */}
+      <UnifiedFilterBar 
+        filters={filters} 
+        onFiltersChange={setFilters}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        stats={stats}
+      />
 
       {/* Vue Radar */}
       {viewMode === 'radar' && (
@@ -176,89 +183,64 @@ export default function PersonnalitesPage() {
         </div>
       )}
 
-      {/* Vue Liste avec Tabs */}
+      {/* Vue Liste */}
       {viewMode === 'list' && (
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full justify-start overflow-x-auto">
-            <TabsTrigger value="all" className="gap-2">
-              Tous
-              {personnalites && (
-                <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
-                  {personnalites.length}
-                </span>
-              )}
-            </TabsTrigger>
-            {([1, 2, 3, 4] as CercleStrategique[]).map((cercle) => (
-              <TabsTrigger key={cercle} value={cercle.toString()} className="gap-2">
-                <div className={`h-2 w-2 rounded-full ${CERCLE_LABELS[cercle].color}`} />
-                <span className="hidden sm:inline">Cercle</span> {cercle}
-                <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
-                  {parCercle[cercle]?.length || 0}
-                </span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {/* Contenu - Tous */}
-          <TabsContent value="all" className="mt-6 space-y-8">
-            {isLoading ? (
-              <LoadingSkeleton />
-            ) : personnalites?.length === 0 ? (
-              <EmptyState onAddManually={openCreateDialog} />
-            ) : (
-              ([1, 2, 3, 4] as CercleStrategique[]).map((cercle) => {
-                const acteurs = parCercle[cercle];
-                if (!acteurs || acteurs.length === 0) return null;
-                return (
-                  <div key={cercle}>
-                    <CercleHeader cercle={cercle} count={acteurs.length} />
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-4">
-                      {acteurs.map((acteur) => (
-                        <ActeurCard
-                          key={acteur.id}
-                          personnalite={acteur}
-                          onClick={() => handleActeurClick(acteur)}
-                          onEdit={isAdmin ? () => openEditDialog(acteur) : undefined}
-                          onArchive={isAdmin ? () => handleArchive(acteur) : undefined}
-                          onDelete={isAdmin ? () => handleDeleteRequest(acteur) : undefined}
-                        />
-                      ))}
-                    </div>
+        <div className="space-y-8">
+          {isLoading ? (
+            <LoadingSkeleton />
+          ) : personnalites?.length === 0 ? (
+            <EmptyState onAddManually={openCreateDialog} />
+          ) : activeTab === 'all' ? (
+            // Vue "Tous" - groupée par cercle
+            ([1, 2, 3, 4] as CercleStrategique[]).map((cercle) => {
+              const acteurs = parCercle[cercle];
+              if (!acteurs || acteurs.length === 0) return null;
+              return (
+                <div key={cercle}>
+                  <CercleHeader cercle={cercle} count={acteurs.length} />
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-4">
+                    {acteurs.map((acteur) => (
+                      <SmartActeurCard
+                        key={acteur.id}
+                        personnalite={acteur}
+                        allPersonnalites={personnalites}
+                        onClick={() => handleActeurClick(acteur)}
+                        onEdit={isAdmin ? () => openEditDialog(acteur) : undefined}
+                        onArchive={isAdmin ? () => handleArchive(acteur) : undefined}
+                        onDelete={isAdmin ? () => handleDeleteRequest(acteur) : undefined}
+                      />
+                    ))}
                   </div>
-                );
-              })
-            )}
-          </TabsContent>
-
-          {/* Contenu - Par cercle */}
-          {([1, 2, 3, 4] as CercleStrategique[]).map((cercle) => (
-            <TabsContent key={cercle} value={cercle.toString()} className="mt-6">
-              {isLoading ? (
-                <LoadingSkeleton />
+                </div>
+              );
+            })
+          ) : (
+            // Vue cercle spécifique
+            <>
+              <CercleHeader 
+                cercle={parseInt(activeTab) as CercleStrategique} 
+                count={filteredPersonnalites.length} 
+              />
+              {filteredPersonnalites.length === 0 ? (
+                <EmptyState cercle={parseInt(activeTab) as CercleStrategique} />
               ) : (
-                <>
-                  <CercleHeader cercle={cercle} count={parCercle[cercle]?.length || 0} />
-                  {parCercle[cercle]?.length === 0 ? (
-                    <EmptyState cercle={cercle} />
-                  ) : (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-4">
-                      {parCercle[cercle]?.map((acteur) => (
-                        <ActeurCard
-                          key={acteur.id}
-                          personnalite={acteur}
-                          onClick={() => handleActeurClick(acteur)}
-                          onEdit={isAdmin ? () => openEditDialog(acteur) : undefined}
-                          onArchive={isAdmin ? () => handleArchive(acteur) : undefined}
-                          onDelete={isAdmin ? () => handleDeleteRequest(acteur) : undefined}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-4">
+                  {filteredPersonnalites.map((acteur) => (
+                    <SmartActeurCard
+                      key={acteur.id}
+                      personnalite={acteur}
+                      allPersonnalites={personnalites}
+                      onClick={() => handleActeurClick(acteur)}
+                      onEdit={isAdmin ? () => openEditDialog(acteur) : undefined}
+                      onArchive={isAdmin ? () => handleArchive(acteur) : undefined}
+                      onDelete={isAdmin ? () => handleDeleteRequest(acteur) : undefined}
+                    />
+                  ))}
+                </div>
               )}
-            </TabsContent>
-          ))}
-        </Tabs>
+            </>
+          )}
+        </div>
       )}
 
       {/* Detail panel */}
@@ -310,19 +292,35 @@ export default function PersonnalitesPage() {
 
 function LoadingSkeleton() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div key={i} className="p-5 rounded-xl border bg-card">
-          <div className="flex items-start gap-3">
-            <Skeleton className="h-12 w-12 rounded-full" />
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+        <div key={i} className="p-5 rounded-2xl border bg-card">
+          <div className="flex items-start gap-4">
+            <Skeleton className="h-14 w-14 rounded-full" />
             <div className="flex-1 space-y-2">
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-3 w-1/2" />
-              <div className="flex gap-2 mt-2">
-                <Skeleton className="h-5 w-12" />
+              <Skeleton className="h-5 w-3/4" />
+              <div className="flex gap-2">
                 <Skeleton className="h-5 w-16" />
+                <Skeleton className="h-5 w-20" />
               </div>
             </div>
+          </div>
+          <div className="mt-4 space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+          <div className="mt-4 flex gap-1">
+            <Skeleton className="h-5 w-12" />
+            <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-5 w-10" />
+          </div>
+          <div className="mt-4 pt-4 border-t flex justify-between items-center">
+            <div className="flex -space-x-2">
+              <Skeleton className="h-6 w-6 rounded-full" />
+              <Skeleton className="h-6 w-6 rounded-full" />
+              <Skeleton className="h-6 w-6 rounded-full" />
+            </div>
+            <Skeleton className="h-4 w-20" />
           </div>
         </div>
       ))}
