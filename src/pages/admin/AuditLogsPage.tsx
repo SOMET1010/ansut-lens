@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
@@ -44,7 +44,18 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
+
+const PAGE_SIZE = 25;
 
 interface AuditLog {
   id: string;
@@ -90,15 +101,20 @@ export default function AuditLogsPage() {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
 
-  const { data: logs, isLoading } = useQuery({
-    queryKey: ["admin-audit-logs", actionFilter, startDate?.toISOString(), endDate?.toISOString()],
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [actionFilter, startDate, endDate, searchQuery]);
+
+  const { data: logsData, isLoading } = useQuery({
+    queryKey: ["admin-audit-logs", actionFilter, startDate?.toISOString(), endDate?.toISOString(), page],
     queryFn: async () => {
       let query = supabase
         .from("admin_audit_logs")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
+        .select("*", { count: "exact" })
+        .order("created_at", { ascending: false });
 
       if (actionFilter !== "all") {
         query = query.eq("action", actionFilter);
@@ -114,7 +130,12 @@ export default function AuditLogsPage() {
         query = query.lte("created_at", endOfDay.toISOString());
       }
 
-      const { data, error } = await query;
+      // Pagination
+      const from = (page - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
       if (error) throw error;
 
       // Fetch admin and target profiles
@@ -129,26 +150,35 @@ export default function AuditLogsPage() {
 
       const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
 
-      return data.map((log) => ({
+      const enrichedLogs = data.map((log) => ({
         ...log,
         admin_profile: profileMap.get(log.admin_id),
         target_profile: log.target_user_id ? profileMap.get(log.target_user_id) : null,
       })) as AuditLog[];
+
+      return {
+        logs: enrichedLogs,
+        total: count ?? 0,
+        totalPages: Math.ceil((count ?? 0) / PAGE_SIZE),
+      };
     },
   });
 
-  // Calculate stats from all logs (before text filtering)
+  const logs = logsData?.logs ?? [];
+  const totalCount = logsData?.total ?? 0;
+  const totalPages = logsData?.totalPages ?? 1;
+
+  // Calculate stats from current page logs
   const stats = useMemo(() => {
-    if (!logs) return { total: 0, invitations: 0, roleChanges: 0, passwordResets: 0 };
     return {
-      total: logs.length,
+      total: totalCount,
       invitations: logs.filter((l) => l.action === "user_invited").length,
       roleChanges: logs.filter((l) => l.action === "role_changed").length,
       passwordResets: logs.filter(
         (l) => l.action === "password_reset_requested" || l.action === "password_reset_completed"
       ).length,
     };
-  }, [logs]);
+  }, [logs, totalCount]);
 
   // Client-side text filtering
   const filteredLogs = useMemo(() => {
@@ -224,6 +254,38 @@ export default function AuditLogsPage() {
   };
 
   const hasActiveFilters = startDate || endDate || searchQuery || actionFilter !== "all";
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages: (number | "ellipsis")[] = [];
+    
+    // Always show first page
+    pages.push(1);
+    
+    // Show ellipsis if current page is far from start
+    if (page > 3) {
+      pages.push("ellipsis");
+    }
+    
+    // Show pages around current page
+    for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) {
+      if (!pages.includes(i)) {
+        pages.push(i);
+      }
+    }
+    
+    // Show ellipsis if current page is far from end
+    if (page < totalPages - 2) {
+      pages.push("ellipsis");
+    }
+    
+    // Always show last page if more than 1 page
+    if (totalPages > 1 && !pages.includes(totalPages)) {
+      pages.push(totalPages);
+    }
+    
+    return pages;
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -418,7 +480,7 @@ export default function AuditLogsPage() {
               Actions récentes
             </CardTitle>
             <Badge variant="secondary" className="font-normal">
-              {filteredLogs?.length || 0} résultat{(filteredLogs?.length || 0) > 1 ? "s" : ""}
+              {totalCount} résultat{totalCount > 1 ? "s" : ""} • Page {page}/{totalPages}
             </Badge>
           </div>
         </CardHeader>
@@ -428,62 +490,109 @@ export default function AuditLogsPage() {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : filteredLogs && filteredLogs.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[140px]">Date</TableHead>
-                  <TableHead>Administrateur</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Utilisateur cible</TableHead>
-                  <TableHead>Détails</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredLogs.map((log) => {
-                  const config = actionConfig[log.action] || {
-                    label: log.action,
-                    icon: ClipboardList,
-                    color: "bg-muted text-muted-foreground",
-                  };
-                  const Icon = config.icon;
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[140px]">Date</TableHead>
+                    <TableHead>Administrateur</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Utilisateur cible</TableHead>
+                    <TableHead>Détails</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredLogs.map((log) => {
+                    const config = actionConfig[log.action] || {
+                      label: log.action,
+                      icon: ClipboardList,
+                      color: "bg-muted text-muted-foreground",
+                    };
+                    const Icon = config.icon;
 
-                  return (
-                    <TableRow key={log.id}>
-                      <TableCell className="font-mono text-sm">
-                        {format(new Date(log.created_at), "dd/MM/yy HH:mm", { locale: fr })}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-7 w-7">
-                            <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                              {getInitials(log.admin_profile?.full_name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium">
-                            {log.admin_profile?.full_name || "Inconnu"}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={config.color}>
-                          <Icon className="h-3 w-3 mr-1" />
-                          {config.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {log.target_profile?.full_name ||
-                          (log.details?.target_name as string) ||
-                          (log.details?.full_name as string) ||
-                          "—"}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground max-w-[300px] truncate">
-                        {formatDetails(log)}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                    return (
+                      <TableRow key={log.id}>
+                        <TableCell className="font-mono text-sm">
+                          {format(new Date(log.created_at), "dd/MM/yy HH:mm", { locale: fr })}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-7 w-7">
+                              <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                                {getInitials(log.admin_profile?.full_name)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">
+                              {log.admin_profile?.full_name || "Inconnu"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={config.color}>
+                            <Icon className="h-3 w-3 mr-1" />
+                            {config.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {log.target_profile?.full_name ||
+                            (log.details?.target_name as string) ||
+                            (log.details?.full_name as string) ||
+                            "—"}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground max-w-[300px] truncate">
+                          {formatDetails(log)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-6 flex flex-col items-center gap-2">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() => setPage((p) => Math.max(1, p - 1))}
+                          className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+
+                      {getPageNumbers().map((pageNum, idx) =>
+                        pageNum === "ellipsis" ? (
+                          <PaginationItem key={`ellipsis-${idx}`}>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        ) : (
+                          <PaginationItem key={pageNum}>
+                            <PaginationLink
+                              onClick={() => setPage(pageNum)}
+                              isActive={page === pageNum}
+                              className="cursor-pointer"
+                            >
+                              {pageNum}
+                            </PaginationLink>
+                          </PaginationItem>
+                        )
+                      )}
+
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                          className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+
+                  <p className="text-xs text-muted-foreground">
+                    Page {page} sur {totalPages} • {totalCount} résultat{totalCount > 1 ? "s" : ""}
+                  </p>
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               {searchQuery ? "Aucun résultat pour cette recherche" : "Aucune action enregistrée"}
