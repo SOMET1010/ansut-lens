@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, Sparkles, UserPlus, Plus } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Users, Sparkles, UserPlus, Plus, List, Target } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePersonnalites, CERCLE_LABELS, type PersonnalitesFilters } from '@/hooks/usePersonnalites';
 import { StatsBar } from '@/components/personnalites/StatsBar';
@@ -12,7 +13,10 @@ import { ActeurCard } from '@/components/personnalites/ActeurCard';
 import { CercleHeader } from '@/components/personnalites/CercleHeader';
 import { ActeurDetail } from '@/components/personnalites/ActeurDetail';
 import { ActeurFormDialog } from '@/components/personnalites/ActeurFormDialog';
+import { RadarVisualization } from '@/components/personnalites/RadarVisualization';
 import type { Personnalite, CercleStrategique } from '@/types';
+
+type ViewMode = 'list' | 'radar';
 
 export default function PersonnalitesPage() {
   const [filters, setFilters] = useState<PersonnalitesFilters>({ actif: true });
@@ -21,6 +25,7 @@ export default function PersonnalitesPage() {
   const [activeTab, setActiveTab] = useState<string>('all');
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [editingActeur, setEditingActeur] = useState<Personnalite | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const { isAdmin } = useAuth();
 
   const { data: personnalites, isLoading } = usePersonnalites(filters);
@@ -75,12 +80,31 @@ export default function PersonnalitesPage() {
             Suivi des personnalités stratégiques du secteur numérique
           </p>
         </div>
-        {isAdmin && (
-          <Button onClick={openCreateDialog} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Ajouter un acteur
-          </Button>
-        )}
+        <div className="flex items-center gap-3">
+          {/* Toggle Vue Liste / Radar */}
+          <ToggleGroup 
+            type="single" 
+            value={viewMode} 
+            onValueChange={(value) => value && setViewMode(value as ViewMode)}
+            className="bg-muted/50 p-1 rounded-lg"
+          >
+            <ToggleGroupItem value="list" aria-label="Vue liste" className="gap-1.5 px-3">
+              <List className="h-4 w-4" />
+              <span className="hidden sm:inline">Liste</span>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="radar" aria-label="Vue radar" className="gap-1.5 px-3">
+              <Target className="h-4 w-4" />
+              <span className="hidden sm:inline">Radar</span>
+            </ToggleGroupItem>
+          </ToggleGroup>
+          
+          {isAdmin && (
+            <Button onClick={openCreateDialog} className="gap-2">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Ajouter un acteur</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Stats */}
@@ -89,84 +113,104 @@ export default function PersonnalitesPage() {
       {/* Filters */}
       <ActeurFilters filters={filters} onFiltersChange={setFilters} />
 
-      {/* Tabs par cercle */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full justify-start overflow-x-auto">
-          <TabsTrigger value="all" className="gap-2">
-            Tous
-            {personnalites && (
-              <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
-                {personnalites.length}
-              </span>
-            )}
-          </TabsTrigger>
-          {([1, 2, 3, 4] as CercleStrategique[]).map((cercle) => (
-            <TabsTrigger key={cercle} value={cercle.toString()} className="gap-2">
-              <div className={`h-2 w-2 rounded-full ${CERCLE_LABELS[cercle].color}`} />
-              <span className="hidden sm:inline">Cercle</span> {cercle}
-              <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
-                {parCercle[cercle]?.length || 0}
-              </span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {/* Contenu - Tous */}
-        <TabsContent value="all" className="mt-6 space-y-8">
+      {/* Vue Radar */}
+      {viewMode === 'radar' && (
+        <div className="py-8">
           {isLoading ? (
-            <LoadingSkeleton />
-          ) : personnalites?.length === 0 ? (
-            <EmptyState onAddManually={openCreateDialog} />
+            <div className="flex items-center justify-center h-96">
+              <Skeleton className="w-96 h-96 rounded-full" />
+            </div>
+          ) : personnalites && personnalites.length > 0 ? (
+            <RadarVisualization 
+              personnalites={filteredPersonnalites} 
+              onActeurClick={handleActeurClick}
+            />
           ) : (
-            ([1, 2, 3, 4] as CercleStrategique[]).map((cercle) => {
-              const acteurs = parCercle[cercle];
-              if (!acteurs || acteurs.length === 0) return null;
-              return (
-                <div key={cercle}>
-                  <CercleHeader cercle={cercle} count={acteurs.length} />
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-3">
-                    {acteurs.map((acteur) => (
-                      <ActeurCard
-                        key={acteur.id}
-                        personnalite={acteur}
-                        onClick={() => handleActeurClick(acteur)}
-                        onEdit={isAdmin ? () => openEditDialog(acteur) : undefined}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })
+            <EmptyState onAddManually={openCreateDialog} />
           )}
-        </TabsContent>
+        </div>
+      )}
 
-        {/* Contenu - Par cercle */}
-        {([1, 2, 3, 4] as CercleStrategique[]).map((cercle) => (
-          <TabsContent key={cercle} value={cercle.toString()} className="mt-6">
+      {/* Vue Liste avec Tabs */}
+      {viewMode === 'list' && (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="w-full justify-start overflow-x-auto">
+            <TabsTrigger value="all" className="gap-2">
+              Tous
+              {personnalites && (
+                <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
+                  {personnalites.length}
+                </span>
+              )}
+            </TabsTrigger>
+            {([1, 2, 3, 4] as CercleStrategique[]).map((cercle) => (
+              <TabsTrigger key={cercle} value={cercle.toString()} className="gap-2">
+                <div className={`h-2 w-2 rounded-full ${CERCLE_LABELS[cercle].color}`} />
+                <span className="hidden sm:inline">Cercle</span> {cercle}
+                <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
+                  {parCercle[cercle]?.length || 0}
+                </span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          {/* Contenu - Tous */}
+          <TabsContent value="all" className="mt-6 space-y-8">
             {isLoading ? (
               <LoadingSkeleton />
+            ) : personnalites?.length === 0 ? (
+              <EmptyState onAddManually={openCreateDialog} />
             ) : (
-              <>
-                <CercleHeader cercle={cercle} count={parCercle[cercle]?.length || 0} />
-                {parCercle[cercle]?.length === 0 ? (
-                  <EmptyState cercle={cercle} />
-                ) : (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-3">
-                    {parCercle[cercle]?.map((acteur) => (
-                      <ActeurCard
-                        key={acteur.id}
-                        personnalite={acteur}
-                        onClick={() => handleActeurClick(acteur)}
-                        onEdit={isAdmin ? () => openEditDialog(acteur) : undefined}
-                      />
-                    ))}
+              ([1, 2, 3, 4] as CercleStrategique[]).map((cercle) => {
+                const acteurs = parCercle[cercle];
+                if (!acteurs || acteurs.length === 0) return null;
+                return (
+                  <div key={cercle}>
+                    <CercleHeader cercle={cercle} count={acteurs.length} />
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-4">
+                      {acteurs.map((acteur) => (
+                        <ActeurCard
+                          key={acteur.id}
+                          personnalite={acteur}
+                          onClick={() => handleActeurClick(acteur)}
+                          onEdit={isAdmin ? () => openEditDialog(acteur) : undefined}
+                        />
+                      ))}
+                    </div>
                   </div>
-                )}
-              </>
+                );
+              })
             )}
           </TabsContent>
-        ))}
-      </Tabs>
+
+          {/* Contenu - Par cercle */}
+          {([1, 2, 3, 4] as CercleStrategique[]).map((cercle) => (
+            <TabsContent key={cercle} value={cercle.toString()} className="mt-6">
+              {isLoading ? (
+                <LoadingSkeleton />
+              ) : (
+                <>
+                  <CercleHeader cercle={cercle} count={parCercle[cercle]?.length || 0} />
+                  {parCercle[cercle]?.length === 0 ? (
+                    <EmptyState cercle={cercle} />
+                  ) : (
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-4">
+                      {parCercle[cercle]?.map((acteur) => (
+                        <ActeurCard
+                          key={acteur.id}
+                          personnalite={acteur}
+                          onClick={() => handleActeurClick(acteur)}
+                          onEdit={isAdmin ? () => openEditDialog(acteur) : undefined}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </TabsContent>
+          ))}
+        </Tabs>
+      )}
 
       {/* Detail panel */}
       <ActeurDetail
@@ -195,7 +239,7 @@ function LoadingSkeleton() {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div key={i} className="p-4 rounded-lg border bg-card">
+        <div key={i} className="p-5 rounded-xl border bg-card">
           <div className="flex items-start gap-3">
             <Skeleton className="h-12 w-12 rounded-full" />
             <div className="flex-1 space-y-2">
