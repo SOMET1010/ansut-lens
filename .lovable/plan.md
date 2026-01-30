@@ -1,234 +1,167 @@
 
-# Génération d'un PDF de Documentation Technique ANSUT RADAR
+
+# Ajout d'une Table des Matières Cliquable avec Ancres
 
 ## Objectif
 
-Créer une nouvelle page accessible depuis l'administration permettant de générer et télécharger un **PDF de documentation technique complet** résumant l'ensemble des fonctionnalités de la plateforme.
+Transformer la table des matières statique en navigation interactive avec scroll fluide vers les sections correspondantes dans la prévisualisation du document technique.
 
-## Approche
+## Analyse de l'existant
 
-Réutiliser l'infrastructure existante :
-- Composant `GuidePDFLayout` pour le branding ANSUT
-- Librairie `react-to-pdf` déjà installée
-- Composant `GuideViewer` pour le rendu Markdown stylisé
+### Structure actuelle
+- **TechDocPage.tsx** : Table des matières visuelle dans une Card (lignes 69-100)
+- **GuideViewer.tsx** : Rendu Markdown sans ancres sur les titres
+- **TechDocContent.tsx** : Contenu avec 6 sections principales
 
-## Structure du Document PDF
+### Problème
+Les titres `h1` et `h2` n'ont pas d'attribut `id`, empêchant toute navigation par ancre.
 
-Le PDF sera organisé en **6 sections** couvrant l'intégralité de la plateforme :
+## Solution
 
-```text
-┌──────────────────────────────────────────────────────────────────────┐
-│                    ANSUT RADAR - Documentation Technique             │
-│                              Version 2.1.0                           │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  1. PRÉSENTATION GÉNÉRALE                                            │
-│     - Contexte et objectifs                                          │
-│     - Les 7 modules métier                                           │
-│     - Profils utilisateurs (4 rôles)                                 │
-│                                                                      │
-│  2. ARCHITECTURE TECHNIQUE                                           │
-│     - Stack Frontend (React, TypeScript, Tailwind)                   │
-│     - Stack Backend (Lovable Cloud / PostgreSQL)                     │
-│     - Intégrations externes (Perplexity, Grok, Resend)               │
-│                                                                      │
-│  3. BASE DE DONNÉES                                                  │
-│     - Schéma des 17 tables principales                               │
-│     - Système de rôles (app_role enum)                               │
-│     - Row Level Security (RLS)                                       │
-│                                                                      │
-│  4. EDGE FUNCTIONS                                                   │
-│     - Liste des 17 fonctions serverless                              │
-│     - Endpoints et paramètres                                        │
-│     - Secrets requis                                                 │
-│                                                                      │
-│  5. SYSTÈME DE PERMISSIONS                                           │
-│     - 17 permissions granulaires                                     │
-│     - Matrice rôle/permission                                        │
-│     - Architecture RBAC                                              │
-│                                                                      │
-│  6. SÉCURITÉ & CONFORMITÉ                                            │
-│     - Authentification JWT                                           │
-│     - Politiques RLS                                                 │
-│     - Audit et traçabilité                                           │
-│                                                                      │
-├──────────────────────────────────────────────────────────────────────┤
-│  © 2026 ANSUT • Document confidentiel • Usage interne uniquement     │
-└──────────────────────────────────────────────────────────────────────┘
+### 1. Modifier GuideViewer pour générer des IDs automatiques
+
+Ajouter une fonction de slugification et des IDs aux titres :
+
+```typescript
+// Fonction de slugification
+const slugify = (text: string): string => {
+  return text
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Supprimer accents
+    .replace(/[^a-z0-9]+/g, '-')     // Remplacer espaces/spéciaux par -
+    .replace(/^-+|-+$/g, '');        // Supprimer - en début/fin
+};
+
+// Composants h1/h2 avec IDs
+h1: ({ children }) => {
+  const id = slugify(String(children));
+  return (
+    <h1 id={id} className="...">
+      {children}
+    </h1>
+  );
+}
 ```
 
-## Fichiers à créer
+### 2. Modifier TechDocPage pour la navigation
 
-| Fichier | Description |
-|---------|-------------|
-| `src/pages/admin/TechDocPage.tsx` | Page de génération du PDF technique |
-| `src/components/documentation/TechDocContent.tsx` | Contenu Markdown structuré du document |
-| `src/components/documentation/TechDocPDFLayout.tsx` | Layout multi-pages optimisé pour impression |
+Remplacer les `div` statiques par des boutons cliquables avec scroll smooth :
+
+```typescript
+const TOC_ITEMS = [
+  { id: '1-presentation-generale', label: 'Présentation', num: 1 },
+  { id: '2-architecture-technique', label: 'Architecture', num: 2 },
+  { id: '3-base-de-donnees', label: 'Base de données', num: 3 },
+  { id: '4-edge-functions', label: 'Edge Functions', num: 4 },
+  { id: '5-systeme-de-permissions', label: 'Permissions', num: 5 },
+  { id: '6-securite-conformite', label: 'Sécurité', num: 6 },
+];
+
+const scrollToSection = (id: string) => {
+  const element = document.getElementById(id);
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+};
+```
 
 ## Fichiers à modifier
 
 | Fichier | Modification |
 |---------|--------------|
-| `src/App.tsx` | Ajouter la route `/admin/documentation` |
-| `src/pages/AdminPage.tsx` | Ajouter le lien dans la section Communication |
+| `src/components/formation/GuideViewer.tsx` | Ajouter IDs automatiques aux h1/h2/h3 |
+| `src/pages/admin/TechDocPage.tsx` | Rendre la table des matières cliquable |
 
-## Détails des composants
+## Détails des modifications
 
-### 1. TechDocPage.tsx
+### GuideViewer.tsx
 
-Page principale avec :
-- Prévisualisation du document
-- Bouton de téléchargement PDF
-- Table des matières interactive
+Ajouter la fonction `slugify` et modifier les composants de titre :
 
 ```text
+Avant:
+h1: ({ children }) => (
+  <h1 className="text-2xl font-bold...">
+    {children}
+  </h1>
+)
+
+Après:
+h1: ({ children }) => {
+  const id = slugify(String(children));
+  return (
+    <h1 id={id} className="text-2xl font-bold... scroll-mt-4">
+      {children}
+    </h1>
+  );
+}
+```
+
+Le `scroll-mt-4` ajoute une marge de scroll pour éviter que le titre soit masqué sous le header.
+
+### TechDocPage.tsx
+
+Transformer la Card de table des matières :
+
+```text
+Structure visuelle finale :
 ┌─────────────────────────────────────────────────────────────────────┐
-│  ← Retour    Documentation Technique                                │
-│              Générez le manuel technique de la plateforme           │
+│  TABLE DES MATIÈRES                                                 │
 ├─────────────────────────────────────────────────────────────────────┤
+│  [1] Présentation   [2] Architecture   [3] Base de données         │
+│  [4] Edge Functions [5] Permissions    [6] Sécurité                │
 │                                                                     │
-│  [📥 Télécharger le PDF]                                            │
-│                                                                     │
-│  ┌───────────────────────────────────────────────────────────────┐ │
-│  │                                                               │ │
-│  │   ANSUT RADAR                                                 │ │
-│  │   Documentation Technique                                     │ │
-│  │                                                               │ │
-│  │   Table des matières                                          │ │
-│  │   1. Présentation Générale ..................... 2            │ │
-│  │   2. Architecture Technique .................... 4            │ │
-│  │   3. Base de Données ........................... 6            │ │
-│  │   4. Edge Functions ............................ 8            │ │
-│  │   5. Système de Permissions .................... 10           │ │
-│  │   6. Sécurité & Conformité ..................... 12           │ │
-│  │                                                               │ │
-│  └───────────────────────────────────────────────────────────────┘ │
-│                                                                     │
+│  Chaque élément est cliquable avec hover effect                    │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2. TechDocContent.tsx
+Comportement :
+- Clic sur un élément → scroll fluide vers la section
+- Hover → effet visuel (fond légèrement coloré)
+- Cursor pointer pour indiquer l'interactivité
 
-Contenu Markdown complet basé sur la documentation existante :
+## Détails techniques
+
+### Génération des IDs
+
+Le contenu Markdown utilise des titres comme :
+- `# 1. Présentation Générale` → `id="1-presentation-generale"`
+- `# 2. Architecture Technique` → `id="2-architecture-technique"`
+
+### Mapping TOC
 
 ```typescript
-export const TECH_DOC_CONTENT = `
-# Documentation Technique ANSUT RADAR
-
-## 1. Présentation Générale
-
-### Contexte
-ANSUT RADAR est une plateforme de veille stratégique...
-
-### Les 7 Modules
-| Module | Description |
-|--------|-------------|
-| Tableau de bord | Vue d'ensemble et KPIs |
-| Actualités | Fil enrichi par IA |
-| ...
-
-## 2. Architecture Technique
-
-### Stack Frontend
-- React 18.3 + TypeScript
-- Tailwind CSS + shadcn/ui
-- TanStack Query (cache)
-- React Router (routing)
-
-### Stack Backend (Lovable Cloud)
-- PostgreSQL (17 tables)
-- Edge Functions (17 fonctions)
-- Auth (4 rôles)
-- Storage (avatars)
-
-...
-`;
+const TOC_ITEMS = [
+  { id: '1-presentation-generale', label: 'Présentation', num: 1 },
+  { id: '2-architecture-technique', label: 'Architecture', num: 2 },
+  { id: '3-base-de-donnees', label: 'Base de données', num: 3 },
+  { id: '4-edge-functions', label: 'Edge Functions', num: 4 },
+  { id: '5-systeme-de-permissions', label: 'Permissions', num: 5 },
+  { id: '6-securite-conformite', label: 'Sécurité', num: 6 },
+];
 ```
 
-### 3. TechDocPDFLayout.tsx
-
-Layout optimisé pour l'impression A4 :
+### Fonction de scroll
 
 ```typescript
-export const TechDocPDFLayout = forwardRef<HTMLDivElement, Props>(
-  ({ children }, ref) => {
-    return (
-      <div 
-        ref={ref}
-        className="bg-white text-black"
-        style={{ 
-          width: '210mm',
-          minHeight: '297mm',
-          padding: '15mm 20mm',
-          fontFamily: 'Arial, Helvetica, sans-serif'
-        }}
-      >
-        {/* Header avec logo ANSUT */}
-        <header>...</header>
-        
-        {/* Contenu paginé */}
-        <main>{children}</main>
-        
-        {/* Footer avec numéro de page */}
-        <footer>...</footer>
-      </div>
-    );
+const scrollToSection = (id: string) => {
+  const element = document.getElementById(id);
+  if (element) {
+    element.scrollIntoView({ 
+      behavior: 'smooth', 
+      block: 'start' 
+    });
   }
-);
+};
 ```
-
-## Contenu détaillé du PDF
-
-### Section 1 : Présentation Générale
-- Contexte ANSUT et enjeux
-- Objectifs de la plateforme (5 objectifs)
-- Les 7 modules métier avec description
-- Les 4 profils utilisateurs (admin, user, council_user, guest)
-
-### Section 2 : Architecture Technique
-- Diagramme d'architecture (ASCII art)
-- Stack Frontend détaillé
-- Stack Backend (Lovable Cloud)
-- APIs externes (Perplexity, Grok, Resend)
-- Patterns de développement
-
-### Section 3 : Base de Données
-- Liste des 17 tables avec colonnes principales
-- Enum `app_role` et ses valeurs
-- Fonctions utilitaires (`has_role`, `get_user_role`)
-- Politiques RLS standards
-
-### Section 4 : Edge Functions
-- Tableau des 17 fonctions avec endpoints
-- Paramètres et réponses types
-- Secrets requis
-- Planification CRON
-
-### Section 5 : Système de Permissions
-- 17 permissions granulaires (codes et descriptions)
-- Matrice rôle/permission par défaut
-- Fonctionnement RBAC
-- Gestion via interface admin
-
-### Section 6 : Sécurité & Conformité
-- Authentification JWT
-- Politiques RLS actives
-- Audit logs et traçabilité
-- Protection des routes
-
-## Navigation vers la page
-
-Depuis la page Admin :
-- Section "Communication" → nouvelle carte "Documentation Technique"
-- Route : `/admin/documentation`
-- Icône : `FileCode` (Lucide)
-- Badge : "PDF"
 
 ## Résultat attendu
 
-1. **Document PDF professionnel** avec branding ANSUT complet
-2. **Contenu exhaustif** couvrant toute la plateforme
-3. **Format imprimable** A4 optimisé
-4. **Prévisualisation interactive** avant téléchargement
-5. **Génération instantanée** via react-to-pdf
-6. **Accessible aux admins** depuis le cockpit d'administration
+1. **Titres avec ancres** : Tous les h1/h2/h3 ont un ID unique basé sur leur contenu
+2. **Navigation fluide** : Clic sur un élément TOC scroll vers la section correspondante
+3. **Feedback visuel** : Hover effect sur les éléments cliquables
+4. **Compatibilité** : Fonctionne aussi pour les autres usages de GuideViewer (Formation)
+5. **Accessibilité** : Éléments focusables au clavier
+
