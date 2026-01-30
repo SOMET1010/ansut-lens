@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, Database, Bell, Tag, UserPlus, ClipboardList, Clock, Mail, Shield, Presentation } from 'lucide-react';
+import { Users, Database, Bell, Tag, UserPlus, ClipboardList, Clock, Mail, Shield, Presentation, GraduationCap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { AdminStatBadge } from '@/components/admin/AdminStatBadge';
@@ -117,6 +117,20 @@ export default function AdminPage() {
                 <p className="text-sm text-muted-foreground">Slides PDF</p>
                 <AdminStatBadge
                   value="11 slides"
+                  variant="info"
+                  loading={false}
+                />
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/admin/formation">
+            <Card className="glass cursor-pointer hover:shadow-glow transition-shadow h-full">
+              <CardContent className="pt-6 flex flex-col items-center text-center">
+                <GraduationCap className="h-10 w-10 text-emerald-400 mb-3" />
+                <h3 className="font-semibold">Formation</h3>
+                <p className="text-sm text-muted-foreground">Guides PDF</p>
+                <AdminStatBadge
+                  value="2 guides"
                   variant="info"
                   loading={false}
                 />
