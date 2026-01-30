@@ -36,8 +36,9 @@ export default function DossiersPage() {
   const brouillons = dossiers?.filter(d => d.statut === 'brouillon') || [];
   const publies = dossiers?.filter(d => d.statut === 'publie') || [];
   
-  // Get recent sent newsletters
-  const recentNewsletters = newsletters?.filter(n => n.statut === 'envoye').slice(0, 3) || [];
+  // Get recent newsletters (both sent and drafts)
+  const recentSentNewsletters = newsletters?.filter(n => n.statut === 'envoye').slice(0, 3) || [];
+  const recentDraftNewsletters = newsletters?.filter(n => n.statut === 'brouillon' || n.statut === 'en_revision').slice(0, 2) || [];
 
   // Filter for "Crise" mode - show only high-priority items (IA or acteurs categories as proxy for urgency)
   const urgentDossiers = dossiers?.filter(d => 
@@ -139,7 +140,7 @@ export default function DossiersPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Newsletters envoyées</p>
-                    <p className="text-3xl font-bold text-blue-500">{recentNewsletters.length}</p>
+                    <p className="text-3xl font-bold text-blue-500">{recentSentNewsletters.length}</p>
                   </div>
                   <div className="h-12 w-12 bg-blue-500/10 rounded-full flex items-center justify-center">
                     <Mail className="h-6 w-6 text-blue-500" />
@@ -246,6 +247,22 @@ export default function DossiersPage() {
             
             <NewsletterWidget />
             
+            {/* Brouillons de newsletters */}
+            {recentDraftNewsletters.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-xs font-bold uppercase text-orange-500 flex items-center gap-1">
+                  <Edit3 className="h-3 w-3" /> Brouillons à finaliser
+                </h3>
+                {recentDraftNewsletters.map(newsletter => (
+                  <NewsletterHistoryItem 
+                    key={newsletter.id} 
+                    newsletter={newsletter}
+                    onClick={() => window.location.href = `/admin/newsletters`}
+                  />
+                ))}
+              </div>
+            )}
+            
             <div className="space-y-3">
               <h3 className="text-xs font-bold uppercase text-muted-foreground">
                 Derniers envois
@@ -256,8 +273,8 @@ export default function DossiersPage() {
                   <Skeleton className="h-[80px]" />
                   <Skeleton className="h-[80px]" />
                 </>
-              ) : recentNewsletters.length > 0 ? (
-                recentNewsletters.map(newsletter => (
+              ) : recentSentNewsletters.length > 0 ? (
+                recentSentNewsletters.map(newsletter => (
                   <NewsletterHistoryItem 
                     key={newsletter.id} 
                     newsletter={newsletter}
