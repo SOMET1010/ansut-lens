@@ -185,27 +185,29 @@ Le Score de Présence Digitale et d'Influence (0-100) mesure :
 
 ---
 
-## 📁 Dossiers Stratégiques
+## 📁 Studio de Publication
 
 ### Accès
 Menu → **Dossiers**
 
-### Qu'est-ce qu'un dossier ?
+Le Studio de Publication centralise deux types de contenus :
 
-Un dossier est une note interne permettant de :
+### Notes Stratégiques
+
+Une note est un document interne permettant de :
 - Documenter une analyse
 - Synthétiser des informations
 - Partager avec l'équipe
 
-### Créer un dossier
+#### Créer une note
 
-1. Cliquez sur **"Nouveau dossier"**
+1. Cliquez sur **"Nouvelle note"**
 2. Donnez un titre
 3. Sélectionnez une catégorie
 4. Rédigez le contenu en **Markdown**
 5. Sauvegardez
 
-### Syntaxe Markdown
+#### Syntaxe Markdown
 
 ```markdown
 # Titre principal
@@ -228,13 +230,61 @@ Texte normal avec **gras** et *italique*.
 | Valeur 1  | Valeur 2  |
 ```
 
-### Statuts des dossiers
+### Newsletters
+
+Les newsletters permettent de diffuser une synthèse des actualités aux abonnés.
+
+#### Créer une newsletter
+
+1. Cliquez sur **"Générer Newsletter"**
+2. Sélectionnez la période couverte
+3. Choisissez le ton (formel, accessible, technique)
+4. L'IA génère automatiquement le contenu
+5. Éditez dans le **Studio Newsletter**
+
+#### Studio Newsletter (Éditeur visuel)
+
+L'éditeur WYSIWYG permet de :
+
+| Fonctionnalité | Description |
+|----------------|-------------|
+| **Drag & Drop** | Réorganiser les blocs par glisser-déposer |
+| **Blocs ANSUT** | Header, Édito, Articles, Tech, Chiffres, Agenda, Footer |
+| **Prévisualisation** | Tester le rendu Desktop, Tablette et Mobile |
+| **Export HTML** | Générer le code HTML pour l'envoi |
+
+#### Types de blocs disponibles
+
+| Bloc | Icône | Description |
+|------|-------|-------------|
+| En-tête | 📰 | Bandeau avec logo ANSUT |
+| Édito | 📝 | Introduction éditoriale |
+| Article | 📄 | Actualité avec titre et analyse |
+| Tendance Tech | 🔬 | Focus technologie |
+| Chiffre clé | 📊 | Statistique marquante |
+| Agenda | 📅 | Événements à venir |
+| Image | 🖼️ | Illustration |
+| Bouton | 🔗 | Lien d'action |
+| Pied de page | 📋 | Informations ANSUT |
+
+#### Prévisualisation responsive
+
+Le sélecteur de viewport permet de tester le rendu :
+
+| Mode | Largeur | Usage |
+|------|---------|-------|
+| 🖥️ Desktop | 650px | Affichage standard |
+| 📱 Tablette | 768px | Écrans moyens |
+| 📱 Mobile | 375px | Smartphones |
+
+### Statuts des documents
 
 | Statut | Description |
 |--------|-------------|
 | Brouillon | En cours de rédaction |
 | En revue | Soumis pour validation |
-| Publié | Finalisé et partagé |
+| Validé | Prêt à l'envoi |
+| Envoyé | Newsletter diffusée |
 | Archivé | Conservé mais inactif |
 
 ---

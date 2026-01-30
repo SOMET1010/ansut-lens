@@ -45,7 +45,10 @@ Accessible via le menu "Administration" (visible uniquement pour les admins).
 | Section | Route | Description |
 |---------|-------|-------------|
 | Utilisateurs | `/admin/users` | Gérer les comptes |
+| Rôles & Permissions | `/admin/roles` | Configurer les droits d'accès |
 | Mots-clés | `/admin/mots-cles` | Configurer la veille |
+| Sources | `/admin/sources` | Gérer les sources média |
+| Newsletters | `/admin/newsletters` | Gestion des newsletters |
 | Import Acteurs | `/admin/import-acteurs` | Import CSV |
 | Tâches CRON | `/admin/cron` | Planification automatique |
 | Logs d'audit | `/admin/audit` | Historique des actions |
