@@ -1,16 +1,30 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, X } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { 
+  Loader2, 
+  Zap, 
+  Sparkles, 
+  Search, 
+  Bell, 
+  Mail,
+  Cpu,
+  TrendingUp,
+  Scale,
+  Star
+} from 'lucide-react';
 import { FluxVeille, FluxFormData, useCreateFlux, useUpdateFlux } from '@/hooks/useFluxVeille';
-import { useCategoriesVeille } from '@/hooks/useMotsClesVeille';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface FluxFormDialogProps {
   open: boolean;
@@ -19,15 +33,120 @@ interface FluxFormDialogProps {
   initialData?: Partial<FluxFormData> | null;
 }
 
+// Quadrant options with visual styling
 const quadrantOptions = [
-  { id: 'tech', label: 'Technologie', color: 'bg-blue-500' },
-  { id: 'regulation', label: 'Régulation', color: 'bg-purple-500' },
-  { id: 'market', label: 'Marché', color: 'bg-green-500' },
-  { id: 'reputation', label: 'Réputation', color: 'bg-orange-500' },
+  { id: 'tech', label: 'Technologie', icon: Cpu, colorClass: 'text-blue-500', bgClass: 'bg-blue-500/10', borderClass: 'border-blue-500' },
+  { id: 'market', label: 'Marché', icon: TrendingUp, colorClass: 'text-green-500', bgClass: 'bg-green-500/10', borderClass: 'border-green-500' },
+  { id: 'regulation', label: 'Régulation', icon: Scale, colorClass: 'text-purple-500', bgClass: 'bg-purple-500/10', borderClass: 'border-purple-500' },
+  { id: 'reputation', label: 'Réputation', icon: Star, colorClass: 'text-orange-500', bgClass: 'bg-orange-500/10', borderClass: 'border-orange-500' },
 ];
 
+// Volume estimation based on criteria
+function estimateVolume(keywords: string[], quadrants: string[], importance: number) {
+  const keywordScore = keywords.length * 10;
+  const quadrantScore = (4 - quadrants.length) * 15;
+  const importanceScore = 100 - importance;
+  const totalScore = keywordScore + quadrantScore + importanceScore;
+  
+  if (totalScore < 40) return { level: 1, label: 'Faible (~5/sem)', colorClass: 'bg-yellow-500' };
+  if (totalScore < 80) return { level: 2, label: 'Modéré (~15/sem)', colorClass: 'bg-green-500' };
+  return { level: 3, label: 'Élevé (~30+/sem)', colorClass: 'bg-orange-500' };
+}
+
+// Helper components
+function QuadrantButton({ 
+  id, 
+  label, 
+  icon: Icon, 
+  colorClass, 
+  bgClass,
+  borderClass,
+  active, 
+  onClick 
+}: {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  colorClass: string;
+  bgClass: string;
+  borderClass: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200",
+        active 
+          ? `${borderClass} ${bgClass} ${colorClass}` 
+          : "border-muted hover:border-muted-foreground/30 text-muted-foreground"
+      )}
+    >
+      <Icon className={cn("h-5 w-5 mb-2", active ? colorClass : "")} />
+      <span className="text-xs font-medium">{label}</span>
+    </button>
+  );
+}
+
+function VolumeIndicator({ keywords, quadrants, importance }: { keywords: string[], quadrants: string[], importance: number }) {
+  const { level, label, colorClass } = estimateVolume(keywords, quadrants, importance);
+  
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <span className="text-muted-foreground font-medium">Volume estimé :</span>
+      <div className="flex gap-0.5">
+        {[1, 2, 3].map(i => (
+          <div 
+            key={i} 
+            className={cn(
+              "w-6 h-1.5 rounded-full transition-colors",
+              i <= level ? colorClass : "bg-muted"
+            )} 
+          />
+        ))}
+      </div>
+      <span className={cn(
+        "font-medium",
+        level === 1 ? "text-yellow-600" : level === 2 ? "text-green-600" : "text-orange-600"
+      )}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function AlertOption({ 
+  icon: Icon, 
+  title, 
+  description, 
+  checked, 
+  onChange 
+}: { 
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-primary/10 text-primary">
+          <Icon className="h-5 w-5" />
+        </div>
+        <div>
+          <h4 className="font-medium text-sm">{title}</h4>
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </div>
+  );
+}
+
 export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFormDialogProps) {
-  const { data: categories } = useCategoriesVeille();
   const createFlux = useCreateFlux();
   const updateFlux = useUpdateFlux();
 
@@ -40,10 +159,11 @@ export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFo
     importance_min: 0,
     alerte_email: false,
     alerte_push: true,
-    frequence_digest: 'instantane',
+    frequence_digest: 'quotidien',
   });
 
-  const [keywordInput, setKeywordInput] = useState('');
+  const [keywordsText, setKeywordsText] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Reset form when flux or initialData changes
   useEffect(() => {
@@ -59,6 +179,7 @@ export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFo
         alerte_push: flux.alerte_push,
         frequence_digest: flux.frequence_digest,
       });
+      setKeywordsText((flux.mots_cles || []).join(', '));
     } else if (initialData) {
       setFormData({
         nom: initialData.nom || '',
@@ -69,8 +190,9 @@ export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFo
         importance_min: initialData.importance_min || 0,
         alerte_email: initialData.alerte_email ?? false,
         alerte_push: initialData.alerte_push ?? true,
-        frequence_digest: initialData.frequence_digest || 'instantane',
+        frequence_digest: initialData.frequence_digest || 'quotidien',
       });
+      setKeywordsText((initialData.mots_cles || []).join(', '));
     } else {
       setFormData({
         nom: '',
@@ -81,38 +203,20 @@ export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFo
         importance_min: 0,
         alerte_email: false,
         alerte_push: true,
-        frequence_digest: 'instantane',
+        frequence_digest: 'quotidien',
       });
+      setKeywordsText('');
     }
-    setKeywordInput('');
   }, [flux, initialData, open]);
 
-  const handleAddKeyword = () => {
-    const keywords = keywordInput.split(',').map(k => k.trim()).filter(k => k);
-    if (keywords.length > 0) {
-      setFormData(prev => ({
-        ...prev,
-        mots_cles: [...new Set([...prev.mots_cles, ...keywords])],
-      }));
-      setKeywordInput('');
-    }
-  };
-
-  const handleRemoveKeyword = (keyword: string) => {
-    setFormData(prev => ({
-      ...prev,
-      mots_cles: prev.mots_cles.filter(k => k !== keyword),
-    }));
-  };
-
-  const handleToggleCategory = (catId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      categories_ids: prev.categories_ids.includes(catId)
-        ? prev.categories_ids.filter(id => id !== catId)
-        : [...prev.categories_ids, catId],
-    }));
-  };
+  // Parse keywords from text
+  useEffect(() => {
+    const keywords = keywordsText
+      .split(/[,\n]/)
+      .map(k => k.trim())
+      .filter(k => k.length > 0);
+    setFormData(prev => ({ ...prev, mots_cles: keywords }));
+  }, [keywordsText]);
 
   const handleToggleQuadrant = (quadrant: string) => {
     setFormData(prev => ({
@@ -121,6 +225,43 @@ export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFo
         ? prev.quadrants.filter(q => q !== quadrant)
         : [...prev.quadrants, quadrant],
     }));
+  };
+
+  const handleAiGenerate = async () => {
+    if (!formData.nom.trim()) {
+      toast.error('Entrez un nom de flux pour la génération IA');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generer-requete-flux', {
+        body: { 
+          nom: formData.nom.trim(), 
+          description: formData.description.trim() || undefined 
+        }
+      });
+
+      if (error) throw error;
+
+      if (data) {
+        // Apply AI suggestions
+        setKeywordsText(data.mots_cles?.join(', ') || '');
+        setFormData(prev => ({
+          ...prev,
+          mots_cles: data.mots_cles || prev.mots_cles,
+          quadrants: data.quadrants || prev.quadrants,
+          importance_min: data.importance_min ?? prev.importance_min,
+          description: data.description || prev.description,
+        }));
+        toast.success('Configuration générée par l\'IA !');
+      }
+    } catch (error) {
+      console.error('AI generation error:', error);
+      toast.error('Erreur lors de la génération IA');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -142,180 +283,176 @@ export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {flux ? 'Modifier le flux' : 'Créer un flux de veille'}
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+        
+        {/* Header distinctif */}
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
+          <DialogTitle className="text-xl flex items-center gap-2">
+            <Zap className="h-5 w-5 text-primary" />
+            {flux ? 'Modifier l\'agent' : 'Configurer un nouvel agent'}
           </DialogTitle>
+          <DialogDescription>
+            Définissez les paramètres de surveillance pour votre flux de veille.
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Nom */}
-          <div className="space-y-2">
-            <Label htmlFor="nom">Nom du flux *</Label>
-            <Input
-              id="nom"
-              placeholder="Ex: Cybersécurité Afrique"
-              value={formData.nom}
-              onChange={(e) => setFormData(prev => ({ ...prev, nom: e.target.value }))}
-            />
-          </div>
-
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="Décrivez ce flux..."
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              rows={2}
-            />
-          </div>
-
-          {/* Mots-clés */}
-          <div className="space-y-2">
-            <Label>Mots-clés personnalisés</Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Ajouter des mots-clés (séparés par des virgules)"
-                value={keywordInput}
-                onChange={(e) => setKeywordInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddKeyword())}
+        {/* Corps scrollable */}
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+          
+          {/* Section 1: Nom du flux */}
+          <section className="space-y-2">
+            <Label className="font-semibold">Nom du flux</Label>
+            <div className="flex gap-3">
+              <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <Zap className="h-6 w-6" />
+              </div>
+              <Input 
+                placeholder="Ex: Concurrence Fintech, E-Réputation..." 
+                className="h-12 text-base"
+                value={formData.nom}
+                onChange={(e) => setFormData(prev => ({ ...prev, nom: e.target.value }))}
+                autoFocus
               />
-              <Button type="button" variant="secondary" onClick={handleAddKeyword}>
-                Ajouter
+            </div>
+          </section>
+
+          {/* Section 2: Ciblage IA */}
+          <section className="bg-muted/50 rounded-xl p-5 border space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <Label className="font-semibold flex items-center gap-2">
+                <Search className="h-4 w-4" />
+                Requête de surveillance
+              </Label>
+              <Button 
+                type="button"
+                variant="outline" 
+                size="sm" 
+                onClick={handleAiGenerate}
+                disabled={isGenerating || !formData.nom.trim()}
+                className="gap-2 text-purple-600 border-purple-200 hover:bg-purple-50 hover:text-purple-700"
+              >
+                {isGenerating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                Générer avec l'IA
               </Button>
             </div>
-            {formData.mots_cles.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {formData.mots_cles.map((kw) => (
-                  <Badge key={kw} variant="secondary" className="gap-1">
-                    {kw}
-                    <X 
-                      className="h-3 w-3 cursor-pointer" 
-                      onClick={() => handleRemoveKeyword(kw)}
-                    />
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
+            
+            {/* Zone de mots-clés avec style terminal */}
+            <Textarea 
+              className="font-mono text-sm bg-background min-h-[80px]"
+              placeholder="Saisissez vos mots-clés (séparés par des virgules) ou laissez l'IA les générer..."
+              value={keywordsText}
+              onChange={(e) => setKeywordsText(e.target.value)}
+            />
+            
+            {/* Indicateur de volume */}
+            <VolumeIndicator 
+              keywords={formData.mots_cles} 
+              quadrants={formData.quadrants}
+              importance={formData.importance_min}
+            />
+          </section>
 
-          {/* Catégories de veille */}
-          <div className="space-y-2">
-            <Label>Catégories de veille</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {categories?.map((cat) => (
-                <div key={cat.id} className="flex items-center gap-2">
-                  <Checkbox
-                    id={`cat-${cat.id}`}
-                    checked={formData.categories_ids.includes(cat.id)}
-                    onCheckedChange={() => handleToggleCategory(cat.id)}
-                  />
-                  <Label htmlFor={`cat-${cat.id}`} className="text-sm cursor-pointer">
-                    {cat.nom}
-                  </Label>
-                </div>
+          {/* Section 3: Quadrants visuels */}
+          <section className="space-y-3">
+            <Label className="font-semibold">Quadrants Radar</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {quadrantOptions.map(q => (
+                <QuadrantButton 
+                  key={q.id} 
+                  {...q} 
+                  active={formData.quadrants.includes(q.id)}
+                  onClick={() => handleToggleQuadrant(q.id)}
+                />
               ))}
             </div>
-          </div>
+          </section>
 
-          {/* Quadrants */}
-          <div className="space-y-2">
-            <Label>Quadrants Radar</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {quadrantOptions.map((q) => (
-                <div key={q.id} className="flex items-center gap-2">
-                  <Checkbox
-                    id={`quad-${q.id}`}
-                    checked={formData.quadrants.includes(q.id)}
-                    onCheckedChange={() => handleToggleQuadrant(q.id)}
-                  />
-                  <Label htmlFor={`quad-${q.id}`} className="text-sm cursor-pointer flex items-center gap-1">
-                    <span className={`w-2 h-2 rounded-full ${q.color}`} />
-                    {q.label}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Importance minimum */}
-          <div className="space-y-3">
+          {/* Section 4: Importance */}
+          <section className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>Importance minimum</Label>
-              <span className="text-sm text-muted-foreground">{formData.importance_min}%</span>
+              <Label className="font-semibold">Seuil d'importance minimum</Label>
+              <Badge variant="secondary">≥ {formData.importance_min}%</Badge>
             </div>
-            <Slider
-              value={[formData.importance_min]}
+            <Slider 
+              value={[formData.importance_min]} 
               onValueChange={([value]) => setFormData(prev => ({ ...prev, importance_min: value }))}
               max={100}
               step={5}
             />
-          </div>
+            <p className="text-xs text-muted-foreground">
+              Plus le seuil est élevé, moins vous recevrez d'articles (uniquement les plus pertinents).
+            </p>
+          </section>
 
-          {/* Notifications */}
-          <div className="space-y-4 pt-4 border-t">
-            <Label className="text-base">Notifications</Label>
+          {/* Section 5: Alertes (groupées) */}
+          <section className="rounded-xl border p-4 space-y-4">
+            <AlertOption 
+              icon={Bell}
+              title="Notifications en temps réel"
+              description="Alerte dans l'app dès qu'un article critique est détecté"
+              checked={formData.alerte_push}
+              onChange={(checked) => setFormData(prev => ({ ...prev, alerte_push: checked }))}
+            />
             
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="alerte_push"
-                checked={formData.alerte_push}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, alerte_push: !!checked }))}
-              />
-              <Label htmlFor="alerte_push" className="cursor-pointer">
-                Notifications dans l'application
-              </Label>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="alerte_email"
-                checked={formData.alerte_email}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, alerte_email: !!checked }))}
-              />
-              <Label htmlFor="alerte_email" className="cursor-pointer">
-                Alertes par email
-              </Label>
-            </div>
-
             {formData.alerte_push && (
-              <div className="space-y-2 pl-6">
-                <Label className="text-sm">Fréquence</Label>
-                <RadioGroup
+              <div className="pl-10">
+                <RadioGroup 
                   value={formData.frequence_digest}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, frequence_digest: value }))}
-                  className="flex gap-4"
+                  className="flex flex-wrap gap-4"
                 >
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="instantane" id="freq-instant" />
-                    <Label htmlFor="freq-instant" className="text-sm cursor-pointer">Instantané</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="quotidien" id="freq-daily" />
-                    <Label htmlFor="freq-daily" className="text-sm cursor-pointer">Quotidien</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="hebdo" id="freq-weekly" />
-                    <Label htmlFor="freq-weekly" className="text-sm cursor-pointer">Hebdomadaire</Label>
-                  </div>
+                  {[
+                    { value: 'instantane', label: 'Instantané' },
+                    { value: 'quotidien', label: 'Quotidien' },
+                    { value: 'hebdo', label: 'Hebdomadaire' },
+                  ].map(opt => (
+                    <div key={opt.value} className="flex items-center gap-2">
+                      <RadioGroupItem value={opt.value} id={`freq-${opt.value}`} />
+                      <Label htmlFor={`freq-${opt.value}`} className="text-sm cursor-pointer">
+                        {opt.label}
+                      </Label>
+                    </div>
+                  ))}
                 </RadioGroup>
               </div>
             )}
-          </div>
+            
+            <Separator />
+            
+            <AlertOption 
+              icon={Mail}
+              title="Alertes par email"
+              description="Recevoir un email pour chaque article critique"
+              checked={formData.alerte_email}
+              onChange={(checked) => setFormData(prev => ({ ...prev, alerte_email: checked }))}
+            />
+          </section>
+
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        {/* Footer avec CTA fort */}
+        <DialogFooter className="px-6 py-4 border-t bg-muted/30">
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
-          <Button onClick={handleSubmit} disabled={isLoading || !formData.nom.trim()}>
-            {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            {flux ? 'Mettre à jour' : 'Créer le flux'}
+          <Button 
+            onClick={handleSubmit} 
+            disabled={isLoading || !formData.nom.trim()} 
+            className="gap-2"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Zap className="h-4 w-4" />
+            )}
+            {flux ? 'Mettre à jour' : 'Lancer la surveillance'}
           </Button>
         </DialogFooter>
+
       </DialogContent>
     </Dialog>
   );
