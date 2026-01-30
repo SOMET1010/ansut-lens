@@ -1,297 +1,275 @@
 
-# Transformation de la page Actualités : Du Gestionnaire de Fichiers au Moteur de Veille Augmentée
+# Corrections "Pixel Perfect" de la page Actualités
 
-## Diagnostic de l'existant
+## Diagnostic des 3 problèmes à corriger
 
-### Problèmes identifiés
-| Problème | Impact |
-|----------|--------|
-| **Doublons non gérés** | 3 articles "Orange SAT" identiques dans le flux actuel |
-| **KPIs inutiles** | Les 4 cartes (50 Actualités, 0 Alertes...) consomment 30% de l'écran |
-| **Filtres passifs** | Menus déroulants cachés vs. filtres interactifs visibles |
-| **Pas d'extraction d'entités** | Les personnes/entreprises citées ne sont pas visibles |
-| **Enrichissement manuel** | Bouton "Enrichir" = l'IA n'a pas encore travaillé |
-
-### Données disponibles pour la transformation
-Après analyse de la base de données :
-- `analyse_ia` : contient les quadrants et mots-clés détectés
-- `sentiment` : disponible mais non rempli actuellement
-- `tags` : tableau de mots-clés
-- `resume`, `pourquoi_important` : contexte stratégique
-- Table `personnalites` : 4 acteurs clés identifiés (Kalil Konaté, Thierry Beugré, Bamba, etc.)
+| Problème | Cause technique | Solution |
+|----------|----------------|----------|
+| **Graphique "Tonalité" cassé** | Positionnement `absolute -top-6` des pourcentages crée un débordement | Refonte avec flexbox, labels en hover uniquement |
+| **Doublons visibles** | Seuil de similarité trop strict (40%) dans `useArticleClusters` | Baisser le seuil à 30% et ajouter la comparaison d'entités |
+| **Bouton "Enrichir" trop dominant** | Utilise `variant="default"` avec `animate-pulse` | Inverser la hiérarchie : "Voir l'analyse" devient primaire |
 
 ---
 
-## Architecture cible : Layout 2 colonnes
+## Correction 1 : Graphique de Sentiment (SmartSidebar.tsx)
+
+### Problèmes actuels
+- Les pourcentages flottent au-dessus des barres avec `absolute -top-6`
+- Pas d'espace réservé pour les labels, créant un chevauchement
+- Hauteur des barres (h-16) trop petite pour être lisible
+
+### Solution proposée
+- Augmenter la hauteur du graphique (h-24)
+- Afficher les pourcentages uniquement au survol avec une animation fluide
+- Ajouter des labels en bas pour chaque barre
+- Améliorer les coins arrondis et transitions
 
 ```text
-┌────────────────────────────────────────────────────────────────────────────┐
-│  🔍 BARRE DE RECHERCHE CENTRALE (pleine largeur)                          │
-│  [Rechercher par mot-clé, acteur (ex: ANSUT, Ministre)...] [Filtres ▼]    │
-└────────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────┐ ┌────────────────────────────┐
-│  ⚡ FLUX TEMPS RÉEL (70%)                   │ │  📊 SIDEBAR (30%)          │
-│                                             │ │                            │
-│ ┌─────────────────────────────────────────┐ │ │ ┌────────────────────────┐ │
-│ │ 95%  AGENCE ECOFIN • Il y a 2h         │ │ │ │  📈 TONALITÉ DU JOUR   │ │
-│ │      [3 sources similaires ▼]           │ │ │ │  ████ 60% Positif     │ │
-│ │                                         │ │ │ │  ██   30% Neutre      │ │
-│ │ Orange SAT : connecter les zones où    │ │ │ │  █    10% Négatif     │ │
-│ │ les réseaux s'arrêtent                 │ │ │ └────────────────────────┘ │
-│ │                                         │ │ │                            │
-│ │ Mamadou Bamba présente Orange SAT,     │ │ │ ┌────────────────────────┐ │
-│ │ solution Internet satellite avec       │ │ │ │  #️⃣ CONCEPTS CLÉS      │ │
-│ │ Eutelsat pour les zones rurales...     │ │ │ │  [Infrastructure] [5G] │ │
-│ │                                         │ │ │ │  [Orange CI] [ANSUT]   │ │
-│ │ 👤 Mamadou Bamba  🏢 Orange CI         │ │ │ │  [Satellite] [Fibre]   │ │
-│ │ 🏢 Eutelsat                            │ │ │ └────────────────────────┘ │
-│ │                                         │ │ │                            │
-│ │         [Partager] [Commenter]         │ │ │ ┌────────────────────────┐ │
-│ └─────────────────────────────────────────┘ │ │ │  🌐 TOP SOURCES (24h) │ │
-│                                             │ │ │  Agence Ecofin    12  │ │
-│ ┌─────────────────────────────────────────┐ │ │ │  Sika Finance      8  │ │
-│ │ 72%  FRATERNITY MATIN • Hier           │ │ │ │  Abidjan.net       5  │ │
-│ │      Nouveau ministre du Numérique...   │ │ │ └────────────────────────┘ │
-│ └─────────────────────────────────────────┘ │ │                            │
-│                                             │ │ ┌────────────────────────┐ │
-│ [Charger plus d'articles]                   │ │ │  🔥 PERSONNALITÉS      │ │
-│                                             │ │ │  Mamadou Bamba    12  │ │
-└─────────────────────────────────────────────┘ │ │  Kalil Konaté      8  │ │
-                                                │ │  Thierry Beugré    3  │ │
-                                                │ └────────────────────────┘ │
-                                                └────────────────────────────┘
+Avant :                          Après :
+                                 
+33%   34%   33%  (flottant)     ┌────────────────────┐
+┌─┐   ┌─┐   ┌─┐                 │     (hover: 33%)   │
+│█│   │█│   │█│                 │   ████             │
+└─┘   └─┘   └─┘                 │   ████  ████       │
+Positif Neutre Négatif          │   ████  ████  ████ │
+                                │  Positif Neutre Neg│
+                                └────────────────────┘
 ```
 
 ---
 
-## Phase 1 : Migration du schéma de base de données
+## Correction 2 : Amélioration du Clustering (useArticleClusters.ts)
 
-Ajouter des colonnes pour l'extraction d'entités dans la table `actualites` :
+### Problèmes actuels
+- Seuil de similarité de titre à 40% (trop strict)
+- Pas de comparaison par entités nommées (personnes/entreprises)
+- Articles sur le même sujet (Orange SAT, Mamadou Bamba) restent séparés
 
-```sql
-ALTER TABLE actualites 
-ADD COLUMN IF NOT EXISTS entites_personnes TEXT[] DEFAULT '{}',
-ADD COLUMN IF NOT EXISTS entites_entreprises TEXT[] DEFAULT '{}',
-ADD COLUMN IF NOT EXISTS cluster_id UUID,
-ADD COLUMN IF NOT EXISTS score_pertinence INTEGER DEFAULT 50;
-```
+### Solution proposée
+- **Baisser le seuil de titre à 30%** pour attraper plus de doublons
+- **Ajouter la comparaison par entités** : si deux articles partagent ≥1 personne OU ≥1 entreprise, ils sont regroupés
+- **Combiner les critères** : titre OU tags OU entités partagées
 
----
-
-## Phase 2 : Nouveaux composants
-
-### 2.1 ArticleCluster.tsx (Carte avec regroupement)
-
-**Fonctionnalités :**
-- Score de pertinence visible (badge bleu)
-- Indicateur "X sources similaires" cliquable
-- Titre + Résumé enrichi
-- Entités extraites (Personnes + Entreprises) avec icônes
-- Zone expandable pour les articles liés
-- Actions footer (Partager, Commenter, Analyse complète)
-
-**Design :**
-```text
-┌────────────────────────────────────────────────────────────────┐
-│ [95% Pertinence]  SOURCE • TEMPS     [3 sources similaires ▼] │
-│                                                                │
-│ Titre de l'article principal (gras, cliquable)                │
-│                                                                │
-│ Résumé de 2-3 lignes expliquant l'impact stratégique...       │
-│                                                                │
-│ 👤 Personne1  👤 Personne2  🏢 Entreprise1  🏢 Entreprise2    │
-│                                                                │
-│ ─────────────────────────────────────────────────────────────  │
-│ [Partager] [Commenter]                [Voir l'analyse →]      │
-└────────────────────────────────────────────────────────────────┘
-```
-
-### 2.2 SmartSidebar.tsx (Filtres intelligents)
-
-**Widgets inclus :**
-1. **Tonalité du jour** : Graphique barres (Positif/Neutre/Négatif)
-2. **Concepts clés** : Nuage de tags cliquables (filtrage actif)
-3. **Top Sources** : Liste ordonnée par nombre d'articles
-4. **Personnalités citées** : Compteur de mentions par acteur
-
-### 2.3 WatchHeader.tsx (En-tête épuré)
-
-**Éléments :**
-- Titre + sous-titre ("X nouveaux articles depuis votre dernière visite")
-- Sélecteur de date (Aujourd'hui / 7 jours / 30 jours)
-- Bouton "Exporter le rapport"
-
-### 2.4 BigSearchBar.tsx (Recherche principale)
-
-**Design :**
-- Barre de recherche large (100% largeur)
-- Placeholder intelligent
-- Bouton "Filtres avancés" intégré
-- Autocomplétion sur entités
-
----
-
-## Phase 3 : Hook de clustering useArticleClusters
-
-**Logique de regroupement :**
 ```typescript
-interface ArticleCluster {
-  mainArticle: Actualite;        // Article avec le meilleur score
-  relatedArticles: Actualite[];  // Articles similaires
-  relevanceScore: number;        // Score de pertinence du cluster
-  entities: {
-    people: string[];
-    companies: string[];
-  };
-}
-
-// Algorithme de clustering simplifié
-const clusterArticles = (articles: Actualite[]): ArticleCluster[] => {
-  // 1. Grouper par similarité de titre (Levenshtein < 0.3)
-  // 2. Ou par mots-clés communs (>60% de chevauchement)
-  // 3. Garder l'article avec le meilleur score comme "maître"
-  // 4. Extraire les entités du cluster combiné
+// Nouveau critère de regroupement
+const shouldCluster = (article1, article2): boolean => {
+  // Similarité de titre > 30% (au lieu de 40%)
+  if (calculateSimilarity(title1, title2) > 0.30) return true;
+  
+  // Chevauchement de tags > 60%
+  if (calculateTagOverlap(tags1, tags2) > 0.6) return true;
+  
+  // NOUVEAU : Entités partagées
+  if (hasSharedEntities(article1, article2)) return true;
+  
+  // Même catégorie + similarité > 20%
+  if (sameCategorie && titleSimilarity > 0.2) return true;
+  
+  return false;
 };
 ```
 
 ---
 
-## Phase 4 : Hook useSidebarAnalytics
+## Correction 3 : Hiérarchie des Boutons (ArticleCluster.tsx)
 
-**Données calculées en temps réel :**
-```typescript
-interface SidebarAnalytics {
-  sentimentDistribution: {
-    positive: number;  // %
-    neutral: number;
-    negative: number;
-  };
-  topConcepts: Array<{ tag: string; count: number; active: boolean }>;
-  topSources: Array<{ name: string; count: number }>;
-  trendingPeople: Array<{ name: string; mentions: number }>;
-}
+### Problèmes actuels
+- "Enrichir" avec `variant="default"` + `animate-pulse` = trop visible
+- "Voir l'analyse" est un simple lien discret
+- L'action principale pour un DG est "Lire", pas "Enrichir"
+
+### Solution proposée
+
+| Action | Avant | Après |
+|--------|-------|-------|
+| Partager / Commenter | `variant="ghost"` (gris) | ✓ Inchangé |
+| **Enrichir** | `variant="default"` (bleu solide) | `variant="ghost"` (discret, icône seule optionnelle) |
+| **Voir l'analyse** | `variant="link"` (texte bleu) | `variant="default"` (bouton principal avec flèche) |
+
+```text
+Avant :
+[Partager] [Commenter]     [█ Enrichir █]  [Voir l'analyse →]
+                           ↑ trop visible   ↑ pas assez visible
+
+Après :
+[Partager] [Commenter]     [✨ Enrichir]   [█ Lire l'analyse → █]
+                           ↑ discret        ↑ action principale
 ```
 
 ---
 
-## Phase 5 : Refonte de ActualitesPage.tsx
+## Correction 4 : État vide pour "Concepts Clés"
 
-**Structure finale :**
+### Problème
+Quand `topConcepts` est vide (pas de tags dans les articles), le widget apparaît vide sans message
+
+### Solution
+Ajouter un état placeholder avec icône et texte informatif :
+
+```text
+┌────────────────────────────┐
+│  #️ Concepts Clés          │
+│                            │
+│      ⚠ En attente         │
+│      d'analyse...          │
+│                            │
+└────────────────────────────┘
+```
+
+---
+
+## Fichiers à modifier
+
+| Fichier | Modifications |
+|---------|---------------|
+| `src/components/actualites/SmartSidebar.tsx` | Refonte du graphique de sentiment + état vide concepts |
+| `src/hooks/useArticleClusters.ts` | Seuil 30% + comparaison par entités |
+| `src/components/actualites/ArticleCluster.tsx` | Inversion hiérarchie boutons |
+
+---
+
+## Détails d'implémentation
+
+### SmartSidebar.tsx - Nouveau graphique de sentiment
+
 ```tsx
-<div className="min-h-screen bg-muted/30">
-  {/* 1. En-tête */}
-  <WatchHeader 
-    newArticlesCount={newCount}
-    onDateChange={setPeriod}
-    onExport={handleExport}
-  />
-
-  {/* 2. Barre de recherche */}
-  <BigSearchBar 
-    value={searchTerm}
-    onChange={setSearchTerm}
-    suggestions={topEntities}
-    onAdvancedFilters={() => setShowFilters(true)}
-  />
-
-  {/* 3. Layout 2 colonnes */}
-  <div className="flex gap-8">
-    {/* Colonne principale (70%) */}
-    <main className="w-full lg:w-3/4 space-y-4">
-      <SectionLabel 
-        icon={TrendingUp}
-        title="Les immanquables"
-        sortBy={sortBy}
-        onSortChange={setSortBy}
-      />
+{/* Widget : Analyse de Sentiment (Corrigé) */}
+<Card className="border-border/50">
+  <CardContent className="p-5">
+    <h3 className="...">Tonalité du jour</h3>
+    
+    {/* Graphique avec hauteur augmentée */}
+    <div className="flex items-end justify-between gap-3 h-24 px-2">
       
-      {clusters.map(cluster => (
-        <ArticleCluster
-          key={cluster.mainArticle.id}
-          mainArticle={cluster.mainArticle}
-          relatedArticles={cluster.relatedArticles}
-          entities={cluster.entities}
-          onExpand={trackInteraction}
-        />
-      ))}
+      {/* Barre Positif */}
+      <div className="flex flex-col items-center w-1/3 group cursor-pointer">
+        {/* Label visible au hover */}
+        <span className="text-xs font-bold text-signal-positive mb-1 
+                         opacity-0 group-hover:opacity-100 
+                         transition-opacity duration-200">
+          {sentimentDistribution.positive}%
+        </span>
+        {/* Conteneur de la barre */}
+        <div className="w-full bg-signal-positive/20 rounded-lg 
+                        relative h-full overflow-hidden">
+          <div 
+            className="absolute bottom-0 w-full bg-signal-positive 
+                       rounded-lg transition-all duration-500 
+                       group-hover:brightness-110"
+            style={{ height: `${sentimentDistribution.positive}%` }}
+          />
+        </div>
+        <span className="text-xs text-muted-foreground mt-2">Positif</span>
+      </div>
       
-      <LoadMoreButton onClick={loadMore} hasMore={hasMore} />
-    </main>
+      {/* Barre Neutre - même structure */}
+      {/* Barre Négatif - même structure */}
+    </div>
+  </CardContent>
+</Card>
+```
 
-    {/* Sidebar (30%) */}
-    <aside className="hidden lg:block w-1/4 sticky top-6">
-      <SmartSidebar
-        analytics={analytics}
-        activeFilters={activeFilters}
-        onFilterChange={handleFilterChange}
-      />
-    </aside>
+### useArticleClusters.ts - Nouvelle fonction de comparaison
+
+```typescript
+// Vérifier si deux articles partagent des entités
+const hasSharedEntities = (
+  a1: ExtendedActualite, 
+  a2: ExtendedActualite
+): boolean => {
+  const people1 = new Set(a1.entites_personnes ?? []);
+  const people2 = new Set(a2.entites_personnes ?? []);
+  const companies1 = new Set(a1.entites_entreprises ?? []);
+  const companies2 = new Set(a2.entites_entreprises ?? []);
+  
+  // Au moins une personne en commun
+  for (const p of people1) {
+    if (people2.has(p)) return true;
+  }
+  
+  // Au moins une entreprise en commun
+  for (const c of companies1) {
+    if (companies2.has(c)) return true;
+  }
+  
+  return false;
+};
+
+// Mise à jour de shouldCluster
+const shouldCluster = (article1, article2): boolean => {
+  // Seuil de titre abaissé à 30%
+  if (calculateSimilarity(title1, title2) > 0.30) return true;
+  
+  // Tags communs > 60%
+  if (calculateTagOverlap(tags1, tags2) > 0.6) return true;
+  
+  // NOUVEAU: Entités partagées
+  if (hasSharedEntities(article1, article2)) return true;
+  
+  // Catégorie + titre > 20%
+  if (sameCategory && titleSimilarity > 0.2) return true;
+  
+  return false;
+};
+```
+
+### ArticleCluster.tsx - Footer avec hiérarchie corrigée
+
+```tsx
+{/* Footer Actions - Hiérarchie corrigée */}
+<div className="bg-muted/30 px-5 py-2.5 border-t border-border/50 
+                flex justify-between items-center">
+  
+  {/* Actions sociales (inchangées) */}
+  <div className="flex gap-2">
+    <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
+      <Share2 className="h-3.5 w-3.5 mr-1" /> Partager
+    </Button>
+    <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
+      <MessageSquare className="h-3.5 w-3.5 mr-1" /> Commenter
+    </Button>
+  </div>
+  
+  {/* Actions principales (hiérarchie inversée) */}
+  <div className="flex items-center gap-2">
+    {/* Enrichir = discret maintenant */}
+    {onEnrich && (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => onEnrich(mainArticle.id)}
+        disabled={isEnriching}
+        className="text-xs text-primary hover:bg-primary/10"
+      >
+        {isEnriching ? (
+          <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+        ) : (
+          <Sparkles className="h-3.5 w-3.5 mr-1" />
+        )}
+        {needsEnrichment ? "Enrichir" : "Ré-analyser"}
+      </Button>
+    )}
+    
+    {/* Voir l'analyse = primaire maintenant */}
+    <Button 
+      variant="default" 
+      size="sm" 
+      className="text-xs font-bold gap-1"
+    >
+      Lire l'analyse
+      <ArrowRight className="h-3.5 w-3.5" />
+    </Button>
   </div>
 </div>
 ```
 
 ---
 
-## Phase 6 : Edge function d'extraction d'entités
-
-Enrichir la fonction `enrichir-actualite` pour extraire automatiquement les personnes et entreprises citées en utilisant l'IA.
-
-**Prompt IA pour extraction :**
-```text
-Analyse ce texte et extrais les entités nommées :
-1. PERSONNES : Noms complets des personnes citées
-2. ENTREPRISES : Noms des organisations, entreprises, institutions
-
-Format JSON attendu :
-{
-  "personnes": ["Mamadou Bamba", "Kalil Konaté"],
-  "entreprises": ["Orange CI", "Eutelsat", "ANSUT"]
-}
-```
-
----
-
-## Fichiers à créer
-
-| Fichier | Description |
-|---------|-------------|
-| `src/components/actualites/ArticleCluster.tsx` | Carte avec regroupement d'articles similaires |
-| `src/components/actualites/SmartSidebar.tsx` | Sidebar avec widgets analytiques |
-| `src/components/actualites/WatchHeader.tsx` | En-tête épuré avec date picker |
-| `src/components/actualites/BigSearchBar.tsx` | Barre de recherche centrée |
-| `src/components/actualites/SentimentChart.tsx` | Widget graphique de sentiment |
-| `src/components/actualites/ConceptCloud.tsx` | Nuage de tags cliquables |
-| `src/components/actualites/SourceRanking.tsx` | Liste des top sources |
-| `src/components/actualites/TrendingPeople.tsx` | Personnalités tendance |
-| `src/hooks/useArticleClusters.ts` | Hook de clustering des articles |
-| `src/hooks/useSidebarAnalytics.ts` | Hook de calcul des analytics sidebar |
-
-## Fichiers à modifier
-
-| Fichier | Modifications |
-|---------|---------------|
-| `src/pages/ActualitesPage.tsx` | Refonte complète du layout |
-| `src/hooks/useActualites.ts` | Ajout des nouveaux champs (entités, cluster_id) |
-| `supabase/functions/enrichir-actualite/index.ts` | Ajout de l'extraction d'entités par IA |
-
----
-
 ## Récapitulatif des améliorations UX
 
-### Gain d'espace
-- **Avant** : 4 KPIs + filtres déroulants = 40% écran perdu
-- **Après** : Recherche + flux = 95% contenu utile
-
-### Réduction du bruit
-- **Avant** : 3 articles identiques sur Orange SAT
-- **Après** : 1 cluster avec "3 sources similaires" cliquable
-
-### Analyse visible
-- **Avant** : Bouton "Enrichir" = analyse non faite
-- **Après** : Entités (👤 👏) visibles directement sur les cartes
-
-### Filtrage actif
-- **Avant** : Menus déroulants cachés
-- **Après** : Tags cliquables + graphique de sentiment interactif
-
+| Avant | Après |
+|-------|-------|
+| Graphique sentiment avec labels flottants | Labels au hover, barres plus hautes, coins arrondis |
+| Doublons Orange SAT/Mamadou Bamba visibles | Regroupés grâce à la comparaison par entités |
+| Bouton "Enrichir" trop visible | Discret, "Lire l'analyse" devient primaire |
+| Concepts Clés vide sans message | Placeholder "En attente d'analyse..." |
