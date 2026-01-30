@@ -1,140 +1,200 @@
 
 
-# Correction du bouton "Lire l'analyse"
+# Correction de l'affichage de la modale "Analyse IA"
 
 ## Diagnostic
 
-Le bouton "Lire l'analyse" dans `ArticleCluster.tsx` (lignes 204-211) **n'a pas de handler `onClick`** - c'est un bouton purement visuel sans aucune action associée :
+Le champ `analyse_ia` contient du **JSON stringifié** avec cette structure :
 
-```tsx
-<Button 
-  variant="default" 
-  size="sm" 
-  className="text-xs font-bold gap-1"
->
-  Lire l'analyse  {/* ⚠️ Pas de onClick ! */}
-  <ArrowRight className="h-3.5 w-3.5" />
-</Button>
+```json
+{
+  "tags": ["5G", "Orange Côte d'Ivoire", ...],
+  "categorie": "Technologies & Infrastructures",
+  "importance": 98,
+  "quadrant_dominant": "market",
+  "quadrant_distribution": { "tech": 97, "regulation": 0, "market": 100, "reputation": 0 },
+  "alertes_declenchees": [],
+  "analyse_summary": "4 mots-clés détectés",
+  "enrichi_le": "2026-01-30T04:28:39.608Z"
+}
 ```
 
-## Données disponibles
+ReactMarkdown essaie de rendre ce JSON comme du texte Markdown, ce qui affiche le JSON brut.
 
-L'interface `Actualite` contient déjà un champ `analyse_ia: string | null` qui stocke l'analyse IA de l'article. Ce champ est rempli par la fonction d'enrichissement.
+---
 
 ## Solution proposée
 
-Ajouter une **modale de lecture** qui s'ouvre au clic sur "Lire l'analyse" pour afficher :
-- Le titre de l'article
-- L'analyse IA (en Markdown si enrichi)
-- Un message si l'article n'a pas encore été enrichi
+Parser le JSON et afficher un dashboard structuré avec :
+- Score d'importance (jauge visuelle)
+- Catégorie détectée
+- Tags en badges
+- Distribution des quadrants (barres)
+- Alertes déclenchées (si présentes)
+- Date d'enrichissement
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
 │  ✕  Analyse IA                                              │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  📰 [Titre de l'article]                                    │
+│  📰 Côte d'Ivoire/Internet par Satellite : ...              │
 │                                                             │
 │  ─────────────────────────────────────────────              │
 │                                                             │
-│  [Contenu de l'analyse IA en Markdown]                      │
-│                                                             │
-│  - Points clés                                              │
-│  - Entités mentionnées                                      │
-│  - Sentiment détecté                                        │
+│  ⭐ Importance : 98/100   │  📁 Technologies & Infra        │
+│  ████████████████████░░   │                                 │
 │                                                             │
 │  ─────────────────────────────────────────────              │
 │                                                             │
-│  Si pas d'analyse :                                         │
-│  "Cet article n'a pas encore été enrichi.                   │
-│   Cliquez sur 'Enrichir' pour générer l'analyse."           │
+│  🏷️ Mots-clés détectés (4)                                  │
+│  ┌────────┐ ┌─────────────────┐ ┌─────────────────┐         │
+│  │  5G    │ │ Orange CI       │ │ Inclusion num.  │         │
+│  └────────┘ └─────────────────┘ └─────────────────┘         │
 │                                                             │
+│  ─────────────────────────────────────────────              │
+│                                                             │
+│  📊 Répartition par quadrant                                │
+│  Tech       ████████████████████░░░  97%                    │
+│  Market     ██████████████████████   100%                   │
+│  Regulation ░░░░░░░░░░░░░░░░░░░░░░   0%                     │
+│  Reputation ░░░░░░░░░░░░░░░░░░░░░░   0%                     │
+│                                                             │
+│  ─────────────────────────────────────────────              │
+│  🕐 Enrichi le 30/01/2026 à 04:28                           │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Fichiers à modifier
+## Fichier à modifier
 
 | Fichier | Modifications |
 |---------|---------------|
-| `src/components/actualites/ArticleCluster.tsx` | Ajouter état `isAnalysisOpen` + Dialog + onClick sur le bouton |
+| `src/components/actualites/ArticleCluster.tsx` | Remplacer ReactMarkdown par un parser JSON + affichage structuré |
 
 ---
 
-## Implémentation détaillée
+## Implémentation
 
-### ArticleCluster.tsx
+### 1. Interface pour le JSON d'analyse
+
+```typescript
+interface AnalyseIA {
+  tags: string[];
+  categorie: string;
+  importance: number;
+  quadrant_dominant: string;
+  quadrant_distribution: Record<string, number>;
+  alertes_declenchees: string[];
+  analyse_summary: string;
+  enrichi_le: string;
+}
+```
+
+### 2. Parser et affichage dans la modale
 
 ```tsx
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import ReactMarkdown from 'react-markdown';
-import { AlertCircle, FileText } from 'lucide-react';
+// Parser le JSON (avec gestion d'erreur)
+const parseAnalyseIA = (analyseString: string | null): AnalyseIA | null => {
+  if (!analyseString) return null;
+  try {
+    return JSON.parse(analyseString) as AnalyseIA;
+  } catch {
+    return null;
+  }
+};
 
-// Dans le composant :
-const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
+// Dans le Dialog
+const analyseData = parseAnalyseIA(mainArticle.analyse_ia);
 
-// Bouton avec onClick
-<Button 
-  variant="default" 
-  size="sm" 
-  className="text-xs font-bold gap-1"
-  onClick={() => setIsAnalysisOpen(true)}
-  disabled={!mainArticle.analyse_ia && needsEnrichment}
->
-  Lire l'analyse
-  <ArrowRight className="h-3.5 w-3.5" />
-</Button>
-
-// Modale d'analyse
-<Dialog open={isAnalysisOpen} onOpenChange={setIsAnalysisOpen}>
-  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-    <DialogHeader>
-      <DialogTitle className="flex items-center gap-2">
-        <FileText className="h-5 w-5" />
-        Analyse IA
-      </DialogTitle>
-    </DialogHeader>
-    
-    <div className="space-y-4">
-      {/* Titre de l'article */}
-      <h3 className="font-bold text-lg">{mainArticle.titre}</h3>
-      
-      <div className="border-t pt-4">
-        {mainArticle.analyse_ia ? (
-          <div className="prose prose-sm dark:prose-invert max-w-none">
-            <ReactMarkdown>{mainArticle.analyse_ia}</ReactMarkdown>
+{analyseData ? (
+  <div className="space-y-6">
+    {/* Score + Catégorie */}
+    <div className="grid grid-cols-2 gap-4">
+      <div>
+        <p className="text-xs text-muted-foreground mb-1">Importance</p>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary transition-all" 
+              style={{ width: `${analyseData.importance}%` }}
+            />
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-            <AlertCircle className="h-8 w-8 mb-2" />
-            <p className="text-center">
-              Cet article n'a pas encore été analysé.<br />
-              Cliquez sur "Enrichir" pour générer l'analyse.
-            </p>
-          </div>
-        )}
+          <span className="font-bold text-sm">{analyseData.importance}/100</span>
+        </div>
+      </div>
+      <div>
+        <p className="text-xs text-muted-foreground mb-1">Catégorie</p>
+        <Badge variant="secondary">{analyseData.categorie}</Badge>
       </div>
     </div>
-  </DialogContent>
-</Dialog>
+
+    {/* Tags */}
+    <div>
+      <p className="text-xs text-muted-foreground mb-2">
+        Mots-clés détectés ({analyseData.tags.length})
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {analyseData.tags.map(tag => (
+          <Badge key={tag} variant="outline">{tag}</Badge>
+        ))}
+      </div>
+    </div>
+
+    {/* Quadrants */}
+    <div>
+      <p className="text-xs text-muted-foreground mb-2">Répartition par quadrant</p>
+      <div className="space-y-2">
+        {Object.entries(analyseData.quadrant_distribution).map(([quadrant, score]) => (
+          <div key={quadrant} className="flex items-center gap-2">
+            <span className="w-24 text-xs capitalize">{quadrant}</span>
+            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary/70 transition-all" 
+                style={{ width: `${score}%` }}
+              />
+            </div>
+            <span className="text-xs w-8 text-right">{score}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* Alertes */}
+    {analyseData.alertes_declenchees.length > 0 && (
+      <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/30">
+        <p className="text-xs font-medium text-destructive mb-1">Alertes déclenchées</p>
+        <p className="text-sm">{analyseData.alertes_declenchees.join(', ')}</p>
+      </div>
+    )}
+
+    {/* Date */}
+    <p className="text-xs text-muted-foreground pt-2 border-t">
+      Enrichi le {new Date(analyseData.enrichi_le).toLocaleString('fr-FR')}
+    </p>
+  </div>
+) : (
+  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+    <AlertCircle className="h-8 w-8 mb-2" />
+    <p className="text-center">
+      Cet article n'a pas encore été analysé.<br />
+      Cliquez sur "Enrichir" pour générer l'analyse.
+    </p>
+  </div>
+)}
 ```
 
 ---
 
-## Comportement du bouton
+## Récapitulatif
 
-| État de l'article | Bouton | Comportement |
-|-------------------|--------|--------------|
-| Avec `analyse_ia` | Actif (bleu) | Ouvre la modale avec l'analyse |
-| Sans `analyse_ia` mais déjà enrichi | Actif | Ouvre la modale avec message "pas encore analysé" |
-| Sans `analyse_ia` et `importance=0` | Désactivé (grisé) | Tooltip "Enrichissez d'abord l'article" |
-
----
-
-## Dépendances existantes
-
-✅ `react-markdown` est déjà installé dans le projet (version ^10.1.0)
-✅ `Dialog` de shadcn/ui est déjà disponible
+| Élément | Avant | Après |
+|---------|-------|-------|
+| Parsing | Aucun (JSON brut) | `JSON.parse()` avec fallback |
+| Affichage tags | Texte JSON | Badges cliquables |
+| Score importance | Nombre brut | Barre de progression |
+| Quadrants | Objet JSON | Barres horizontales |
+| Alertes | Array JSON | Encart rouge si présent |
+| Date | ISO string | Format `fr-FR` lisible |
 
