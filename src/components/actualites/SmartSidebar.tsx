@@ -1,4 +1,4 @@
-import { BarChart2, Hash, Globe, User, TrendingUp } from 'lucide-react';
+import { BarChart2, Hash, Globe, User, TrendingUp, AlertCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -33,77 +33,93 @@ export function SmartSidebar({
 
   return (
     <div className="space-y-5">
-      {/* Widget : Analyse de Sentiment */}
+      {/* Widget : Analyse de Sentiment (Corrigé) */}
       <Card className="border-border/50">
         <CardContent className="p-5">
-          <h3 className="text-xs font-bold text-muted-foreground uppercase mb-4 flex items-center gap-2">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase mb-6 flex items-center gap-2">
             <BarChart2 className="h-3.5 w-3.5" /> Tonalité du jour
           </h3>
-          <div className="flex items-end gap-2 h-16 mb-2">
-            {/* Barre Positive */}
-            <div className="w-1/3 bg-signal-positive/20 rounded-t-md relative group h-full">
-              <div 
-                className="absolute bottom-0 w-full bg-signal-positive rounded-t-md transition-all group-hover:bg-signal-positive/90"
-                style={{ height: `${sentimentDistribution.positive}%` }}
-              />
-              <span className="absolute -top-6 text-xs font-bold text-signal-positive w-full text-center">
+          
+          {/* Graphique avec hauteur augmentée et labels hover */}
+          <div className="flex items-end justify-between gap-3 h-24 px-2">
+            {/* Barre Positif */}
+            <div className="flex flex-col items-center w-1/3 group cursor-pointer">
+              <span className="text-xs font-bold text-signal-positive mb-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 transform translate-y-2 group-hover:translate-y-0">
                 {sentimentDistribution.positive}%
               </span>
+              <div className="w-full bg-signal-positive/20 rounded-lg relative h-full overflow-hidden">
+                <div 
+                  className="absolute bottom-0 w-full bg-signal-positive rounded-lg transition-all duration-500 group-hover:brightness-110"
+                  style={{ height: `${sentimentDistribution.positive}%` }}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground mt-2 font-medium">Positif</span>
             </div>
+
             {/* Barre Neutre */}
-            <div className="w-1/3 bg-muted-foreground/20 rounded-t-md relative group h-full">
-              <div 
-                className="absolute bottom-0 w-full bg-muted-foreground rounded-t-md"
-                style={{ height: `${sentimentDistribution.neutral}%` }}
-              />
-              <span className="absolute -top-6 text-xs font-bold text-muted-foreground w-full text-center">
+            <div className="flex flex-col items-center w-1/3 group cursor-pointer">
+              <span className="text-xs font-bold text-muted-foreground mb-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 transform translate-y-2 group-hover:translate-y-0">
                 {sentimentDistribution.neutral}%
               </span>
+              <div className="w-full bg-muted-foreground/20 rounded-lg relative h-full overflow-hidden">
+                <div 
+                  className="absolute bottom-0 w-full bg-muted-foreground rounded-lg transition-all duration-500 group-hover:brightness-110"
+                  style={{ height: `${sentimentDistribution.neutral}%` }}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground mt-2 font-medium">Neutre</span>
             </div>
-            {/* Barre Négative */}
-            <div className="w-1/3 bg-signal-critical/20 rounded-t-md relative group h-full">
-              <div 
-                className="absolute bottom-0 w-full bg-signal-critical rounded-t-md"
-                style={{ height: `${sentimentDistribution.negative}%` }}
-              />
-              <span className="absolute -top-6 text-xs font-bold text-signal-critical w-full text-center">
+
+            {/* Barre Négatif */}
+            <div className="flex flex-col items-center w-1/3 group cursor-pointer">
+              <span className="text-xs font-bold text-signal-critical mb-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 transform translate-y-2 group-hover:translate-y-0">
                 {sentimentDistribution.negative}%
               </span>
+              <div className="w-full bg-signal-critical/20 rounded-lg relative h-full overflow-hidden">
+                <div 
+                  className="absolute bottom-0 w-full bg-signal-critical rounded-lg transition-all duration-500 group-hover:brightness-110"
+                  style={{ height: `${sentimentDistribution.negative}%` }}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground mt-2 font-medium">Négatif</span>
             </div>
-          </div>
-          <div className="flex justify-between text-xs text-muted-foreground px-1 pt-1">
-            <span>Positif</span>
-            <span>Neutre</span>
-            <span>Négatif</span>
           </div>
         </CardContent>
       </Card>
 
-      {/* Widget : Concepts Clés */}
+      {/* Widget : Concepts Clés (avec état vide) */}
       <Card className="border-border/50">
-        <CardContent className="p-5">
-          <h3 className="text-xs font-bold text-muted-foreground uppercase mb-3 flex items-center gap-2">
+        <CardContent className="p-5 min-h-[140px]">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase mb-4 flex items-center gap-2">
             <Hash className="h-3.5 w-3.5" /> Concepts Clés
           </h3>
-          <div className="flex flex-wrap gap-2">
-            {topConcepts.slice(0, 8).map((concept) => (
-              <Button
-                key={concept.tag}
-                variant="ghost"
-                size="sm"
-                onClick={() => onFilterChange(concept.tag)}
-                className={cn(
-                  "px-3 py-1.5 h-auto rounded-lg text-xs font-medium transition-colors border",
-                  activeFilters.includes(concept.tag)
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-muted/50 text-foreground border-border hover:border-primary/50 hover:text-primary"
-                )}
-              >
-                {concept.tag}
-                <span className="ml-1 opacity-60">({concept.count})</span>
-              </Button>
-            ))}
-          </div>
+          
+          {topConcepts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-20 text-muted-foreground/50">
+              <AlertCircle className="h-5 w-5 mb-1 opacity-50" />
+              <span className="text-xs">En attente d'analyse...</span>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {topConcepts.slice(0, 8).map((concept) => (
+                <Button
+                  key={concept.tag}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onFilterChange(concept.tag)}
+                  className={cn(
+                    "px-2.5 py-1 h-auto rounded-md text-xs font-medium transition-colors border",
+                    activeFilters.includes(concept.tag)
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted/30 text-foreground border-border/50 hover:border-primary/50 hover:text-primary"
+                  )}
+                >
+                  #{concept.tag}
+                  <span className="ml-1 opacity-60">({concept.count})</span>
+                </Button>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
