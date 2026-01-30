@@ -20,6 +20,7 @@ import {
   Search,
   Users
 } from "lucide-react";
+import AuditActivityChart from "@/components/admin/AuditActivityChart";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -292,6 +293,9 @@ export default function AuditLogsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Activity Chart */}
+      <AuditActivityChart />
 
       {/* Filters Card */}
       <Card className="glass">
