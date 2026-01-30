@@ -208,3 +208,27 @@ export const usePreviewEnrichment = () => {
     },
   });
 };
+
+// Hook pour récupérer les articles de la veille (24-48h) pour les comparaisons de tendances
+export const useYesterdayArticles = () => {
+  return useQuery({
+    queryKey: ['yesterday-articles'],
+    queryFn: async () => {
+      const now = new Date();
+      const yesterday24h = new Date(now);
+      yesterday24h.setHours(yesterday24h.getHours() - 48);
+      const yesterday48h = new Date(now);
+      yesterday48h.setHours(yesterday48h.getHours() - 72);
+
+      const { data, error } = await supabase
+        .from('actualites')
+        .select('id, sentiment')
+        .gte('date_publication', yesterday48h.toISOString())
+        .lt('date_publication', yesterday24h.toISOString());
+
+      if (error) throw error;
+      return data as { id: string; sentiment: number | null }[];
+    },
+    staleTime: 5 * 60 * 1000, // Cache 5 minutes
+  });
+};

@@ -1,13 +1,23 @@
-import { BarChart2, Hash, Globe, User, TrendingUp, AlertCircle } from 'lucide-react';
+import { BarChart2, Hash, Globe, User, TrendingUp, TrendingDown, Minus, AlertCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
+interface TrendInfo {
+  delta: number;
+  direction: 'up' | 'down' | 'stable';
+}
 
 interface SidebarAnalytics {
   sentimentDistribution: {
     positive: number;
     neutral: number;
     negative: number;
+  };
+  sentimentTrends: {
+    positive: TrendInfo;
+    neutral: TrendInfo;
+    negative: TrendInfo;
   };
   topConcepts: Array<{ tag: string; count: number; active: boolean }>;
   topSources: Array<{ name: string; count: number }>;
@@ -22,6 +32,47 @@ interface SmartSidebarProps {
   onSourceClick?: (source: string) => void;
 }
 
+// Composant pour afficher l'indicateur de tendance
+const TrendIndicator = ({ 
+  trend, 
+  type 
+}: { 
+  trend: TrendInfo; 
+  type: 'positive' | 'neutral' | 'negative';
+}) => {
+  const { delta, direction } = trend;
+  
+  // Si stable ou delta = 0
+  if (direction === 'stable' || delta === 0) {
+    return (
+      <span className="flex items-center gap-0.5 text-muted-foreground text-[10px]">
+        <Minus className="h-2.5 w-2.5" />
+        <span>0%</span>
+      </span>
+    );
+  }
+
+  // Logique de couleur inversée pour "negative" (baisse = bien, hausse = mal)
+  let colorClass: string;
+  if (type === 'neutral') {
+    colorClass = 'text-muted-foreground';
+  } else if (type === 'positive') {
+    colorClass = direction === 'up' ? 'text-signal-positive' : 'text-signal-critical';
+  } else {
+    // negative: down = amélioration (vert), up = dégradation (rouge)
+    colorClass = direction === 'down' ? 'text-signal-positive' : 'text-signal-critical';
+  }
+  
+  const Icon = direction === 'up' ? TrendingUp : TrendingDown;
+  
+  return (
+    <span className={cn("flex items-center gap-0.5 text-[10px] font-medium", colorClass)}>
+      <Icon className="h-2.5 w-2.5" />
+      <span>{direction === 'up' ? '+' : '-'}{delta}%</span>
+    </span>
+  );
+};
+
 export function SmartSidebar({ 
   analytics, 
   activeFilters, 
@@ -29,23 +80,27 @@ export function SmartSidebar({
   onPersonClick,
   onSourceClick 
 }: SmartSidebarProps) {
-  const { sentimentDistribution, topConcepts, topSources, trendingPeople } = analytics;
+  const { sentimentDistribution, sentimentTrends, topConcepts, topSources, trendingPeople } = analytics;
 
   return (
     <div className="space-y-5">
-      {/* Widget : Analyse de Sentiment (Structure corrigée) */}
+      {/* Widget : Analyse de Sentiment avec tendances */}
       <Card className="border-border/50">
         <CardContent className="p-5">
           <h3 className="text-xs font-bold text-muted-foreground uppercase mb-4 flex items-center gap-2">
             <BarChart2 className="h-3.5 w-3.5" /> Tonalité du jour
           </h3>
           
-          {/* Zone des barres - hauteur fixe avec position relative */}
-          <div className="flex items-end justify-between gap-3 h-24 px-2 mb-2">
+          {/* Zone des barres avec indicateurs de tendance */}
+          <div className="flex items-end justify-between gap-3 h-28 px-2 mb-2">
             {/* Barre Positif */}
             <div className="flex-1 h-full relative group cursor-pointer">
+              {/* Indicateur de tendance (toujours visible) */}
+              <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-10">
+                <TrendIndicator trend={sentimentTrends.positive} type="positive" />
+              </div>
               {/* Pourcentage au hover */}
-              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-signal-positive opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+              <span className="absolute -top-12 left-1/2 -translate-x-1/2 text-xs font-bold text-signal-positive opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
                 {sentimentDistribution.positive}%
               </span>
               {/* Conteneur de la barre */}
@@ -59,7 +114,10 @@ export function SmartSidebar({
 
             {/* Barre Neutre */}
             <div className="flex-1 h-full relative group cursor-pointer">
-              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+              <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-10">
+                <TrendIndicator trend={sentimentTrends.neutral} type="neutral" />
+              </div>
+              <span className="absolute -top-12 left-1/2 -translate-x-1/2 text-xs font-bold text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
                 {sentimentDistribution.neutral}%
               </span>
               <div className="absolute inset-0 bg-muted-foreground/20 rounded-lg overflow-hidden">
@@ -72,7 +130,10 @@ export function SmartSidebar({
 
             {/* Barre Négatif */}
             <div className="flex-1 h-full relative group cursor-pointer">
-              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-signal-critical opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+              <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-10">
+                <TrendIndicator trend={sentimentTrends.negative} type="negative" />
+              </div>
+              <span className="absolute -top-12 left-1/2 -translate-x-1/2 text-xs font-bold text-signal-critical opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
                 {sentimentDistribution.negative}%
               </span>
               <div className="absolute inset-0 bg-signal-critical/20 rounded-lg overflow-hidden">
