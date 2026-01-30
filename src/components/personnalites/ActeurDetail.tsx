@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { 
   Building2, MapPin, Star, AlertTriangle, Bell, 
   Twitter, Linkedin, Newspaper, ExternalLink,
-  Wifi, Wallet, Landmark, GraduationCap, Activity, Pencil
+  Wifi, Wallet, Landmark, GraduationCap, Activity, Pencil,
+  Archive, Trash2
 } from 'lucide-react';
 import { CERCLE_LABELS, SOUS_CATEGORIE_LABELS } from '@/hooks/usePersonnalites';
 import { 
@@ -28,6 +29,8 @@ interface ActeurDetailProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onEdit?: () => void;
+  onArchive?: () => void;
+  onDelete?: () => void;
 }
 
 const getCercleColors = (cercle: CercleStrategique) => {
@@ -50,7 +53,7 @@ const getCategorieIcon = (categorie?: string) => {
   }
 };
 
-export function ActeurDetail({ personnalite, open, onOpenChange, onEdit }: ActeurDetailProps) {
+export function ActeurDetail({ personnalite, open, onOpenChange, onEdit, onArchive, onDelete }: ActeurDetailProps) {
   const { isAdmin } = useAuth();
   const toggleSuivi = useToggleSuiviSPDI();
   
@@ -340,6 +343,43 @@ export function ActeurDetail({ personnalite, open, onOpenChange, onEdit }: Acteu
             </h3>
             <p className="text-xs text-muted-foreground">{cercleInfo.description}</p>
           </div>
+
+          {/* Zone Danger - Visible uniquement pour les admins */}
+          {isAdmin && (onArchive || onDelete) && (
+            <>
+              <Separator className="my-4" />
+              <div className="p-4 rounded-lg border border-destructive/20 bg-destructive/5">
+                <h3 className="text-sm font-semibold text-destructive mb-3 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  Zone sensible
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {onArchive && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={onArchive}
+                      className="gap-1.5"
+                    >
+                      <Archive className="h-3.5 w-3.5" />
+                      Archiver
+                    </Button>
+                  )}
+                  {onDelete && (
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={onDelete}
+                      className="gap-1.5"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Supprimer définitivement
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </ScrollArea>
       </SheetContent>
     </Sheet>

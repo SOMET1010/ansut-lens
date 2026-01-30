@@ -1,4 +1,3 @@
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Award, Building2, AlertTriangle, Star, Eye, Pencil, MoreHorizontal } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Award, Building2, AlertTriangle, Star, Eye, Pencil, MoreHorizontal, Archive, Trash2 } from 'lucide-react';
 import { CERCLE_LABELS } from '@/hooks/usePersonnalites';
 import type { Personnalite, CercleStrategique } from '@/types';
 import { cn } from '@/lib/utils';
@@ -17,6 +23,8 @@ interface ActeurCardProps {
   personnalite: Personnalite;
   onClick?: () => void;
   onEdit?: () => void;
+  onArchive?: () => void;
+  onDelete?: () => void;
 }
 
 const getCercleStyles = (cercle: CercleStrategique) => {
@@ -74,7 +82,7 @@ const getCategorieLabel = (categorie?: string) => {
   return labels[categorie || 'autre'] || 'Autre';
 };
 
-export function ActeurCard({ personnalite, onClick, onEdit }: ActeurCardProps) {
+export function ActeurCard({ personnalite, onClick, onEdit, onArchive, onDelete }: ActeurCardProps) {
   const cercleStyles = getCercleStyles(personnalite.cercle);
   const initials = `${personnalite.prenom?.[0] || ''}${personnalite.nom[0]}`.toUpperCase();
   
@@ -140,18 +148,45 @@ export function ActeurCard({ personnalite, onClick, onEdit }: ActeurCardProps) {
         </div>
 
         {/* Menu contextuel */}
-        {onEdit && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground/50 hover:text-foreground shrink-0"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit();
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
+        {(onEdit || onArchive || onDelete) && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground/50 hover:text-foreground shrink-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              {onEdit && (
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Modifier
+                </DropdownMenuItem>
+              )}
+              {onArchive && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onArchive(); }}>
+                    <Archive className="h-4 w-4 mr-2" />
+                    Archiver
+                  </DropdownMenuItem>
+                </>
+              )}
+              {onDelete && (
+                <DropdownMenuItem 
+                  onClick={(e) => { e.stopPropagation(); onDelete(); }} 
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Supprimer
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 
