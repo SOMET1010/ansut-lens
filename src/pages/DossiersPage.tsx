@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { FileText, Edit3, Send, Mail, Users } from 'lucide-react';
+import { FileText, Edit3, Send, Mail, Users, AlertTriangle, TrendingUp, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { NavLink } from 'react-router-dom';
 import { 
   useDossiers, 
@@ -9,6 +11,7 @@ import {
 } from '@/hooks/useDossiers';
 import { useNewsletters } from '@/hooks/useNewsletters';
 import { useAuth } from '@/contexts/AuthContext';
+import { useViewMode } from '@/contexts/ViewModeContext';
 import { 
   DossierFormDialog, 
   DossierView,
@@ -25,6 +28,7 @@ export default function DossiersPage() {
   const [editingDossier, setEditingDossier] = useState<Dossier | null>(null);
   
   const { isAdmin } = useAuth();
+  const { mode } = useViewMode();
   const { data: dossiers, isLoading: isLoadingDossiers } = useDossiers();
   const { data: newsletters, isLoading: isLoadingNewsletters } = useNewsletters();
 
@@ -34,6 +38,11 @@ export default function DossiersPage() {
   
   // Get recent sent newsletters
   const recentNewsletters = newsletters?.filter(n => n.statut === 'envoye').slice(0, 3) || [];
+
+  // Filter for "Crise" mode - show only high-priority items (IA or acteurs categories as proxy for urgency)
+  const urgentDossiers = dossiers?.filter(d => 
+    d.categorie === 'ia' || d.categorie === 'acteurs'
+  ) || [];
 
   const handleEditDossier = (dossier: Dossier) => {
     setSelectedDossier(null);
@@ -46,80 +55,104 @@ export default function DossiersPage() {
     setIsFormOpen(true);
   };
 
+  // Mode-specific titles and descriptions
+  const modeConfig = {
+    dg: {
+      title: 'Tableau de Bord Stratégique',
+      subtitle: 'Vue synthétique pour la Direction Générale',
+      icon: TrendingUp
+    },
+    analyste: {
+      title: 'Studio de Publication',
+      subtitle: 'Centralisez la production de vos Notes Stratégiques et Newsletters.',
+      icon: FileText
+    },
+    crise: {
+      title: 'Centre de Crise',
+      subtitle: 'Documents prioritaires et alertes en temps réel.',
+      icon: AlertTriangle
+    }
+  };
+
+  const currentConfig = modeConfig[mode];
+  const ModeIcon = currentConfig.icon;
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3">
-            <FileText className="h-7 w-7 text-primary" />
-            Studio de Publication
+            <ModeIcon className={`h-7 w-7 ${mode === 'crise' ? 'text-destructive' : 'text-primary'}`} />
+            {currentConfig.title}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Centralisez la production de vos Notes Stratégiques et Newsletters.
+            {currentConfig.subtitle}
           </p>
         </div>
+        
+        {/* Mode indicator badge */}
+        <Badge 
+          variant={mode === 'crise' ? 'destructive' : 'secondary'}
+          className="uppercase text-xs tracking-wider"
+        >
+          <Eye className="h-3 w-3 mr-1" />
+          Mode {mode.toUpperCase()}
+        </Badge>
       </div>
 
-      {/* LAYOUT 2 COLONNES */}
-      <div className="flex flex-col lg:flex-row gap-8">
-        
-        {/* COLONNE GAUCHE : Notes & Briefings (65%) */}
-        <div className="flex-1 space-y-8">
-          
-          {/* Section Brouillons */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2">
-                <Edit3 className="h-4 w-4" /> Brouillons & En cours
-              </h2>
-              {isAdmin && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-primary hover:text-primary"
-                  onClick={handleNewDossier}
-                >
-                  + Nouvelle Note
-                </Button>
-              )}
-            </div>
-            
-            {isLoadingDossiers ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {[1, 2, 3].map(i => (
-                  <Skeleton key={i} className="h-[180px]" />
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {brouillons.map(dossier => (
-                  <BriefingCard 
-                    key={dossier.id} 
-                    dossier={dossier} 
-                    onClick={() => setSelectedDossier(dossier)}
-                    onEdit={() => handleEditDossier(dossier)}
-                  />
-                ))}
-                
-                {/* Create card - always visible for admins */}
-                {isAdmin && <CreateCard onClick={handleNewDossier} />}
-                
-                {/* Empty state when no drafts and not admin */}
-                {brouillons.length === 0 && !isAdmin && (
-                  <div className="col-span-full text-center py-8 text-muted-foreground">
-                    <Edit3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Aucun brouillon en cours</p>
+      {/* MODE: DG - Vue synthétique */}
+      {mode === 'dg' && (
+        <div className="space-y-6">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Notes publiées</p>
+                    <p className="text-3xl font-bold text-primary">{publies.length}</p>
                   </div>
-                )}
-              </div>
-            )}
-          </section>
-          
-          {/* Section Derniers envois */}
+                  <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center">
+                    <Send className="h-6 w-6 text-primary" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">En préparation</p>
+                    <p className="text-3xl font-bold text-orange-500">{brouillons.length}</p>
+                  </div>
+                  <div className="h-12 w-12 bg-orange-500/10 rounded-full flex items-center justify-center">
+                    <Edit3 className="h-6 w-6 text-orange-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Newsletters envoyées</p>
+                    <p className="text-3xl font-bold text-blue-500">{recentNewsletters.length}</p>
+                  </div>
+                  <div className="h-12 w-12 bg-blue-500/10 rounded-full flex items-center justify-center">
+                    <Mail className="h-6 w-6 text-blue-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Recent published documents only */}
           <section>
             <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2 mb-4">
-              <Send className="h-4 w-4" /> Derniers envois au Conseil
+              <Send className="h-4 w-4" /> Derniers documents validés
             </h2>
             
             {isLoadingDossiers ? (
@@ -132,54 +165,193 @@ export default function DossiersPage() {
             )}
           </section>
         </div>
-        
-        {/* COLONNE DROITE : Newsletter Studio (35%) */}
-        <div className="w-full lg:w-[380px] space-y-6">
-          
-          <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2">
-            <Mail className="h-4 w-4" /> Hebdo Télécoms
-          </h2>
-          
-          {/* Widget Generation */}
-          <NewsletterWidget />
-          
-          {/* Historique recent */}
-          <div className="space-y-3">
-            <h3 className="text-xs font-bold uppercase text-muted-foreground">
-              Derniers envois
-            </h3>
+      )}
+
+      {/* MODE: ANALYSTE - Vue complète */}
+      {mode === 'analyste' && (
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* COLONNE GAUCHE : Notes & Briefings (65%) */}
+          <div className="flex-1 space-y-8">
             
-            {isLoadingNewsletters ? (
-              <>
-                <Skeleton className="h-[80px]" />
-                <Skeleton className="h-[80px]" />
-              </>
-            ) : recentNewsletters.length > 0 ? (
-              recentNewsletters.map(newsletter => (
-                <NewsletterHistoryItem 
-                  key={newsletter.id} 
-                  newsletter={newsletter}
-                />
-              ))
-            ) : (
-              <div className="text-center py-6 text-muted-foreground text-sm">
-                <Mail className="h-6 w-6 mx-auto mb-2 opacity-50" />
-                Aucune newsletter envoyée
+            {/* Section Brouillons */}
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2">
+                  <Edit3 className="h-4 w-4" /> Brouillons & En cours
+                </h2>
+                {isAdmin && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-primary hover:text-primary"
+                    onClick={handleNewDossier}
+                  >
+                    + Nouvelle Note
+                  </Button>
+                )}
               </div>
-            )}
+              
+              {isLoadingDossiers ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {[1, 2, 3].map(i => (
+                    <Skeleton key={i} className="h-[180px]" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {brouillons.map(dossier => (
+                    <BriefingCard 
+                      key={dossier.id} 
+                      dossier={dossier} 
+                      onClick={() => setSelectedDossier(dossier)}
+                      onEdit={() => handleEditDossier(dossier)}
+                    />
+                  ))}
+                  
+                  {isAdmin && <CreateCard onClick={handleNewDossier} />}
+                  
+                  {brouillons.length === 0 && !isAdmin && (
+                    <div className="col-span-full text-center py-8 text-muted-foreground">
+                      <Edit3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Aucun brouillon en cours</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+            
+            {/* Section Derniers envois */}
+            <section>
+              <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2 mb-4">
+                <Send className="h-4 w-4" /> Derniers envois au Conseil
+              </h2>
+              
+              {isLoadingDossiers ? (
+                <Skeleton className="h-[200px]" />
+              ) : (
+                <RecentSendsTable 
+                  dossiers={publies} 
+                  onSelect={setSelectedDossier} 
+                />
+              )}
+            </section>
           </div>
           
-          {/* Lien Admin */}
-          <div className="pt-4 text-center border-t border-border">
-            <NavLink 
-              to="/admin/newsletters" 
-              className="text-xs text-muted-foreground hover:text-primary flex items-center justify-center gap-1 transition-colors"
-            >
-              <Users className="h-3 w-3" /> Gérer les abonnés & modèles
-            </NavLink>
+          {/* COLONNE DROITE : Newsletter Studio (35%) */}
+          <div className="w-full lg:w-[380px] space-y-6">
+            
+            <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2">
+              <Mail className="h-4 w-4" /> Hebdo Télécoms
+            </h2>
+            
+            <NewsletterWidget />
+            
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold uppercase text-muted-foreground">
+                Derniers envois
+              </h3>
+              
+              {isLoadingNewsletters ? (
+                <>
+                  <Skeleton className="h-[80px]" />
+                  <Skeleton className="h-[80px]" />
+                </>
+              ) : recentNewsletters.length > 0 ? (
+                recentNewsletters.map(newsletter => (
+                  <NewsletterHistoryItem 
+                    key={newsletter.id} 
+                    newsletter={newsletter}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-6 text-muted-foreground text-sm">
+                  <Mail className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                  Aucune newsletter envoyée
+                </div>
+              )}
+            </div>
+            
+            <div className="pt-4 text-center border-t border-border">
+              <NavLink 
+                to="/admin/newsletters" 
+                className="text-xs text-muted-foreground hover:text-primary flex items-center justify-center gap-1 transition-colors"
+              >
+                <Users className="h-3 w-3" /> Gérer les abonnés & modèles
+              </NavLink>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* MODE: CRISE - Vue alertes */}
+      {mode === 'crise' && (
+        <div className="space-y-6">
+          {/* Alert Banner */}
+          <Card className="border-destructive/50 bg-destructive/5">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 bg-destructive/10 rounded-full flex items-center justify-center shrink-0">
+                  <AlertTriangle className="h-6 w-6 text-destructive" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">Mode Crise Activé</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Affichage des documents prioritaires (IA et Acteurs Clés) nécessitant une attention immédiate.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Urgent Documents */}
+          <section>
+            <h2 className="text-sm font-bold uppercase text-destructive flex items-center gap-2 mb-4">
+              <AlertTriangle className="h-4 w-4" /> Documents Prioritaires ({urgentDossiers.length})
+            </h2>
+            
+            {isLoadingDossiers ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1, 2, 3].map(i => (
+                  <Skeleton key={i} className="h-[180px]" />
+                ))}
+              </div>
+            ) : urgentDossiers.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {urgentDossiers.map(dossier => (
+                  <BriefingCard 
+                    key={dossier.id} 
+                    dossier={dossier} 
+                    onClick={() => setSelectedDossier(dossier)}
+                    onEdit={() => handleEditDossier(dossier)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card className="p-8 text-center">
+                <AlertTriangle className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  Aucun document prioritaire en attente.
+                </p>
+              </Card>
+            )}
+          </section>
+
+          {/* Quick action for crisis response */}
+          {isAdmin && (
+            <div className="flex justify-center">
+              <Button 
+                variant="destructive" 
+                size="lg"
+                onClick={handleNewDossier}
+                className="gap-2"
+              >
+                <AlertTriangle className="h-5 w-5" />
+                Rédiger une alerte urgente
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Dialogs */}
       <DossierFormDialog
