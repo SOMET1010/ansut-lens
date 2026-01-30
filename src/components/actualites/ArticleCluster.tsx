@@ -5,9 +5,30 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import ReactMarkdown from 'react-markdown';
 import { calculateFreshness, type Actualite } from '@/hooks/useActualites';
 import { cn } from '@/lib/utils';
+
+// Interface pour le JSON d'analyse IA
+interface AnalyseIA {
+  tags?: string[];
+  categorie?: string;
+  importance?: number;
+  quadrant_dominant?: string;
+  quadrant_distribution?: Record<string, number>;
+  alertes_declenchees?: string[];
+  analyse_summary?: string;
+  enrichi_le?: string;
+}
+
+// Parser le JSON avec gestion d'erreur
+const parseAnalyseIA = (analyseString: string | null | undefined): AnalyseIA | null => {
+  if (!analyseString) return null;
+  try {
+    return JSON.parse(analyseString) as AnalyseIA;
+  } catch {
+    return null;
+  }
+};
 
 interface ArticleClusterProps {
   mainArticle: Actualite & {
@@ -230,19 +251,95 @@ export function ArticleCluster({
             <h3 className="font-bold text-lg leading-tight">{mainArticle.titre}</h3>
             
             <div className="border-t pt-4">
-              {mainArticle.analyse_ia ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <ReactMarkdown>{mainArticle.analyse_ia}</ReactMarkdown>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                  <AlertCircle className="h-8 w-8 mb-2" />
-                  <p className="text-center">
-                    Cet article n'a pas encore été analysé.<br />
-                    Cliquez sur "Enrichir" pour générer l'analyse.
-                  </p>
-                </div>
-              )}
+              {(() => {
+                const analyseData = parseAnalyseIA(mainArticle.analyse_ia);
+                
+                if (analyseData) {
+                  return (
+                    <div className="space-y-6">
+                      {/* Score + Catégorie */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Importance</p>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-primary transition-all" 
+                                style={{ width: `${analyseData.importance ?? 0}%` }}
+                              />
+                            </div>
+                            <span className="font-bold text-sm">{analyseData.importance ?? 0}/100</span>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Catégorie</p>
+                          <Badge variant="secondary">{analyseData.categorie ?? 'Non définie'}</Badge>
+                        </div>
+                      </div>
+
+                      {/* Tags */}
+                      {analyseData.tags && analyseData.tags.length > 0 && (
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Mots-clés détectés ({analyseData.tags.length})
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {analyseData.tags.map(tag => (
+                              <Badge key={tag} variant="outline">{tag}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Quadrants */}
+                      {analyseData.quadrant_distribution && (
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-2">Répartition par quadrant</p>
+                          <div className="space-y-2">
+                            {Object.entries(analyseData.quadrant_distribution).map(([quadrant, score]) => (
+                              <div key={quadrant} className="flex items-center gap-2">
+                                <span className="w-24 text-xs capitalize">{quadrant}</span>
+                                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-primary/70 transition-all" 
+                                    style={{ width: `${score}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs w-8 text-right">{score}%</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Alertes */}
+                      {analyseData.alertes_declenchees && analyseData.alertes_declenchees.length > 0 && (
+                        <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/30">
+                          <p className="text-xs font-medium text-destructive mb-1">Alertes déclenchées</p>
+                          <p className="text-sm">{analyseData.alertes_declenchees.join(', ')}</p>
+                        </div>
+                      )}
+
+                      {/* Date */}
+                      {analyseData.enrichi_le && (
+                        <p className="text-xs text-muted-foreground pt-2 border-t">
+                          Enrichi le {new Date(analyseData.enrichi_le).toLocaleString('fr-FR')}
+                        </p>
+                      )}
+                    </div>
+                  );
+                }
+                
+                return (
+                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                    <AlertCircle className="h-8 w-8 mb-2" />
+                    <p className="text-center">
+                      Cet article n'a pas encore été analysé.<br />
+                      Cliquez sur "Enrichir" pour générer l'analyse.
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </DialogContent>
