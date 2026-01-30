@@ -1,167 +1,196 @@
 
 
-# Ajout d'une Table des Matières Cliquable avec Ancres
+# Ajout d'un Indicateur Visuel de Section Active
 
 ## Objectif
 
-Transformer la table des matières statique en navigation interactive avec scroll fluide vers les sections correspondantes dans la prévisualisation du document technique.
+Ajouter un indicateur visuel dynamique dans la table des matières qui met en évidence la section actuellement visible lors du scroll dans la prévisualisation du document.
 
 ## Analyse de l'existant
 
 ### Structure actuelle
-- **TechDocPage.tsx** : Table des matières visuelle dans une Card (lignes 69-100)
-- **GuideViewer.tsx** : Rendu Markdown sans ancres sur les titres
-- **TechDocContent.tsx** : Contenu avec 6 sections principales
+- **Container de scroll** : `div` avec `className="max-h-[70vh] overflow-y-auto"` (ligne 114)
+- **TOC** : Grille de boutons avec hover effects mais sans état actif
+- **Sections** : Titres avec IDs générés par `GuideViewer` (ex: `1-presentation-generale`)
 
-### Problème
-Les titres `h1` et `h2` n'ont pas d'attribut `id`, empêchant toute navigation par ancre.
+### Défi technique
+Le scroll se fait dans un conteneur interne (`overflow-y-auto`), pas sur `window`. Il faut donc :
+1. Obtenir une référence au conteneur scrollable
+2. Écouter les événements de scroll sur ce conteneur
+3. Calculer quelle section est visible en fonction du scroll
 
 ## Solution
 
-### 1. Modifier GuideViewer pour générer des IDs automatiques
+### 1. Utiliser IntersectionObserver
 
-Ajouter une fonction de slugification et des IDs aux titres :
+L'API `IntersectionObserver` est idéale pour détecter quelle section est visible :
 
 ```typescript
-// Fonction de slugification
-const slugify = (text: string): string => {
-  return text
-    .toString()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // Supprimer accents
-    .replace(/[^a-z0-9]+/g, '-')     // Remplacer espaces/spéciaux par -
-    .replace(/^-+|-+$/g, '');        // Supprimer - en début/fin
-};
+useEffect(() => {
+  const scrollContainer = scrollContainerRef.current;
+  if (!scrollContainer) return;
 
-// Composants h1/h2 avec IDs
-h1: ({ children }) => {
-  const id = slugify(String(children));
-  return (
-    <h1 id={id} className="...">
-      {children}
-    </h1>
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id);
+        }
+      });
+    },
+    {
+      root: scrollContainer,
+      rootMargin: '-20% 0px -70% 0px', // Zone de détection centrée en haut
+      threshold: 0
+    }
   );
-}
+
+  TOC_ITEMS.forEach((item) => {
+    const element = document.getElementById(item.id);
+    if (element) observer.observe(element);
+  });
+
+  return () => observer.disconnect();
+}, []);
 ```
 
-### 2. Modifier TechDocPage pour la navigation
-
-Remplacer les `div` statiques par des boutons cliquables avec scroll smooth :
+### 2. État actif dans le composant
 
 ```typescript
-const TOC_ITEMS = [
-  { id: '1-presentation-generale', label: 'Présentation', num: 1 },
-  { id: '2-architecture-technique', label: 'Architecture', num: 2 },
-  { id: '3-base-de-donnees', label: 'Base de données', num: 3 },
-  { id: '4-edge-functions', label: 'Edge Functions', num: 4 },
-  { id: '5-systeme-de-permissions', label: 'Permissions', num: 5 },
-  { id: '6-securite-conformite', label: 'Sécurité', num: 6 },
-];
-
-const scrollToSection = (id: string) => {
-  const element = document.getElementById(id);
-  if (element) {
-    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-};
+const [activeSection, setActiveSection] = useState<string>(TOC_ITEMS[0].id);
+const scrollContainerRef = useRef<HTMLDivElement>(null);
 ```
 
-## Fichiers à modifier
+### 3. Styling conditionnel du TOC
+
+```typescript
+<button
+  className={cn(
+    "flex items-center gap-2 p-2 rounded-lg transition-all cursor-pointer text-left group",
+    activeSection === item.id
+      ? "bg-primary/20 ring-2 ring-primary/50"
+      : "hover:bg-primary/10"
+  )}
+>
+  <span className={cn(
+    "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors",
+    activeSection === item.id
+      ? "bg-primary text-primary-foreground"
+      : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground"
+  )}>
+    {item.num}
+  </span>
+  <span className={cn(
+    "transition-colors",
+    activeSection === item.id ? "text-primary font-medium" : "group-hover:text-primary"
+  )}>
+    {item.label}
+  </span>
+</button>
+```
+
+## Fichier à modifier
 
 | Fichier | Modification |
 |---------|--------------|
-| `src/components/formation/GuideViewer.tsx` | Ajouter IDs automatiques aux h1/h2/h3 |
-| `src/pages/admin/TechDocPage.tsx` | Rendre la table des matières cliquable |
+| `src/pages/admin/TechDocPage.tsx` | Ajouter IntersectionObserver et styles actifs |
 
-## Détails des modifications
+## Détails de l'implémentation
 
-### GuideViewer.tsx
+### Nouveaux imports
 
-Ajouter la fonction `slugify` et modifier les composants de titre :
-
-```text
-Avant:
-h1: ({ children }) => (
-  <h1 className="text-2xl font-bold...">
-    {children}
-  </h1>
-)
-
-Après:
-h1: ({ children }) => {
-  const id = slugify(String(children));
-  return (
-    <h1 id={id} className="text-2xl font-bold... scroll-mt-4">
-      {children}
-    </h1>
-  );
-}
+```typescript
+import { useState, useEffect, useRef } from 'react';
+import { cn } from '@/lib/utils';
 ```
 
-Le `scroll-mt-4` ajoute une marge de scroll pour éviter que le titre soit masqué sous le header.
+### Nouveau state et ref
 
-### TechDocPage.tsx
+```typescript
+const [activeSection, setActiveSection] = useState<string>(TOC_ITEMS[0].id);
+const scrollContainerRef = useRef<HTMLDivElement>(null);
+```
 
-Transformer la Card de table des matières :
+### Hook useEffect pour l'observer
+
+```typescript
+useEffect(() => {
+  const scrollContainer = scrollContainerRef.current;
+  if (!scrollContainer) return;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      // Trouver la section la plus visible
+      const visibleEntries = entries.filter(e => e.isIntersecting);
+      if (visibleEntries.length > 0) {
+        // Prendre celle avec le ratio le plus élevé
+        const mostVisible = visibleEntries.reduce((prev, curr) => 
+          curr.intersectionRatio > prev.intersectionRatio ? curr : prev
+        );
+        setActiveSection(mostVisible.target.id);
+      }
+    },
+    {
+      root: scrollContainer,
+      rootMargin: '-10% 0px -80% 0px',
+      threshold: [0, 0.25, 0.5, 0.75, 1]
+    }
+  );
+
+  TOC_ITEMS.forEach((item) => {
+    const element = document.getElementById(item.id);
+    if (element) observer.observe(element);
+  });
+
+  return () => observer.disconnect();
+}, []);
+```
+
+### Container scrollable avec ref
+
+```typescript
+<div 
+  ref={scrollContainerRef}
+  className="max-h-[70vh] overflow-y-auto bg-gray-200 dark:bg-gray-900 p-4"
+>
+```
+
+## Rendu visuel
 
 ```text
-Structure visuelle finale :
+État normal :
 ┌─────────────────────────────────────────────────────────────────────┐
 │  TABLE DES MATIÈRES                                                 │
 ├─────────────────────────────────────────────────────────────────────┤
-│  [1] Présentation   [2] Architecture   [3] Base de données         │
-│  [4] Edge Functions [5] Permissions    [6] Sécurité                │
-│                                                                     │
-│  Chaque élément est cliquable avec hover effect                    │
+│  (1) Présentation   (2) Architecture   (3) Base de données         │
+│  (4) Edge Functions (5) Permissions    (6) Sécurité                │
+└─────────────────────────────────────────────────────────────────────┘
+
+État avec section 3 active :
+┌─────────────────────────────────────────────────────────────────────┐
+│  TABLE DES MATIÈRES                                                 │
+├─────────────────────────────────────────────────────────────────────┤
+│  (1) Présentation   (2) Architecture  ┌[3] Base de données┐        │
+│  (4) Edge Functions (5) Permissions   │   Fond coloré     │        │
+│                                       │   Ring visible    │        │
+│                                       └───────────────────┘        │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-Comportement :
-- Clic sur un élément → scroll fluide vers la section
-- Hover → effet visuel (fond légèrement coloré)
-- Cursor pointer pour indiquer l'interactivité
+### Indicateurs visuels pour la section active
 
-## Détails techniques
-
-### Génération des IDs
-
-Le contenu Markdown utilise des titres comme :
-- `# 1. Présentation Générale` → `id="1-presentation-generale"`
-- `# 2. Architecture Technique` → `id="2-architecture-technique"`
-
-### Mapping TOC
-
-```typescript
-const TOC_ITEMS = [
-  { id: '1-presentation-generale', label: 'Présentation', num: 1 },
-  { id: '2-architecture-technique', label: 'Architecture', num: 2 },
-  { id: '3-base-de-donnees', label: 'Base de données', num: 3 },
-  { id: '4-edge-functions', label: 'Edge Functions', num: 4 },
-  { id: '5-systeme-de-permissions', label: 'Permissions', num: 5 },
-  { id: '6-securite-conformite', label: 'Sécurité', num: 6 },
-];
-```
-
-### Fonction de scroll
-
-```typescript
-const scrollToSection = (id: string) => {
-  const element = document.getElementById(id);
-  if (element) {
-    element.scrollIntoView({ 
-      behavior: 'smooth', 
-      block: 'start' 
-    });
-  }
-};
-```
+| Élément | État normal | État actif |
+|---------|-------------|------------|
+| **Fond** | Transparent | `bg-primary/20` |
+| **Bordure** | Aucune | `ring-2 ring-primary/50` |
+| **Numéro** | `bg-primary/10` | `bg-primary text-white` |
+| **Label** | Couleur normale | `text-primary font-medium` |
 
 ## Résultat attendu
 
-1. **Titres avec ancres** : Tous les h1/h2/h3 ont un ID unique basé sur leur contenu
-2. **Navigation fluide** : Clic sur un élément TOC scroll vers la section correspondante
-3. **Feedback visuel** : Hover effect sur les éléments cliquables
-4. **Compatibilité** : Fonctionne aussi pour les autres usages de GuideViewer (Formation)
-5. **Accessibilité** : Éléments focusables au clavier
+1. **Détection automatique** : La section visible est détectée lors du scroll
+2. **Feedback visuel clair** : L'élément actif dans le TOC est mis en évidence
+3. **Transition fluide** : Les changements d'état sont animés
+4. **Performance** : IntersectionObserver est optimisé pour le scroll
+5. **Synchronisation** : Clic sur TOC → scroll → mise à jour de l'indicateur
 
