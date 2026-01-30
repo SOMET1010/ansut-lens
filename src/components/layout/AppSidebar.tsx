@@ -63,10 +63,10 @@ const menuItems = [
     permission: 'view_personnalites'
   },
   { 
-    title: 'Dossiers stratégiques', 
+    title: 'Studio Publication', 
     url: '/dossiers', 
     icon: FileText,
-    description: 'Notes et briefings',
+    description: 'Notes et newsletters',
     permission: 'view_dossiers'
   },
   { 
