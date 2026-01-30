@@ -1,235 +1,234 @@
 
-
-# Transformation de la Page Admin en Cockpit Administrateur
+# Génération d'un PDF de Documentation Technique ANSUT RADAR
 
 ## Objectif
 
-Transformer la page d'accueil de l'administration d'une grille de boutons "plate" en un **Tableau de Bord Technique** avec indicateurs de santé système en temps réel.
+Créer une nouvelle page accessible depuis l'administration permettant de générer et télécharger un **PDF de documentation technique complet** résumant l'ensemble des fonctionnalités de la plateforme.
 
-## Analyse de l'existant
+## Approche
 
-### Données disponibles pour le widget santé
-- **Table `collectes_log`** : durée des collectes (duree_ms), statut, erreurs, nombre de résultats
-- **Table `admin_audit_logs`** : actions des dernières 24h
-- **Hook `useAdminStats`** : statistiques agrégées déjà en place
-- **`derniereCollecte`** : timestamp de la dernière collecte
+Réutiliser l'infrastructure existante :
+- Composant `GuidePDFLayout` pour le branding ANSUT
+- Librairie `react-to-pdf` déjà installée
+- Composant `GuideViewer` pour le rendu Markdown stylisé
 
-### Organisation actuelle
-- 2 sections : "Gestion opérationnelle" et "Supervision technique"
-- Cartes centrées avec icônes et badges de comptage
-- Pas de vue d'ensemble de l'état du système
+## Structure du Document PDF
 
-## Modifications planifiées
-
-### 1. Nouveau composant `SystemHealthWidget`
-
-Widget noir en haut de page affichant l'état du système :
+Le PDF sera organisé en **6 sections** couvrant l'intégralité de la plateforme :
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ ●  Système Opérationnel                 │ Scrapers   │ DB Response │ API   │
-│    Dernier check: Il y a 30s v2.1.0     │ 12%        │ 840ms       │ 200 OK│
-│                                          ─────────────────────────────────────
-└─────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                    ANSUT RADAR - Documentation Technique             │
+│                              Version 2.1.0                           │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  1. PRÉSENTATION GÉNÉRALE                                            │
+│     - Contexte et objectifs                                          │
+│     - Les 7 modules métier                                           │
+│     - Profils utilisateurs (4 rôles)                                 │
+│                                                                      │
+│  2. ARCHITECTURE TECHNIQUE                                           │
+│     - Stack Frontend (React, TypeScript, Tailwind)                   │
+│     - Stack Backend (Lovable Cloud / PostgreSQL)                     │
+│     - Intégrations externes (Perplexity, Grok, Resend)               │
+│                                                                      │
+│  3. BASE DE DONNÉES                                                  │
+│     - Schéma des 17 tables principales                               │
+│     - Système de rôles (app_role enum)                               │
+│     - Row Level Security (RLS)                                       │
+│                                                                      │
+│  4. EDGE FUNCTIONS                                                   │
+│     - Liste des 17 fonctions serverless                              │
+│     - Endpoints et paramètres                                        │
+│     - Secrets requis                                                 │
+│                                                                      │
+│  5. SYSTÈME DE PERMISSIONS                                           │
+│     - 17 permissions granulaires                                     │
+│     - Matrice rôle/permission                                        │
+│     - Architecture RBAC                                              │
+│                                                                      │
+│  6. SÉCURITÉ & CONFORMITÉ                                            │
+│     - Authentification JWT                                           │
+│     - Politiques RLS                                                 │
+│     - Audit et traçabilité                                           │
+│                                                                      │
+├──────────────────────────────────────────────────────────────────────┤
+│  © 2026 ANSUT • Document confidentiel • Usage interne uniquement     │
+└──────────────────────────────────────────────────────────────────────┘
 ```
-
-Données à afficher :
-- **Statut global** : Basé sur la dernière collecte (success/warning/error)
-- **Durée collecte** : `duree_ms` de la dernière collecte (indicateur de performance)
-- **Timestamp** : "Il y a X minutes"
-- **Version** : Statique "v2.1.0"
-- **Lien vers logs** : Navigation vers `/admin/cron-jobs`
-
-### 2. Nouveau composant `AdminNavCard`
-
-Carte de navigation horizontale remplaçant les cartes centrées :
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│ ┌──────────┐                                                     │
-│ │   👥     │  Utilisateurs                         [3 actifs]   │
-│ └──────────┘  Invitez des collaborateurs et gérez les accès     │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-Props :
-- icon : Lucide icon
-- title : Nom de la fonctionnalité
-- subtitle : Description courte
-- badge : Compteur ou label
-- color : theme de couleur (blue, purple, orange, emerald)
-- to : URL de navigation
-
-### 3. Réorganisation des sections
-
-Nouvelle structure en 3 sections logiques :
-
-| Section | Icône | Contenu |
-|---------|-------|---------|
-| **Organisation** | Users | Utilisateurs, Rôles, Audit Logs |
-| **Moteur de Veille** | Database | Mots-clés, Sources, Alertes, Templates |
-| **Supervision** | Activity | Tâches CRON (déjà existant) |
-
-### 4. Footer technique
-
-Bandeau discret en bas de page :
-- Version de l'application
-- Lien vers la documentation technique
 
 ## Fichiers à créer
 
 | Fichier | Description |
 |---------|-------------|
-| `src/components/admin/SystemHealthWidget.tsx` | Widget de santé système avec métriques temps réel |
-| `src/components/admin/AdminNavCard.tsx` | Carte de navigation horizontale |
+| `src/pages/admin/TechDocPage.tsx` | Page de génération du PDF technique |
+| `src/components/documentation/TechDocContent.tsx` | Contenu Markdown structuré du document |
+| `src/components/documentation/TechDocPDFLayout.tsx` | Layout multi-pages optimisé pour impression |
 
 ## Fichiers à modifier
 
 | Fichier | Modification |
 |---------|--------------|
-| `src/pages/AdminPage.tsx` | Refonte complète avec nouveau layout |
-| `src/hooks/useAdminStats.ts` | Ajouter données de collecte (durée, statut) |
-| `src/components/admin/index.ts` | Exporter nouveaux composants |
+| `src/App.tsx` | Ajouter la route `/admin/documentation` |
+| `src/pages/AdminPage.tsx` | Ajouter le lien dans la section Communication |
 
 ## Détails des composants
 
-### SystemHealthWidget.tsx
+### 1. TechDocPage.tsx
+
+Page principale avec :
+- Prévisualisation du document
+- Bouton de téléchargement PDF
+- Table des matières interactive
 
 ```text
-Structure :
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  ┌──────────┐                                                               │
-│  │ ●        │  Système Opérationnel                                         │
-│  │ Activity │  Dernière collecte: Il y a 5 min • v2.1.0                     │
-│  └──────────┘                                                               │
-│                                                                             │
-│  ─────────────────────────────────────────────────────────────────────────  │
-│                                                                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌───────────────────┐  │
-│  │ SCRAPERS    │  │ COLLECTE    │  │ ARTICLES    │  │                   │  │
-│  │ ✓ Actifs    │  │ 1.2s        │  │ 24 (24h)    │  │  [Voir les logs]  │  │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └───────────────────┘  │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│  ← Retour    Documentation Technique                                │
+│              Générez le manuel technique de la plateforme           │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  [📥 Télécharger le PDF]                                            │
+│                                                                     │
+│  ┌───────────────────────────────────────────────────────────────┐ │
+│  │                                                               │ │
+│  │   ANSUT RADAR                                                 │ │
+│  │   Documentation Technique                                     │ │
+│  │                                                               │ │
+│  │   Table des matières                                          │ │
+│  │   1. Présentation Générale ..................... 2            │ │
+│  │   2. Architecture Technique .................... 4            │ │
+│  │   3. Base de Données ........................... 6            │ │
+│  │   4. Edge Functions ............................ 8            │ │
+│  │   5. Système de Permissions .................... 10           │ │
+│  │   6. Sécurité & Conformité ..................... 12           │ │
+│  │                                                               │ │
+│  └───────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-Props utilisant useAdminStats enrichi :
-- statusGlobal : 'operational' | 'degraded' | 'error'
-- lastCollecteTime : formatDistanceToNow
-- lastCollecteDuration : en ms → secondes
-- articlesCount24h : nombre d'actualités des 24h
+### 2. TechDocContent.tsx
 
-### AdminNavCard.tsx
+Contenu Markdown complet basé sur la documentation existante :
 
 ```typescript
-interface AdminNavCardProps {
-  icon: React.ElementType;
-  title: string;
-  subtitle: string;
-  badge?: string | number;
-  badgeVariant?: 'default' | 'success' | 'warning';
-  color: 'blue' | 'purple' | 'orange' | 'emerald';
-  to: string;
-}
+export const TECH_DOC_CONTENT = `
+# Documentation Technique ANSUT RADAR
+
+## 1. Présentation Générale
+
+### Contexte
+ANSUT RADAR est une plateforme de veille stratégique...
+
+### Les 7 Modules
+| Module | Description |
+|--------|-------------|
+| Tableau de bord | Vue d'ensemble et KPIs |
+| Actualités | Fil enrichi par IA |
+| ...
+
+## 2. Architecture Technique
+
+### Stack Frontend
+- React 18.3 + TypeScript
+- Tailwind CSS + shadcn/ui
+- TanStack Query (cache)
+- React Router (routing)
+
+### Stack Backend (Lovable Cloud)
+- PostgreSQL (17 tables)
+- Edge Functions (17 fonctions)
+- Auth (4 rôles)
+- Storage (avatars)
+
+...
+`;
 ```
 
-Couleurs sémantiques :
-- **Blue** : Utilisateurs, Audit
-- **Purple** : Rôles/Sécurité
-- **Orange** : Mots-clés, Alertes, Templates
-- **Emerald** : Sources, Données
+### 3. TechDocPDFLayout.tsx
 
-### Enrichissement useAdminStats.ts
+Layout optimisé pour l'impression A4 :
 
-Ajouter à l'interface `AdminStats` :
 ```typescript
-lastCollecteStatus: 'success' | 'error' | null;
-lastCollecteDuration: number | null; // en ms
-articlesLast24h: number;
+export const TechDocPDFLayout = forwardRef<HTMLDivElement, Props>(
+  ({ children }, ref) => {
+    return (
+      <div 
+        ref={ref}
+        className="bg-white text-black"
+        style={{ 
+          width: '210mm',
+          minHeight: '297mm',
+          padding: '15mm 20mm',
+          fontFamily: 'Arial, Helvetica, sans-serif'
+        }}
+      >
+        {/* Header avec logo ANSUT */}
+        <header>...</header>
+        
+        {/* Contenu paginé */}
+        <main>{children}</main>
+        
+        {/* Footer avec numéro de page */}
+        <footer>...</footer>
+      </div>
+    );
+  }
+);
 ```
 
-Nouvelles queries :
-```typescript
-// Dernière collecte avec détails
-const collecteResult = await supabase
-  .from('collectes_log')
-  .select('created_at, duree_ms, statut')
-  .order('created_at', { ascending: false })
-  .limit(1);
+## Contenu détaillé du PDF
 
-// Actualités des dernières 24h
-const articlesResult = await supabase
-  .from('actualites')
-  .select('id', { count: 'exact', head: true })
-  .gte('created_at', yesterday);
-```
+### Section 1 : Présentation Générale
+- Contexte ANSUT et enjeux
+- Objectifs de la plateforme (5 objectifs)
+- Les 7 modules métier avec description
+- Les 4 profils utilisateurs (admin, user, council_user, guest)
 
-## Layout final de la page
+### Section 2 : Architecture Technique
+- Diagramme d'architecture (ASCII art)
+- Stack Frontend détaillé
+- Stack Backend (Lovable Cloud)
+- APIs externes (Perplexity, Grok, Resend)
+- Patterns de développement
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  Administration                                                              │
-│  Configuration globale, sécurité et maintenance de la plateforme            │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  ┌─────────────────────────────── SANTÉ SYSTÈME ───────────────────────────┐│
-│  │ ● Opérationnel  •  Il y a 5 min  •  v2.1.0    │ Collecte │ Articles     ││
-│  │                                               │  1.2s    │  24/24h      ││
-│  └──────────────────────────────────────────────────────────────────────────┘│
-│                                                                              │
-│  ── 👥 ORGANISATION ─────────────────────────────────────────────────────── │
-│  ┌─────────────────────┐ ┌─────────────────────┐ ┌─────────────────────┐    │
-│  │ 👥 Utilisateurs     │ │ 🛡️ Rôles           │ │ 📋 Audit Logs       │    │
-│  │ 3 actifs            │ │ RBAC               │ │ 12 actions/24h      │    │
-│  └─────────────────────┘ └─────────────────────┘ └─────────────────────┘    │
-│                                                                              │
-│  ── 🗄️ MOTEUR DE VEILLE ─────────────────────────────────────────────────── │
-│  ┌────────────────┐ ┌────────────────┐ ┌────────────────┐ ┌────────────────┐│
-│  │ 🏷️ Mots-clés   │ │ 📡 Sources     │ │ 🔔 Alertes     │ │ 📁 Import      ││
-│  │ 112 actifs     │ │ 8 actives      │ │ 2 non lues     │ │ Acteurs IA     ││
-│  └────────────────┘ └────────────────┘ └────────────────┘ └────────────────┘│
-│                                                                              │
-│  ── 📧 COMMUNICATION ────────────────────────────────────────────────────── │
-│  ┌────────────────┐ ┌────────────────┐ ┌────────────────┐                   │
-│  │ 📧 Newsletters │ │ 🎓 Formation   │ │ 📊 Présentation││                   │
-│  │ 1 en attente   │ │ 2 guides       │ │ 11 slides      ││                   │
-│  └────────────────┘ └────────────────┘ └────────────────┘                   │
-│                                                                              │
-│  ── ⚙️ SUPERVISION TECHNIQUE ────────────────────────────────────────────── │
-│  ┌─────────────────────┐                                                     │
-│  │ ⏰ Tâches CRON       │                                                     │
-│  │ Dernière: Il y a 5m │                                                     │
-│  └─────────────────────┘                                                     │
-│                                                                              │
-│  ─────────────────────────────────────────────────────────────────────────── │
-│  ANSUT RADAR v2.1.0 • Documentation Technique                                │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+### Section 3 : Base de Données
+- Liste des 17 tables avec colonnes principales
+- Enum `app_role` et ses valeurs
+- Fonctions utilitaires (`has_role`, `get_user_role`)
+- Politiques RLS standards
 
-## Sections réorganisées
+### Section 4 : Edge Functions
+- Tableau des 17 fonctions avec endpoints
+- Paramètres et réponses types
+- Secrets requis
+- Planification CRON
 
-| Section | Éléments | Couleur dominante |
-|---------|----------|-------------------|
-| **Organisation** | Utilisateurs, Rôles, Audit | Bleu/Violet |
-| **Moteur de Veille** | Mots-clés, Sources, Alertes, Import Acteurs | Orange/Emerald |
-| **Communication** | Newsletters, Formation, Présentation | Bleu/Emerald |
-| **Supervision** | Tâches CRON | Gris/Muted |
+### Section 5 : Système de Permissions
+- 17 permissions granulaires (codes et descriptions)
+- Matrice rôle/permission par défaut
+- Fonctionnement RBAC
+- Gestion via interface admin
 
-## Avantages de la nouvelle approche
+### Section 6 : Sécurité & Conformité
+- Authentification JWT
+- Politiques RLS actives
+- Audit logs et traçabilité
+- Protection des routes
 
-| Aspect | Avant | Après |
-|--------|-------|-------|
-| **Vue d'ensemble** | Aucune | Widget santé système en temps réel |
-| **Organisation** | 2 sections floues | 4 sections logiques métier |
-| **Navigation** | Cartes centrées | Cartes horizontales avec description |
-| **Métriques** | Badges isolés | Indicateurs contextuels |
-| **Cohérence** | Variable | Couleurs sémantiques par domaine |
+## Navigation vers la page
+
+Depuis la page Admin :
+- Section "Communication" → nouvelle carte "Documentation Technique"
+- Route : `/admin/documentation`
+- Icône : `FileCode` (Lucide)
+- Badge : "PDF"
 
 ## Résultat attendu
 
-1. **Vision immédiate** de l'état du système en haut de page
-2. **Organisation logique** séparant humain (Organisation) de machine (Veille)
-3. **Navigation claire** avec descriptions et badges informatifs
-4. **Cohérence visuelle** avec les pages utilisateurs et rôles redesignées
-5. **Footer technique** discret avec version et documentation
-
+1. **Document PDF professionnel** avec branding ANSUT complet
+2. **Contenu exhaustif** couvrant toute la plateforme
+3. **Format imprimable** A4 optimisé
+4. **Prévisualisation interactive** avant téléchargement
+5. **Génération instantanée** via react-to-pdf
+6. **Accessible aux admins** depuis le cockpit d'administration
