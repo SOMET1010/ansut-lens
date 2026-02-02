@@ -1,64 +1,131 @@
 
-# Configuration du CRON pour la collecte web automatique
+# Enrichissement des sources de veille africaines et télécom
 
 ## Objectif
 
-Automatiser l'exécution de la fonction `collecte-social` toutes les 6 heures pour collecter les insights depuis les sources web (blogs, forums, actualités) sans intervention manuelle.
+Ajouter des sources alternatives pertinentes pour améliorer la couverture de veille sur l'écosystème tech africain et le secteur des télécommunications, en complément des 8 sources déjà configurées.
 
-## Analyse des jobs existants
+## Analyse des sources existantes
 
-Actuellement, 5 jobs CRON sont configurés :
+| Nom | Type | URL | Statut |
+|-----|------|-----|--------|
+| Africa Tech Summit | blog | africatechsummit.com/blog | Actif |
+| CIO Mag Afrique | blog | cio-mag.com | Actif |
+| Réseau Télécom | blog | reseaux-telecoms.net | Actif |
+| JeuneAfrique Tech | news | jeuneafrique.com/economie-entreprises/tech | Actif |
+| TIC Magazine CI | news | ticmagazine.ci | Actif |
+| Facebook ANSUT | facebook | (réseau social) | Inactif |
+| LinkedIn ANSUT | linkedin | (réseau social) | Inactif |
+| Twitter/X ANSUT | twitter | (réseau social) | Inactif |
 
-| ID | Nom | Schedule | Fonction |
-|----|-----|----------|----------|
-| 1 | collecte-veille-quotidienne | 0 8 * * * | collecte-veille (8h) |
-| 2 | collecte-veille-critique | 0 */6 * * * | collecte-veille (toutes les 6h) |
-| 4 | flux-digest-quotidien | 0 8 * * * | send-flux-digest (8h) |
-| 5 | flux-digest-hebdo | 0 8 * * 1 | send-flux-digest (lundi 8h) |
-| 6 | newsletter-scheduler-daily | 0 6 * * * | scheduler-newsletter (6h) |
+**Constat** : 5 sources actives sur 8, principalement francophones. Manque de diversité géographique et de couverture anglophone.
 
-Aucun job ne cible actuellement la fonction `collecte-social`.
+## Nouvelles sources proposees
 
-## Nouveau job a creer
+### Blogs Tech Africains
 
-| Paramètre | Valeur |
-|-----------|--------|
-| Nom | `collecte-social-auto` |
-| Schedule | `0 */6 * * *` |
-| Fréquence | Toutes les 6 heures (0h, 6h, 12h, 18h UTC) |
-| Fonction | `collecte-social` |
+| Nom | URL | Couverture |
+|-----|-----|------------|
+| Disrupt Africa | https://disrupt-africa.com | Startups et innovation panafricaine (EN) |
+| TechCabal | https://techcabal.com | Tech news Afrique (EN) |
+| Ecofin Telecom | https://agenceecofin.com/telecom | Télécoms et régulation Afrique (FR) |
+| WeeTracker | https://weetracker.com | Startups et fintech Afrique (EN) |
+| IT News Africa | https://itnewsafrica.com | Tech enterprise Afrique (EN) |
+| Tech-Afrique | https://tech-afrique.com | Tech francophone (FR) |
 
-## Execution SQL
+### Presse Specialisee Telecom
+
+| Nom | URL | Couverture |
+|-----|-----|------------|
+| Telecom Review Africa | https://telecomreviewafrica.com | Industrie télécom Afrique (EN) |
+| Connecting Africa | https://connectingafrica.com | Connectivité et infra (EN) |
+| Balancing Act Africa | https://balancingact-africa.com | Broadband et médias (EN) |
+| CommsUpdate | https://commsupdate.com/africa | Régulation télécom (EN) |
+| Mobile World Live | https://mobileworldlive.com | 5G et innovations mobiles (EN) |
+| GSMA News Africa | https://gsma.com/africa | Association opérateurs (EN) |
+
+### Actualites Regionales Cote d'Ivoire
+
+| Nom | URL | Couverture |
+|-----|-----|------------|
+| Abidjan.net Tech | https://news.abidjan.net/h/tech | Tech locale CI (FR) |
+| Le Point Afrique | https://lepointafrique.com | Actualités économiques (FR) |
+| Financial Afrik | https://financialafrik.com | Finance et tech Afrique (FR) |
+
+## Migration base de donnees
+
+Insertion des 15 nouvelles sources avec le type approprié (blog ou news) et la fréquence de scan adaptée.
 
 ```sql
-SELECT cron.schedule(
-  'collecte-social-auto',
-  '0 */6 * * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1/collecte-social',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxwa2Z3eGlzcmFubWV0YnRneHJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4NjkxMDQsImV4cCI6MjA4MjQ0NTEwNH0.5nP9S0X_oIhYYrHRf_R_eQcUXTACMSGamSCMu25fo1M'
-    ),
-    body := '{"triggered_by": "cron"}'::jsonb
-  ) AS request_id;
-  $$
-);
+INSERT INTO sources_media (nom, type, url, actif, frequence_scan) VALUES
+  -- Blogs Tech Africains
+  ('Disrupt Africa', 'blog', 'https://disrupt-africa.com', true, '6h'),
+  ('TechCabal', 'blog', 'https://techcabal.com', true, '6h'),
+  ('Ecofin Telecom', 'news', 'https://www.agenceecofin.com/telecom', true, '6h'),
+  ('WeeTracker', 'blog', 'https://weetracker.com', true, '12h'),
+  ('IT News Africa', 'blog', 'https://www.itnewsafrica.com', true, '12h'),
+  ('Tech-Afrique', 'blog', 'https://tech-afrique.com', true, '12h'),
+  -- Presse Telecom
+  ('Telecom Review Africa', 'news', 'https://www.telecomreviewafrica.com', true, '12h'),
+  ('Connecting Africa', 'news', 'https://www.connectingafrica.com', true, '12h'),
+  ('Balancing Act Africa', 'news', 'https://www.balancingact-africa.com', true, '24h'),
+  ('CommsUpdate Africa', 'news', 'https://www.commsupdate.com/africa', true, '24h'),
+  ('Mobile World Live', 'news', 'https://www.mobileworldlive.com', true, '12h'),
+  ('GSMA Africa', 'news', 'https://www.gsma.com/africa', true, '24h'),
+  -- Actualités régionales CI
+  ('Abidjan.net Tech', 'news', 'https://news.abidjan.net/h/tech.asp', true, '6h'),
+  ('Le Point Afrique', 'news', 'https://www.lepoint.fr/afrique', true, '12h'),
+  ('Financial Afrik', 'news', 'https://www.financialafrik.com', true, '12h');
 ```
-
-## Pourquoi cette approche
-
-1. **Cohérence** : Utilise le même pattern que les autres jobs CRON existants (net.http_post avec Authorization Bearer)
-2. **Fréquence adaptée** : 6 heures permet de capturer les mises à jour des blogs et actualités sans surcharger les sources
-3. **Traçabilité** : Le paramètre `triggered_by: cron` permet d'identifier les exécutions automatiques dans les logs
-
-## Verification apres creation
-
-Le job sera visible dans :
-- La page `/admin/cron-jobs` pour les administrateurs
-- Les notifications temps réel via `useRealtimeCronAlerts` en cas d'erreur
 
 ## Resultat attendu
 
-Après création, le système collectera automatiquement les insights web toutes les 6 heures. Les alertes seront générées pour les insights critiques, et les logs seront enregistrés dans `collectes_log`.
+Après ajout :
+- **23 sources totales** (contre 8 actuellement)
+- **20 sources actives** (contre 5)
+- Couverture équilibrée FR/EN
+- Diversité : blogs tech, presse télécom, actualités régionales
+
+## Impact sur la collecte
+
+Le job CRON `collecte-social-auto` (toutes les 6h) récupérera automatiquement les insights de ces nouvelles sources. Les mots-clés de veille déjà configurés filtreront les contenus pertinents.
+
+## Section technique
+
+### Types de sources compatibles
+
+La fonction `collecte-social` filtre les sources par type :
+```typescript
+.in('type', ['blog', 'forum', 'news'])
+```
+
+Les nouveaux types utilisés (`blog`, `news`) sont donc compatibles sans modification du code.
+
+### Frequences recommandees
+
+| Fréquence | Sources |
+|-----------|---------|
+| 6h | Sources à fort volume (Disrupt Africa, TechCabal, Ecofin, Abidjan.net) |
+| 12h | Sources à volume moyen (IT News, Telecom Review, etc.) |
+| 24h | Sources à faible volume (GSMA, Balancing Act, CommsUpdate) |
+
+### Fichiers concernes
+
+Aucune modification de code requise - uniquement une insertion de données via migration SQL.
+
+| Action | Détail |
+|--------|--------|
+| Migration SQL | INSERT de 15 nouvelles sources |
+| Code | Aucun changement |
+| CRON | Aucun changement (déjà configuré) |
+
+### Verification post-insertion
+
+Requête pour confirmer l'ajout :
+```sql
+SELECT type, COUNT(*) as count, 
+       SUM(CASE WHEN actif THEN 1 ELSE 0 END) as actives
+FROM sources_media 
+GROUP BY type 
+ORDER BY type;
+```
