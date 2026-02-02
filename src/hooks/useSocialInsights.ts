@@ -22,6 +22,7 @@ export interface SocialInsight {
   traite: boolean;
   alerte_generee: boolean;
   created_at: string;
+  is_manual_entry?: boolean;
 }
 
 export interface WebStats {
@@ -106,6 +107,46 @@ export function useCollectSocial() {
     onError: (error) => {
       toast.error('Erreur de collecte', {
         description: error instanceof Error ? error.message : 'Échec de la collecte web',
+      });
+    },
+  });
+}
+
+export function useCreateSocialInsight() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      plateforme: WebPlateforme;
+      contenu: string;
+      url_original?: string;
+      auteur?: string;
+      est_critique?: boolean;
+      hashtags?: string[];
+    }) => {
+      const { error } = await supabase.from('social_insights').insert({
+        plateforme: data.plateforme,
+        contenu: data.contenu,
+        url_original: data.url_original || null,
+        auteur: data.auteur || null,
+        est_critique: data.est_critique || false,
+        hashtags: data.hashtags || null,
+        type_contenu: 'post',
+        engagement_score: 0,
+        is_manual_entry: true,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['social-insights'] });
+      queryClient.invalidateQueries({ queryKey: ['social-stats'] });
+      toast.success('Post ajouté', {
+        description: "L'insight a été enregistré dans la veille",
+      });
+    },
+    onError: (error) => {
+      toast.error("Erreur lors de l'ajout", {
+        description: error instanceof Error ? error.message : 'Impossible de sauvegarder',
       });
     },
   });

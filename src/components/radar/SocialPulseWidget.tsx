@@ -15,9 +15,12 @@ import {
   Hash,
   ExternalLink,
   Loader2,
-  Radio
+  Radio,
+  Plus,
+  PenLine
 } from 'lucide-react';
 import { useSocialInsights, useSocialStats, useCollectSocial, SocialInsight, WebPlateforme } from '@/hooks/useSocialInsights';
+import { SocialInsightFormDialog } from './SocialInsightFormDialog';
 import { cn } from '@/lib/utils';
 
 const PLATFORM_CONFIG: Record<WebPlateforme, { icon: typeof Newspaper; color: string; bgColor: string; label: string }> = {
@@ -88,6 +91,12 @@ function InsightCard({ insight }: { insight: SocialInsight }) {
             <Badge variant="outline" className={cn('text-xs px-1.5 py-0', config.color)}>
               {config.label}
             </Badge>
+            {insight.is_manual_entry && (
+              <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                <PenLine className="h-3 w-3 mr-1" />
+                Manuel
+              </Badge>
+            )}
             {insight.est_critique && (
               <Badge variant="destructive" className="text-xs px-1.5 py-0">
                 <AlertTriangle className="h-3 w-3 mr-1" />
@@ -148,6 +157,7 @@ export function SocialPulseWidget() {
   const { data: stats, isLoading: statsLoading } = useSocialStats();
   const collectMutation = useCollectSocial();
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
 
   const filteredInsights = activeFilter
     ? insights?.filter(i => i.plateforme === activeFilter)
@@ -168,20 +178,31 @@ export function SocialPulseWidget() {
             </div>
             Veille Web
           </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => collectMutation.mutate()}
-            disabled={collectMutation.isPending}
-            className="gap-2"
-          >
-            {collectMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            Actualiser
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFormOpen(true)}
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Ajouter
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => collectMutation.mutate()}
+              disabled={collectMutation.isPending}
+              className="gap-2"
+            >
+              {collectMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Actualiser
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -265,6 +286,8 @@ export function SocialPulseWidget() {
           )}
         </ScrollArea>
       </CardContent>
+
+      <SocialInsightFormDialog open={formOpen} onOpenChange={setFormOpen} />
     </Card>
   );
 }

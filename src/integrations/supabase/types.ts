@@ -1163,6 +1163,7 @@ export type Database = {
           est_critique: boolean | null
           hashtags: string[] | null
           id: string
+          is_manual_entry: boolean | null
           is_official_api: boolean | null
           likes_count: number | null
           plateforme: string
@@ -1187,6 +1188,7 @@ export type Database = {
           est_critique?: boolean | null
           hashtags?: string[] | null
           id?: string
+          is_manual_entry?: boolean | null
           is_official_api?: boolean | null
           likes_count?: number | null
           plateforme: string
@@ -1211,6 +1213,7 @@ export type Database = {
           est_critique?: boolean | null
           hashtags?: string[] | null
           id?: string
+          is_manual_entry?: boolean | null
           is_official_api?: boolean | null
           likes_count?: number | null
           plateforme?: string
