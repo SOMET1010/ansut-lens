@@ -1,131 +1,95 @@
 
-# Enrichissement des sources de veille africaines et télécom
+# Activation des APIs officielles des réseaux sociaux
 
 ## Objectif
 
-Ajouter des sources alternatives pertinentes pour améliorer la couverture de veille sur l'écosystème tech africain et le secteur des télécommunications, en complément des 8 sources déjà configurées.
+Configurer les tokens d'accès pour Twitter/X, LinkedIn et Facebook afin d'activer la collecte via leurs APIs officielles, en complément du scraping Firecrawl existant.
 
-## Analyse des sources existantes
+## Secrets à ajouter
 
-| Nom | Type | URL | Statut |
-|-----|------|-----|--------|
-| Africa Tech Summit | blog | africatechsummit.com/blog | Actif |
-| CIO Mag Afrique | blog | cio-mag.com | Actif |
-| Réseau Télécom | blog | reseaux-telecoms.net | Actif |
-| JeuneAfrique Tech | news | jeuneafrique.com/economie-entreprises/tech | Actif |
-| TIC Magazine CI | news | ticmagazine.ci | Actif |
-| Facebook ANSUT | facebook | (réseau social) | Inactif |
-| LinkedIn ANSUT | linkedin | (réseau social) | Inactif |
-| Twitter/X ANSUT | twitter | (réseau social) | Inactif |
+| Secret | API | Utilisation |
+|--------|-----|-------------|
+| TWITTER_BEARER_TOKEN | Twitter API v2 | Recherche de tweets, timeline, mentions |
+| LINKEDIN_ACCESS_TOKEN | LinkedIn Marketing API | Posts d'entreprise, analytics |
+| FACEBOOK_PAGE_ACCESS_TOKEN | Facebook Graph API | Posts de page, insights, commentaires |
 
-**Constat** : 5 sources actives sur 8, principalement francophones. Manque de diversité géographique et de couverture anglophone.
+## Sources concernées
 
-## Nouvelles sources proposees
+3 sources déjà configurées mais inactives :
 
-### Blogs Tech Africains
+| Source | Type | URL | Statut actuel |
+|--------|------|-----|---------------|
+| Twitter/X ANSUT | twitter | twitter.com/ansut_ci | Inactif |
+| LinkedIn ANSUT | linkedin | linkedin.com/company/ansut | Inactif |
+| Facebook ANSUT | facebook | facebook.com/ansut.ci | Inactif |
 
-| Nom | URL | Couverture |
-|-----|-----|------------|
-| Disrupt Africa | https://disrupt-africa.com | Startups et innovation panafricaine (EN) |
-| TechCabal | https://techcabal.com | Tech news Afrique (EN) |
-| Ecofin Telecom | https://agenceecofin.com/telecom | Télécoms et régulation Afrique (FR) |
-| WeeTracker | https://weetracker.com | Startups et fintech Afrique (EN) |
-| IT News Africa | https://itnewsafrica.com | Tech enterprise Afrique (EN) |
-| Tech-Afrique | https://tech-afrique.com | Tech francophone (FR) |
+## Étapes d'implémentation
 
-### Presse Specialisee Telecom
+### 1. Ajout des secrets (immédiat)
 
-| Nom | URL | Couverture |
-|-----|-----|------------|
-| Telecom Review Africa | https://telecomreviewafrica.com | Industrie télécom Afrique (EN) |
-| Connecting Africa | https://connectingafrica.com | Connectivité et infra (EN) |
-| Balancing Act Africa | https://balancingact-africa.com | Broadband et médias (EN) |
-| CommsUpdate | https://commsupdate.com/africa | Régulation télécom (EN) |
-| Mobile World Live | https://mobileworldlive.com | 5G et innovations mobiles (EN) |
-| GSMA News Africa | https://gsma.com/africa | Association opérateurs (EN) |
+Utiliser l'outil `add_secret` pour demander les 3 tokens :
+- `TWITTER_BEARER_TOKEN` - Obtenu depuis le Twitter Developer Portal
+- `LINKEDIN_ACCESS_TOKEN` - Obtenu depuis LinkedIn Developer Portal  
+- `FACEBOOK_PAGE_ACCESS_TOKEN` - Obtenu depuis Meta Business Suite
 
-### Actualites Regionales Cote d'Ivoire
+### 2. Extension de la fonction collecte-social
 
-| Nom | URL | Couverture |
-|-----|-----|------------|
-| Abidjan.net Tech | https://news.abidjan.net/h/tech | Tech locale CI (FR) |
-| Le Point Afrique | https://lepointafrique.com | Actualités économiques (FR) |
-| Financial Afrik | https://financialafrik.com | Finance et tech Afrique (FR) |
+Modifier `supabase/functions/collecte-social/index.ts` pour :
+- Détecter les sources de type `twitter`, `linkedin`, `facebook`
+- Appeler les APIs officielles avec les tokens configurés
+- Conserver le fallback Firecrawl si les tokens ne sont pas configurés
 
-## Migration base de donnees
+### 3. Activation des sources
 
-Insertion des 15 nouvelles sources avec le type approprié (blog ou news) et la fréquence de scan adaptée.
-
+Migration SQL pour activer les 3 sources :
 ```sql
-INSERT INTO sources_media (nom, type, url, actif, frequence_scan) VALUES
-  -- Blogs Tech Africains
-  ('Disrupt Africa', 'blog', 'https://disrupt-africa.com', true, '6h'),
-  ('TechCabal', 'blog', 'https://techcabal.com', true, '6h'),
-  ('Ecofin Telecom', 'news', 'https://www.agenceecofin.com/telecom', true, '6h'),
-  ('WeeTracker', 'blog', 'https://weetracker.com', true, '12h'),
-  ('IT News Africa', 'blog', 'https://www.itnewsafrica.com', true, '12h'),
-  ('Tech-Afrique', 'blog', 'https://tech-afrique.com', true, '12h'),
-  -- Presse Telecom
-  ('Telecom Review Africa', 'news', 'https://www.telecomreviewafrica.com', true, '12h'),
-  ('Connecting Africa', 'news', 'https://www.connectingafrica.com', true, '12h'),
-  ('Balancing Act Africa', 'news', 'https://www.balancingact-africa.com', true, '24h'),
-  ('CommsUpdate Africa', 'news', 'https://www.commsupdate.com/africa', true, '24h'),
-  ('Mobile World Live', 'news', 'https://www.mobileworldlive.com', true, '12h'),
-  ('GSMA Africa', 'news', 'https://www.gsma.com/africa', true, '24h'),
-  -- Actualités régionales CI
-  ('Abidjan.net Tech', 'news', 'https://news.abidjan.net/h/tech.asp', true, '6h'),
-  ('Le Point Afrique', 'news', 'https://www.lepoint.fr/afrique', true, '12h'),
-  ('Financial Afrik', 'news', 'https://www.financialafrik.com', true, '12h');
+UPDATE sources_media 
+SET actif = true 
+WHERE type IN ('twitter', 'linkedin', 'facebook');
 ```
-
-## Resultat attendu
-
-Après ajout :
-- **23 sources totales** (contre 8 actuellement)
-- **20 sources actives** (contre 5)
-- Couverture équilibrée FR/EN
-- Diversité : blogs tech, presse télécom, actualités régionales
-
-## Impact sur la collecte
-
-Le job CRON `collecte-social-auto` (toutes les 6h) récupérera automatiquement les insights de ces nouvelles sources. Les mots-clés de veille déjà configurés filtreront les contenus pertinents.
 
 ## Section technique
 
-### Types de sources compatibles
+### Structure de la collecte multi-plateformes
 
-La fonction `collecte-social` filtre les sources par type :
-```typescript
-.in('type', ['blog', 'forum', 'news'])
+```text
+collecte-social/
+├── Sources web (actuelles)
+│   └── Firecrawl scraping → blog, forum, news
+└── APIs officielles (à ajouter)
+    ├── Twitter API v2 → tweets, mentions
+    ├── LinkedIn API → posts entreprise
+    └── Facebook Graph API → posts page
 ```
 
-Les nouveaux types utilisés (`blog`, `news`) sont donc compatibles sans modification du code.
+### Contraintes de plateforme
 
-### Frequences recommandees
+La contrainte `social_insights_plateforme_check` doit être mise à jour pour accepter les nouveaux types :
 
-| Fréquence | Sources |
-|-----------|---------|
-| 6h | Sources à fort volume (Disrupt Africa, TechCabal, Ecofin, Abidjan.net) |
-| 12h | Sources à volume moyen (IT News, Telecom Review, etc.) |
-| 24h | Sources à faible volume (GSMA, Balancing Act, CommsUpdate) |
-
-### Fichiers concernes
-
-Aucune modification de code requise - uniquement une insertion de données via migration SQL.
-
-| Action | Détail |
-|--------|--------|
-| Migration SQL | INSERT de 15 nouvelles sources |
-| Code | Aucun changement |
-| CRON | Aucun changement (déjà configuré) |
-
-### Verification post-insertion
-
-Requête pour confirmer l'ajout :
 ```sql
-SELECT type, COUNT(*) as count, 
-       SUM(CASE WHEN actif THEN 1 ELSE 0 END) as actives
-FROM sources_media 
-GROUP BY type 
-ORDER BY type;
+ALTER TABLE social_insights 
+DROP CONSTRAINT IF EXISTS social_insights_plateforme_check;
+
+ALTER TABLE social_insights 
+ADD CONSTRAINT social_insights_plateforme_check 
+CHECK (plateforme IN ('twitter', 'linkedin', 'facebook', 'blog', 'forum', 'news'));
 ```
+
+### Obtention des tokens
+
+| API | Portail | Prérequis |
+|-----|---------|-----------|
+| Twitter | developer.twitter.com | App créée, Bearer Token |
+| LinkedIn | developer.linkedin.com | App autorisée, OAuth 2.0 |
+| Facebook | developers.facebook.com | Page liée, Page Access Token |
+
+### Fichiers à modifier
+
+| Fichier | Modification |
+|---------|--------------|
+| `supabase/functions/collecte-social/index.ts` | Ajouter appels API Twitter/LinkedIn/Facebook |
+| Migration SQL | Activer les sources + mettre à jour la contrainte |
+
+### Seuil d'alerte social
+
+Conformément à la stratégie définie, le seuil de déclenchement des alertes pour les réseaux sociaux sera de **40** (contre 70 pour les sources standards) pour capturer davantage de signaux faibles.
