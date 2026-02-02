@@ -1113,11 +1113,48 @@ export type Database = {
         }
         Relationships: []
       }
+      social_api_config: {
+        Row: {
+          config: Json | null
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          last_sync: string | null
+          plateforme: string
+          quota_limit: number | null
+          quota_used: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          last_sync?: string | null
+          plateforme: string
+          quota_limit?: number | null
+          quota_used?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          last_sync?: string | null
+          plateforme?: string
+          quota_limit?: number | null
+          quota_used?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       social_insights: {
         Row: {
           alerte_generee: boolean | null
           auteur: string | null
           auteur_url: string | null
+          comments_count: number | null
           contenu: string | null
           created_at: string
           date_publication: string | null
@@ -1126,8 +1163,12 @@ export type Database = {
           est_critique: boolean | null
           hashtags: string[] | null
           id: string
+          is_official_api: boolean | null
+          likes_count: number | null
           plateforme: string
+          platform_post_id: string | null
           sentiment: number | null
+          shares_count: number | null
           source_id: string | null
           traite: boolean | null
           type_contenu: string
@@ -1137,6 +1178,7 @@ export type Database = {
           alerte_generee?: boolean | null
           auteur?: string | null
           auteur_url?: string | null
+          comments_count?: number | null
           contenu?: string | null
           created_at?: string
           date_publication?: string | null
@@ -1145,8 +1187,12 @@ export type Database = {
           est_critique?: boolean | null
           hashtags?: string[] | null
           id?: string
+          is_official_api?: boolean | null
+          likes_count?: number | null
           plateforme: string
+          platform_post_id?: string | null
           sentiment?: number | null
+          shares_count?: number | null
           source_id?: string | null
           traite?: boolean | null
           type_contenu?: string
@@ -1156,6 +1202,7 @@ export type Database = {
           alerte_generee?: boolean | null
           auteur?: string | null
           auteur_url?: string | null
+          comments_count?: number | null
           contenu?: string | null
           created_at?: string
           date_publication?: string | null
@@ -1164,8 +1211,12 @@ export type Database = {
           est_critique?: boolean | null
           hashtags?: string[] | null
           id?: string
+          is_official_api?: boolean | null
+          likes_count?: number | null
           plateforme?: string
+          platform_post_id?: string | null
           sentiment?: number | null
+          shares_count?: number | null
           source_id?: string | null
           traite?: boolean | null
           type_contenu?: string
@@ -1189,6 +1240,8 @@ export type Database = {
           frequence_scan: string | null
           id: string
           nom: string
+          platform_config: Json | null
+          platform_id: string | null
           type: string
           url: string | null
         }
@@ -1199,6 +1252,8 @@ export type Database = {
           frequence_scan?: string | null
           id?: string
           nom: string
+          platform_config?: Json | null
+          platform_id?: string | null
           type: string
           url?: string | null
         }
@@ -1209,6 +1264,8 @@ export type Database = {
           frequence_scan?: string | null
           id?: string
           nom?: string
+          platform_config?: Json | null
+          platform_id?: string | null
           type?: string
           url?: string | null
         }
