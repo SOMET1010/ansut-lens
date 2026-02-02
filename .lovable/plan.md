@@ -1,150 +1,150 @@
 
-# Animation de Transition Fluide pour la Table des Matières
+# Plan d'adaptation : Sources alternatives pour la veille sociale
 
-## Objectif
+## Contexte
 
-Améliorer les animations de transition lors du changement de section active dans la table des matières pour un rendu plus fluide et professionnel.
+Firecrawl bloque le scraping des réseaux sociaux (LinkedIn, Twitter, Facebook) conformément aux conditions d'utilisation de ces plateformes. Ce plan propose d'adapter le système pour scraper des **sources alternatives ouvertes** : blogs tech, forums sectoriels et sites d'actualités spécialisés.
 
-## Analyse de l'existant
-
-### Classes actuelles
-- `transition-all` sur le bouton (ligne 131)
-- `transition-colors` sur le numéro et le label (lignes 138, 146)
-- Pas de durée explicite (utilise le défaut Tailwind de 150ms)
-- Pas d'easing personnalisé
-
-### Limitations
-- Transitions trop rapides (150ms par défaut)
-- Pas d'animation de scale pour le numéro actif
-- Pas d'effet de "glow" animé sur le ring
-
-## Solution
-
-### 1. Durées et easing personnalisés
-
-Remplacer les transitions génériques par des durées explicites :
-
-| Propriété | Avant | Après |
-|-----------|-------|-------|
-| Durée | 150ms (défaut) | 300ms |
-| Easing | ease (défaut) | ease-out / cubic-bezier |
-| Propriétés | all/colors | Ciblées (bg, ring, transform) |
-
-### 2. Animation de scale sur le numéro actif
-
-Ajouter un effet de scale subtil quand le numéro devient actif :
-
-```typescript
-// État actif
-"bg-primary text-primary-foreground scale-110"
-
-// État normal
-"bg-primary/10 text-primary scale-100"
-```
-
-### 3. Animation du ring avec glow
-
-Ajouter un effet de glow animé sur l'élément actif :
-
-```typescript
-activeSection === item.id
-  ? "bg-primary/20 ring-2 ring-primary/50 shadow-glow"
-  : "hover:bg-primary/10"
-```
-
-### 4. Classes de transition améliorées
-
-```typescript
-// Bouton principal
-"transition-all duration-300 ease-out"
-
-// Numéro
-"transition-all duration-300 ease-out"
-
-// Label
-"transition-all duration-200 ease-out"
-```
-
-## Fichier à modifier
-
-| Fichier | Modification |
-|---------|--------------|
-| `src/pages/admin/TechDocPage.tsx` | Améliorer les classes de transition |
-
-## Détails des modifications
-
-### Bouton TOC (lignes 127-152)
-
-```typescript
-<button
-  key={item.id}
-  onClick={() => scrollToSection(item.id)}
-  className={cn(
-    "flex items-center gap-2 p-2 rounded-lg cursor-pointer text-left group",
-    "transition-all duration-300 ease-out",
-    activeSection === item.id
-      ? "bg-primary/20 ring-2 ring-primary/50 shadow-[0_0_12px_hsl(var(--primary)/0.3)]"
-      : "hover:bg-primary/10 ring-0 ring-transparent shadow-none"
-  )}
->
-```
-
-### Numéro avec scale (lignes 137-144)
-
-```typescript
-<span className={cn(
-  "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
-  "transition-all duration-300 ease-out",
-  activeSection === item.id
-    ? "bg-primary text-primary-foreground scale-110 shadow-md"
-    : "bg-primary/10 text-primary scale-100 group-hover:bg-primary group-hover:text-primary-foreground group-hover:scale-105"
-)}>
-```
-
-### Label avec effet (lignes 145-150)
-
-```typescript
-<span className={cn(
-  "transition-all duration-200 ease-out",
-  activeSection === item.id 
-    ? "text-primary font-semibold translate-x-0.5" 
-    : "text-foreground group-hover:text-primary"
-)}>
-```
-
-## Rendu visuel des transitions
+## Architecture proposée
 
 ```text
-Transition d'activation (300ms ease-out) :
-┌────────────────────────────────────────────────────────────────┐
-│  t=0ms        t=100ms       t=200ms       t=300ms             │
-│  ┌─────┐      ┌─────┐       ┌─────┐       ┌─────┐             │
-│  │ (3) │  →   │ (3) │   →   │ [3] │   →   │ [3] │  ← Actif   │
-│  │     │      │░░░░░│       │▓▓▓▓▓│       │█████│             │
-│  └─────┘      └─────┘       └─────┘       └─────┘             │
-│                                                                │
-│  Effets progressifs :                                          │
-│  - Background : transparent → primary/20                       │
-│  - Ring : 0 → 2px primary/50                                   │
-│  - Numéro : scale(1) → scale(1.1)                              │
-│  - Shadow : none → glow effect                                 │
-│  - Label : normal → semibold + translate                       │
-└────────────────────────────────────────────────────────────────┘
++---------------------+     +-------------------+     +------------------+
+|   sources_media     | --> | collecte-social   | --> | social_insights  |
+| (blog, forum, news) |     | (Firecrawl)       |     | (platforme:      |
+|                     |     |                   |     |  blog/forum/news)|
++---------------------+     +-------------------+     +------------------+
+                                    |
+                                    v
+                           +-----------------+
+                           | SocialPulseWidget|
+                           | (UI renommée en  |
+                           | "Veille Web")    |
+                           +-----------------+
 ```
 
-## Timeline des animations
+## Changements prévus
 
-| Élément | Durée | Easing | Propriétés animées |
-|---------|-------|--------|-------------------|
-| Bouton | 300ms | ease-out | background, ring, shadow |
-| Numéro | 300ms | ease-out | background, color, scale, shadow |
-| Label | 200ms | ease-out | color, font-weight, transform |
+### 1. Migration base de données
 
-## Résultat attendu
+**Nouvelles sources par défaut** (table `sources_media`) :
 
-1. **Transitions fluides** : Durée de 300ms pour un effet visuel agréable
-2. **Effet de scale** : Le numéro grossit légèrement quand actif
-3. **Glow effect** : Halo lumineux subtil autour de l'élément actif
-4. **Micro-interaction** : Le label se décale légèrement vers la droite
-5. **Cohérence** : Tous les éléments s'animent de manière synchronisée
-6. **Performance** : Utilisation de `transform` et `opacity` (GPU-accelerated)
+| Nom | Type | URL | Catégorie |
+|-----|------|-----|-----------|
+| CIO Mag Afrique | blog | https://cio-mag.com | Blog tech |
+| JeuneAfrique Tech | news | https://www.jeuneafrique.com/economie-entreprises/tech | Actualités |
+| TIC Magazine CI | news | https://www.ticmagazine.ci | Actualités locales |
+| Réseau Télécom | blog | https://www.reseaux-telecoms.net | Blog télécom |
+| Forum Abidjan IT | forum | https://forum.abidjan.net/forumdisplay.php?f=6 | Forum local |
+| Africa Tech Summit | blog | https://africatechsummit.com/blog | Blog tech pan-africain |
+
+**Mise à jour du CHECK constraint** sur `sources_media.type` pour ajouter les types `blog`, `forum`, `news`.
+
+### 2. Edge Function `collecte-social`
+
+Modifications majeures :
+- Requêter les sources de type `blog`, `forum`, `news` au lieu de `linkedin`, `twitter`, `facebook`
+- Adapter le parsing Firecrawl pour extraire les titres, auteurs, dates des articles
+- Mapper `plateforme` vers les nouvelles valeurs : `blog`, `forum`, `news`
+- Ajuster les scores d'engagement basés sur la longueur du contenu et la richesse sémantique
+- Conserver l'analyse de sentiment existante
+
+### 3. Hook `useSocialInsights.ts`
+
+- Étendre le type `SocialInsight.plateforme` pour inclure `blog`, `forum`, `news`
+- Adapter les statistiques par type de source
+
+### 4. Widget `SocialPulseWidget.tsx`
+
+Transformations :
+- Renommer "Pulse Social" en **"Veille Web"**
+- Nouvelles icônes et couleurs :
+  - Blog : `Newspaper` (violet)
+  - Forum : `MessagesSquare` (orange)
+  - News : `Globe` (vert)
+- Afficher le nom de la source et l'URL originale
+- Conserver les indicateurs de sentiment et criticité
+
+### 5. Types TypeScript
+
+Mettre à jour `src/types/index.ts` si nécessaire pour les nouveaux types de sources.
+
+---
+
+## Section technique
+
+### Migration SQL
+
+```sql
+-- Étendre le type de sources_media
+ALTER TABLE sources_media DROP CONSTRAINT IF EXISTS sources_media_type_check;
+ALTER TABLE sources_media ADD CONSTRAINT sources_media_type_check 
+  CHECK (type IN ('web', 'rss', 'twitter', 'linkedin', 'facebook', 'blog', 'forum', 'news', 'autre'));
+
+-- Insérer les sources alternatives
+INSERT INTO sources_media (nom, type, url, actif, frequence_scan) VALUES
+  ('CIO Mag Afrique', 'blog', 'https://cio-mag.com', true, 'quotidien'),
+  ('JeuneAfrique Tech', 'news', 'https://www.jeuneafrique.com/economie-entreprises/tech', true, 'quotidien'),
+  ('TIC Magazine CI', 'news', 'https://www.ticmagazine.ci', true, 'quotidien'),
+  ('Réseau Télécom', 'blog', 'https://www.reseaux-telecoms.net', true, 'quotidien'),
+  ('Africa Tech Summit', 'blog', 'https://africatechsummit.com/blog', true, 'quotidien');
+
+-- Désactiver les anciennes sources sociales bloquées
+UPDATE sources_media SET actif = false 
+  WHERE type IN ('linkedin', 'twitter', 'facebook');
+```
+
+### Modifications Edge Function
+
+```typescript
+// Nouveaux types de plateformes
+type Plateforme = 'blog' | 'forum' | 'news';
+
+// Requête adaptée
+const { data: sources } = await supabase
+  .from('sources_media')
+  .select('id, nom, type, url')
+  .in('type', ['blog', 'forum', 'news'])
+  .eq('actif', true);
+
+// Extraction adaptée pour articles/posts de blog
+function extractInsightsFromContent(
+  content: string,
+  metadata: { title?: string; sourceURL?: string },
+  sourceId: string,
+  plateforme: Plateforme,
+  keywords: string[]
+): SocialInsight[]
+```
+
+### Configuration UI
+
+```typescript
+const PLATFORM_CONFIG = {
+  blog: {
+    icon: Newspaper,
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-500/10',
+    label: 'Blogs',
+  },
+  forum: {
+    icon: MessagesSquare,
+    color: 'text-orange-600',
+    bgColor: 'bg-orange-500/10',
+    label: 'Forums',
+  },
+  news: {
+    icon: Globe,
+    color: 'text-green-600',
+    bgColor: 'bg-green-500/10',
+    label: 'Actualités',
+  },
+};
+```
+
+## Livrables
+
+1. Migration SQL pour ajouter les sources alternatives
+2. Edge function `collecte-social` adaptée
+3. Hook `useSocialInsights` mis à jour
+4. Widget `SocialPulseWidget` renommé "Veille Web" avec nouvelles icônes
+5. Test de collecte sur les nouvelles sources
