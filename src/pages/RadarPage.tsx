@@ -16,6 +16,7 @@ import {
   CriticalAlertBanner,
   IntelligenceFeed,
   CompactRadar,
+  SocialPulseWidget,
 } from '@/components/radar';
 
 const periodLabels: Record<PeriodFilter, string> = {
@@ -88,6 +89,9 @@ export default function RadarPage() {
           console.log('View signal details:', signal.id);
         }}
       />
+
+      {/* Social Pulse Widget */}
+      <SocialPulseWidget />
 
       {/* Main Intelligence Feed */}
       <IntelligenceFeed 

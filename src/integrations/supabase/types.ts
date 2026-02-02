@@ -1113,6 +1113,74 @@ export type Database = {
         }
         Relationships: []
       }
+      social_insights: {
+        Row: {
+          alerte_generee: boolean | null
+          auteur: string | null
+          auteur_url: string | null
+          contenu: string | null
+          created_at: string
+          date_publication: string | null
+          engagement_score: number | null
+          entites_detectees: string[] | null
+          est_critique: boolean | null
+          hashtags: string[] | null
+          id: string
+          plateforme: string
+          sentiment: number | null
+          source_id: string | null
+          traite: boolean | null
+          type_contenu: string
+          url_original: string | null
+        }
+        Insert: {
+          alerte_generee?: boolean | null
+          auteur?: string | null
+          auteur_url?: string | null
+          contenu?: string | null
+          created_at?: string
+          date_publication?: string | null
+          engagement_score?: number | null
+          entites_detectees?: string[] | null
+          est_critique?: boolean | null
+          hashtags?: string[] | null
+          id?: string
+          plateforme: string
+          sentiment?: number | null
+          source_id?: string | null
+          traite?: boolean | null
+          type_contenu?: string
+          url_original?: string | null
+        }
+        Update: {
+          alerte_generee?: boolean | null
+          auteur?: string | null
+          auteur_url?: string | null
+          contenu?: string | null
+          created_at?: string
+          date_publication?: string | null
+          engagement_score?: number | null
+          entites_detectees?: string[] | null
+          est_critique?: boolean | null
+          hashtags?: string[] | null
+          id?: string
+          plateforme?: string
+          sentiment?: number | null
+          source_id?: string | null
+          traite?: boolean | null
+          type_contenu?: string
+          url_original?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_insights_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "sources_media"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sources_media: {
         Row: {
           actif: boolean | null
