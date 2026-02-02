@@ -1,150 +1,250 @@
 
-# Plan d'adaptation : Sources alternatives pour la veille sociale
+
+# Plan d'integration des APIs officielles Twitter, LinkedIn et Facebook
 
 ## Contexte
 
-Firecrawl bloque le scraping des réseaux sociaux (LinkedIn, Twitter, Facebook) conformément aux conditions d'utilisation de ces plateformes. Ce plan propose d'adapter le système pour scraper des **sources alternatives ouvertes** : blogs tech, forums sectoriels et sites d'actualités spécialisés.
+Le scraping des reseaux sociaux via Firecrawl est bloque pour des raisons de conformite. Ce plan propose d'implementer une integration avec les **APIs officielles** de chaque plateforme pour collecter legalement les donnees sociales.
 
-## Architecture proposée
+## Apercu des APIs
+
+| Plateforme | API | Donnees accessibles | Cout |
+|------------|-----|---------------------|------|
+| Twitter/X | X API v2 | Tweets, mentions, recherche, hashtags | Free tier: 10k tweets/mois |
+| LinkedIn | Marketing API | Posts de pages d'entreprise | Gratuit (acces approuve requis) |
+| Facebook | Graph API | Posts de pages publiques | Gratuit |
+
+## Architecture proposee
 
 ```text
-+---------------------+     +-------------------+     +------------------+
-|   sources_media     | --> | collecte-social   | --> | social_insights  |
-| (blog, forum, news) |     | (Firecrawl)       |     | (platforme:      |
-|                     |     |                   |     |  blog/forum/news)|
-+---------------------+     +-------------------+     +------------------+
-                                    |
-                                    v
-                           +-----------------+
-                           | SocialPulseWidget|
-                           | (UI renommée en  |
-                           | "Veille Web")    |
-                           +-----------------+
+                      +-------------------+
+                      | collecte-social   |
+                      | (orchestrateur)   |
+                      +--------+----------+
+                               |
+         +---------------------+---------------------+
+         |                     |                     |
+         v                     v                     v
++----------------+    +----------------+    +----------------+
+| collecte-      |    | collecte-      |    | collecte-      |
+| twitter        |    | linkedin       |    | facebook       |
+| (X API v2)     |    | (Marketing API)|    | (Graph API)    |
++----------------+    +----------------+    +----------------+
+         |                     |                     |
+         +---------------------+---------------------+
+                               |
+                               v
+                      +-------------------+
+                      | social_insights   |
+                      | (table unifiee)   |
+                      +-------------------+
 ```
 
-## Changements prévus
+## Changements prevus
 
-### 1. Migration base de données
+### 1. Nouvelle edge function `collecte-twitter`
 
-**Nouvelles sources par défaut** (table `sources_media`) :
+Utilise l'API X v2 pour:
+- Rechercher des tweets contenant les mots-cles de veille
+- Collecter les mentions des comptes suivis
+- Extraire les hashtags tendance pertinents
 
-| Nom | Type | URL | Catégorie |
-|-----|------|-----|-----------|
-| CIO Mag Afrique | blog | https://cio-mag.com | Blog tech |
-| JeuneAfrique Tech | news | https://www.jeuneafrique.com/economie-entreprises/tech | Actualités |
-| TIC Magazine CI | news | https://www.ticmagazine.ci | Actualités locales |
-| Réseau Télécom | blog | https://www.reseaux-telecoms.net | Blog télécom |
-| Forum Abidjan IT | forum | https://forum.abidjan.net/forumdisplay.php?f=6 | Forum local |
-| Africa Tech Summit | blog | https://africatechsummit.com/blog | Blog tech pan-africain |
+Fonctionnalites:
+- Authentification OAuth 2.0 Bearer Token
+- Gestion du rate limiting (450 requetes/15 min)
+- Pagination automatique des resultats
+- Extraction des metriques d'engagement reelles (retweets, likes, replies)
 
-**Mise à jour du CHECK constraint** sur `sources_media.type` pour ajouter les types `blog`, `forum`, `news`.
+### 2. Nouvelle edge function `collecte-linkedin`
 
-### 2. Edge Function `collecte-social`
+Utilise l'API Marketing de LinkedIn pour:
+- Recuperer les posts des pages d'entreprise suivies
+- Analyser les reactions et commentaires
+- Detecter les mentions de l'organisation
 
-Modifications majeures :
-- Requêter les sources de type `blog`, `forum`, `news` au lieu de `linkedin`, `twitter`, `facebook`
-- Adapter le parsing Firecrawl pour extraire les titres, auteurs, dates des articles
-- Mapper `plateforme` vers les nouvelles valeurs : `blog`, `forum`, `news`
-- Ajuster les scores d'engagement basés sur la longueur du contenu et la richesse sémantique
-- Conserver l'analyse de sentiment existante
+Fonctionnalites:
+- Authentification OAuth 2.0 avec refresh token
+- Collecte des metriques natives (likes, shares, comments)
+- Support des Organization URNs
 
-### 3. Hook `useSocialInsights.ts`
+### 3. Nouvelle edge function `collecte-facebook`
 
-- Étendre le type `SocialInsight.plateforme` pour inclure `blog`, `forum`, `news`
-- Adapter les statistiques par type de source
+Utilise le Graph API v19 pour:
+- Lire les posts des pages publiques
+- Analyser les reactions et partages
+- Rechercher dans les contenus publics
 
-### 4. Widget `SocialPulseWidget.tsx`
+Fonctionnalites:
+- Access Token long-lived pour les pages
+- Extraction des metriques (reactions, shares, comments)
+- Support des Page Access Tokens
 
-Transformations :
-- Renommer "Pulse Social" en **"Veille Web"**
-- Nouvelles icônes et couleurs :
-  - Blog : `Newspaper` (violet)
-  - Forum : `MessagesSquare` (orange)
-  - News : `Globe` (vert)
-- Afficher le nom de la source et l'URL originale
-- Conserver les indicateurs de sentiment et criticité
+### 4. Mise a jour de `collecte-social`
 
-### 5. Types TypeScript
+Transformation en orchestrateur:
+- Appelle les 3 fonctions specialisees en parallele
+- Agrege les resultats
+- Continue la collecte web existante (blogs, forums, news)
+- Genere les alertes unifiees
 
-Mettre à jour `src/types/index.ts` si nécessaire pour les nouveaux types de sources.
+### 5. Migration base de donnees
+
+- Reactiver les types `twitter`, `linkedin`, `facebook` dans `sources_media`
+- Ajouter des champs optionnels pour les identifiants de plateforme
+- Table de configuration des tokens API par plateforme
+
+### 6. Interface de configuration
+
+Nouveau composant dans l'administration:
+- Formulaire de saisie des credentials API
+- Test de connexion par plateforme
+- Gestion des comptes/pages a surveiller
+- Historique des quotas d'API utilises
+
+### 7. Mise a jour du widget
+
+Extension de `SocialPulseWidget` pour:
+- Afficher les icones officielles des plateformes sociales
+- Metriques d'engagement reelles (RT, likes, shares)
+- Lien direct vers le post original
+- Indicateur de source (API officielle vs web scraping)
 
 ---
 
 ## Section technique
 
+### Secrets a configurer
+
+Les cles API suivantes devront etre ajoutees via l'outil de secrets:
+
+| Secret | Description |
+|--------|-------------|
+| `TWITTER_BEARER_TOKEN` | Bearer Token de l'app Twitter Developer |
+| `LINKEDIN_CLIENT_ID` | Client ID de l'app LinkedIn |
+| `LINKEDIN_CLIENT_SECRET` | Client Secret de l'app LinkedIn |
+| `LINKEDIN_ACCESS_TOKEN` | Access Token (genere via OAuth) |
+| `FACEBOOK_PAGE_ACCESS_TOKEN` | Page Access Token long-lived |
+
+### Edge function Twitter (extrait)
+
+```typescript
+const TWITTER_API_BASE = 'https://api.x.com/2';
+
+async function searchTweets(query: string, bearerToken: string) {
+  const response = await fetch(
+    `${TWITTER_API_BASE}/tweets/search/recent?query=${encodeURIComponent(query)}&tweet.fields=created_at,public_metrics,author_id&max_results=100`,
+    {
+      headers: {
+        'Authorization': `Bearer ${bearerToken}`,
+      },
+    }
+  );
+  
+  if (!response.ok) {
+    throw new Error(`Twitter API error: ${response.status}`);
+  }
+  
+  return response.json();
+}
+```
+
+### Edge function LinkedIn (extrait)
+
+```typescript
+const LINKEDIN_API_BASE = 'https://api.linkedin.com/v2';
+
+async function getOrganizationPosts(orgId: string, accessToken: string) {
+  const response = await fetch(
+    `${LINKEDIN_API_BASE}/shares?q=owners&owners=urn:li:organization:${orgId}&count=50`,
+    {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'X-Restli-Protocol-Version': '2.0.0',
+      },
+    }
+  );
+  
+  return response.json();
+}
+```
+
+### Edge function Facebook (extrait)
+
+```typescript
+const FACEBOOK_API_BASE = 'https://graph.facebook.com/v19.0';
+
+async function getPagePosts(pageId: string, accessToken: string) {
+  const response = await fetch(
+    `${FACEBOOK_API_BASE}/${pageId}/posts?fields=id,message,created_time,shares,reactions.summary(true),comments.summary(true)&access_token=${accessToken}`
+  );
+  
+  return response.json();
+}
+```
+
 ### Migration SQL
 
 ```sql
--- Étendre le type de sources_media
-ALTER TABLE sources_media DROP CONSTRAINT IF EXISTS sources_media_type_check;
-ALTER TABLE sources_media ADD CONSTRAINT sources_media_type_check 
-  CHECK (type IN ('web', 'rss', 'twitter', 'linkedin', 'facebook', 'blog', 'forum', 'news', 'autre'));
-
--- Insérer les sources alternatives
-INSERT INTO sources_media (nom, type, url, actif, frequence_scan) VALUES
-  ('CIO Mag Afrique', 'blog', 'https://cio-mag.com', true, 'quotidien'),
-  ('JeuneAfrique Tech', 'news', 'https://www.jeuneafrique.com/economie-entreprises/tech', true, 'quotidien'),
-  ('TIC Magazine CI', 'news', 'https://www.ticmagazine.ci', true, 'quotidien'),
-  ('Réseau Télécom', 'blog', 'https://www.reseaux-telecoms.net', true, 'quotidien'),
-  ('Africa Tech Summit', 'blog', 'https://africatechsummit.com/blog', true, 'quotidien');
-
--- Désactiver les anciennes sources sociales bloquées
-UPDATE sources_media SET actif = false 
+-- Reactiver les sources sociales
+UPDATE sources_media SET actif = true 
   WHERE type IN ('linkedin', 'twitter', 'facebook');
+
+-- Ajouter les identifiants de plateforme
+ALTER TABLE sources_media 
+  ADD COLUMN IF NOT EXISTS platform_id TEXT,
+  ADD COLUMN IF NOT EXISTS platform_config JSONB DEFAULT '{}';
+
+-- Table de configuration des APIs sociales
+CREATE TABLE IF NOT EXISTS social_api_config (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  plateforme TEXT NOT NULL UNIQUE CHECK (plateforme IN ('twitter', 'linkedin', 'facebook')),
+  enabled BOOLEAN DEFAULT false,
+  last_sync TIMESTAMPTZ,
+  quota_used INTEGER DEFAULT 0,
+  quota_limit INTEGER,
+  config JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Enrichir social_insights avec les metriques natives
+ALTER TABLE social_insights
+  ADD COLUMN IF NOT EXISTS likes_count INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS shares_count INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS comments_count INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS platform_post_id TEXT,
+  ADD COLUMN IF NOT EXISTS is_official_api BOOLEAN DEFAULT false;
 ```
 
-### Modifications Edge Function
+### Config.toml additions
 
-```typescript
-// Nouveaux types de plateformes
-type Plateforme = 'blog' | 'forum' | 'news';
+```toml
+[functions.collecte-twitter]
+verify_jwt = false
 
-// Requête adaptée
-const { data: sources } = await supabase
-  .from('sources_media')
-  .select('id, nom, type, url')
-  .in('type', ['blog', 'forum', 'news'])
-  .eq('actif', true);
+[functions.collecte-linkedin]
+verify_jwt = false
 
-// Extraction adaptée pour articles/posts de blog
-function extractInsightsFromContent(
-  content: string,
-  metadata: { title?: string; sourceURL?: string },
-  sourceId: string,
-  plateforme: Plateforme,
-  keywords: string[]
-): SocialInsight[]
+[functions.collecte-facebook]
+verify_jwt = false
 ```
 
-### Configuration UI
+## Prerequis utilisateur
 
-```typescript
-const PLATFORM_CONFIG = {
-  blog: {
-    icon: Newspaper,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-500/10',
-    label: 'Blogs',
-  },
-  forum: {
-    icon: MessagesSquare,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-500/10',
-    label: 'Forums',
-  },
-  news: {
-    icon: Globe,
-    color: 'text-green-600',
-    bgColor: 'bg-green-500/10',
-    label: 'Actualités',
-  },
-};
-```
+Avant l'implementation, l'utilisateur devra:
+
+1. **Twitter/X**: Creer un compte Developer et une app sur developer.twitter.com
+2. **LinkedIn**: Demander l'acces a l'API Marketing via LinkedIn Developer
+3. **Facebook**: Creer une app Facebook et obtenir un Page Access Token
 
 ## Livrables
 
-1. Migration SQL pour ajouter les sources alternatives
-2. Edge function `collecte-social` adaptée
-3. Hook `useSocialInsights` mis à jour
-4. Widget `SocialPulseWidget` renommé "Veille Web" avec nouvelles icônes
-5. Test de collecte sur les nouvelles sources
+1. Edge function `collecte-twitter` avec X API v2
+2. Edge function `collecte-linkedin` avec Marketing API
+3. Edge function `collecte-facebook` avec Graph API
+4. Migration de base de donnees pour les nouveaux champs
+5. Orchestrateur `collecte-social` mis a jour
+6. Interface d'administration pour la configuration API
+7. Widget `SocialPulseWidget` enrichi avec metriques reelles
+8. Documentation d'onboarding pour chaque API
+
