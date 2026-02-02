@@ -2,10 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+export type WebPlateforme = 'blog' | 'forum' | 'news' | 'linkedin' | 'twitter' | 'facebook';
+
 export interface SocialInsight {
   id: string;
   source_id: string | null;
-  plateforme: 'linkedin' | 'twitter' | 'facebook';
+  plateforme: WebPlateforme;
   type_contenu: 'post' | 'mention' | 'hashtag' | 'trending';
   contenu: string | null;
   auteur: string | null;
@@ -22,7 +24,7 @@ export interface SocialInsight {
   created_at: string;
 }
 
-export interface SocialStats {
+export interface WebStats {
   total: number;
   byPlatform: Record<string, number>;
   critical: number;
@@ -49,7 +51,7 @@ export function useSocialInsights(limit = 20) {
 export function useSocialStats() {
   return useQuery({
     queryKey: ['social-stats'],
-    queryFn: async (): Promise<SocialStats> => {
+    queryFn: async (): Promise<WebStats> => {
       const { data, error } = await supabase
         .from('social_insights')
         .select('plateforme, engagement_score, sentiment, est_critique')
@@ -103,7 +105,7 @@ export function useCollectSocial() {
     },
     onError: (error) => {
       toast.error('Erreur de collecte', {
-        description: error instanceof Error ? error.message : 'Échec de la collecte sociale',
+        description: error instanceof Error ? error.message : 'Échec de la collecte web',
       });
     },
   });

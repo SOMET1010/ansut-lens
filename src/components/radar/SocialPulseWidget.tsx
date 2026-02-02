@@ -5,43 +5,63 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
-  Linkedin, 
-  Twitter, 
-  Facebook, 
+  Newspaper, 
+  MessagesSquare, 
+  Globe, 
   RefreshCw, 
   TrendingUp, 
   TrendingDown,
   AlertTriangle,
   Hash,
-  MessageSquare,
-  Loader2
+  ExternalLink,
+  Loader2,
+  Radio
 } from 'lucide-react';
-import { useSocialInsights, useSocialStats, useCollectSocial, SocialInsight } from '@/hooks/useSocialInsights';
+import { useSocialInsights, useSocialStats, useCollectSocial, SocialInsight, WebPlateforme } from '@/hooks/useSocialInsights';
 import { cn } from '@/lib/utils';
 
-const PLATFORM_CONFIG = {
+const PLATFORM_CONFIG: Record<WebPlateforme, { icon: typeof Newspaper; color: string; bgColor: string; label: string }> = {
+  blog: {
+    icon: Newspaper,
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-500/10',
+    label: 'Blogs',
+  },
+  forum: {
+    icon: MessagesSquare,
+    color: 'text-orange-600',
+    bgColor: 'bg-orange-500/10',
+    label: 'Forums',
+  },
+  news: {
+    icon: Globe,
+    color: 'text-green-600',
+    bgColor: 'bg-green-500/10',
+    label: 'Actualités',
+  },
+  // Garder les anciens types pour compatibilité avec les données existantes
   linkedin: {
-    icon: Linkedin,
-    color: 'text-[#0A66C2]',
-    bgColor: 'bg-[#0A66C2]/10',
+    icon: Globe,
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-500/10',
     label: 'LinkedIn',
   },
   twitter: {
-    icon: Twitter,
-    color: 'text-[#1DA1F2]',
-    bgColor: 'bg-[#1DA1F2]/10',
-    label: 'X/Twitter',
+    icon: Globe,
+    color: 'text-sky-500',
+    bgColor: 'bg-sky-500/10',
+    label: 'Twitter',
   },
   facebook: {
-    icon: Facebook,
-    color: 'text-[#1877F2]',
-    bgColor: 'bg-[#1877F2]/10',
+    icon: Globe,
+    color: 'text-indigo-600',
+    bgColor: 'bg-indigo-500/10',
     label: 'Facebook',
   },
 };
 
-function PlatformIcon({ platform }: { platform: 'linkedin' | 'twitter' | 'facebook' }) {
-  const config = PLATFORM_CONFIG[platform];
+function PlatformIcon({ platform }: { platform: WebPlateforme }) {
+  const config = PLATFORM_CONFIG[platform] || PLATFORM_CONFIG.blog;
   const Icon = config.icon;
   return (
     <div className={cn('p-1.5 rounded-lg', config.bgColor)}>
@@ -51,7 +71,7 @@ function PlatformIcon({ platform }: { platform: 'linkedin' | 'twitter' | 'facebo
 }
 
 function InsightCard({ insight }: { insight: SocialInsight }) {
-  const config = PLATFORM_CONFIG[insight.plateforme];
+  const config = PLATFORM_CONFIG[insight.plateforme] || PLATFORM_CONFIG.blog;
   const sentimentValue = insight.sentiment ?? 0;
   
   return (
@@ -64,7 +84,10 @@ function InsightCard({ insight }: { insight: SocialInsight }) {
       <div className="flex items-start gap-3">
         <PlatformIcon platform={insight.plateforme} />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <Badge variant="outline" className={cn('text-xs px-1.5 py-0', config.color)}>
+              {config.label}
+            </Badge>
             {insight.est_critique && (
               <Badge variant="destructive" className="text-xs px-1.5 py-0">
                 <AlertTriangle className="h-3 w-3 mr-1" />
@@ -91,15 +114,26 @@ function InsightCard({ insight }: { insight: SocialInsight }) {
           <p className="text-sm line-clamp-2 text-foreground/90">
             {insight.contenu}
           </p>
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
             {insight.hashtags && insight.hashtags.length > 0 && (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Hash className="h-3 w-3" />
                 {insight.hashtags.slice(0, 2).join(' ')}
               </div>
             )}
+            {insight.url_original && (
+              <a 
+                href={insight.url_original} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Source
+              </a>
+            )}
             <div className="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
-              <MessageSquare className="h-3 w-3" />
+              <Radio className="h-3 w-3" />
               {insight.engagement_score}
             </div>
           </div>
@@ -121,15 +155,18 @@ export function SocialPulseWidget() {
 
   const isLoading = insightsLoading || statsLoading;
 
+  // Plateformes actives (nouvelles sources web)
+  const activePlatforms: WebPlateforme[] = ['blog', 'forum', 'news'];
+
   return (
     <Card className="col-span-1 lg:col-span-2">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20">
-              <TrendingUp className="h-5 w-5 text-primary" />
+            <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500/20 to-green-500/20">
+              <Radio className="h-5 w-5 text-primary" />
             </div>
-            Pulse Social
+            Veille Web
           </CardTitle>
           <Button
             variant="outline"
@@ -169,7 +206,8 @@ export function SocialPulseWidget() {
               <div className="text-2xl font-bold">{stats.total}</div>
               <div className="text-xs text-muted-foreground">Total</div>
             </button>
-            {Object.entries(PLATFORM_CONFIG).map(([key, config]) => {
+            {activePlatforms.map((key) => {
+              const config = PLATFORM_CONFIG[key];
               const count = stats.byPlatform[key] || 0;
               const Icon = config.icon;
               return (
@@ -220,8 +258,8 @@ export function SocialPulseWidget() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-              <MessageSquare className="h-10 w-10 mb-2 opacity-50" />
-              <p className="text-sm">Aucun insight social</p>
+              <Radio className="h-10 w-10 mb-2 opacity-50" />
+              <p className="text-sm">Aucun insight web</p>
               <p className="text-xs">Cliquez sur Actualiser pour collecter</p>
             </div>
           )}
