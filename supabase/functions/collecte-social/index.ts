@@ -5,9 +5,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface SocialInsight {
+type Plateforme = 'blog' | 'forum' | 'news';
+
+interface WebInsight {
   source_id?: string;
-  plateforme: 'linkedin' | 'twitter' | 'facebook';
+  plateforme: Plateforme;
   type_contenu: 'post' | 'mention' | 'hashtag' | 'trending';
   contenu: string;
   auteur?: string;
@@ -36,20 +38,20 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Récupérer les sources sociales actives
+    // Récupérer les sources web alternatives actives (blogs, forums, actualités)
     const { data: sources, error: sourcesError } = await supabase
       .from('sources_media')
       .select('id, nom, type, url')
-      .in('type', ['linkedin', 'twitter', 'facebook'])
+      .in('type', ['blog', 'forum', 'news'])
       .eq('actif', true);
 
     if (sourcesError) {
       throw new Error(`Failed to fetch sources: ${sourcesError.message}`);
     }
 
-    console.log(`Found ${sources?.length || 0} social sources to scrape`);
+    console.log(`Found ${sources?.length || 0} web sources to scrape (blogs, forums, news)`);
 
-    const insights: SocialInsight[] = [];
+    const insights: WebInsight[] = [];
     const errors: string[] = [];
 
     // Récupérer les mots-clés de veille pour le filtrage
@@ -88,18 +90,24 @@ Deno.serve(async (req) => {
 
         const scrapeData = await scrapeResponse.json();
         const markdown = scrapeData.data?.markdown || scrapeData.markdown || '';
+        const metadata = scrapeData.data?.metadata || scrapeData.metadata || {};
 
         if (!markdown) {
           console.log(`No content found for ${source.nom}`);
           continue;
         }
 
+        // Mapper le type de source vers le type de plateforme
+        const plateforme = mapSourceTypeToPlateforme(source.type);
+
         // Extraire les insights du contenu
         const extractedInsights = extractInsightsFromContent(
           markdown,
+          metadata,
           source.id,
-          source.type as 'linkedin' | 'twitter' | 'facebook',
-          keywords
+          plateforme,
+          keywords,
+          source.url
         );
 
         insights.push(...extractedInsights);
@@ -126,9 +134,9 @@ Deno.serve(async (req) => {
       const criticalInsights = insights.filter(i => i.est_critique);
       if (criticalInsights.length > 0) {
         const alertes = criticalInsights.map(insight => ({
-          type: 'social',
+          type: 'veille_web',
           niveau: 'important',
-          titre: `Insight social critique - ${insight.plateforme}`,
+          titre: `Insight critique - ${getPlatformLabel(insight.plateforme)}`,
           message: insight.contenu?.substring(0, 200) + '...',
           reference_type: 'social_insight',
         }));
@@ -140,7 +148,7 @@ Deno.serve(async (req) => {
 
     // Logger la collecte
     await supabase.from('collectes_log').insert({
-      type: 'social',
+      type: 'veille_web',
       statut: errors.length === 0 ? 'succes' : 'partiel',
       nb_resultats: insights.length,
       sources_utilisees: sources?.map(s => s.nom) || [],
@@ -166,20 +174,82 @@ Deno.serve(async (req) => {
   }
 });
 
+function mapSourceTypeToPlateforme(type: string): Plateforme {
+  switch (type) {
+    case 'blog':
+      return 'blog';
+    case 'forum':
+      return 'forum';
+    case 'news':
+      return 'news';
+    default:
+      return 'blog';
+  }
+}
+
+function getPlatformLabel(plateforme: Plateforme): string {
+  switch (plateforme) {
+    case 'blog':
+      return 'Blog';
+    case 'forum':
+      return 'Forum';
+    case 'news':
+      return 'Actualités';
+    default:
+      return 'Web';
+  }
+}
+
 // Fonction pour extraire les insights du contenu scraped
 function extractInsightsFromContent(
   content: string,
+  metadata: { title?: string; sourceURL?: string; description?: string },
   sourceId: string,
-  plateforme: 'linkedin' | 'twitter' | 'facebook',
-  keywords: string[]
-): SocialInsight[] {
-  const insights: SocialInsight[] = [];
+  plateforme: Plateforme,
+  keywords: string[],
+  originalUrl: string
+): WebInsight[] {
+  const insights: WebInsight[] = [];
   
-  // Diviser le contenu en sections/posts potentiels
-  const sections = content.split(/\n{2,}/).filter(s => s.trim().length > 50);
+  // Pour les blogs et news, extraire d'abord le titre/description comme premier insight
+  if (metadata.title) {
+    const titleContent = `${metadata.title}${metadata.description ? ': ' + metadata.description : ''}`;
+    
+    // Vérifier si le contenu contient des mots-clés pertinents
+    const matchingKeywords = keywords.filter(kw => 
+      titleContent.toLowerCase().includes(kw.toLowerCase()) ||
+      content.toLowerCase().includes(kw.toLowerCase())
+    );
+    
+    if (matchingKeywords.length > 0 || keywords.length === 0) {
+      const sentiment = estimateSentiment(titleContent + ' ' + content.substring(0, 500));
+      const isCritical = sentiment < -0.3 || 
+        /controvers|scandale|accusation|crise|problème|échec|alerte|urgent/i.test(titleContent);
+
+      insights.push({
+        source_id: sourceId,
+        plateforme,
+        type_contenu: 'post',
+        contenu: titleContent.substring(0, 1000),
+        url_original: metadata.sourceURL || originalUrl,
+        engagement_score: calculateEngagementScore(content, plateforme),
+        sentiment,
+        entites_detectees: matchingKeywords,
+        est_critique: isCritical,
+      });
+    }
+  }
   
-  for (const section of sections.slice(0, 10)) { // Limiter à 10 insights par source
+  // Diviser le contenu en sections/articles potentiels
+  const sections = content.split(/\n{2,}/).filter(s => s.trim().length > 100);
+  
+  for (const section of sections.slice(0, 8)) { // Limiter à 8 insights par source
     const cleanContent = section.trim();
+    
+    // Ignorer si c'est juste du titre déjà traité
+    if (metadata.title && cleanContent.includes(metadata.title)) {
+      continue;
+    }
     
     // Vérifier si le contenu contient des mots-clés pertinents
     const matchingKeywords = keywords.filter(kw => 
@@ -190,28 +260,29 @@ function extractInsightsFromContent(
       continue; // Ignorer si aucun mot-clé ne correspond
     }
 
-    // Extraire les hashtags
+    // Extraire les hashtags et tags potentiels
     const hashtagMatches = cleanContent.match(/#\w+/g) || [];
     
     // Calculer un score d'engagement estimé
     const engagementScore = calculateEngagementScore(cleanContent, plateforme);
     
-    // Estimer le sentiment (simplifié)
+    // Estimer le sentiment
     const sentiment = estimateSentiment(cleanContent);
     
-    // Déterminer si critique (mentions négatives, controverses)
+    // Déterminer si critique
     const isCritical = sentiment < -0.3 || 
-      /controvers|scandale|accusation|crise|problème|échec/i.test(cleanContent);
+      /controvers|scandale|accusation|crise|problème|échec|alerte|urgent|danger/i.test(cleanContent);
 
     insights.push({
       source_id: sourceId,
       plateforme,
       type_contenu: 'post',
       contenu: cleanContent.substring(0, 1000),
-      hashtags: hashtagMatches,
+      hashtags: hashtagMatches.length > 0 ? hashtagMatches : undefined,
       engagement_score: engagementScore,
       sentiment,
       entites_detectees: matchingKeywords,
+      url_original: metadata.sourceURL || originalUrl,
       est_critique: isCritical,
     });
   }
@@ -219,27 +290,38 @@ function extractInsightsFromContent(
   return insights;
 }
 
-function calculateEngagementScore(content: string, plateforme: string): number {
-  // Score basé sur des indicateurs de longueur et structure
-  let score = Math.min(content.length / 10, 50);
+function calculateEngagementScore(content: string, plateforme: Plateforme): number {
+  // Score basé sur la longueur et la richesse du contenu
+  let score = Math.min(content.length / 15, 40);
   
-  // Bonus pour les mentions et hashtags
-  const mentions = (content.match(/@\w+/g) || []).length;
-  const hashtags = (content.match(/#\w+/g) || []).length;
+  // Bonus pour les indicateurs de qualité
+  const hasNumbers = /\d+/.test(content);
+  const hasQuotes = /["«»]/.test(content);
+  const hasLinks = /https?:\/\//.test(content);
   
-  score += mentions * 5;
-  score += hashtags * 3;
+  if (hasNumbers) score += 10;
+  if (hasQuotes) score += 10;
+  if (hasLinks) score += 5;
   
-  // Plateforme-specific adjustments
-  if (plateforme === 'linkedin') score *= 1.2; // LinkedIn posts tend to have higher value
-  if (plateforme === 'twitter') score *= 0.8; // Twitter posts are shorter
+  // Ajustements par type de source
+  switch (plateforme) {
+    case 'news':
+      score *= 1.3; // Les actualités ont généralement plus de valeur
+      break;
+    case 'blog':
+      score *= 1.1; // Les blogs tech sont souvent approfondis
+      break;
+    case 'forum':
+      score *= 0.9; // Les forums peuvent être moins structurés
+      break;
+  }
   
   return Math.round(Math.min(score, 100));
 }
 
 function estimateSentiment(content: string): number {
-  const positiveWords = /excellent|succès|innovant|réussi|félicitations|bravo|super|génial|formidable/gi;
-  const negativeWords = /échec|problème|crise|scandale|controvers|accusation|déception|inquiétude/gi;
+  const positiveWords = /excellent|succès|innovant|réussi|félicitations|bravo|super|génial|formidable|progrès|amélioration|croissance|opportunité|partenariat|investissement|développement|lancement/gi;
+  const negativeWords = /échec|problème|crise|scandale|controvers|accusation|déception|inquiétude|retard|difficile|perte|fermeture|suppression|licenciement|danger|alerte|urgent/gi;
   
   const positiveCount = (content.match(positiveWords) || []).length;
   const negativeCount = (content.match(negativeWords) || []).length;
