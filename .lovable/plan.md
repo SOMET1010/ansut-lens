@@ -1,103 +1,79 @@
 
+# Fix: Robust Password Reset Page with Error State
 
-# Correction des liens d'invitation -- Acces direct sans intermediaire
+## Root Cause
 
-## Probleme identifie
+Two problems combined:
 
-Les liens dans les emails passent par le serveur d'authentification (`/auth/v1/verify`), qui dans l'environnement Lovable Cloud redirige automatiquement via un pont d'authentification (`lovable.dev/auth-bridge`) vers l'URL de preview. L'utilisateur arrive donc sur une page de login Lovable au lieu de la page de creation de mot de passe.
+1. **Token invalidation**: Two invitations were sent to the same user (`psomet@gmail.com`) within 3 minutes. The second call to `generateLink` invalidated the first token. The user clicked the link from the first email, which contained a dead token.
 
-Le lien actuel genere :
-```text
-https://lpkfwxisranmetbtgxrv.supabase.co/auth/v1/verify?token=...&redirect_to=...
-```
-
-Ce qui provoque : serveur auth --> auth-bridge --> preview URL --> login Lovable
+2. **Fragile error handling**: When `verifyOtp` fails for ANY reason (expired, already used, network error), the page silently redirects to `/auth` (login page) with only a brief toast. The user never understands what happened.
 
 ## Solution
 
-Au lieu d'utiliser le `action_link` (qui passe par le serveur de verification), construire un lien **direct** vers l'application de production avec le `hashed_token`. La page `ResetPasswordPage` gere deja ce format (elle appelle `verifyOtp()` cote client).
+Instead of redirecting to the login page on failure, show an **error state directly on the ResetPasswordPage** with:
+- A clear error message ("Lien expiré ou invalide")
+- A button to request a new link by entering their email
+- The same visual style (ANSUT logo, card layout)
 
-Le nouveau lien sera :
-```text
-https://ansut-lens.lovable.app/auth/reset-password?token_hash=HASH&type=recovery
-```
+This way the user stays in context and can self-recover.
 
-L'utilisateur clique --> arrive directement sur la page de creation de mot de passe --> le token est verifie cote client --> il definit son mot de passe. Pas d'intermediaire, pas de redirection.
+## File Changes
 
-## Fichiers a modifier
+### 1. `src/pages/ResetPasswordPage.tsx`
 
-| Fichier | Modification |
-|---------|-------------|
-| `supabase/functions/reset-user-password/index.ts` | Construire le lien avec `hashed_token` au lieu de `action_link` |
-| `supabase/functions/generate-password-link/index.ts` | Idem |
-| `supabase/functions/invite-user/index.ts` | Idem |
+Add a new state `tokenError` that shows an error UI instead of redirecting to `/auth`:
 
-## Detail technique
+- Replace `navigate('/auth')` calls in the useEffect with `setTokenError(true)`
+- Add a new UI state that renders when `tokenError` is true:
+  - ANSUT logo
+  - Error icon and message: "Ce lien de reinitialisation est invalide ou a expire"
+  - A small form with just an email input and a "Renvoyer un lien" button
+  - This form calls the `reset-user-password` Edge Function to send a fresh link
+  - A "Retour a la connexion" link at the bottom
 
-### 1. `supabase/functions/reset-user-password/index.ts`
+### 2. No backend changes needed
 
-Remplacer l'utilisation de `action_link` par la construction d'un lien direct :
+The `reset-user-password` Edge Function already supports sending password reset emails by email address. The ResetPasswordPage just needs to call it.
 
-```text
-// Avant :
-const resetLink = linkData?.properties?.action_link;
-
-// Apres :
-const hashedToken = linkData?.properties?.hashed_token;
-const resetLink = `${PRODUCTION_URL}/auth/reset-password?token_hash=${hashedToken}&type=recovery`;
-```
-
-### 2. `supabase/functions/generate-password-link/index.ts`
-
-Meme modification :
+## Flow After Fix
 
 ```text
-// Avant :
-const resetLink = linkData.properties.action_link;
-
-// Apres :
-const hashedToken = linkData.properties.hashed_token;
-const resetLink = `${PRODUCTION_URL}/auth/reset-password?token_hash=${hashedToken}&type=recovery`;
+User clicks link --> ResetPasswordPage loads
+  |
+  +--> verifyOtp succeeds --> Show password creation form
+  |
+  +--> verifyOtp fails --> Show error state:
+         "Ce lien est expire ou invalide"
+         [Email input] [Renvoyer un lien]
+         --> Sends new email with fresh token
+         --> User clicks new link --> Password form
 ```
 
-### 3. `supabase/functions/invite-user/index.ts`
+## Technical Details
 
-Meme modification, en tenant compte du type de lien (invite ou recovery) :
+New state variable and error UI in `ResetPasswordPage.tsx`:
 
 ```text
-// Avant :
-const inviteLink = linkData.properties.action_link;
+// New state
+const [tokenError, setTokenError] = useState(false);
 
-// Apres :
-const hashedToken = linkData.properties.hashed_token;
-const inviteLink = `${PRODUCTION_URL}/auth/reset-password?token_hash=${hashedToken}&type=${linkType}`;
+// Replace navigate('/auth') with:
+setTokenError(true);
+
+// New error UI (rendered when tokenError is true)
+- Card with ANSUT logo
+- AlertTriangle icon
+- "Lien expire ou invalide" title
+- "Ce lien a peut-etre deja ete utilise ou est expire" description
+- Email input + "Renvoyer un lien" button (calls reset-user-password function)
+- "Retour a la connexion" link to /auth
 ```
 
-### 4. Verification de `ResetPasswordPage.tsx`
+The email input will call `supabase.functions.invoke('reset-user-password', { body: { email } })` to send a fresh link, same as the "Mot de passe oublie" flow on AuthPage.
 
-La page gere deja le format `token_hash` + `type` en query params (Cas 2 dans le useEffect). Aucune modification necessaire cote frontend :
+## Important
 
-```text
-// Deja present :
-const tokenHash = queryParams.get('token_hash');
-if (tokenHash && (type === 'recovery' || type === 'invite')) {
-  await supabase.auth.verifyOtp({ token_hash: tokenHash, type: ... });
-}
-```
-
-## Flux utilisateur apres correction
-
-```text
-1. L'utilisateur recoit l'email avec un lien direct
-2. Il clique --> arrive sur https://ansut-lens.lovable.app/auth/reset-password?token_hash=...&type=recovery
-3. La page verifie le token automatiquement (verifyOtp)
-4. Le formulaire de creation de mot de passe s'affiche
-5. Il definit son mot de passe et accede a l'application
-```
-
-Aucune page intermediaire, aucun formulaire d'email, aucune redirection parasite.
-
-## Apres deploiement
-
-Renvoyer les invitations aux 4 utilisateurs pour qu'ils recoivent les nouveaux liens directs.
-
+After implementing, the user should:
+1. Click **Publish** to deploy the frontend changes
+2. Then resend the invitation to `psomet@gmail.com` (only once, not twice)
