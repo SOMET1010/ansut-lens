@@ -253,7 +253,7 @@ serve(async (req) => {
       // Envoyer l'email via Resend
       const resendClient = new Resend(resendApiKey);
       const { error: emailError } = await resendClient.emails.send({
-        from: "ANSUT RADAR <onboarding@resend.dev>",
+        from: "ANSUT RADAR <no-reply@notifications.ansut.ci>",
         to: [targetEmail],
         subject: isResend ? "Rappel : Invitation à rejoindre ANSUT RADAR" : "Invitation à rejoindre ANSUT RADAR",
         html,
