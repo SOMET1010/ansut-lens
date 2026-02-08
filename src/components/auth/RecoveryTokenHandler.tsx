@@ -19,8 +19,8 @@ export const RecoveryTokenHandler = ({ children }: RecoveryTokenHandlerProps) =>
       const hashParams = new URLSearchParams(hash.substring(1));
       const type = hashParams.get('type');
       
-      if (type === 'recovery' && location.pathname !== '/auth/reset-password') {
-        console.log('[RecoveryTokenHandler] Token recovery détecté dans le hash, redirection...');
+      if ((type === 'recovery' || type === 'invite') && location.pathname !== '/auth/reset-password') {
+        console.log('[RecoveryTokenHandler] Token recovery/invite détecté dans le hash, redirection...');
         navigate(`/auth/reset-password${hash}`, { replace: true });
         return;
       }
