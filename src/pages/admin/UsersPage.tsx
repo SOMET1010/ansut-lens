@@ -22,7 +22,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Database } from '@/integrations/supabase/types';
-import { UserCard, SecurityKpiCards, InviteQuickCard } from '@/components/admin';
+import { UserCard, SecurityKpiCards, InviteQuickCard, InvitationTracker } from '@/components/admin';
 import { getActivityCategory, formatLastActivity, formatExactDate, getInitials, type ActivityCategory } from '@/utils/activity-status';
 
 interface UserStatus {
@@ -663,6 +663,20 @@ export default function UsersPage() {
           isLoading={isLoading}
         />
       </div>
+
+      {/* Suivi des invitations en cours */}
+      {users && usersStatus && (
+        <div className="mb-6">
+          <InvitationTracker
+            users={users}
+            usersStatus={usersStatus}
+            onResendInvite={(userId, fullName, role) =>
+              resendInviteMutation.mutate({ userId, fullName, role: role as any })
+            }
+            isResending={resendInviteMutation.isPending}
+          />
+        </div>
+      )}
 
       {/* Barre de filtres avec toggle vue */}
       <div className="flex flex-wrap items-center gap-4 mb-6">
