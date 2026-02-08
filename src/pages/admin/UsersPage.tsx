@@ -255,7 +255,7 @@ export default function UsersPage() {
       const response = await supabase.functions.invoke('invite-user', {
         body: {
           ...data,
-          redirectUrl: `${window.location.origin}/auth/reset-password`,
+          redirectUrl: `https://ansut-lens.lovable.app/auth/reset-password`,
         },
       });
 
@@ -413,7 +413,7 @@ export default function UsersPage() {
       const response = await supabase.functions.invoke('generate-password-link', {
         body: { 
           userId, 
-          redirectUrl: `${window.location.origin}/auth/reset-password` 
+          redirectUrl: `https://ansut-lens.lovable.app/auth/reset-password` 
         },
       });
 

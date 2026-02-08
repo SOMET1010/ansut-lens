@@ -205,7 +205,8 @@ serve(async (req) => {
 
     // Toujours utiliser l'URL de production pour garantir que les liens fonctionnent
     const PRODUCTION_URL = "https://ansut-lens.lovable.app";
-    const finalRedirectUrl = redirectUrl || `${PRODUCTION_URL}/auth/reset-password`;
+    const isPreviewUrl = redirectUrl && (redirectUrl.includes('id-preview--') || redirectUrl.includes('lovableproject.com'));
+    const finalRedirectUrl = (!redirectUrl || isPreviewUrl) ? `${PRODUCTION_URL}/auth/reset-password` : redirectUrl;
 
     // Base URL pour les assets (logo) - toujours utiliser la production
     const baseUrl = PRODUCTION_URL;
