@@ -1,4 +1,4 @@
-import { MoreVertical, Shield, User, Users, Mail, Clock, RefreshCw, UserCheck, UserX, Trash2, MailCheck, KeyRound, Building2 } from 'lucide-react';
+import { MoreVertical, Shield, User, Users, Mail, Clock, RefreshCw, UserCheck, UserX, Trash2, MailCheck, KeyRound, Building2, Wifi } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Database } from '@/integrations/supabase/types';
+import { getActivityCategory, formatLastActivity, formatExactDate, getInitials, type ActivityCategory } from '@/utils/activity-status';
 
 type AppRole = Database['public']['Enums']['app_role'];
 
@@ -64,47 +65,119 @@ const roleIcons: Record<AppRole, React.ReactNode> = {
   guest: <Mail className="h-3.5 w-3.5" />,
 };
 
-// Formater la dernière activité de manière intelligente
-function formatLastActivity(lastSignInAt: string | null): string {
-  if (!lastSignInAt) return 'Jamais connecté';
-
-  const now = new Date();
-  const lastActive = new Date(lastSignInAt);
-  const diffMs = now.getTime() - lastActive.getTime();
-  const diffMinutes = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMinutes < 5) return 'À l\'instant';
-  if (diffMinutes < 60) return `Il y a ${diffMinutes} min`;
-  if (diffHours < 24) return `Il y a ${diffHours}h`;
-  if (diffDays === 1) {
-    return `Hier ${lastActive.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+/* ────── Indicateur de présence sur l'avatar ────── */
+function AvatarPresenceIndicator({ category }: { category: ActivityCategory }) {
+  if (category === 'online') {
+    return (
+      <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-background" />
+    );
   }
-  if (diffDays < 7) return `Il y a ${diffDays} jours`;
-  
-  return lastActive.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  if (category === 'dormant') {
+    return (
+      <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-orange-400 border-2 border-background" />
+    );
+  }
+  if (category === 'never_connected') {
+    return (
+      <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-slate-300 dark:bg-slate-600 border-2 border-background flex items-center justify-center">
+        <span className="block h-[1px] w-2 bg-slate-500 dark:bg-slate-400 rotate-45" />
+      </span>
+    );
+  }
+  return null;
 }
 
-// Vérifier si l'utilisateur est "en ligne" (activité < 15 min)
-function isUserOnline(lastSignInAt: string | null): boolean {
-  if (!lastSignInAt) return false;
-  const now = new Date();
-  const lastActive = new Date(lastSignInAt);
-  const diffMs = now.getTime() - lastActive.getTime();
-  return diffMs < 15 * 60 * 1000; // 15 minutes
+/* ────── Badge de statut dans le footer ────── */
+function ActivityStatusBadge({ category, lastActiveAt }: { category: ActivityCategory; lastActiveAt: string | null }) {
+  if (category === 'disabled') {
+    return (
+      <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
+        Désactivé
+      </Badge>
+    );
+  }
+
+  if (category === 'pending') {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 gap-1 text-xs cursor-help">
+              <Clock className="h-3 w-3" />
+              En attente
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>L'utilisateur n'a pas encore activé son compte</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  if (category === 'never_connected') {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="secondary" className="bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 gap-1 text-xs cursor-help">
+              <UserX className="h-3 w-3" />
+              Jamais connecté
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Cet utilisateur n'a jamais ouvert de session</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  if (category === 'dormant') {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="secondary" className="bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 gap-1 text-xs cursor-help">
+              <Clock className="h-3 w-3" />
+              Inactif
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Dernière connexion le {lastActiveAt ? formatExactDate(lastActiveAt) : '—'}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  if (category === 'online') {
+    return (
+      <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 gap-1 text-xs">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        En ligne
+      </Badge>
+    );
+  }
+
+  // active
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs cursor-help">
+            Actif
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Dernière activité : {lastActiveAt ? formatExactDate(lastActiveAt) : '—'}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 }
 
-function getInitials(name: string | null): string {
-  if (!name) return '?';
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-}
-
+/* ────── Composant principal UserCard ────── */
 export function UserCard({
   user,
   status,
@@ -117,16 +190,26 @@ export function UserCard({
   onGeneratePasswordLink,
   isLoading,
 }: UserCardProps) {
-  const isOnline = isUserOnline(status?.last_active_at || null);
-  const lastActivity = formatLastActivity(status?.last_active_at || null);
+  const lastActiveAt = status?.last_active_at || null;
   const isEmailConfirmed = !!status?.email_confirmed_at;
-  const isPending = !user.disabled && !isEmailConfirmed;
+  const category = getActivityCategory(lastActiveAt, isEmailConfirmed, user.disabled);
+  const lastActivity = formatLastActivity(lastActiveAt);
+
+  // Couleur du texte "Dernière activité" selon la catégorie
+  const activityTextClass = cn(
+    "font-medium",
+    category === 'online' && "text-emerald-600 dark:text-emerald-400",
+    category === 'never_connected' && "text-slate-400 dark:text-slate-500 italic",
+    category === 'dormant' && "text-orange-600 dark:text-orange-400",
+    category === 'active' && "text-foreground",
+    (category === 'disabled' || category === 'pending') && "text-foreground",
+  );
 
   return (
     <Card className={cn(
       "relative transition-all hover:shadow-md",
       user.disabled && "opacity-60",
-      isOnline && "ring-2 ring-emerald-500/20"
+      category === 'online' && "ring-2 ring-emerald-500/20"
     )}>
       <CardContent className="p-4">
         {/* Menu actions (3 points) - coin supérieur droit */}
@@ -138,7 +221,7 @@ export function UserCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {isPending && (
+              {category === 'pending' && (
                 <>
                   <DropdownMenuItem onClick={() => onConfirmEmail?.(user.id)}>
                     <MailCheck className="mr-2 h-4 w-4" />
@@ -184,7 +267,7 @@ export function UserCard({
         )}
 
         {/* Indicateur en ligne - coin supérieur droit */}
-        {isOnline && !isCurrentUser && (
+        {category === 'online' && !isCurrentUser && (
           <div className="absolute top-3 right-12 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="hidden sm:inline">En ligne</span>
@@ -200,10 +283,7 @@ export function UserCard({
                 {getInitials(user.full_name)}
               </AvatarFallback>
             </Avatar>
-            {/* Petit indicateur de présence sur l'avatar */}
-            {isOnline && (
-              <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-background" />
-            )}
+            <AvatarPresenceIndicator category={category} />
           </div>
           
           <div className="flex-1 min-w-0">
@@ -250,39 +330,12 @@ export function UserCard({
         <div className="flex items-center justify-between pt-2 border-t border-border/50">
           <div className="text-xs">
             <span className="text-muted-foreground">Dernière activité</span>
-            <p className={cn(
-              "font-medium",
-              isOnline ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"
-            )}>
+            <p className={activityTextClass}>
               {lastActivity}
             </p>
           </div>
 
-          <div>
-            {user.disabled ? (
-              <Badge variant="secondary" className="bg-muted text-muted-foreground text-xs">
-                Désactivé
-              </Badge>
-            ) : isPending ? (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 gap-1 text-xs cursor-help">
-                      <Clock className="h-3 w-3" />
-                      En attente
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>L'utilisateur n'a pas encore activé son compte</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ) : (
-              <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs">
-                Actif
-              </Badge>
-            )}
-          </div>
+          <ActivityStatusBadge category={category} lastActiveAt={lastActiveAt} />
         </div>
       </CardContent>
     </Card>
