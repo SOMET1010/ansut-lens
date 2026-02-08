@@ -59,9 +59,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    const resetLink = linkData?.properties?.action_link;
-    if (!resetLink) {
-      console.error("No action_link in response");
+    const hashedToken = linkData?.properties?.hashed_token;
+    if (!hashedToken) {
+      console.error("No hashed_token in response");
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -70,6 +70,7 @@ Deno.serve(async (req) => {
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    const resetLink = `${PRODUCTION_URL}/auth/reset-password?token_hash=${hashedToken}&type=recovery`;
 
     // Get user profile name for personalization
     let userName = "Utilisateur";
