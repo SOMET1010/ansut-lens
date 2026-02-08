@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Eye, EyeOff, CheckCircle, KeyRound, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Loader2, Eye, EyeOff, CheckCircle, KeyRound, ArrowRight, ShieldCheck, AlertTriangle, Mail } from 'lucide-react';
 import logoAnsut from '@/assets/logo-ansut.jpg';
 
+// ── Schemas ──────────────────────────────────────────
 const resetPasswordSchema = z.object({
   password: z
     .string()
@@ -26,7 +26,7 @@ const resetPasswordSchema = z.object({
 
 type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
-/* ────── Indicateur de force du mot de passe ────── */
+// ── Sub-components ───────────────────────────────────
 function PasswordStrength({ password }: { password: string }) {
   const checks = [
     { label: '6 caractères minimum', ok: password.length >= 6 },
@@ -35,7 +35,6 @@ function PasswordStrength({ password }: { password: string }) {
     { label: 'Un caractère spécial', ok: /[^a-zA-Z0-9]/.test(password) },
   ];
   const score = checks.filter(c => c.ok).length;
-  const percent = (score / checks.length) * 100;
   const color = score <= 1 ? 'bg-destructive' : score <= 2 ? 'bg-orange-500' : score <= 3 ? 'bg-amber-500' : 'bg-emerald-500';
 
   if (!password) return null;
@@ -58,7 +57,6 @@ function PasswordStrength({ password }: { password: string }) {
   );
 }
 
-/* ────── Stepper visuel ────── */
 function StepIndicator({ currentStep }: { currentStep: 1 | 2 }) {
   return (
     <div className="flex items-center justify-center gap-3 mb-6">
@@ -79,9 +77,110 @@ function StepIndicator({ currentStep }: { currentStep: 1 | 2 }) {
   );
 }
 
+// ── Token Error UI ───────────────────────────────────
+function TokenErrorView() {
+  const [email, setEmail] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const navigate = useNavigate();
+
+  const handleResend = async () => {
+    if (!email.trim()) {
+      toast.error('Veuillez saisir votre adresse email');
+      return;
+    }
+
+    setSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-user-password', {
+        body: { email: email.trim() },
+      });
+
+      if (error) throw error;
+
+      setSent(true);
+      toast.success('Un nouveau lien vous a été envoyé par email');
+    } catch (err: any) {
+      console.error('Erreur renvoi lien:', err);
+      toast.error('Impossible d\'envoyer le lien. Vérifiez votre adresse email.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4">
+      <Card className="w-full max-w-md glass">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <img src={logoAnsut} alt="ANSUT" className="w-20 h-20 rounded-xl object-contain bg-white p-2" />
+          </div>
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
+              <AlertTriangle className="h-8 w-8 text-destructive" />
+            </div>
+          </div>
+          <CardTitle className="text-xl font-bold">
+            Lien expiré ou invalide
+          </CardTitle>
+          <CardDescription className="text-base">
+            Ce lien a peut-être déjà été utilisé ou est expiré. Entrez votre adresse email pour recevoir un nouveau lien.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {sent ? (
+            <div className="flex flex-col items-center gap-3 py-4">
+              <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                <Mail className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <p className="text-sm text-center text-muted-foreground">
+                Un nouveau lien a été envoyé à <strong>{email}</strong>. Vérifiez votre boîte de réception.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <label htmlFor="resend-email" className="text-sm font-medium">
+                  Adresse email
+                </label>
+                <Input
+                  id="resend-email"
+                  type="email"
+                  placeholder="votre@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleResend()}
+                />
+              </div>
+              <Button
+                className="w-full gap-2"
+                onClick={handleResend}
+                disabled={sending}
+              >
+                {sending && <Loader2 className="h-4 w-4 animate-spin" />}
+                <Mail className="h-4 w-4" />
+                Renvoyer un lien
+              </Button>
+            </>
+          )}
+          <Button
+            variant="ghost"
+            className="w-full text-sm text-muted-foreground"
+            onClick={() => navigate('/auth')}
+          >
+            Retour à la connexion
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ── Main Page ────────────────────────────────────────
 export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [tokenError, setTokenError] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
@@ -116,8 +215,7 @@ export default function ResetPasswordPage() {
         
         if (error) {
           console.error('Erreur session:', error);
-          toast.error('Lien de réinitialisation invalide ou expiré');
-          navigate('/auth');
+          setTokenError(true);
           return;
         }
         window.history.replaceState(null, '', window.location.pathname);
@@ -133,8 +231,7 @@ export default function ResetPasswordPage() {
         
         if (error) {
           console.error('Erreur vérification OTP:', error);
-          toast.error('Lien de réinitialisation invalide ou expiré');
-          navigate('/auth');
+          setTokenError(true);
           return;
         }
         window.history.replaceState(null, '', window.location.pathname);
@@ -148,12 +245,11 @@ export default function ResetPasswordPage() {
         return;
       }
       
-      toast.error('Lien de réinitialisation invalide ou expiré');
-      navigate('/auth');
+      setTokenError(true);
     };
     
     handleRecoveryToken();
-  }, [navigate]);
+  }, []);
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     setLoading(true);
@@ -200,6 +296,12 @@ export default function ResetPasswordPage() {
     }
   };
 
+  // ── Token error state ──
+  if (tokenError) {
+    return <TokenErrorView />;
+  }
+
+  // ── Success state ──
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4">
@@ -232,6 +334,7 @@ export default function ResetPasswordPage() {
     );
   }
 
+  // ── Password form state ──
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4">
       <Card className="w-full max-w-md glass">
