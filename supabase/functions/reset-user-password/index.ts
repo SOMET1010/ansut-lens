@@ -35,7 +35,8 @@ Deno.serve(async (req) => {
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
     // Generate recovery link using admin API
-    const redirectUrl = `${req.headers.get("origin") || "https://ansut-lens.lovable.app"}/auth/reset-password`;
+    const PRODUCTION_URL = "https://ansut-lens.lovable.app";
+    const redirectUrl = `${PRODUCTION_URL}/auth/reset-password`;
 
     const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
       type: "recovery",

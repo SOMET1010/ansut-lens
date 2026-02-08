@@ -60,9 +60,11 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { userId, redirectUrl }: RequestBody = await req.json();
+    const { userId }: RequestBody = await req.json();
+    const PRODUCTION_URL = "https://ansut-lens.lovable.app";
+    const redirectUrl = `${PRODUCTION_URL}/auth/reset-password`;
 
-    if (!userId || !redirectUrl) {
+    if (!userId) {
       return new Response(
         JSON.stringify({ error: 'userId et redirectUrl requis' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
