@@ -17,6 +17,7 @@ interface UserStatus {
   email_confirmed_at: string | null;
   last_sign_in_at: string | null;
   last_active_at: string | null;
+  password_set_at?: string | null;
   created_at: string;
 }
 
@@ -77,6 +78,11 @@ function AvatarPresenceIndicator({ category }: { category: ActivityCategory }) {
       <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-orange-400 border-2 border-background" />
     );
   }
+  if (category === 'password_not_set') {
+    return (
+      <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-rose-500 border-2 border-background" />
+    );
+  }
   if (category === 'never_connected') {
     return (
       <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-slate-300 dark:bg-slate-600 border-2 border-background flex items-center justify-center">
@@ -109,6 +115,24 @@ function ActivityStatusBadge({ category, lastActiveAt }: { category: ActivityCat
           </TooltipTrigger>
           <TooltipContent>
             <p>L'utilisateur n'a pas encore activé son compte</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  if (category === 'password_not_set') {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="secondary" className="bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 gap-1 text-xs cursor-help">
+              <KeyRound className="h-3 w-3" />
+              MDP non défini
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>L'utilisateur a cliqué le lien mais n'a pas encore défini son mot de passe</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -192,7 +216,8 @@ export function UserCard({
 }: UserCardProps) {
   const lastActiveAt = status?.last_active_at || null;
   const isEmailConfirmed = !!status?.email_confirmed_at;
-  const category = getActivityCategory(lastActiveAt, isEmailConfirmed, user.disabled);
+  const passwordSetAt = status?.password_set_at ?? null;
+  const category = getActivityCategory(lastActiveAt, isEmailConfirmed, user.disabled, passwordSetAt);
   const lastActivity = formatLastActivity(lastActiveAt);
 
   // Couleur du texte "Dernière activité" selon la catégorie
@@ -200,6 +225,7 @@ export function UserCard({
     "font-medium",
     category === 'online' && "text-emerald-600 dark:text-emerald-400",
     category === 'never_connected' && "text-slate-400 dark:text-slate-500 italic",
+    category === 'password_not_set' && "text-rose-600 dark:text-rose-400 italic",
     category === 'dormant' && "text-orange-600 dark:text-orange-400",
     category === 'active' && "text-foreground",
     (category === 'disabled' || category === 'pending') && "text-foreground",
@@ -337,7 +363,7 @@ export function UserCard({
 
           <div className="flex items-center gap-2">
             {/* Bouton rapide Renvoyer l'invitation pour pending / never_connected */}
-            {!isCurrentUser && (category === 'pending' || category === 'never_connected') && (
+            {!isCurrentUser && (category === 'pending' || category === 'never_connected' || category === 'password_not_set') && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>

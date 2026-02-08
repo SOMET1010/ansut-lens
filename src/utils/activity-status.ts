@@ -3,7 +3,7 @@
  * Utilisé dans UserCard et UsersPage pour un rendu cohérent.
  */
 
-export type ActivityCategory = 'disabled' | 'pending' | 'never_connected' | 'dormant' | 'online' | 'active';
+export type ActivityCategory = 'disabled' | 'pending' | 'password_not_set' | 'never_connected' | 'dormant' | 'online' | 'active';
 
 const ONLINE_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes
 const DORMANT_THRESHOLD_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
@@ -11,10 +11,12 @@ const DORMANT_THRESHOLD_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
 export function getActivityCategory(
   lastActiveAt: string | null,
   isEmailConfirmed: boolean,
-  isDisabled: boolean
+  isDisabled: boolean,
+  passwordSetAt?: string | null
 ): ActivityCategory {
   if (isDisabled) return 'disabled';
   if (!isEmailConfirmed) return 'pending';
+  if (passwordSetAt === null || passwordSetAt === undefined) return 'password_not_set';
   if (!lastActiveAt) return 'never_connected';
 
   const diffMs = Date.now() - new Date(lastActiveAt).getTime();

@@ -64,13 +64,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             fetchUserRole(session.user.id).then(setRole);
           }, 0);
 
-          // Track real activity (not recovery/invite implicit logins)
+          // Track real activity — only for genuine password logins
+          // Exclude implicit logins from recovery/invite links
           if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            supabase
-              .from('profiles')
-              .update({ last_active_at: new Date().toISOString() } as any)
-              .eq('id', session.user.id)
-              .then(() => {});
+            const amr = (session as any)?.user?.amr;
+            const isPasswordLogin = Array.isArray(amr)
+              ? amr.some((a: any) => a.method === 'password')
+              : false;
+
+            // TOKEN_REFRESHED is always a real session continuation
+            // SIGNED_IN only counts if it's a password-based login
+            if (event === 'TOKEN_REFRESHED' || isPasswordLogin) {
+              supabase
+                .from('profiles')
+                .update({ last_active_at: new Date().toISOString() } as any)
+                .eq('id', session.user.id)
+                .then(() => {});
+            }
           }
         } else {
           setRole(null);
