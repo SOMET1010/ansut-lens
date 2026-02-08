@@ -1,95 +1,86 @@
 
-# Activation des APIs officielles des réseaux sociaux
 
-## Objectif
+# Configuration des secrets API Mail et SMS + correction des emails
 
-Configurer les tokens d'accès pour Twitter/X, LinkedIn et Facebook afin d'activer la collecte via leurs APIs officielles, en complément du scraping Firecrawl existant.
+## Contexte
 
-## Secrets à ajouter
+Bernard Akou a fourni les credentials pour l'API Mail (Resend avec domaine verifie `notifications.ansut.ci`) et l'API SMS (Azure). Le probleme d'invitation non recue etait cause par la cle Resend en mode test et l'adresse d'expediteur `onboarding@resend.dev`.
 
-| Secret | API | Utilisation |
-|--------|-----|-------------|
-| TWITTER_BEARER_TOKEN | Twitter API v2 | Recherche de tweets, timeline, mentions |
-| LINKEDIN_ACCESS_TOKEN | LinkedIn Marketing API | Posts d'entreprise, analytics |
-| FACEBOOK_PAGE_ACCESS_TOKEN | Facebook Graph API | Posts de page, insights, commentaires |
+## Etape 1 : Mise a jour du secret RESEND_API_KEY
 
-## Sources concernées
+Remplacer la cle Resend actuelle (mode test) par la nouvelle cle de production fournie.
 
-3 sources déjà configurées mais inactives :
+## Etape 2 : Ajout des secrets Azure SMS
 
-| Source | Type | URL | Statut actuel |
-|--------|------|-----|---------------|
-| Twitter/X ANSUT | twitter | twitter.com/ansut_ci | Inactif |
-| LinkedIn ANSUT | linkedin | linkedin.com/company/ansut | Inactif |
-| Facebook ANSUT | facebook | facebook.com/ansut.ci | Inactif |
+Ajouter 4 nouveaux secrets pour l'API SMS Azure :
 
-## Étapes d'implémentation
+| Secret | Description |
+|--------|-------------|
+| `AZURE_SMS_URL` | URL du service SMS Azure |
+| `AZURE_SMS_USERNAME` | Identifiant de connexion |
+| `AZURE_SMS_PASSWORD` | Mot de passe |
+| `AZURE_SMS_FROM` | Expediteur SMS (ANSUT) |
 
-### 1. Ajout des secrets (immédiat)
+## Etape 3 : Correction des adresses d'expediteur dans les Edge Functions
 
-Utiliser l'outil `add_secret` pour demander les 3 tokens :
-- `TWITTER_BEARER_TOKEN` - Obtenu depuis le Twitter Developer Portal
-- `LINKEDIN_ACCESS_TOKEN` - Obtenu depuis LinkedIn Developer Portal  
-- `FACEBOOK_PAGE_ACCESS_TOKEN` - Obtenu depuis Meta Business Suite
+Trois fonctions utilisent des adresses d'expediteur incorrectes et doivent etre mises a jour vers `no-reply@notifications.ansut.ci` :
 
-### 2. Extension de la fonction collecte-social
+| Fonction | Adresse actuelle (incorrecte) | Nouvelle adresse |
+|----------|-------------------------------|-----------------|
+| `invite-user` | `onboarding@resend.dev` | `no-reply@notifications.ansut.ci` |
+| `envoyer-newsletter` | `noreply@ansut.ci` | `no-reply@notifications.ansut.ci` |
+| `scheduler-newsletter` | `notifications@resend.dev` | `no-reply@notifications.ansut.ci` |
 
-Modifier `supabase/functions/collecte-social/index.ts` pour :
-- Détecter les sources de type `twitter`, `linkedin`, `facebook`
-- Appeler les APIs officielles avec les tokens configurés
-- Conserver le fallback Firecrawl si les tokens ne sont pas configurés
+Deux fonctions utilisent deja la bonne adresse (aucune modification) :
+- `generate-password-link` : `no-reply@notifications.ansut.ci`
+- `send-flux-digest` : `no-reply@notifications.ansut.ci`
 
-### 3. Activation des sources
+## Etape 4 : Renvoyer l'invitation a Bernard Akou
 
-Migration SQL pour activer les 3 sources :
-```sql
-UPDATE sources_media 
-SET actif = true 
-WHERE type IN ('twitter', 'linkedin', 'facebook');
-```
+Une fois les secrets mis a jour et les fonctions corrigees, renvoyer l'invitation a Bernard Akou via la page Admin > Utilisateurs.
 
 ## Section technique
 
-### Structure de la collecte multi-plateformes
+### Modifications dans `invite-user/index.ts`
+
+Ligne 258 : changer l'adresse `from` :
+```text
+Avant : from: "ANSUT RADAR <onboarding@resend.dev>"
+Apres : from: "ANSUT RADAR <no-reply@notifications.ansut.ci>"
+```
+
+### Modifications dans `envoyer-newsletter/index.ts`
+
+Ligne 102 : changer l'adresse `from` :
+```text
+Avant : from: "ANSUT RADAR <noreply@ansut.ci>"
+Apres : from: "ANSUT RADAR <no-reply@notifications.ansut.ci>"
+```
+
+### Modifications dans `scheduler-newsletter/index.ts`
+
+Ligne 391 : changer l'adresse `from` :
+```text
+Avant : from: 'ANSUT RADAR <notifications@resend.dev>'
+Apres : from: 'ANSUT RADAR <no-reply@notifications.ansut.ci>'
+```
+
+### Ordre d'execution
 
 ```text
-collecte-social/
-├── Sources web (actuelles)
-│   └── Firecrawl scraping → blog, forum, news
-└── APIs officielles (à ajouter)
-    ├── Twitter API v2 → tweets, mentions
-    ├── LinkedIn API → posts entreprise
-    └── Facebook Graph API → posts page
+1. Mettre a jour RESEND_API_KEY (secret existant)
+2. Ajouter les 4 secrets Azure SMS
+3. Modifier les 3 fichiers edge functions (from address)
+4. Deployer les fonctions modifiees
+5. Renvoyer l'invitation a Bernard Akou
+6. Verifier la reception de l'email
 ```
 
-### Contraintes de plateforme
+### Fichiers a modifier
 
-La contrainte `social_insights_plateforme_check` doit être mise à jour pour accepter les nouveaux types :
+| Fichier | Type de modification |
+|---------|---------------------|
+| `supabase/functions/invite-user/index.ts` | Adresse from |
+| `supabase/functions/envoyer-newsletter/index.ts` | Adresse from |
+| `supabase/functions/scheduler-newsletter/index.ts` | Adresse from |
 
-```sql
-ALTER TABLE social_insights 
-DROP CONSTRAINT IF EXISTS social_insights_plateforme_check;
-
-ALTER TABLE social_insights 
-ADD CONSTRAINT social_insights_plateforme_check 
-CHECK (plateforme IN ('twitter', 'linkedin', 'facebook', 'blog', 'forum', 'news'));
-```
-
-### Obtention des tokens
-
-| API | Portail | Prérequis |
-|-----|---------|-----------|
-| Twitter | developer.twitter.com | App créée, Bearer Token |
-| LinkedIn | developer.linkedin.com | App autorisée, OAuth 2.0 |
-| Facebook | developers.facebook.com | Page liée, Page Access Token |
-
-### Fichiers à modifier
-
-| Fichier | Modification |
-|---------|--------------|
-| `supabase/functions/collecte-social/index.ts` | Ajouter appels API Twitter/LinkedIn/Facebook |
-| Migration SQL | Activer les sources + mettre à jour la contrainte |
-
-### Seuil d'alerte social
-
-Conformément à la stratégie définie, le seuil de déclenchement des alertes pour les réseaux sociaux sera de **40** (contre 70 pour les sources standards) pour capturer davantage de signaux faibles.
