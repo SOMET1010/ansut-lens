@@ -1,32 +1,52 @@
 
-# Correction du faux positif "Derniere activite"
 
-## Probleme
+# Indicateurs visuels distinctifs pour les statuts d'activite
 
-Le champ `last_sign_in_at` de Supabase Auth est mis a jour lors de TOUTE connexion, y compris les connexions implicites declenchees par un clic sur un lien de recuperation ou d'invitation. Resultat : des utilisateurs comme Sarrah Coulibaly apparaissent avec "Il y a 9 min" comme derniere activite alors qu'ils ne se sont jamais reellement connectes a l'application.
+## Contexte
 
-## Solution
+Actuellement, la page Gouvernance des Acces affiche trois etats de statut : "Desactive", "En attente" et "Actif". Cependant, un utilisateur qui s'est connecte hier et un utilisateur inactif depuis 3 mois portent le meme badge "Actif". De meme, "Jamais connecte" n'apparait que dans le texte de derniere activite sans traitement visuel distinctif.
 
-Ajouter un champ `last_active_at` dans la table `profiles` et le mettre a jour uniquement lors des connexions reelles (par mot de passe ou token refresh). Ce champ remplacera `last_sign_in_at` pour l'affichage de "Derniere activite".
+## Objectif
+
+Ajouter des indicateurs visuels clairs pour distinguer rapidement :
+- Les utilisateurs **jamais connectes** (last_active_at = null, email confirme)
+- Les utilisateurs **inactifs depuis longtemps** (derniere activite > 30 jours)
+- Les utilisateurs **recemment actifs** (derniere activite < 30 jours)
+- Les utilisateurs **en ligne** (activite < 15 min, deja en place)
 
 ## Modifications prevues
 
-### 1. Migration de base de donnees
-Ajouter la colonne `last_active_at` (timestamp nullable) a la table `profiles`.
+### 1. UserCard.tsx -- Nouveaux badges de statut et indicateurs visuels
 
-### 2. Mise a jour de AuthContext.tsx
-Lors d'un evenement `SIGNED_IN` ou `TOKEN_REFRESHED` (et PAS `PASSWORD_RECOVERY`), mettre a jour le champ `last_active_at` du profil de l'utilisateur connecte avec l'horodatage actuel.
+**Badge de statut enrichi (footer de la carte) :**
 
-### 3. Mise a jour de list-users-status Edge Function
-Enrichir les donnees retournees avec le champ `last_active_at` recupere depuis la table `profiles`, en complement du `last_sign_in_at` d'auth.
+| Etat | Badge actuel | Nouveau badge |
+|------|-------------|---------------|
+| Desactive | Gris "Desactive" | Inchange |
+| En attente (email non confirme) | Ambre "En attente" | Inchange |
+| Jamais connecte (email confirme, last_active_at null) | Vert "Actif" | Bleu-gris avec icone UserX : "Jamais connecte" |
+| Inactif > 30 jours | Vert "Actif" | Orange avec icone Clock : "Inactif" + tooltip avec la date |
+| Actif < 30 jours | Vert "Actif" | Vert "Actif" + tooltip avec la date precise |
+| En ligne | Vert "Actif" | Vert vif "En ligne" avec point pulse |
 
-### 4. Mise a jour de UserCard.tsx et UsersPage.tsx
-Utiliser `last_active_at` (depuis profiles) au lieu de `last_sign_in_at` (depuis auth) pour :
-- L'affichage de "Derniere activite"
-- Le calcul du statut "En ligne"
-- Le compteur d'utilisateurs en ligne
+**Indicateur sur l'avatar :**
+- Jamais connecte : petit badge gris barre sur l'avatar (au lieu du point vert de presence)
+- Inactif > 30 jours : petit point orange sur l'avatar
 
-Si `last_active_at` est `null`, afficher "Jamais connecte" meme si `last_sign_in_at` existe.
+**Texte "Derniere activite" :**
+- Jamais connecte : affiche en couleur bleu-gris avec style italique
+- Inactif > 30 jours : affiche en orange
+
+### 2. UsersPage.tsx -- Vue table mise a jour
+
+La colonne "Statut" et "Derniere activite" de la vue table adoptera la meme logique :
+- Badge "Jamais connecte" bleu-gris distinct du badge "En attente"
+- Badge "Inactif" orange pour les utilisateurs absents depuis plus de 30 jours
+- Colonne derniere activite avec code couleur coherent
+
+### 3. Compteurs KPI enrichis
+
+Ajouter un compteur "Jamais connecte" dans les statistiques `userCounts` pour alimenter un eventuel KPI supplementaire ou enrichir le tooltip existant.
 
 ---
 
@@ -36,52 +56,54 @@ Si `last_active_at` est `null`, afficher "Jamais connecte" meme si `last_sign_in
 
 | Fichier | Modification |
 |---------|-------------|
-| Migration SQL | Ajouter colonne `last_active_at` a `profiles` |
-| `src/contexts/AuthContext.tsx` | Mettre a jour `last_active_at` sur SIGNED_IN / TOKEN_REFRESHED |
-| `supabase/functions/list-users-status/index.ts` | Inclure `last_active_at` des profiles dans la reponse |
-| `src/components/admin/UserCard.tsx` | Utiliser `last_active_at` au lieu de `last_sign_in_at` |
-| `src/pages/admin/UsersPage.tsx` | Adapter le type `UserStatus` et les fonctions de calcul |
+| `src/components/admin/UserCard.tsx` | Ajout logique de categorisation d'activite, nouveaux badges conditionnels, indicateur avatar |
+| `src/pages/admin/UsersPage.tsx` | Meme logique dans la vue table, compteur "neverConnected" |
 
-### Detail des changements
+### Logique de categorisation
 
-**Migration SQL :**
+Une fonction utilitaire `getActivityCategory` sera ajoutee pour centraliser la logique :
+
 ```text
-ALTER TABLE profiles ADD COLUMN last_active_at timestamptz DEFAULT NULL;
+function getActivityCategory(lastActiveAt, isEmailConfirmed, isDisabled):
+  si desactive -> 'disabled'
+  si email non confirme -> 'pending'
+  si lastActiveAt est null -> 'never_connected'
+  si lastActiveAt > 30 jours -> 'dormant'
+  si lastActiveAt < 15 min -> 'online'
+  sinon -> 'active'
 ```
 
-**AuthContext.tsx** -- dans le listener `onAuthStateChange`, ajouter apres le traitement normal de `SIGNED_IN` :
+### Details des badges visuels
+
 ```text
-if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-  supabase.from('profiles')
-    .update({ last_active_at: new Date().toISOString() })
-    .eq('id', session.user.id)
-    .then(() => {});
-}
+never_connected:
+  Badge: bg-slate-100 text-slate-500, icone UserX
+  Texte: "Jamais connecte"
+  Avatar: point gris avec barre
+  Tooltip: "Cet utilisateur n'a jamais ouvert de session"
+
+dormant (> 30 jours):
+  Badge: bg-orange-100 text-orange-600, icone Clock
+  Texte: "Inactif"
+  Avatar: point orange
+  Tooltip: "Derniere connexion le [date precise]"
+
+active (< 30 jours):
+  Badge: bg-emerald-100 text-emerald-700
+  Texte: "Actif"
+  Tooltip: "Derniere activite : [date]"
+
+online (< 15 min):
+  Badge: bg-emerald-100 text-emerald-700, point pulse
+  Texte: "En ligne"
 ```
-
-**list-users-status/index.ts** -- recuperer `last_active_at` depuis profiles et l'ajouter dans chaque `UserStatus` :
-```text
-// Fetch profiles with last_active_at
-const { data: profiles } = await adminClient
-  .from('profiles')
-  .select('id, last_active_at');
-
-// Merge into usersStatus
-for (const u of users) {
-  const profile = profiles?.find(p => p.id === u.id);
-  usersStatus[u.id] = {
-    ...existingFields,
-    last_active_at: profile?.last_active_at || null,
-  };
-}
-```
-
-**UserCard.tsx / UsersPage.tsx** -- remplacer toutes les references a `status?.last_sign_in_at` par `status?.last_active_at` pour les calculs d'activite et d'affichage.
 
 ### Ordre d'execution
+
 ```text
-1. Creer la migration (ajouter last_active_at)
-2. Modifier AuthContext.tsx (tracking des vraies connexions)
-3. Modifier list-users-status (inclure last_active_at)
-4. Modifier UserCard.tsx et UsersPage.tsx (utiliser last_active_at)
+1. Ajouter la fonction getActivityCategory dans UserCard.tsx
+2. Modifier le rendu des badges et indicateurs dans UserCard.tsx
+3. Appliquer la meme logique dans la vue table de UsersPage.tsx
+4. Mettre a jour les compteurs userCounts dans UsersPage.tsx
 ```
+
