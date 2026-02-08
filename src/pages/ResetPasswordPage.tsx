@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { Loader2, Eye, EyeOff, CheckCircle, KeyRound, ArrowRight, ShieldCheck } from 'lucide-react';
 import logoAnsut from '@/assets/logo-ansut.jpg';
 
 const resetPasswordSchema = z.object({
@@ -25,6 +26,59 @@ const resetPasswordSchema = z.object({
 
 type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
+/* ────── Indicateur de force du mot de passe ────── */
+function PasswordStrength({ password }: { password: string }) {
+  const checks = [
+    { label: '6 caractères minimum', ok: password.length >= 6 },
+    { label: 'Une majuscule', ok: /[A-Z]/.test(password) },
+    { label: 'Un chiffre', ok: /\d/.test(password) },
+    { label: 'Un caractère spécial', ok: /[^a-zA-Z0-9]/.test(password) },
+  ];
+  const score = checks.filter(c => c.ok).length;
+  const percent = (score / checks.length) * 100;
+  const color = score <= 1 ? 'bg-destructive' : score <= 2 ? 'bg-orange-500' : score <= 3 ? 'bg-amber-500' : 'bg-emerald-500';
+
+  if (!password) return null;
+
+  return (
+    <div className="space-y-2 mt-2">
+      <div className="flex gap-1">
+        {checks.map((_, i) => (
+          <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${i < score ? color : 'bg-muted'}`} />
+        ))}
+      </div>
+      <ul className="grid grid-cols-2 gap-x-4 gap-y-1">
+        {checks.map((c, i) => (
+          <li key={i} className={`text-xs flex items-center gap-1 ${c.ok ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
+            {c.ok ? '✓' : '○'} {c.label}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* ────── Stepper visuel ────── */
+function StepIndicator({ currentStep }: { currentStep: 1 | 2 }) {
+  return (
+    <div className="flex items-center justify-center gap-3 mb-6">
+      <div className={`flex items-center gap-2 text-xs font-medium ${currentStep >= 1 ? 'text-primary' : 'text-muted-foreground'}`}>
+        <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold ${currentStep >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+          1
+        </div>
+        <span className="hidden sm:inline">Mot de passe</span>
+      </div>
+      <div className={`h-px w-8 ${currentStep >= 2 ? 'bg-primary' : 'bg-muted'}`} />
+      <div className={`flex items-center gap-2 text-xs font-medium ${currentStep >= 2 ? 'text-primary' : 'text-muted-foreground'}`}>
+        <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold ${currentStep >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+          2
+        </div>
+        <span className="hidden sm:inline">Accès</span>
+      </div>
+    </div>
+  );
+}
+
 export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -39,6 +93,8 @@ export default function ResetPasswordPage() {
       confirmPassword: '',
     },
   });
+
+  const watchedPassword = form.watch('password');
 
   // Vérifier et échanger le token de récupération
   useEffect(() => {
@@ -64,7 +120,6 @@ export default function ResetPasswordPage() {
           navigate('/auth');
           return;
         }
-        // Nettoyer le hash de l'URL
         window.history.replaceState(null, '', window.location.pathname);
         return;
       }
@@ -86,10 +141,9 @@ export default function ResetPasswordPage() {
         return;
       }
       
-      // Cas 3: Vérifier si une session existe déjà (redirigé par RecoveryTokenHandler via PASSWORD_RECOVERY event)
+      // Cas 3: Vérifier si une session existe déjà
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        // Session déjà établie par Supabase auto-detection, l'utilisateur peut changer son mot de passe
         console.log('[ResetPasswordPage] Session existante détectée, prêt pour reset');
         return;
       }
@@ -112,22 +166,32 @@ export default function ResetPasswordPage() {
       if (error) {
         toast.error(error.message || 'Erreur lors de la réinitialisation');
       } else {
-        // Logger le succès dans admin_audit_logs
+        // Mettre à jour password_set_at dans profiles
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          const now = new Date().toISOString();
+          await supabase
+            .from('profiles')
+            .update({ 
+              password_set_at: now, 
+              last_active_at: now 
+            } as any)
+            .eq('id', user.id);
+
+          // Logger le succès dans admin_audit_logs
           await supabase.from('admin_audit_logs').insert({
             admin_id: user.id,
             target_user_id: user.id,
             action: 'password_reset_completed',
             details: {
               method: 'recovery_link',
-              timestamp: new Date().toISOString()
+              timestamp: now
             }
           });
         }
         
         setSuccess(true);
-        toast.success('Mot de passe réinitialisé avec succès');
+        toast.success('Mot de passe défini avec succès !');
       }
     } catch (err) {
       toast.error('Une erreur est survenue');
@@ -141,24 +205,26 @@ export default function ResetPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4">
         <Card className="w-full max-w-md glass">
           <CardHeader className="text-center">
+            <StepIndicator currentStep={2} />
             <div className="flex justify-center mb-4">
-              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                <CheckCircle className="h-10 w-10 text-primary" />
+              <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                <CheckCircle className="h-10 w-10 text-emerald-600 dark:text-emerald-400" />
               </div>
             </div>
             <CardTitle className="text-2xl font-bold">
-              Mot de passe réinitialisé
+              Compte activé !
             </CardTitle>
-            <CardDescription>
-              Votre mot de passe a été modifié avec succès
+            <CardDescription className="text-base">
+              Votre mot de passe a été défini avec succès. Vous pouvez maintenant accéder à ANSUT RADAR.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button 
-              className="w-full" 
+              className="w-full gap-2" 
               onClick={() => navigate('/radar')}
             >
               Accéder à l'application
+              <ArrowRight className="h-4 w-4" />
             </Button>
           </CardContent>
         </Card>
@@ -170,17 +236,25 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4">
       <Card className="w-full max-w-md glass">
         <CardHeader className="text-center">
+          <StepIndicator currentStep={1} />
           <div className="flex justify-center mb-4">
             <img src={logoAnsut} alt="ANSUT" className="w-20 h-20 rounded-xl object-contain bg-white p-2" />
           </div>
           <CardTitle className="text-2xl font-bold">
-            Nouveau mot de passe
+            Bienvenue sur ANSUT RADAR
           </CardTitle>
-          <CardDescription>
-            Choisissez un nouveau mot de passe pour votre compte
+          <CardDescription className="text-base">
+            Définissez votre mot de passe pour activer votre compte et accéder à la plateforme.
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/10 mb-4">
+            <ShieldCheck className="h-5 w-5 text-primary shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              Choisissez un mot de passe fort que vous n'utilisez nulle part ailleurs.
+            </p>
+          </div>
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -188,12 +262,13 @@ export default function ResetPasswordPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nouveau mot de passe</FormLabel>
+                    <FormLabel>Mot de passe</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
                           type={showPassword ? 'text' : 'password'}
                           placeholder="••••••••"
+                          autoFocus
                           {...field}
                         />
                         <Button
@@ -211,6 +286,7 @@ export default function ResetPasswordPage() {
                         </Button>
                       </div>
                     </FormControl>
+                    <PasswordStrength password={watchedPassword} />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -249,9 +325,10 @@ export default function ResetPasswordPage() {
                 )}
               />
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full gap-2" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Réinitialiser le mot de passe
+                <KeyRound className="h-4 w-4" />
+                Définir mon mot de passe
               </Button>
             </form>
           </Form>

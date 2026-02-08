@@ -31,6 +31,7 @@ interface UserStatus {
   email_confirmed_at: string | null;
   last_sign_in_at: string | null;
   last_active_at: string | null;
+  password_set_at?: string | null;
   created_at: string;
 }
 
@@ -102,6 +103,23 @@ function TableActivityBadge({ category, lastActiveAt }: { category: ActivityCate
           </TooltipTrigger>
           <TooltipContent>
             <p>L'utilisateur n'a pas encore activé son compte</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+  if (category === 'password_not_set') {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="secondary" className="bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 gap-1 cursor-help">
+              <KeyRound className="h-3 w-3" />
+              MDP non défini
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>L'utilisateur a cliqué le lien mais n'a pas encore défini son mot de passe</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -441,7 +459,7 @@ export default function UsersPage() {
 
   // Calculer les compteurs enrichis avec neverConnected
   const userCounts = useMemo(() => {
-    if (!users) return { total: 0, active: 0, pending: 0, disabled: 0, online: 0, admins: 0, neverConnected: 0, dormant: 0 };
+    if (!users) return { total: 0, active: 0, pending: 0, disabled: 0, online: 0, admins: 0, neverConnected: 0, dormant: 0, passwordNotSet: 0 };
     
     let active = 0;
     let pending = 0;
@@ -450,6 +468,7 @@ export default function UsersPage() {
     let admins = 0;
     let neverConnected = 0;
     let dormant = 0;
+    let passwordNotSet = 0;
     
     users.forEach(user => {
       if (user.role === 'admin') admins++;
@@ -458,12 +477,14 @@ export default function UsersPage() {
       const category = getActivityCategory(
         status?.last_active_at || null,
         !!status?.email_confirmed_at,
-        user.disabled
+        user.disabled,
+        status?.password_set_at ?? null
       );
 
       switch (category) {
         case 'disabled': disabled++; break;
         case 'pending': pending++; break;
+        case 'password_not_set': passwordNotSet++; break;
         case 'never_connected': neverConnected++; active++; break;
         case 'dormant': dormant++; active++; break;
         case 'online': online++; active++; break;
@@ -471,7 +492,7 @@ export default function UsersPage() {
       }
     });
     
-    return { total: users.length, active, pending, disabled, online, admins, neverConnected, dormant };
+    return { total: users.length, active, pending, disabled, online, admins, neverConnected, dormant, passwordNotSet };
   }, [users, usersStatus]);
 
   // Filtrer les utilisateurs
@@ -813,13 +834,15 @@ export default function UsersPage() {
                     const category = getActivityCategory(
                       status?.last_active_at || null,
                       !!status?.email_confirmed_at,
-                      user.disabled
+                      user.disabled,
+                      status?.password_set_at ?? null
                     );
                     
                     // Couleur du texte dernière activité dans la table
                     const activityTextClass =
                       category === 'online' ? 'text-emerald-600 dark:text-emerald-400 font-medium' :
                       category === 'never_connected' ? 'text-slate-400 dark:text-slate-500 italic' :
+                      category === 'password_not_set' ? 'text-rose-600 dark:text-rose-400 italic' :
                       category === 'dormant' ? 'text-orange-600 dark:text-orange-400' :
                       '';
 
@@ -839,6 +862,9 @@ export default function UsersPage() {
                               )}
                               {category === 'dormant' && (
                                 <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-orange-400 border-2 border-background" />
+                              )}
+                              {category === 'password_not_set' && (
+                                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-rose-500 border-2 border-background" />
                               )}
                               {category === 'never_connected' && (
                                 <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-600 border-2 border-background flex items-center justify-center">
