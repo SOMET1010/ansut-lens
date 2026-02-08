@@ -1011,6 +1011,7 @@ export type Database = {
           disabled: boolean
           full_name: string | null
           id: string
+          last_active_at: string | null
           updated_at: string
         }
         Insert: {
@@ -1020,6 +1021,7 @@ export type Database = {
           disabled?: boolean
           full_name?: string | null
           id: string
+          last_active_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -1029,6 +1031,7 @@ export type Database = {
           disabled?: boolean
           full_name?: string | null
           id?: string
+          last_active_at?: string | null
           updated_at?: string
         }
         Relationships: []

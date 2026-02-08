@@ -15,6 +15,7 @@ interface UserStatus {
   email: string;
   email_confirmed_at: string | null;
   last_sign_in_at: string | null;
+  last_active_at: string | null;
   created_at: string;
 }
 
@@ -116,8 +117,8 @@ export function UserCard({
   onGeneratePasswordLink,
   isLoading,
 }: UserCardProps) {
-  const isOnline = isUserOnline(status?.last_sign_in_at || null);
-  const lastActivity = formatLastActivity(status?.last_sign_in_at || null);
+  const isOnline = isUserOnline(status?.last_active_at || null);
+  const lastActivity = formatLastActivity(status?.last_active_at || null);
   const isEmailConfirmed = !!status?.email_confirmed_at;
   const isPending = !user.disabled && !isEmailConfirmed;
 
