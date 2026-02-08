@@ -1,137 +1,95 @@
 
 
-# Correction du flux d'authentification -- les utilisateurs ne peuvent pas se connecter
+# Correction des URLs de redirection -- liens d'invitation inaccessibles
 
-## Diagnostic
+## Probleme
 
-L'analyse des logs d'authentification revele le scenario suivant :
+Quand un administrateur envoie une invitation depuis l'environnement de preview, l'URL de redirection dans les emails pointe vers `https://id-preview--...lovable.app` qui necessite un compte Lovable pour etre accessible. Les utilisateurs invites voient donc la page de login Lovable au lieu de la page de definition de mot de passe.
 
-1. **Bernard, Amonkou, Arnold et Sarrah** ont tous clique sur leurs liens de reinitialisation (confirme par les logs `/verify` a 21:51:14-21:51:20 et 21:59:52)
-2. Le clic a declenche un **login implicite** qui a mis a jour `last_active_at` dans la table `profiles`, les faisant apparaitre "En ligne" dans l'interface
-3. **Mais ils n'ont jamais complete la definition de leur mot de passe** -- ils ont probablement ete perdus sur la page de reinitialisation ou l'ont fermee
-4. Quand ils tentent de se connecter ensuite avec email/mot de passe → **"Invalid login credentials"** (log a 21:51:07)
-5. Seul **Patrick Somet** a un vrai login par mot de passe (`grant_type: refresh_token`)
+## Cause racine
 
-## Problemes identifies
+`window.location.origin` dans le frontend retourne l'URL de preview quand l'admin travaille depuis cet environnement. Cette URL est transmise aux fonctions backend qui l'utilisent telle quelle pour generer les liens dans les emails.
 
-### Probleme 1 : Faux positif `last_active_at`
-Le clic sur un lien de recuperation declenche un evenement `SIGNED_IN` (login implicite) qui met a jour `last_active_at`. Le filtre actuel dans `AuthContext` n'exclut que l'evenement `PASSWORD_RECOVERY`, pas le `SIGNED_IN` provenant d'un lien de recuperation/invitation.
+## Solution
 
-### Probleme 2 : Page de reinitialisation potentiellement confuse
-Les utilisateurs semblent cliquer le lien, arriver sur la page de reinitialisation, mais ne pas completer la saisie du nouveau mot de passe. Le formulaire manque peut-etre de guidage visuel pour les nouveaux utilisateurs.
+Remplacer toutes les utilisations dynamiques de `window.location.origin` pour les liens d'invitation/reinitialisation par l'URL publiee fixe (`https://ansut-lens.lovable.app`). Les fonctions backend seront egalement securisees pour forcer l'URL de production.
 
-### Probleme 3 : Pas de suivi de la completion du mot de passe
-Aucun mecanisme ne permet de distinguer un utilisateur qui a **clique le lien** d'un utilisateur qui a **reellement defini son mot de passe**.
-
-## Plan de correction
-
-### 1. Corriger le tracking `last_active_at` dans AuthContext
-
-Modifier `src/contexts/AuthContext.tsx` pour ne mettre a jour `last_active_at` que lors de vrais logins par mot de passe, en excluant les logins implicites provenant de liens de recuperation/invitation.
-
-La verification se fera en testant si le `amr` (Authentication Methods Reference) contient `password` comme facteur, ou en verifiant que le type d'evenement n'est pas un login implicite via recovery.
-
-### 2. Ajouter un champ `password_set_at` dans profiles
-
-Creer une migration pour ajouter une colonne `password_set_at` (timestamp nullable) dans la table `profiles`. Ce champ sera mis a jour uniquement quand l'utilisateur complete avec succes la definition/reinitialisation de son mot de passe sur `ResetPasswordPage`.
-
-### 3. Ameliorer la page ResetPasswordPage
-
-- Ajouter un **message d'accueil clair** pour les nouveaux utilisateurs : "Bienvenue sur ANSUT RADAR. Definissez votre mot de passe pour activer votre compte."
-- Ajouter des **indicateurs de force** du mot de passe
-- Afficher un **stepper visuel** (Etape 1/2 : Definir le mot de passe → Etape 2/2 : Acces a l'application)
-- Mettre a jour `password_set_at` dans profiles apres le succes
-
-### 4. Mettre a jour les indicateurs visuels
-
-Modifier la logique `getActivityCategory` pour utiliser `password_set_at` :
-- Si `password_set_at` est null et `email_confirmed_at` existe → "Lien clique, mot de passe non defini"
-- Cela donne un statut plus precis que le simple "Jamais connecte"
-
-### 5. Reinitialiser `last_active_at` pour les utilisateurs sans mot de passe
-
-Corriger les donnees existantes : remettre a `null` le `last_active_at` des utilisateurs qui n'ont fait que cliquer un lien sans definir de mot de passe.
-
----
-
-## Section technique
-
-### Fichiers modifies
+## Fichiers modifies
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/contexts/AuthContext.tsx` | Filtrer les SIGNED_IN implicites (recovery/invite) du tracking last_active_at |
-| `src/pages/ResetPasswordPage.tsx` | Ameliorer l'UX, ajouter stepper, mettre a jour password_set_at |
-| `src/utils/activity-status.ts` | Integrer password_set_at dans la categorisation |
-| `src/components/admin/UserCard.tsx` | Nouveau badge "Lien clique" distinct |
-| `src/pages/admin/UsersPage.tsx` | Nouveau compteur KPI "Mot de passe non defini" |
-| Migration SQL | Ajout colonne `password_set_at` + correction donnees existantes |
+| `src/pages/admin/UsersPage.tsx` | Remplacer `window.location.origin` par l'URL publiee pour les 2 appels (invite + password link) |
+| `supabase/functions/reset-user-password/index.ts` | Forcer l'URL de production au lieu de `req.headers.get("origin")` |
+| `supabase/functions/generate-password-link/index.ts` | Ignorer le `redirectUrl` du frontend et forcer l'URL de production |
+| `supabase/functions/invite-user/index.ts` | Deja corrige avec `PRODUCTION_URL`, mais ignorer le `redirectUrl` du frontend s'il contient "preview" |
 
-### Migration SQL
+## Detail des modifications
+
+### 1. `src/pages/admin/UsersPage.tsx`
+
+Ajouter une constante en haut du composant :
 
 ```text
--- Ajouter le champ password_set_at
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS password_set_at timestamptz;
-
--- Corriger les faux positifs : remettre last_active_at a null
--- pour les utilisateurs qui n'ont jamais eu de vrai login par mot de passe
--- (tous sauf Patrick Somet qui a un vrai login)
-UPDATE profiles 
-SET last_active_at = NULL 
-WHERE id != '266e47a1-70c7-48af-8f6b-2a52527dad9a'
-AND password_set_at IS NULL;
-
--- Marquer Patrick comme ayant defini son mot de passe
-UPDATE profiles 
-SET password_set_at = last_active_at 
-WHERE id = '266e47a1-70c7-48af-8f6b-2a52527dad9a';
+const PUBLISHED_URL = "https://ansut-lens.lovable.app";
 ```
 
-### Modification AuthContext -- filtrage des logins implicites
+Remplacer les 2 occurrences de `window.location.origin` :
+
+- Ligne 258 : `redirectUrl: \`${PUBLISHED_URL}/auth/reset-password\``
+- Ligne 416 : `redirectUrl: \`${PUBLISHED_URL}/auth/reset-password\``
+
+### 2. `supabase/functions/reset-user-password/index.ts`
+
+Remplacer la ligne 38 :
 
 ```text
-onAuthStateChange:
-  si event = PASSWORD_RECOVERY → ignorer tracking
-  si event = SIGNED_IN:
-    verifier session.user.app_metadata.provider
-    verifier si la session vient d'un token de recovery (amr claim)
-    si login implicite (recovery/invite) → ne PAS mettre a jour last_active_at
-    si login par mot de passe → mettre a jour last_active_at
+// Avant:
+const redirectUrl = `${req.headers.get("origin") || "https://ansut-lens.lovable.app"}/auth/reset-password`;
+
+// Apres:
+const PRODUCTION_URL = "https://ansut-lens.lovable.app";
+const redirectUrl = `${PRODUCTION_URL}/auth/reset-password`;
 ```
 
-### Nouvelle categorisation d'activite
+### 3. `supabase/functions/generate-password-link/index.ts`
+
+Forcer l'URL de production cote serveur, ignorer le `redirectUrl` du client :
 
 ```text
-getActivityCategory(lastActiveAt, isEmailConfirmed, isDisabled, passwordSetAt):
-  si desactive → 'disabled'
-  si email non confirme → 'pending'
-  si passwordSetAt est null → 'password_not_set' (NOUVEAU)
-  si lastActiveAt est null → 'never_connected'
-  si lastActiveAt > 30 jours → 'dormant'
-  si lastActiveAt < 15 min → 'online'
-  sinon → 'active'
+// Avant:
+const { userId, redirectUrl }: RequestBody = await req.json();
+
+// Apres:
+const { userId }: RequestBody = await req.json();
+const PRODUCTION_URL = "https://ansut-lens.lovable.app";
+const redirectUrl = `${PRODUCTION_URL}/auth/reset-password`;
 ```
 
-### Nouveau badge visuel `password_not_set`
+### 4. `supabase/functions/invite-user/index.ts`
+
+Ajouter une protection contre les URLs de preview dans le `redirectUrl` recu du frontend :
 
 ```text
-password_not_set:
-  Badge: bg-rose-100 text-rose-600, icone KeyRound
-  Texte: "Mot de passe non defini"
-  Avatar: point rouge
-  Tooltip: "L'utilisateur a clique le lien mais n'a pas encore defini son mot de passe"
-  Action rapide: bouton "Renvoyer le lien" visible
+// Avant:
+const finalRedirectUrl = redirectUrl || `${PRODUCTION_URL}/auth/reset-password`;
+
+// Apres:
+const isPreviewUrl = redirectUrl && (redirectUrl.includes('id-preview--') || redirectUrl.includes('lovableproject.com'));
+const finalRedirectUrl = (!redirectUrl || isPreviewUrl) ? `${PRODUCTION_URL}/auth/reset-password` : redirectUrl;
 ```
 
-### Ordre d'execution
+### 5. Renvoyer les invitations
+
+Apres deploiement des corrections, renvoyer les invitations aux 4 utilisateurs (Bernard, Amonkou, Arnold, Sarrah) pour qu'ils recoivent des liens fonctionnels pointant vers `https://ansut-lens.lovable.app/auth/reset-password`.
+
+## Ordre d'execution
 
 ```text
-1. Migration SQL : ajout password_set_at + correction donnees
-2. Modifier AuthContext : filtrer logins implicites
-3. Modifier ResetPasswordPage : ameliorer UX + mettre a jour password_set_at
-4. Modifier activity-status.ts : ajouter categorie password_not_set
-5. Modifier UserCard.tsx : nouveau badge password_not_set
-6. Modifier UsersPage.tsx : nouveau compteur + vue table
-7. Modifier list-users-status : inclure password_set_at
+1. Modifier UsersPage.tsx -- utiliser l'URL publiee
+2. Modifier reset-user-password -- forcer URL de production
+3. Modifier generate-password-link -- forcer URL de production
+4. Modifier invite-user -- proteger contre les URLs de preview
+5. Deployer les fonctions backend
+6. Renvoyer les invitations aux 4 utilisateurs
 ```
 
