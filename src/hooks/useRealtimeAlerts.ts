@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Tables } from '@/integrations/supabase/types';
@@ -33,8 +33,28 @@ const ALERT_STYLES = {
 export function useRealtimeAlerts(): UseRealtimeAlertsReturn {
   const [unreadCount, setUnreadCount] = useState(0);
   const [recentAlerts, setRecentAlerts] = useState<Alerte[]>([]);
+  const smsSentForAlerts = useRef<Set<string>>(new Set());
 
-  // Fetch initial unread count and recent alerts
+  // Trigger SMS for critical alerts
+  const triggerSmsCritical = useCallback(async (alerteId: string) => {
+    // Avoid duplicate SMS sends
+    if (smsSentForAlerts.current.has(alerteId)) return;
+    smsSentForAlerts.current.add(alerteId);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('envoyer-sms', {
+        body: { alerteId },
+      });
+
+      if (error) {
+        console.error('Erreur envoi SMS critique:', error.message);
+      } else {
+        console.log('SMS critique envoyé:', data?.stats);
+      }
+    } catch (err) {
+      console.error('Exception envoi SMS:', err);
+    }
+  }, []);
   useEffect(() => {
     const fetchAlerts = async () => {
       const [countResult, recentResult] = await Promise.all([
@@ -100,6 +120,11 @@ export function useRealtimeAlerts(): UseRealtimeAlertsReturn {
               },
             },
           });
+
+          // Trigger SMS for critical alerts
+          if (newAlert.niveau === 'critical') {
+            triggerSmsCritical(newAlert.id);
+          }
 
           // Play sound for critical alerts
           if (newAlert.niveau === 'critical') {
