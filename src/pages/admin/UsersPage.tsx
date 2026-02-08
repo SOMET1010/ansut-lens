@@ -23,6 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Database } from '@/integrations/supabase/types';
 import { UserCard, SecurityKpiCards, InviteQuickCard } from '@/components/admin';
+import { getActivityCategory, formatLastActivity, formatExactDate, getInitials, type ActivityCategory } from '@/utils/activity-status';
 
 interface UserStatus {
   id: string;
@@ -80,13 +81,89 @@ const roleIcons: Record<AppRole, React.ReactNode> = {
   guest: <Mail className="h-4 w-4" />,
 };
 
-// Fonction utilitaire pour vérifier si un utilisateur est en ligne (< 15 min)
-function isUserOnline(lastActiveAt: string | null): boolean {
-  if (!lastActiveAt) return false;
-  const now = new Date();
-  const lastActive = new Date(lastActiveAt);
-  const diffMs = now.getTime() - lastActive.getTime();
-  return diffMs < 15 * 60 * 1000;
+/* ────── Badge de statut pour la vue table ────── */
+function TableActivityBadge({ category, lastActiveAt }: { category: ActivityCategory; lastActiveAt: string | null }) {
+  if (category === 'disabled') {
+    return (
+      <Badge variant="secondary" className="bg-muted text-muted-foreground">
+        Désactivé
+      </Badge>
+    );
+  }
+  if (category === 'pending') {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 gap-1 cursor-help">
+              <Clock className="h-3 w-3" />
+              En attente
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>L'utilisateur n'a pas encore activé son compte</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+  if (category === 'never_connected') {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="secondary" className="bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 gap-1 cursor-help">
+              <UserX className="h-3 w-3" />
+              Jamais connecté
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Cet utilisateur n'a jamais ouvert de session</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+  if (category === 'dormant') {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="secondary" className="bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 gap-1 cursor-help">
+              <Clock className="h-3 w-3" />
+              Inactif
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Dernière connexion le {lastActiveAt ? formatExactDate(lastActiveAt) : '—'}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+  if (category === 'online') {
+    return (
+      <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 gap-1">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        En ligne
+      </Badge>
+    );
+  }
+  // active
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 cursor-help">
+            Actif
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Dernière activité : {lastActiveAt ? formatExactDate(lastActiveAt) : '—'}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
 }
 
 export default function UsersPage() {
@@ -108,7 +185,6 @@ export default function UsersPage() {
     },
   });
 
-  // Récupérer les utilisateurs avec leurs rôles et département
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
@@ -141,7 +217,6 @@ export default function UsersPage() {
     },
   });
 
-  // Récupérer le statut de confirmation des utilisateurs
   const { data: usersStatus } = useQuery({
     queryKey: ['users-status'],
     queryFn: async () => {
@@ -154,7 +229,6 @@ export default function UsersPage() {
     },
   });
 
-  // Mutation pour inviter un utilisateur
   const inviteMutation = useMutation({
     mutationFn: async (data: InviteFormData) => {
       const { data: session } = await supabase.auth.getSession();
@@ -184,7 +258,6 @@ export default function UsersPage() {
     },
   });
 
-  // Mutation pour changer le rôle
   const updateRoleMutation = useMutation({
     mutationFn: async ({ userId, newRole }: { userId: string; newRole: AppRole }) => {
       const response = await supabase.functions.invoke('update-user-role', {
@@ -210,7 +283,6 @@ export default function UsersPage() {
     },
   });
 
-  // Mutation pour désactiver/réactiver un utilisateur
   const toggleUserMutation = useMutation({
     mutationFn: async ({ userId, action }: { userId: string; action: 'disable' | 'enable' }) => {
       const response = await supabase.functions.invoke('manage-user', {
@@ -236,7 +308,6 @@ export default function UsersPage() {
     },
   });
 
-  // Mutation pour supprimer un utilisateur
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
       const response = await supabase.functions.invoke('manage-user', {
@@ -263,7 +334,6 @@ export default function UsersPage() {
     },
   });
 
-  // Mutation pour renvoyer une invitation
   const resendInviteMutation = useMutation({
     mutationFn: async ({ userId, fullName, role }: { userId: string; fullName: string; role: AppRole }) => {
       const response = await supabase.functions.invoke('invite-user', {
@@ -294,7 +364,6 @@ export default function UsersPage() {
     },
   });
 
-  // Mutation pour confirmer l'email manuellement
   const confirmEmailMutation = useMutation({
     mutationFn: async (userId: string) => {
       const response = await supabase.functions.invoke('manage-user', {
@@ -321,7 +390,6 @@ export default function UsersPage() {
     },
   });
 
-  // Mutation pour générer un lien de création de mot de passe
   const generatePasswordLinkMutation = useMutation({
     mutationFn: async (userId: string) => {
       const response = await supabase.functions.invoke('generate-password-link', {
@@ -371,44 +439,39 @@ export default function UsersPage() {
     updateRoleMutation.mutate({ userId, newRole });
   };
 
-  const getInitials = (name: string | null) => {
-    if (!name) return '?';
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  // Calculer les compteurs enrichis
+  // Calculer les compteurs enrichis avec neverConnected
   const userCounts = useMemo(() => {
-    if (!users) return { total: 0, active: 0, pending: 0, disabled: 0, online: 0, admins: 0 };
+    if (!users) return { total: 0, active: 0, pending: 0, disabled: 0, online: 0, admins: 0, neverConnected: 0, dormant: 0 };
     
     let active = 0;
     let pending = 0;
     let disabled = 0;
     let online = 0;
     let admins = 0;
+    let neverConnected = 0;
+    let dormant = 0;
     
     users.forEach(user => {
-      // Compteur admins
       if (user.role === 'admin') admins++;
       
-      if (user.disabled) {
-        disabled++;
-      } else if (usersStatus?.[user.id]?.email_confirmed_at) {
-        active++;
-        // Vérifier si en ligne (< 15 min)
-        if (isUserOnline(usersStatus[user.id]?.last_active_at || null)) {
-          online++;
-        }
-      } else {
-        pending++;
+      const status = usersStatus?.[user.id];
+      const category = getActivityCategory(
+        status?.last_active_at || null,
+        !!status?.email_confirmed_at,
+        user.disabled
+      );
+
+      switch (category) {
+        case 'disabled': disabled++; break;
+        case 'pending': pending++; break;
+        case 'never_connected': neverConnected++; active++; break;
+        case 'dormant': dormant++; active++; break;
+        case 'online': online++; active++; break;
+        case 'active': active++; break;
       }
     });
     
-    return { total: users.length, active, pending, disabled, online, admins };
+    return { total: users.length, active, pending, disabled, online, admins, neverConnected, dormant };
   }, [users, usersStatus]);
 
   // Filtrer les utilisateurs
@@ -418,7 +481,6 @@ export default function UsersPage() {
     return users.filter(user => {
       const status = usersStatus?.[user.id];
       
-      // Recherche textuelle par nom ou email
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase().trim();
         const fullName = (user.full_name || '').toLowerCase();
@@ -430,14 +492,12 @@ export default function UsersPage() {
         }
       }
       
-      // Filtre par statut
       if (statusFilter !== 'all') {
         if (statusFilter === 'disabled' && !user.disabled) return false;
         if (statusFilter === 'pending' && (user.disabled || status?.email_confirmed_at)) return false;
         if (statusFilter === 'active' && (user.disabled || !status?.email_confirmed_at)) return false;
       }
       
-      // Filtre par rôle
       if (roleFilter !== 'all' && user.role !== roleFilter) return false;
       
       return true;
@@ -748,10 +808,21 @@ export default function UsersPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.map((user) => {
-                    const isCurrentUser = user.id === currentUser?.id;
+                    const isCurrentUserRow = user.id === currentUser?.id;
                     const status = usersStatus?.[user.id];
-                    const isOnline = isUserOnline(status?.last_active_at || null);
+                    const category = getActivityCategory(
+                      status?.last_active_at || null,
+                      !!status?.email_confirmed_at,
+                      user.disabled
+                    );
                     
+                    // Couleur du texte dernière activité dans la table
+                    const activityTextClass =
+                      category === 'online' ? 'text-emerald-600 dark:text-emerald-400 font-medium' :
+                      category === 'never_connected' ? 'text-slate-400 dark:text-slate-500 italic' :
+                      category === 'dormant' ? 'text-orange-600 dark:text-orange-400' :
+                      '';
+
                     return (
                       <TableRow key={user.id} className={user.disabled ? 'opacity-60' : ''}>
                         <TableCell>
@@ -763,8 +834,16 @@ export default function UsersPage() {
                                   {getInitials(user.full_name)}
                                 </AvatarFallback>
                               </Avatar>
-                              {isOnline && (
+                              {category === 'online' && (
                                 <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-background" />
+                              )}
+                              {category === 'dormant' && (
+                                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-orange-400 border-2 border-background" />
+                              )}
+                              {category === 'never_connected' && (
+                                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-600 border-2 border-background flex items-center justify-center">
+                                  <span className="block h-[1px] w-1.5 bg-slate-500 dark:bg-slate-400 rotate-45" />
+                                </span>
                               )}
                             </div>
                             <div className="flex flex-col">
@@ -773,7 +852,7 @@ export default function UsersPage() {
                               </span>
                               <span className="text-xs text-muted-foreground">
                                 {status?.email || '—'}
-                                {isCurrentUser && ' (vous)'}
+                                {isCurrentUserRow && ' (vous)'}
                               </span>
                             </div>
                           </div>
@@ -788,7 +867,7 @@ export default function UsersPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          {isCurrentUser || user.disabled ? (
+                          {isCurrentUserRow || user.disabled ? (
                             <Badge className={roleColors[user.role]} variant="secondary">
                               {roleLabels[user.role]}
                             </Badge>
@@ -836,47 +915,16 @@ export default function UsersPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
-                            {user.disabled ? (
-                              <Badge variant="secondary" className="bg-muted text-muted-foreground">
-                                Désactivé
-                              </Badge>
-                            ) : !status?.email_confirmed_at ? (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 gap-1 cursor-help">
-                                      <Clock className="h-3 w-3" />
-                                      En attente
-                                    </Badge>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>L'utilisateur n'a pas encore activé son compte</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            ) : (
-                              <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                Actif
-                              </Badge>
-                            )}
+                            <TableActivityBadge category={category} lastActiveAt={status?.last_active_at || null} />
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
-                          {status?.last_active_at ? (
-                            <span className={isOnline ? 'text-emerald-600 dark:text-emerald-400 font-medium' : ''}>
-                              {isOnline ? 'En ligne' : new Date(status.last_active_at).toLocaleDateString('fr-FR', {
-                                day: 'numeric',
-                                month: 'short',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </span>
-                          ) : (
-                            <span className="text-amber-600 dark:text-amber-400">Jamais</span>
-                          )}
+                          <span className={activityTextClass}>
+                            {formatLastActivity(status?.last_active_at || null)}
+                          </span>
                         </TableCell>
                         <TableCell>
-                          {!isCurrentUser && (
+                          {!isCurrentUserRow && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
