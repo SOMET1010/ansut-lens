@@ -388,7 +388,7 @@ async function sendNotificationEmail(
 
   try {
     await resend.emails.send({
-      from: 'ANSUT RADAR <notifications@resend.dev>',
+      from: 'ANSUT RADAR <no-reply@notifications.ansut.ci>',
       to: emails,
       subject,
       html,

@@ -99,7 +99,7 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "ANSUT RADAR <noreply@ansut.ci>",
+            from: "ANSUT RADAR <no-reply@notifications.ansut.ci>",
             to: dest.email,
             subject: subject,
             html: newsletter.html_court,
