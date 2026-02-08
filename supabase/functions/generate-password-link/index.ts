@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
       },
     });
 
-    if (linkError || !linkData?.properties?.action_link) {
+    if (linkError || !linkData?.properties?.hashed_token) {
       console.error('Generate link error:', linkError);
       return new Response(
         JSON.stringify({ error: 'Impossible de générer le lien' }),
@@ -114,7 +114,8 @@ Deno.serve(async (req) => {
       .single();
 
     const userName = profile?.full_name || 'Utilisateur';
-    const resetLink = linkData.properties.action_link;
+    const hashedToken = linkData.properties.hashed_token;
+    const resetLink = `${PRODUCTION_URL}/auth/reset-password?token_hash=${hashedToken}&type=recovery`;
 
     // Send email via Resend
     const resendApiKey = Deno.env.get('RESEND_API_KEY');

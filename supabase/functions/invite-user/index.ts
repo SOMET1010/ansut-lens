@@ -244,9 +244,10 @@ serve(async (req) => {
       }
 
       inviteData = { user: linkData.user };
-      const inviteLink = linkData.properties.action_link;
+      const hashedToken = linkData.properties.hashed_token;
+      const inviteLink = `${PRODUCTION_URL}/auth/reset-password?token_hash=${hashedToken}&type=${linkType}`;
 
-      console.log("Generated invite link:", inviteLink);
+      console.log("Generated direct invite link (hashed_token):", inviteLink);
 
       // Générer le HTML de l'email
       const html = generateInvitationEmailHtml(inviteLink, targetFullName, baseUrl);
