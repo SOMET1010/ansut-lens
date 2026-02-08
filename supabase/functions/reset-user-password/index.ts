@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -6,102 +5,160 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface ResetPasswordRequest {
-  email: string;
-  redirectUrl?: string;
-}
-
-serve(async (req: Request) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    
-    // Vérifier l'authentification de l'appelant
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+
+    if (!resendApiKey) {
+      console.error("RESEND_API_KEY non configuré");
       return new Response(
-        JSON.stringify({ error: "Non autorisé" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Service email non configuré" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } }
-    });
+    const { email }: { email: string } = await req.json();
 
-    const { data: { user: caller } } = await userClient.auth.getUser();
-    if (!caller) {
+    if (!email || typeof email !== "string" || !email.includes("@")) {
       return new Response(
-        JSON.stringify({ error: "Non autorisé" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Vérifier que l'appelant est admin
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-    const { data: isAdmin } = await adminClient.rpc('has_role', {
-      _user_id: caller.id,
-      _role: 'admin'
-    });
-
-    if (!isAdmin) {
-      return new Response(
-        JSON.stringify({ error: "Accès refusé - Admin requis" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const { email, redirectUrl }: ResetPasswordRequest = await req.json();
-
-    if (!email) {
-      return new Response(
-        JSON.stringify({ error: "Email requis" }),
+        JSON.stringify({ error: "Email valide requis" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Générer le lien de réinitialisation
-    const { data, error } = await adminClient.auth.admin.generateLink({
-      type: 'recovery',
-      email: email,
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    // Generate recovery link using admin API
+    const redirectUrl = `${req.headers.get("origin") || "https://ansut-lens.lovable.app"}/auth/reset-password`;
+
+    const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+      type: "recovery",
+      email: email.trim().toLowerCase(),
       options: {
-        redirectTo: redirectUrl || 'https://ansut-lens.lovable.app/auth/reset-password'
-      }
+        redirectTo: redirectUrl,
+      },
     });
 
-    if (error) {
-      console.error("Erreur génération lien:", error);
+    if (linkError) {
+      // Don't reveal if user exists or not for security
+      console.error("Generate link error:", linkError.message);
+      // Always return success to prevent email enumeration
       return new Response(
-        JSON.stringify({ error: error.message }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ 
+          success: true, 
+          message: "Si un compte existe avec cet email, un lien de réinitialisation a été envoyé." 
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Log de l'action
-    await adminClient.from('admin_audit_logs').insert({
-      admin_id: caller.id,
-      action: 'password_reset_requested',
-      target_user_id: data.user?.id,
-      details: { email, requested_by: caller.email }
+    const resetLink = linkData?.properties?.action_link;
+    if (!resetLink) {
+      console.error("No action_link in response");
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "Si un compte existe avec cet email, un lien de réinitialisation a été envoyé." 
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get user profile name for personalization
+    let userName = "Utilisateur";
+    if (linkData?.user?.id) {
+      const { data: profile } = await adminClient
+        .from("profiles")
+        .select("full_name")
+        .eq("id", linkData.user.id)
+        .single();
+      if (profile?.full_name) {
+        userName = profile.full_name;
+      }
+    }
+
+    // Send email via Resend
+    const emailResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "ANSUT RADAR <no-reply@notifications.ansut.ci>",
+        to: email.trim().toLowerCase(),
+        subject: "🔐 Réinitialisation de votre mot de passe ANSUT RADAR",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #1a365d; margin: 0;">ANSUT RADAR</h1>
+              <p style="color: #666; margin-top: 5px;">Système de veille stratégique</p>
+            </div>
+            
+            <h2 style="color: #1a365d;">Bonjour ${userName},</h2>
+            
+            <p style="color: #333; line-height: 1.6;">
+              Vous avez demandé la réinitialisation de votre mot de passe pour votre compte ANSUT RADAR.
+            </p>
+            
+            <p style="color: #333; line-height: 1.6;">
+              Cliquez sur le bouton ci-dessous pour définir un nouveau mot de passe :
+            </p>
+            
+            <div style="text-align: center; margin: 35px 0;">
+              <a href="${resetLink}" 
+                 style="background-color: #2563eb; color: white; padding: 16px 32px; 
+                        text-decoration: none; border-radius: 8px; font-weight: bold;
+                        display: inline-block; font-size: 16px;">
+                Réinitialiser mon mot de passe
+              </a>
+            </div>
+            
+            <p style="color: #666; font-size: 14px; line-height: 1.6;">
+              <strong>⚠️ Ce lien expire dans 24 heures.</strong><br>
+              Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet email en toute sécurité.
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            
+            <p style="color: #999; font-size: 12px; text-align: center;">
+              ANSUT RADAR - Autorité Nationale de la Sécurité des Transports<br>
+              Cet email a été envoyé automatiquement, merci de ne pas y répondre.
+            </p>
+          </div>
+        `,
+      }),
     });
+
+    if (!emailResponse.ok) {
+      const errText = await emailResponse.text();
+      console.error("Resend error:", errText);
+      return new Response(
+        JSON.stringify({ error: "Erreur lors de l'envoi de l'email" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Password reset email sent to ${email}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Lien de réinitialisation généré pour ${email}`,
-        link: data.properties?.action_link 
+        message: "Si un compte existe avec cet email, un lien de réinitialisation a été envoyé." 
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
-  } catch (error: any) {
-    console.error("Erreur:", error);
+  } catch (error) {
+    console.error("Unexpected error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Erreur serveur inattendue" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

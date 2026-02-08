@@ -101,14 +101,17 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+      const { data: result, error: fnError } = await supabase.functions.invoke('reset-user-password', {
+        body: { email: data.email },
       });
 
-      if (error) {
-        toast.error(error.message || 'Erreur lors de l\'envoi de l\'email');
+      if (fnError) {
+        console.error('Reset password error:', fnError);
+        toast.error('Erreur lors de l\'envoi de l\'email');
+      } else if (result?.error) {
+        toast.error(result.error);
       } else {
-        toast.success('Un email de réinitialisation a été envoyé');
+        toast.success(result?.message || 'Un email de réinitialisation a été envoyé');
         handleModeChange('login');
       }
     } catch (err) {
