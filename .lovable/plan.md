@@ -1,36 +1,32 @@
 
+# Correction du faux positif "Derniere activite"
 
-# Corrections du flux de reinitialisation de mot de passe
+## Probleme
 
-## Problemes identifies
+Le champ `last_sign_in_at` de Supabase Auth est mis a jour lors de TOUTE connexion, y compris les connexions implicites declenchees par un clic sur un lien de recuperation ou d'invitation. Resultat : des utilisateurs comme Sarrah Coulibaly apparaissent avec "Il y a 9 min" comme derniere activite alors qu'ils ne se sont jamais reellement connectes a l'application.
 
-### 1. Probleme CRITIQUE : fonction backend non accessible sans authentification
-La fonction `reset-user-password` n'est pas enregistree dans le fichier de configuration backend avec `verify_jwt = false`. Par defaut, toute requete sans jeton d'authentification est rejetee. Or, un utilisateur qui a oublie son mot de passe n'est PAS connecte -- il ne peut donc pas appeler cette fonction. **C'est la cause principale du blocage signale ("ca ne passe pas").**
+## Solution
 
-### 2. Les liens d'invitation ne sont pas interceptes
-Le composant `RecoveryTokenHandler` ne detecte que `type=recovery` dans les liens. Les utilisateurs invites arrivent avec `type=invite`, qui n'est pas traite -- ils ne sont pas rediriges vers la page de definition de mot de passe.
+Ajouter un champ `last_active_at` dans la table `profiles` et le mettre a jour uniquement lors des connexions reelles (par mot de passe ou token refresh). Ce champ remplacera `last_sign_in_at` pour l'affichage de "Derniere activite".
 
-### 3. Conflit entre deux ecouteurs d'evenements auth
-`AuthContext` et `RecoveryTokenHandler` ecoutent tous les deux les changements d'etat d'authentification. Quand un lien de recovery est clique, il y a une course : `AuthContext` peut etablir la session (et donc rendre l'utilisateur "connecte") avant que `RecoveryTokenHandler` ne puisse rediriger vers la page de reinitialisation.
+## Modifications prevues
 
-### 4. Renvoi d'email a Sarrah Coulibaly
-Un des 4 emails de recovery envoyes precedemment a ete bloque par la limite de debit de Resend (erreur 429). Il faudra renvoyer le lien.
+### 1. Migration de base de donnees
+Ajouter la colonne `last_active_at` (timestamp nullable) a la table `profiles`.
 
----
+### 2. Mise a jour de AuthContext.tsx
+Lors d'un evenement `SIGNED_IN` ou `TOKEN_REFRESHED` (et PAS `PASSWORD_RECOVERY`), mettre a jour le champ `last_active_at` du profil de l'utilisateur connecte avec l'horodatage actuel.
 
-## Corrections prevues
+### 3. Mise a jour de list-users-status Edge Function
+Enrichir les donnees retournees avec le champ `last_active_at` recupere depuis la table `profiles`, en complement du `last_sign_in_at` d'auth.
 
-### Correction 1 : Ajouter `reset-user-password` dans la configuration
-Ajouter l'entree `[functions.reset-user-password]` avec `verify_jwt = false` dans `supabase/config.toml`. Cela permettra aux utilisateurs non connectes d'appeler la fonction depuis la page de connexion.
+### 4. Mise a jour de UserCard.tsx et UsersPage.tsx
+Utiliser `last_active_at` (depuis profiles) au lieu de `last_sign_in_at` (depuis auth) pour :
+- L'affichage de "Derniere activite"
+- Le calcul du statut "En ligne"
+- Le compteur d'utilisateurs en ligne
 
-### Correction 2 : Gerer `type=invite` dans RecoveryTokenHandler
-Modifier `RecoveryTokenHandler.tsx` pour detecter aussi `type=invite` dans le fragment hash de l'URL, et rediriger vers `/auth/reset-password` dans ce cas.
-
-### Correction 3 : Eviter la course entre AuthContext et RecoveryTokenHandler
-Dans `AuthContext.tsx`, verifier si l'evenement recu est `PASSWORD_RECOVERY` et, dans ce cas, ne pas declencher la logique de chargement de role classique qui pourrait entrer en conflit avec la redirection du RecoveryTokenHandler.
-
-### Correction 4 : Renvoyer l'email a Sarrah Coulibaly
-Appeler la fonction `reset-user-password` pour `sarrah.coulibaly@ansut.ci` afin qu'elle recoive un nouveau lien.
+Si `last_active_at` est `null`, afficher "Jamais connecte" meme si `last_sign_in_at` existe.
 
 ---
 
@@ -40,36 +36,52 @@ Appeler la fonction `reset-user-password` pour `sarrah.coulibaly@ansut.ci` afin 
 
 | Fichier | Modification |
 |---------|-------------|
-| `supabase/config.toml` | Ajouter `[functions.reset-user-password]` avec `verify_jwt = false` |
-| `src/components/auth/RecoveryTokenHandler.tsx` | Ajouter detection de `type=invite` en plus de `type=recovery` |
-| `src/contexts/AuthContext.tsx` | Ignorer `PASSWORD_RECOVERY` pour eviter les conflits de redirection |
+| Migration SQL | Ajouter colonne `last_active_at` a `profiles` |
+| `src/contexts/AuthContext.tsx` | Mettre a jour `last_active_at` sur SIGNED_IN / TOKEN_REFRESHED |
+| `supabase/functions/list-users-status/index.ts` | Inclure `last_active_at` des profiles dans la reponse |
+| `src/components/admin/UserCard.tsx` | Utiliser `last_active_at` au lieu de `last_sign_in_at` |
+| `src/pages/admin/UsersPage.tsx` | Adapter le type `UserStatus` et les fonctions de calcul |
 
 ### Detail des changements
 
-**`supabase/config.toml`** -- ajouter :
+**Migration SQL :**
 ```text
-[functions.reset-user-password]
-verify_jwt = false
+ALTER TABLE profiles ADD COLUMN last_active_at timestamptz DEFAULT NULL;
 ```
 
-**`RecoveryTokenHandler.tsx`** -- ligne 22, remplacer :
+**AuthContext.tsx** -- dans le listener `onAuthStateChange`, ajouter apres le traitement normal de `SIGNED_IN` :
 ```text
-if (type === 'recovery' && ...)
-```
-par :
-```text
-if ((type === 'recovery' || type === 'invite') && ...)
+if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+  supabase.from('profiles')
+    .update({ last_active_at: new Date().toISOString() })
+    .eq('id', session.user.id)
+    .then(() => {});
+}
 ```
 
-**`AuthContext.tsx`** -- dans le listener `onAuthStateChange`, ajouter une condition pour ne pas traiter normalement l'evenement `PASSWORD_RECOVERY` (laisser le `RecoveryTokenHandler` gerer la redirection sans interference).
+**list-users-status/index.ts** -- recuperer `last_active_at` depuis profiles et l'ajouter dans chaque `UserStatus` :
+```text
+// Fetch profiles with last_active_at
+const { data: profiles } = await adminClient
+  .from('profiles')
+  .select('id, last_active_at');
+
+// Merge into usersStatus
+for (const u of users) {
+  const profile = profiles?.find(p => p.id === u.id);
+  usersStatus[u.id] = {
+    ...existingFields,
+    last_active_at: profile?.last_active_at || null,
+  };
+}
+```
+
+**UserCard.tsx / UsersPage.tsx** -- remplacer toutes les references a `status?.last_sign_in_at` par `status?.last_active_at` pour les calculs d'activite et d'affichage.
 
 ### Ordre d'execution
-
 ```text
-1. Modifier supabase/config.toml (ajouter reset-user-password)
-2. Modifier RecoveryTokenHandler.tsx (ajouter type=invite)
-3. Modifier AuthContext.tsx (ignorer PASSWORD_RECOVERY)
-4. Deployer et tester
-5. Renvoyer le lien a sarrah.coulibaly@ansut.ci
+1. Creer la migration (ajouter last_active_at)
+2. Modifier AuthContext.tsx (tracking des vraies connexions)
+3. Modifier list-users-status (inclure last_active_at)
+4. Modifier UserCard.tsx et UsersPage.tsx (utiliser last_active_at)
 ```
-
