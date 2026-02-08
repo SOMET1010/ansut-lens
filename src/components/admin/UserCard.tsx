@@ -335,7 +335,29 @@ export function UserCard({
             </p>
           </div>
 
-          <ActivityStatusBadge category={category} lastActiveAt={lastActiveAt} />
+          <div className="flex items-center gap-2">
+            {/* Bouton rapide Renvoyer l'invitation pour pending / never_connected */}
+            {!isCurrentUser && (category === 'pending' || category === 'never_connected') && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-primary"
+                      onClick={() => onResendInvite?.(user.id, user.full_name || 'Utilisateur', user.role)}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Renvoyer l'invitation</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            <ActivityStatusBadge category={category} lastActiveAt={lastActiveAt} />
+          </div>
         </div>
       </CardContent>
     </Card>
