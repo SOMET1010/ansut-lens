@@ -1,95 +1,103 @@
 
 
-# Correction des URLs de redirection -- liens d'invitation inaccessibles
+# Correction des liens d'invitation -- Acces direct sans intermediaire
 
-## Probleme
+## Probleme identifie
 
-Quand un administrateur envoie une invitation depuis l'environnement de preview, l'URL de redirection dans les emails pointe vers `https://id-preview--...lovable.app` qui necessite un compte Lovable pour etre accessible. Les utilisateurs invites voient donc la page de login Lovable au lieu de la page de definition de mot de passe.
+Les liens dans les emails passent par le serveur d'authentification (`/auth/v1/verify`), qui dans l'environnement Lovable Cloud redirige automatiquement via un pont d'authentification (`lovable.dev/auth-bridge`) vers l'URL de preview. L'utilisateur arrive donc sur une page de login Lovable au lieu de la page de creation de mot de passe.
 
-## Cause racine
+Le lien actuel genere :
+```text
+https://lpkfwxisranmetbtgxrv.supabase.co/auth/v1/verify?token=...&redirect_to=...
+```
 
-`window.location.origin` dans le frontend retourne l'URL de preview quand l'admin travaille depuis cet environnement. Cette URL est transmise aux fonctions backend qui l'utilisent telle quelle pour generer les liens dans les emails.
+Ce qui provoque : serveur auth --> auth-bridge --> preview URL --> login Lovable
 
 ## Solution
 
-Remplacer toutes les utilisations dynamiques de `window.location.origin` pour les liens d'invitation/reinitialisation par l'URL publiee fixe (`https://ansut-lens.lovable.app`). Les fonctions backend seront egalement securisees pour forcer l'URL de production.
+Au lieu d'utiliser le `action_link` (qui passe par le serveur de verification), construire un lien **direct** vers l'application de production avec le `hashed_token`. La page `ResetPasswordPage` gere deja ce format (elle appelle `verifyOtp()` cote client).
 
-## Fichiers modifies
+Le nouveau lien sera :
+```text
+https://ansut-lens.lovable.app/auth/reset-password?token_hash=HASH&type=recovery
+```
+
+L'utilisateur clique --> arrive directement sur la page de creation de mot de passe --> le token est verifie cote client --> il definit son mot de passe. Pas d'intermediaire, pas de redirection.
+
+## Fichiers a modifier
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/pages/admin/UsersPage.tsx` | Remplacer `window.location.origin` par l'URL publiee pour les 2 appels (invite + password link) |
-| `supabase/functions/reset-user-password/index.ts` | Forcer l'URL de production au lieu de `req.headers.get("origin")` |
-| `supabase/functions/generate-password-link/index.ts` | Ignorer le `redirectUrl` du frontend et forcer l'URL de production |
-| `supabase/functions/invite-user/index.ts` | Deja corrige avec `PRODUCTION_URL`, mais ignorer le `redirectUrl` du frontend s'il contient "preview" |
+| `supabase/functions/reset-user-password/index.ts` | Construire le lien avec `hashed_token` au lieu de `action_link` |
+| `supabase/functions/generate-password-link/index.ts` | Idem |
+| `supabase/functions/invite-user/index.ts` | Idem |
 
-## Detail des modifications
+## Detail technique
 
-### 1. `src/pages/admin/UsersPage.tsx`
+### 1. `supabase/functions/reset-user-password/index.ts`
 
-Ajouter une constante en haut du composant :
-
-```text
-const PUBLISHED_URL = "https://ansut-lens.lovable.app";
-```
-
-Remplacer les 2 occurrences de `window.location.origin` :
-
-- Ligne 258 : `redirectUrl: \`${PUBLISHED_URL}/auth/reset-password\``
-- Ligne 416 : `redirectUrl: \`${PUBLISHED_URL}/auth/reset-password\``
-
-### 2. `supabase/functions/reset-user-password/index.ts`
-
-Remplacer la ligne 38 :
+Remplacer l'utilisation de `action_link` par la construction d'un lien direct :
 
 ```text
-// Avant:
-const redirectUrl = `${req.headers.get("origin") || "https://ansut-lens.lovable.app"}/auth/reset-password`;
+// Avant :
+const resetLink = linkData?.properties?.action_link;
 
-// Apres:
-const PRODUCTION_URL = "https://ansut-lens.lovable.app";
-const redirectUrl = `${PRODUCTION_URL}/auth/reset-password`;
+// Apres :
+const hashedToken = linkData?.properties?.hashed_token;
+const resetLink = `${PRODUCTION_URL}/auth/reset-password?token_hash=${hashedToken}&type=recovery`;
 ```
 
-### 3. `supabase/functions/generate-password-link/index.ts`
+### 2. `supabase/functions/generate-password-link/index.ts`
 
-Forcer l'URL de production cote serveur, ignorer le `redirectUrl` du client :
+Meme modification :
 
 ```text
-// Avant:
-const { userId, redirectUrl }: RequestBody = await req.json();
+// Avant :
+const resetLink = linkData.properties.action_link;
 
-// Apres:
-const { userId }: RequestBody = await req.json();
-const PRODUCTION_URL = "https://ansut-lens.lovable.app";
-const redirectUrl = `${PRODUCTION_URL}/auth/reset-password`;
+// Apres :
+const hashedToken = linkData.properties.hashed_token;
+const resetLink = `${PRODUCTION_URL}/auth/reset-password?token_hash=${hashedToken}&type=recovery`;
 ```
 
-### 4. `supabase/functions/invite-user/index.ts`
+### 3. `supabase/functions/invite-user/index.ts`
 
-Ajouter une protection contre les URLs de preview dans le `redirectUrl` recu du frontend :
+Meme modification, en tenant compte du type de lien (invite ou recovery) :
 
 ```text
-// Avant:
-const finalRedirectUrl = redirectUrl || `${PRODUCTION_URL}/auth/reset-password`;
+// Avant :
+const inviteLink = linkData.properties.action_link;
 
-// Apres:
-const isPreviewUrl = redirectUrl && (redirectUrl.includes('id-preview--') || redirectUrl.includes('lovableproject.com'));
-const finalRedirectUrl = (!redirectUrl || isPreviewUrl) ? `${PRODUCTION_URL}/auth/reset-password` : redirectUrl;
+// Apres :
+const hashedToken = linkData.properties.hashed_token;
+const inviteLink = `${PRODUCTION_URL}/auth/reset-password?token_hash=${hashedToken}&type=${linkType}`;
 ```
 
-### 5. Renvoyer les invitations
+### 4. Verification de `ResetPasswordPage.tsx`
 
-Apres deploiement des corrections, renvoyer les invitations aux 4 utilisateurs (Bernard, Amonkou, Arnold, Sarrah) pour qu'ils recoivent des liens fonctionnels pointant vers `https://ansut-lens.lovable.app/auth/reset-password`.
-
-## Ordre d'execution
+La page gere deja le format `token_hash` + `type` en query params (Cas 2 dans le useEffect). Aucune modification necessaire cote frontend :
 
 ```text
-1. Modifier UsersPage.tsx -- utiliser l'URL publiee
-2. Modifier reset-user-password -- forcer URL de production
-3. Modifier generate-password-link -- forcer URL de production
-4. Modifier invite-user -- proteger contre les URLs de preview
-5. Deployer les fonctions backend
-6. Renvoyer les invitations aux 4 utilisateurs
+// Deja present :
+const tokenHash = queryParams.get('token_hash');
+if (tokenHash && (type === 'recovery' || type === 'invite')) {
+  await supabase.auth.verifyOtp({ token_hash: tokenHash, type: ... });
+}
 ```
+
+## Flux utilisateur apres correction
+
+```text
+1. L'utilisateur recoit l'email avec un lien direct
+2. Il clique --> arrive sur https://ansut-lens.lovable.app/auth/reset-password?token_hash=...&type=recovery
+3. La page verifie le token automatiquement (verifyOtp)
+4. Le formulaire de creation de mot de passe s'affiche
+5. Il definit son mot de passe et accede a l'application
+```
+
+Aucune page intermediaire, aucun formulaire d'email, aucune redirection parasite.
+
+## Apres deploiement
+
+Renvoyer les invitations aux 4 utilisateurs pour qu'ils recoivent les nouveaux liens directs.
 
