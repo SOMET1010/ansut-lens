@@ -1113,6 +1113,71 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_destinataires: {
+        Row: {
+          actif: boolean | null
+          created_at: string | null
+          id: string
+          nom: string
+          numero: string
+          role_filtre: string | null
+        }
+        Insert: {
+          actif?: boolean | null
+          created_at?: string | null
+          id?: string
+          nom: string
+          numero: string
+          role_filtre?: string | null
+        }
+        Update: {
+          actif?: boolean | null
+          created_at?: string | null
+          id?: string
+          nom?: string
+          numero?: string
+          role_filtre?: string | null
+        }
+        Relationships: []
+      }
+      sms_logs: {
+        Row: {
+          alerte_id: string | null
+          created_at: string | null
+          destinataire: string
+          erreur: string | null
+          id: string
+          message: string
+          statut: string | null
+        }
+        Insert: {
+          alerte_id?: string | null
+          created_at?: string | null
+          destinataire: string
+          erreur?: string | null
+          id?: string
+          message: string
+          statut?: string | null
+        }
+        Update: {
+          alerte_id?: string | null
+          created_at?: string | null
+          destinataire?: string
+          erreur?: string | null
+          id?: string
+          message?: string
+          statut?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_logs_alerte_id_fkey"
+            columns: ["alerte_id"]
+            isOneToOne: false
+            referencedRelation: "alertes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_api_config: {
         Row: {
           config: Json | null
