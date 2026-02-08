@@ -10,6 +10,7 @@ interface UserStatus {
   email: string;
   email_confirmed_at: string | null;
   last_sign_in_at: string | null;
+  last_active_at: string | null;
   created_at: string;
 }
 
@@ -79,6 +80,18 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Fetch last_active_at from profiles
+    const { data: profiles } = await adminClient
+      .from('profiles')
+      .select('id, last_active_at');
+
+    const profilesMap: Record<string, string | null> = {};
+    if (profiles) {
+      for (const p of profiles) {
+        profilesMap[p.id] = (p as any).last_active_at || null;
+      }
+    }
+
     // Build a map of user statuses
     const usersStatus: Record<string, UserStatus> = {};
     for (const u of users) {
@@ -87,6 +100,7 @@ Deno.serve(async (req) => {
         email: u.email || "",
         email_confirmed_at: u.email_confirmed_at || null,
         last_sign_in_at: u.last_sign_in_at || null,
+        last_active_at: profilesMap[u.id] || null,
         created_at: u.created_at,
       };
     }

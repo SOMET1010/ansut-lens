@@ -29,6 +29,7 @@ interface UserStatus {
   email: string;
   email_confirmed_at: string | null;
   last_sign_in_at: string | null;
+  last_active_at: string | null;
   created_at: string;
 }
 
@@ -80,10 +81,10 @@ const roleIcons: Record<AppRole, React.ReactNode> = {
 };
 
 // Fonction utilitaire pour vérifier si un utilisateur est en ligne (< 15 min)
-function isUserOnline(lastSignInAt: string | null): boolean {
-  if (!lastSignInAt) return false;
+function isUserOnline(lastActiveAt: string | null): boolean {
+  if (!lastActiveAt) return false;
   const now = new Date();
-  const lastActive = new Date(lastSignInAt);
+  const lastActive = new Date(lastActiveAt);
   const diffMs = now.getTime() - lastActive.getTime();
   return diffMs < 15 * 60 * 1000;
 }
@@ -399,7 +400,7 @@ export default function UsersPage() {
       } else if (usersStatus?.[user.id]?.email_confirmed_at) {
         active++;
         // Vérifier si en ligne (< 15 min)
-        if (isUserOnline(usersStatus[user.id]?.last_sign_in_at || null)) {
+        if (isUserOnline(usersStatus[user.id]?.last_active_at || null)) {
           online++;
         }
       } else {
@@ -749,7 +750,7 @@ export default function UsersPage() {
                   {filteredUsers.map((user) => {
                     const isCurrentUser = user.id === currentUser?.id;
                     const status = usersStatus?.[user.id];
-                    const isOnline = isUserOnline(status?.last_sign_in_at || null);
+                    const isOnline = isUserOnline(status?.last_active_at || null);
                     
                     return (
                       <TableRow key={user.id} className={user.disabled ? 'opacity-60' : ''}>
@@ -861,9 +862,9 @@ export default function UsersPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
-                          {status?.last_sign_in_at ? (
+                          {status?.last_active_at ? (
                             <span className={isOnline ? 'text-emerald-600 dark:text-emerald-400 font-medium' : ''}>
-                              {isOnline ? 'En ligne' : new Date(status.last_sign_in_at).toLocaleDateString('fr-FR', {
+                              {isOnline ? 'En ligne' : new Date(status.last_active_at).toLocaleDateString('fr-FR', {
                                 day: 'numeric',
                                 month: 'short',
                                 hour: '2-digit',

@@ -63,6 +63,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setTimeout(() => {
             fetchUserRole(session.user.id).then(setRole);
           }, 0);
+
+          // Track real activity (not recovery/invite implicit logins)
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            supabase
+              .from('profiles')
+              .update({ last_active_at: new Date().toISOString() } as any)
+              .eq('id', session.user.id)
+              .then(() => {});
+          }
         } else {
           setRole(null);
         }
