@@ -43,7 +43,6 @@ export default function ResetPasswordPage() {
   // Vérifier et échanger le token de récupération
   useEffect(() => {
     const handleRecoveryToken = async () => {
-      // Vérifier si on a des paramètres de récupération dans l'URL (hash ou query params)
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const queryParams = new URLSearchParams(window.location.search);
       
@@ -53,7 +52,7 @@ export default function ResetPasswordPage() {
       const tokenHash = queryParams.get('token_hash');
       
       // Cas 1: Token dans l'URL (format hash avec access_token)
-      if (accessToken && refreshToken && type === 'recovery') {
+      if (accessToken && refreshToken && (type === 'recovery' || type === 'invite')) {
         const { error } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken,
@@ -65,15 +64,16 @@ export default function ResetPasswordPage() {
           navigate('/auth');
           return;
         }
-        // Session établie, l'utilisateur peut changer son mot de passe
+        // Nettoyer le hash de l'URL
+        window.history.replaceState(null, '', window.location.pathname);
         return;
       }
       
       // Cas 2: Token hash dans l'URL (format email link avec token_hash)
-      if (tokenHash && type === 'recovery') {
+      if (tokenHash && (type === 'recovery' || type === 'invite')) {
         const { error } = await supabase.auth.verifyOtp({
           token_hash: tokenHash,
-          type: 'recovery',
+          type: type === 'invite' ? 'invite' : 'recovery',
         });
         
         if (error) {
@@ -82,16 +82,20 @@ export default function ResetPasswordPage() {
           navigate('/auth');
           return;
         }
-        // Session établie après vérification OTP
+        window.history.replaceState(null, '', window.location.pathname);
         return;
       }
       
-      // Cas 3: Vérifier si une session existe déjà
+      // Cas 3: Vérifier si une session existe déjà (redirigé par RecoveryTokenHandler via PASSWORD_RECOVERY event)
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error('Lien de réinitialisation invalide ou expiré');
-        navigate('/auth');
+      if (session) {
+        // Session déjà établie par Supabase auto-detection, l'utilisateur peut changer son mot de passe
+        console.log('[ResetPasswordPage] Session existante détectée, prêt pour reset');
+        return;
       }
+      
+      toast.error('Lien de réinitialisation invalide ou expiré');
+      navigate('/auth');
     };
     
     handleRecoveryToken();
