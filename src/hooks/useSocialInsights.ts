@@ -112,6 +112,30 @@ export function useCollectSocial() {
   });
 }
 
+export function useCollectSocialApi() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('collecte-social-api');
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['social-insights'] });
+      queryClient.invalidateQueries({ queryKey: ['social-stats'] });
+      toast.success('Collecte API terminée', {
+        description: `${data.total_collected} insights collectés via APIs officielles`,
+      });
+    },
+    onError: (error) => {
+      toast.error('Erreur collecte API', {
+        description: error instanceof Error ? error.message : 'Échec de la collecte API',
+      });
+    },
+  });
+}
+
 export function useCreateSocialInsight() {
   const queryClient = useQueryClient();
 
