@@ -1,44 +1,78 @@
 
 
-# Ajouter un selecteur de role dans la carte utilisateur
+# Intégration des APIs LinkedIn et Twitter/X
 
-## Constat
+## Contexte
 
-Toute la logique backend et frontend est deja en place :
-- Edge function `update-user-role` : operationnelle
-- Mutation `updateRoleMutation` dans `UsersPage.tsx` : operationnelle  
-- Prop `onRoleChange` sur `UserCard` : declaree mais jamais utilisee dans le rendu
+Les clés API LinkedIn et Twitter/X sont fournies. Facebook est en attente de verification. La table `social_api_config` existe deja avec les 3 plateformes desactivees. La fonction `collecte-social` actuelle ne fait que du scraping web via Firecrawl.
 
-Il manque uniquement **l'interface utilisateur** pour declencher le changement de role.
+## Etape 1 : Stocker les secrets
 
-## Solution
+5 secrets a ajouter de maniere securisee :
 
-Ajouter des options de changement de role dans le menu contextuel (3 points) de chaque `UserCard`.
+| Secret | Valeur |
+|--------|--------|
+| `LINKEDIN_CLIENT_ID` | 78og1qsnauynph |
+| `LINKEDIN_CLIENT_SECRET` | WPL_AP1.VFoCRxyFeH8pF8D2.1LAGjA== |
+| `TWITTER_CONSUMER_KEY` | wYeyVZGb1LBaC5jKMYEUMaBL8 |
+| `TWITTER_CONSUMER_SECRET` | QhIh8EaVW83RCeNe64CsnRE66wAW59ff9BCiMZkQIuUpGyvtkW |
+| `TWITTER_BEARER_TOKEN` | Le bearer token fourni |
 
-## Fichier modifie
+## Etape 2 : Creer la fonction `collecte-social-api`
 
-| Fichier | Modification |
-|---------|-------------|
-| `src/components/admin/UserCard.tsx` | Ajouter un sous-menu "Changer le role" dans le `DropdownMenu` avec les 4 roles disponibles |
-| `src/pages/admin/UsersPage.tsx` | Passer la prop `onRoleChange` au composant `UserCard` (vue cartes et vue table) |
+Nouvelle edge function dediee aux APIs officielles (separee de `collecte-social` qui reste pour le scraping web).
 
-## Detail technique
+### Twitter/X (API v2)
 
-### UserCard.tsx
+- Endpoint : `https://api.x.com/2/tweets/search/recent`
+- Authentification : Bearer Token
+- Recherche par mots-cles de veille (table `mots_cles_veille`)
+- Extraction : tweets, auteurs, metriques d'engagement, hashtags
+- Limite : 10 000 tweets/mois (plan Basic)
 
-Dans le `DropdownMenuContent`, ajouter avant le separateur "Desactiver/Reactiver" :
+### LinkedIn (Marketing API)
 
+- Endpoint : `https://api.linkedin.com/v2/`
+- Authentification : OAuth 2.0 Client Credentials (client_id + client_secret)
+- Recherche de posts d'entreprises/pages suivies
+- Note : L'API LinkedIn est plus restrictive, limitee aux pages d'organisation auxquelles l'app a acces
+
+### Logique commune
+
+- Consulter `social_api_config` pour verifier quelles plateformes sont actives
+- Verifier les quotas avant chaque appel
+- Inserer les resultats dans `social_insights` avec `is_official_api = true`
+- Mettre a jour `quota_used` et `last_sync` dans `social_api_config`
+- Generer des alertes pour les insights critiques (sentiment < -0.3)
+
+## Etape 3 : Activer les plateformes
+
+Migration SQL pour activer Twitter et LinkedIn dans `social_api_config` :
+
+```sql
+UPDATE social_api_config SET enabled = true WHERE plateforme IN ('twitter', 'linkedin');
 ```
-Changer le rôle →
-  ├─ Administrateur  (masqué si déjà admin)
-  ├─ Analyste        (masqué si déjà user)
-  ├─ Décideur        (masqué si déjà council_user)
-  └─ Observateur     (masqué si déjà guest)
-```
 
-Chaque option appelle `onRoleChange(user.id, newRole)`. Le role actuel est indique par une coche et n'est pas cliquable.
+Facebook restera desactive jusqu'a validation de la verification.
 
-### UsersPage.tsx
+## Etape 4 : Interface utilisateur
 
-Passer `onRoleChange={handleRoleChange}` au composant `UserCard` dans la vue cartes. La fonction `handleRoleChange` (ligne 456) existe deja et appelle la mutation.
+Le composant `SocialPulseWidget` et le hook `useSocialInsights` supportent deja les plateformes `twitter`, `linkedin`, `facebook`. Aucune modification UI majeure necessaire, les nouveaux insights apparaitront automatiquement dans le radar.
 
+Ajout possible : un bouton "Collecter APIs sociales" a cote du bouton existant "Collecter" pour lancer la fonction `collecte-social-api`.
+
+## Resume des fichiers
+
+| Fichier | Action |
+|---------|--------|
+| Secrets Lovable Cloud | Ajout de 5 secrets API |
+| `supabase/functions/collecte-social-api/index.ts` | Nouveau - collecte via APIs officielles Twitter et LinkedIn |
+| Migration SQL | Activer twitter et linkedin dans `social_api_config` |
+| `src/hooks/useSocialInsights.ts` | Ajouter mutation pour appeler `collecte-social-api` |
+| `src/components/radar/SocialPulseWidget.tsx` | Ajouter bouton de collecte API (optionnel) |
+
+## Points d'attention
+
+- Le Bearer Token Twitter doit etre decode (il contient des `%2F` et `%3D` qui sont des caracteres encodes URL)
+- L'API LinkedIn en mode Client Credentials a un acces limite : elle permet principalement de consulter les pages d'organisation, pas de faire des recherches libres
+- Les quotas sont geres automatiquement pour eviter les depassements
