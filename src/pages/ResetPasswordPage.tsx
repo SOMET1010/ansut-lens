@@ -181,6 +181,7 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [tokenError, setTokenError] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
@@ -195,60 +196,84 @@ export default function ResetPasswordPage() {
 
   const watchedPassword = form.watch('password');
 
-  // Vérifier et échanger le token de récupération
+  // ── SINGLE token handler — the only place tokens are processed ──
   useEffect(() => {
-    const handleRecoveryToken = async () => {
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const queryParams = new URLSearchParams(window.location.search);
-      
+    let cancelled = false;
+
+    const processToken = async () => {
+      const hash = window.location.hash;
+      const search = window.location.search;
+      const hashParams = new URLSearchParams(hash.substring(1));
+      const queryParams = new URLSearchParams(search);
+
       const accessToken = hashParams.get('access_token') || queryParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token');
       const type = hashParams.get('type') || queryParams.get('type');
       const tokenHash = queryParams.get('token_hash');
-      
-      // Cas 1: Token dans l'URL (format hash avec access_token)
+
+      // Case 1: Hash-based tokens (access_token + refresh_token)
       if (accessToken && refreshToken && (type === 'recovery' || type === 'invite')) {
+        console.log('[ResetPassword] Processing hash token, type:', type);
         const { error } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken,
         });
-        
+
+        if (cancelled) return;
+
         if (error) {
-          console.error('Erreur session:', error);
+          console.error('[ResetPassword] Session error:', error.message);
           setTokenError(true);
           return;
         }
+
+        // Clean URL
         window.history.replaceState(null, '', window.location.pathname);
+        setIsReady(true);
         return;
       }
-      
-      // Cas 2: Token hash dans l'URL (format email link avec token_hash)
+
+      // Case 2: OTP token_hash (email link format)
       if (tokenHash && (type === 'recovery' || type === 'invite')) {
+        console.log('[ResetPassword] Processing OTP token_hash, type:', type);
         const { error } = await supabase.auth.verifyOtp({
           token_hash: tokenHash,
           type: type === 'invite' ? 'invite' : 'recovery',
         });
-        
+
+        if (cancelled) return;
+
         if (error) {
-          console.error('Erreur vérification OTP:', error);
+          console.error('[ResetPassword] OTP error:', error.message);
           setTokenError(true);
           return;
         }
+
         window.history.replaceState(null, '', window.location.pathname);
+        setIsReady(true);
         return;
       }
-      
-      // Cas 3: Vérifier si une session existe déjà
+
+      // Case 3: No token in URL — check if there's already a valid session
+      // (e.g. Supabase auto-processed the token before our code ran)
       const { data: { session } } = await supabase.auth.getSession();
+
+      if (cancelled) return;
+
       if (session) {
-        console.log('[ResetPasswordPage] Session existante détectée, prêt pour reset');
+        console.log('[ResetPassword] Existing session found, ready');
+        setIsReady(true);
         return;
       }
-      
+
+      // No token, no session → error
+      console.warn('[ResetPassword] No token and no session');
       setTokenError(true);
     };
-    
-    handleRecoveryToken();
+
+    processToken();
+
+    return () => { cancelled = true; };
   }, []);
 
   const onSubmit = async (data: ResetPasswordFormData) => {
@@ -261,34 +286,34 @@ export default function ResetPasswordPage() {
 
       if (error) {
         toast.error(error.message || 'Erreur lors de la réinitialisation');
-      } else {
-        // Mettre à jour password_set_at dans profiles
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const now = new Date().toISOString();
-          await supabase
-            .from('profiles')
-            .update({ 
-              password_set_at: now, 
-              last_active_at: now 
-            } as any)
-            .eq('id', user.id);
-
-          // Logger le succès dans admin_audit_logs
-          await supabase.from('admin_audit_logs').insert({
-            admin_id: user.id,
-            target_user_id: user.id,
-            action: 'password_reset_completed',
-            details: {
-              method: 'recovery_link',
-              timestamp: now
-            }
-          });
-        }
-        
-        setSuccess(true);
-        toast.success('Mot de passe défini avec succès !');
+        return;
       }
+
+      // Update profile tracking
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const now = new Date().toISOString();
+        await supabase
+          .from('profiles')
+          .update({
+            password_set_at: now,
+            last_active_at: now,
+          } as any)
+          .eq('id', user.id);
+
+        await supabase.from('admin_audit_logs').insert({
+          admin_id: user.id,
+          target_user_id: user.id,
+          action: 'password_reset_completed',
+          details: {
+            method: 'recovery_link',
+            timestamp: now,
+          },
+        });
+      }
+
+      setSuccess(true);
+      toast.success('Mot de passe défini avec succès !');
     } catch (err) {
       toast.error('Une erreur est survenue');
     } finally {
@@ -299,6 +324,18 @@ export default function ResetPasswordPage() {
   // ── Token error state ──
   if (tokenError) {
     return <TokenErrorView />;
+  }
+
+  // ── Loading state while processing token ──
+  if (!isReady && !tokenError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Vérification du lien...</p>
+        </div>
+      </div>
+    );
   }
 
   // ── Success state ──
@@ -321,8 +358,8 @@ export default function ResetPasswordPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              className="w-full gap-2" 
+            <Button
+              className="w-full gap-2"
               onClick={() => navigate('/radar')}
             >
               Accéder à l'application

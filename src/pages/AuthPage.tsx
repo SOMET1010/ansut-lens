@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import logoAnsut from '@/assets/logo-ansut.jpg';
 
-// Schéma de validation pour la connexion
+// ── Schemas ──────────────────────────────────────────
 const loginSchema = z.object({
   email: z.string()
     .trim()
@@ -25,7 +25,6 @@ const loginSchema = z.object({
     .min(6, "Le mot de passe doit contenir au moins 6 caractères"),
 });
 
-// Schéma pour la réinitialisation
 const resetSchema = z.object({
   email: z.string()
     .trim()
@@ -36,7 +35,6 @@ const resetSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 type ResetFormData = z.infer<typeof resetSchema>;
-
 type AuthMode = 'login' | 'forgot-password';
 
 export default function AuthPage() {
@@ -50,29 +48,23 @@ export default function AuthPage() {
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-    mode: 'onBlur'
+    defaultValues: { email: '', password: '' },
+    mode: 'onBlur',
   });
 
   const resetForm = useForm<ResetFormData>({
     resolver: zodResolver(resetSchema),
-    defaultValues: {
-      email: '',
-    },
-    mode: 'onBlur'
+    defaultValues: { email: '' },
+    mode: 'onBlur',
   });
 
-  // Rediriger si déjà connecté
+  // Redirect if already logged in
   useEffect(() => {
     if (user && !isLoading) {
       navigate(from, { replace: true });
     }
   }, [user, isLoading, from, navigate]);
 
-  // Réinitialiser le formulaire au changement de mode
   const handleModeChange = (newMode: AuthMode) => {
     form.reset();
     resetForm.reset();
@@ -81,7 +73,6 @@ export default function AuthPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     setLoading(true);
-
     try {
       const { error } = await signIn(data.email, data.password);
       if (error) {
@@ -90,7 +81,7 @@ export default function AuthPage() {
         toast.success('Connexion réussie');
         navigate(from, { replace: true });
       }
-    } catch (err) {
+    } catch {
       toast.error('Une erreur est survenue');
     } finally {
       setLoading(false);
@@ -99,7 +90,6 @@ export default function AuthPage() {
 
   const onResetSubmit = async (data: ResetFormData) => {
     setLoading(true);
-
     try {
       const { data: result, error: fnError } = await supabase.functions.invoke('reset-user-password', {
         body: { email: data.email },
@@ -107,21 +97,21 @@ export default function AuthPage() {
 
       if (fnError) {
         console.error('Reset password error:', fnError);
-        toast.error('Erreur lors de l\'envoi de l\'email');
+        toast.error("Erreur lors de l'envoi de l'email");
       } else if (result?.error) {
         toast.error(result.error);
       } else {
         toast.success(result?.message || 'Un email de réinitialisation a été envoyé');
         handleModeChange('login');
       }
-    } catch (err) {
+    } catch {
       toast.error('Une erreur est survenue');
     } finally {
       setLoading(false);
     }
   };
 
-  // Vue pour la réinitialisation du mot de passe
+  // ── Forgot password view ──
   if (mode === 'forgot-password') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4">
@@ -130,12 +120,8 @@ export default function AuthPage() {
             <div className="flex justify-center mb-4">
               <img src={logoAnsut} alt="ANSUT" className="w-20 h-20 rounded-xl object-contain bg-white p-2" />
             </div>
-            <CardTitle className="text-2xl font-bold">
-              Mot de passe oublié
-            </CardTitle>
-            <CardDescription>
-              Entrez votre email pour recevoir un lien de réinitialisation
-            </CardDescription>
+            <CardTitle className="text-2xl font-bold">Mot de passe oublié</CardTitle>
+            <CardDescription>Entrez votre email pour recevoir un lien de réinitialisation</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...resetForm}>
@@ -175,6 +161,7 @@ export default function AuthPage() {
     );
   }
 
+  // ── Login view ──
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4">
       <Card className="w-full max-w-md glass">
@@ -185,9 +172,7 @@ export default function AuthPage() {
           <CardTitle className="text-2xl font-bold">
             <span className="text-primary">ANSUT</span> RADAR
           </CardTitle>
-          <CardDescription>
-            Plateforme de veille stratégique
-          </CardDescription>
+          <CardDescription>Plateforme de veille stratégique</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
