@@ -99,9 +99,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (mounted) setRole(r);
           });
 
-          // Track activity on real logins only
+          // Track activity only for real logins (not recovery/invite sessions)
           if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            trackActivity(newSession.user.id);
+            // Check if user has set their password before tracking
+            supabase
+              .from('profiles')
+              .select('password_set_at')
+              .eq('id', newSession.user.id)
+              .single()
+              .then(({ data }) => {
+                if (data?.password_set_at) {
+                  trackActivity(newSession.user.id);
+                }
+              });
           }
         } else {
           setRole(null);
