@@ -1,89 +1,65 @@
 
-# Suivi des Invitations en Temps Reel
 
-## Ce qui sera ajoute
+# Correction du flux de reinitialisation de mot de passe
 
-Un nouveau panneau "Suivi des invitations" sur la page de gestion des utilisateurs, affichant une timeline visuelle pour chaque utilisateur invite. L'administrateur pourra voir d'un coup d'oeil ou en est chaque personne dans le processus d'activation.
+## Diagnostic
 
-## Fonctionnement
+J'ai analyse les logs d'authentification en detail. Le probleme vient de **deux causes combinees** :
 
-Chaque utilisateur invite aura une ligne avec 4 etapes visuelles :
+### Cause 1 : Le site publie utilise l'ancien code
+
+Les liens de reinitialisation pointent vers `https://ansut-lens.lovable.app` (le site publie). Or, toutes les corrections du systeme d'authentification (suppression des conditions de course, reconstruction de la page de reinitialisation, etc.) sont uniquement dans l'environnement **preview**. Le site publie utilise encore l'ancien code instable.
+
+Les logs d'authentification confirment que toutes les requetes echouees proviennent de `https://ansut-lens.lovable.app` :
 
 ```text
-[1. Invite]  -->  [2. Lien clique]  -->  [3. MDP defini]  -->  [4. Premiere connexion]
-   Envoye          Email confirme        password_set_at        last_active_at
+referer: https://ansut-lens.lovable.app/auth/reset-password
+erreur: "One-time token not found" / "otp_expired"
 ```
 
-- Etape 1 (Invite) : date de la premiere invitation (depuis `admin_audit_logs`)
-- Etape 2 (Lien clique) : l'email est confirme (`email_confirmed_at` non null)
-- Etape 3 (MDP defini) : le mot de passe a ete cree (`password_set_at` dans `profiles`)
-- Etape 4 (Premiere connexion) : l'utilisateur s'est connecte (`last_active_at` dans `profiles`)
+### Cause 2 : Pas de mecanisme de repli en cas de consommation du jeton
 
-Le panneau sera affiche sous les KPIs existants, dans une carte pliable (Collapsible) pour ne pas encombrer l'interface.
+Les logs montrent que le jeton OTP est parfois consomme par une requete parallele (double-clic, onglet duplique, scanner de securite email Microsoft) avant que l'utilisateur ne voie le formulaire. La page actuelle ne verifie pas s'il existe deja une session valide quand `verifyOtp` echoue.
 
-## Ce qui sera cree/modifie
+```text
+09:20:03 - POST /verify - 200 (jeton consomme par IP 48.209.x.x)
+09:21:09 - POST /verify - 403 "otp_expired" (tentative utilisateur)
+```
 
-| Fichier | Action |
-|---------|--------|
-| `src/components/admin/InvitationTracker.tsx` | **Nouveau** -- Composant du panneau de suivi |
-| `src/pages/admin/UsersPage.tsx` | **Modifie** -- Integrer le panneau sous les KPIs |
+## Ce qui sera modifie
 
-Aucune modification de base de donnees ni de backend necessaire : toutes les donnees existent deja.
+| Fichier | Action | Objectif |
+|---------|--------|----------|
+| `src/pages/ResetPasswordPage.tsx` | **Modifie** | Ajouter un mecanisme de repli : si verifyOtp echoue, verifier s'il existe deja une session valide avant d'afficher l'erreur |
+
+Apres modification, il faudra **publier l'application** pour que le site de production utilise le nouveau code.
 
 ## Detail technique
 
-### 1. Nouveau composant `InvitationTracker.tsx`
+### Amelioration de `processToken()` dans `ResetPasswordPage.tsx`
 
-Ce composant recevra en props :
-- La liste des utilisateurs avec profils
-- Le statut de chaque utilisateur (depuis `list-users-status`)
-- Les logs d'audit filtres sur les actions d'invitation
+Le changement est cible sur la gestion d'erreur de `verifyOtp`. Actuellement, si le jeton est invalide, la page affiche directement "Lien expire ou invalide". La correction ajoute une verification : si une session existe malgre l'echec du jeton (parce qu'un processus parallele l'a deja consomme avec succes), le formulaire de mot de passe s'affiche quand meme.
 
-Il affichera :
-- Un titre avec un compteur (ex: "3 invitations en cours")
-- Pour chaque utilisateur non encore actif, une ligne avec :
-  - Avatar et nom
-  - Un stepper horizontal a 4 etapes avec indicateurs colores (vert = fait, ambre = en cours, gris = a venir)
-  - La date de la derniere action (derniere invitation envoyee)
-  - Un bouton "Renvoyer" si l'utilisateur est bloque a une etape
-- Le tout enveloppe dans un Collapsible ouvert par defaut s'il y a des invitations en cours
-
-Le composant utilisera une requete `useQuery` vers `admin_audit_logs` pour recuperer l'historique des invitations :
-```text
-SELECT target_user_id, action, created_at, details
-FROM admin_audit_logs
-WHERE action IN ('user_invited', 'user_invitation_resent')
-ORDER BY created_at DESC
-```
-
-### 2. Modifications de `UsersPage.tsx`
-
-- Importer le nouveau composant `InvitationTracker`
-- L'inserer entre les KPIs (`SecurityKpiCards`) et la barre de filtres
-- Passer les donnees necessaires : `users`, `usersStatus`, et les callbacks `onResendInvite`
-
-### Structure visuelle du panneau
-
-Le panneau sera structure ainsi :
+Logique actuelle (simplifiee) :
 
 ```text
-+----------------------------------------------------------+
-| > Suivi des invitations (3 en cours)                     |
-+----------------------------------------------------------+
-| Bernard AKOUN       [*]---[*]---[ ]---[ ]   il y a 4h   |
-|                     Invite Lien  MDP  Acces  [Renvoyer]  |
-|                                                          |
-| SARRAH COULIBALY    [*]---[ ]---[ ]---[ ]   il y a 3h   |
-|                     Invite Lien  MDP  Acces  [Renvoyer]  |
-|                                                          |
-| TOUAN ARNOLD        [*]---[ ]---[ ]---[ ]   il y a 4h   |
-|                     Invite Lien  MDP  Acces  [Renvoyer]  |
-+----------------------------------------------------------+
+verifyOtp(token_hash) echoue → afficher erreur
 ```
 
-Legende des indicateurs :
-- [*] vert = etape completee
-- [*] ambre/pulse = etape en cours (derniere atteinte)
-- [ ] gris = etape pas encore atteinte
+Logique corrigee :
 
-Les utilisateurs ayant complete toutes les etapes (actifs) ne seront pas affiches dans ce panneau, car le suivi n'est pertinent que pour les invitations en cours.
+```text
+verifyOtp(token_hash) echoue → verifier session existante
+  → session trouvee → afficher formulaire mot de passe
+  → pas de session → afficher erreur avec formulaire de renvoi
+```
+
+Cela couvre les scenarios suivants :
+- Double-clic sur le lien (le premier onglet consomme le jeton, le deuxieme trouve la session)
+- Scanner de securite email (Microsoft Safe Links) qui consomme le jeton en arriere-plan
+- Rechargement de la page apres une verification reussie
+
+### Etape suivante obligatoire : publication
+
+Apres la correction du code, l'application devra etre **publiee** pour que le site `ansut-lens.lovable.app` utilise le nouveau systeme d'authentification au complet (la reconstruction de AuthContext, la suppression de RecoveryTokenHandler, et cette nouvelle amelioration).
+
