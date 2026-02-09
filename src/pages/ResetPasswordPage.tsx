@@ -244,7 +244,21 @@ export default function ResetPasswordPage() {
         if (cancelled) return;
 
         if (error) {
-          console.error('[ResetPassword] OTP error:', error.message);
+          console.warn('[ResetPassword] OTP error:', error.message, '— checking for existing session (token may have been consumed by scanner/duplicate request)');
+          
+          // Fallback: check if a parallel process already consumed the token successfully
+          const { data: { session: fallbackSession } } = await supabase.auth.getSession();
+          
+          if (cancelled) return;
+          
+          if (fallbackSession) {
+            console.log('[ResetPassword] Fallback session found despite OTP error — proceeding');
+            window.history.replaceState(null, '', window.location.pathname);
+            setIsReady(true);
+            return;
+          }
+          
+          console.error('[ResetPassword] No fallback session — token is truly expired/invalid');
           setTokenError(true);
           return;
         }
