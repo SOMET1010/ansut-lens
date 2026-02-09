@@ -1,67 +1,44 @@
 
 
-# Corriger le faux positif "Connecté" pour AMONKOU YVES
+# Ajouter un selecteur de role dans la carte utilisateur
 
-## Probleme identifie
+## Constat
 
-Deux problemes distincts causent la confusion dans le tableau de bord admin :
+Toute la logique backend et frontend est deja en place :
+- Edge function `update-user-role` : operationnelle
+- Mutation `updateRoleMutation` dans `UsersPage.tsx` : operationnelle  
+- Prop `onRoleChange` sur `UserCard` : declaree mais jamais utilisee dans le rendu
 
-### 1. `last_active_at` pollue par les sessions recovery
+Il manque uniquement **l'interface utilisateur** pour declencher le changement de role.
 
-Dans `AuthContext.tsx`, la fonction `trackActivity()` est appelee sur les evenements `SIGNED_IN` et `TOKEN_REFRESHED`. Or, quand un lien de reinitialisation est ouvert (meme par un scanner email), un evenement `SIGNED_IN` est emis, ce qui met a jour `last_active_at` sans que l'utilisateur ait reellement utilise l'application.
+## Solution
 
-**Resultat actuel** : `last_active_at = 2026-02-09 12:34` alors que `password_set_at = null`. L'utilisateur n'a jamais reellement utilise la plateforme.
+Ajouter des options de changement de role dans le menu contextuel (3 points) de chaque `UserCard`.
 
-### 2. InvitationTracker affiche "Premiere connexion" comme validee
-
-Le tracker utilise `!!status.last_active_at` pour determiner si la premiere connexion a eu lieu (ligne 227). Comme `last_active_at` a ete pollue, l'etape apparait comme completee alors qu'elle ne l'est pas.
-
-## Corrections prevues
-
-### Fichier 1 : `src/contexts/AuthContext.tsx`
-
-Exclure les sessions recovery du tracking d'activite. Ne tracker `last_active_at` que pour les connexions reelles (avec mot de passe ou token refresh d'une session deja authentifiee).
-
-```
-// Avant
-if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-  trackActivity(newSession.user.id);
-}
-
-// Apres
-if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-  // Ne pas tracker les sessions recovery (scanner email, reinitialisation)
-  const isRecoverySession = newSession?.user?.aal === 'aal1' 
-    && newSession?.user?.app_metadata?.provider === 'email'
-    && !newSession?.user?.user_metadata?.password_set;
-  // Alternative plus simple : verifier le profil
-  trackActivity(newSession.user.id);
-}
-```
-
-Approche retenue (plus fiable) : verifier dans le profil si `password_set_at` est defini avant de tracker.
-
-### Fichier 2 : `src/components/admin/InvitationTracker.tsx`
-
-Conditionner l'etape "Premiere connexion" a `password_set_at` ET `last_active_at` pour eviter les faux positifs.
-
-```
-// Avant
-firstLogin: !!status.last_active_at,
-
-// Apres
-firstLogin: !!status.password_set_at && !!status.last_active_at,
-```
-
-### Action donnees : Nettoyer `last_active_at` pour AMONKOU YVES
-
-Remettre `last_active_at` a `null` via une migration SQL pour refleter la realite : cet utilisateur n'a jamais eu de session reelle.
-
-## Resume des fichiers modifies
+## Fichier modifie
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/contexts/AuthContext.tsx` | Ne pas appeler `trackActivity` pour les sessions de type recovery (verifier `password_set_at` dans le profil) |
-| `src/components/admin/InvitationTracker.tsx` | Conditionner `firstLogin` a `password_set_at && last_active_at` |
-| Migration SQL | Remettre `last_active_at = null` pour AMONKOU YVES |
+| `src/components/admin/UserCard.tsx` | Ajouter un sous-menu "Changer le role" dans le `DropdownMenu` avec les 4 roles disponibles |
+| `src/pages/admin/UsersPage.tsx` | Passer la prop `onRoleChange` au composant `UserCard` (vue cartes et vue table) |
+
+## Detail technique
+
+### UserCard.tsx
+
+Dans le `DropdownMenuContent`, ajouter avant le separateur "Desactiver/Reactiver" :
+
+```
+Changer le rôle →
+  ├─ Administrateur  (masqué si déjà admin)
+  ├─ Analyste        (masqué si déjà user)
+  ├─ Décideur        (masqué si déjà council_user)
+  └─ Observateur     (masqué si déjà guest)
+```
+
+Chaque option appelle `onRoleChange(user.id, newRole)`. Le role actuel est indique par une coche et n'est pas cliquable.
+
+### UsersPage.tsx
+
+Passer `onRoleChange={handleRoleChange}` au composant `UserCard` dans la vue cartes. La fonction `handleRoleChange` (ligne 456) existe deja et appelle la mutation.
 
