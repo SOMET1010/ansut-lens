@@ -1,21 +1,38 @@
 
 
-# Ajout d'un cron job pour la collecte sociale API
+# Augmenter la frequence de collecte sociale API
 
-## Objectif
+## Situation actuelle
 
-Programmer l'execution automatique de la fonction `collecte-social-api` toutes les heures via pg_cron.
+Le cron job `collecte-social-api-hourly` est configure pour s'executer **toutes les heures** (pas une fois par jour). Cependant, pour capter les informations en temps reel sur les reseaux sociaux, une frequence plus elevee est souhaitable.
 
-## Implementation
+## Contraintes a prendre en compte
 
-Une seule etape : executer une requete SQL pour creer le cron job dans pg_cron. Les extensions `pg_cron` et `pg_net` sont deja actives (d'autres cron jobs existent deja dans le projet).
+- **Quotas API Twitter** : Le plan Basic offre 10 000 tweets/mois. A raison de 20 tweets par requete :
+  - Toutes les heures = ~14 400 requetes/mois (depasse le quota)
+  - Toutes les 15 min = ~57 600 requetes/mois (largement hors quota)
+  - Toutes les 30 min = ~28 800 requetes/mois (hors quota aussi)
+- **Le systeme de quota** est deja integre dans la fonction : si le quota est atteint, la collecte s'arrete automatiquement
+
+## Proposition
+
+Passer la frequence de **toutes les heures** a **toutes les 15 minutes**, tout en gardant le systeme de quota existant comme garde-fou. Le code verifie deja le quota avant chaque appel API et s'arrete quand la limite est atteinte.
+
+## Implementation technique
+
+1. Supprimer l'ancien cron job
+2. Creer un nouveau cron job avec la frequence `*/15 * * * *` (toutes les 15 minutes)
 
 ### SQL a executer
 
 ```sql
+-- Supprimer l'ancien job
+SELECT cron.unschedule('collecte-social-api-hourly');
+
+-- Creer le nouveau job toutes les 15 minutes
 SELECT cron.schedule(
-  'collecte-social-api-hourly',
-  '0 * * * *',
+  'collecte-social-api-frequent',
+  '*/15 * * * *',
   $$
   SELECT net.http_post(
     url := 'https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1/collecte-social-api',
@@ -26,13 +43,13 @@ SELECT cron.schedule(
 );
 ```
 
-Ce job :
-- S'execute a la minute 0 de chaque heure (toutes les heures)
-- Appelle la fonction `collecte-social-api` via HTTP POST
-- Utilise la cle anon pour l'authentification
-- Sera visible et geeable depuis la page Admin > Cron Jobs
-
 ## Fichiers concernes
 
-Aucune modification de code n'est necessaire. Seule une migration SQL sera executee.
+Aucune modification de code. Seule une migration SQL pour remplacer le cron job.
+
+## Securite quota
+
+Le code existant dans `collecte-social-api` verifie deja les quotas :
+- Si `quota_used >= quota_limit`, la plateforme est ignoree
+- Cela protege contre la surconsommation meme avec une frequence elevee
 
