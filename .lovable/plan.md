@@ -1,69 +1,67 @@
 
-# Correction definitive : bouton de confirmation anti-scanner
 
-## Le vrai probleme
+# Corriger le faux positif "Connecté" pour AMONKOU YVES
 
-Le mecanisme de fallback (`getSession()` apres echec de `verifyOtp`) ne resout pas le probleme des scanners email car :
+## Probleme identifie
 
-1. Le scanner Microsoft charge la page `reset-password?token_hash=xxx`
-2. Le JavaScript s'execute automatiquement et appelle `verifyOtp()`
-3. Le jeton est consomme, une session est creee **dans le contexte du scanner**
-4. Quand l'utilisateur ouvre le lien, `verifyOtp()` echoue ET `getSession()` retourne `null` (la session est dans le localStorage du scanner, pas du navigateur de l'utilisateur)
+Deux problemes distincts causent la confusion dans le tableau de bord admin :
 
-## Solution
+### 1. `last_active_at` pollue par les sessions recovery
 
-Ajouter une **etape de confirmation manuelle** avant d'appeler `verifyOtp()`. Les scanners email chargent les pages mais ne cliquent jamais sur les boutons. C'est la methode standard recommandee pour contrer ce probleme.
+Dans `AuthContext.tsx`, la fonction `trackActivity()` est appelee sur les evenements `SIGNED_IN` et `TOKEN_REFRESHED`. Or, quand un lien de reinitialisation est ouvert (meme par un scanner email), un evenement `SIGNED_IN` est emis, ce qui met a jour `last_active_at` sans que l'utilisateur ait reellement utilise l'application.
 
-### Flux actuel
+**Resultat actuel** : `last_active_at = 2026-02-09 12:34` alors que `password_set_at = null`. L'utilisateur n'a jamais reellement utilise la plateforme.
 
-```text
-Page chargee → verifyOtp() automatique → echec (scanner a deja consomme le jeton) → erreur
+### 2. InvitationTracker affiche "Premiere connexion" comme validee
+
+Le tracker utilise `!!status.last_active_at` pour determiner si la premiere connexion a eu lieu (ligne 227). Comme `last_active_at` a ete pollue, l'etape apparait comme completee alors qu'elle ne l'est pas.
+
+## Corrections prevues
+
+### Fichier 1 : `src/contexts/AuthContext.tsx`
+
+Exclure les sessions recovery du tracking d'activite. Ne tracker `last_active_at` que pour les connexions reelles (avec mot de passe ou token refresh d'une session deja authentifiee).
+
+```
+// Avant
+if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+  trackActivity(newSession.user.id);
+}
+
+// Apres
+if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+  // Ne pas tracker les sessions recovery (scanner email, reinitialisation)
+  const isRecoverySession = newSession?.user?.aal === 'aal1' 
+    && newSession?.user?.app_metadata?.provider === 'email'
+    && !newSession?.user?.user_metadata?.password_set;
+  // Alternative plus simple : verifier le profil
+  trackActivity(newSession.user.id);
+}
 ```
 
-### Nouveau flux
+Approche retenue (plus fiable) : verifier dans le profil si `password_set_at` est defini avant de tracker.
 
-```text
-Page chargee → detection du token_hash dans l'URL → affichage d'un ecran "Cliquez pour continuer"
-→ utilisateur clique → verifyOtp() → succes → formulaire de mot de passe
+### Fichier 2 : `src/components/admin/InvitationTracker.tsx`
+
+Conditionner l'etape "Premiere connexion" a `password_set_at` ET `last_active_at` pour eviter les faux positifs.
+
+```
+// Avant
+firstLogin: !!status.last_active_at,
+
+// Apres
+firstLogin: !!status.password_set_at && !!status.last_active_at,
 ```
 
-Le scanner chargera la page mais verra juste un bouton et ne cliquera pas dessus. Le jeton restera intact pour l'utilisateur.
+### Action donnees : Nettoyer `last_active_at` pour AMONKOU YVES
 
-## Fichier modifie
+Remettre `last_active_at` a `null` via une migration SQL pour refleter la realite : cet utilisateur n'a jamais eu de session reelle.
 
-| Fichier | Action |
-|---------|--------|
-| `src/pages/ResetPasswordPage.tsx` | Ajouter un etat `awaitingClick` qui affiche un ecran intermediaire avec un bouton "Continuer" avant d'appeler `verifyOtp()` |
+## Resume des fichiers modifies
 
-## Detail technique
+| Fichier | Modification |
+|---------|-------------|
+| `src/contexts/AuthContext.tsx` | Ne pas appeler `trackActivity` pour les sessions de type recovery (verifier `password_set_at` dans le profil) |
+| `src/components/admin/InvitationTracker.tsx` | Conditionner `firstLogin` a `password_set_at && last_active_at` |
+| Migration SQL | Remettre `last_active_at = null` pour AMONKOU YVES |
 
-### Changements dans `processToken()`
-
-Au lieu d'appeler `verifyOtp()` immediatement quand un `token_hash` est detecte, la fonction stocke le token et affiche un ecran intermediaire :
-
-```text
-Si token_hash present :
-  → sauvegarder token_hash et type dans des refs
-  → mettre awaitingClick = true
-  → afficher ecran avec bouton "Continuer vers la reinitialisation"
-
-Quand l'utilisateur clique :
-  → appeler verifyOtp(token_hash)
-  → si succes → afficher formulaire mot de passe
-  → si echec → afficher ecran erreur avec option de renvoi
-```
-
-Le Case 1 (hash-based tokens avec `access_token` + `refresh_token`) reste inchange car ce format n'est pas affecte par les scanners (les tokens sont dans le fragment hash, invisible pour les requetes serveur).
-
-### Interface de l'ecran intermediaire
-
-Un ecran simple et rassurant avec :
-- Le logo ANSUT
-- Un message "Presque termine !" 
-- Un texte explicatif : "Cliquez sur le bouton ci-dessous pour acceder a la configuration de votre mot de passe"
-- Un bouton principal "Continuer"
-- Un indicateur de securite (icone ShieldCheck)
-
-### Publication necessaire
-
-Apres modification, l'application devra etre publiee pour que le correctif soit actif sur le site de production. Ensuite, un seul lien de reinitialisation devra etre envoye a AMONKOU YVES.
