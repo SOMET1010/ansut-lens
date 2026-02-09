@@ -1,65 +1,40 @@
 
 
-# Correction du flux de reinitialisation de mot de passe
+# Debloquer le compte d'AMONKOU YVES
 
-## Diagnostic
+## Situation actuelle
 
-J'ai analyse les logs d'authentification en detail. Le probleme vient de **deux causes combinees** :
+AMONKOU YVES (`amonkou.nguessan@ansut.ci`) est dans une boucle :
+- Il recoit un lien de reinitialisation
+- Le scanner de securite email Microsoft (IP 48.209.x.x) consomme le jeton avant lui
+- Il voit "Lien expire ou invalide"
+- L'admin lui renvoie un nouveau lien, et le cycle recommence
+- Resultat : `password_set_at` est toujours `null` malgre plusieurs tentatives
 
-### Cause 1 : Le site publie utilise l'ancien code
+Son compte est fonctionnel (email confirme, connexions enregistrees via recovery) mais il n'a jamais pu definir un mot de passe permanent.
 
-Les liens de reinitialisation pointent vers `https://ansut-lens.lovable.app` (le site publie). Or, toutes les corrections du systeme d'authentification (suppression des conditions de course, reconstruction de la page de reinitialisation, etc.) sont uniquement dans l'environnement **preview**. Le site publie utilise encore l'ancien code instable.
+## Plan d'action
 
-Les logs d'authentification confirment que toutes les requetes echouees proviennent de `https://ansut-lens.lovable.app` :
+### Etape 1 : Publier l'application (action utilisateur)
 
-```text
-referer: https://ansut-lens.lovable.app/auth/reset-password
-erreur: "One-time token not found" / "otp_expired"
-```
+C'est l'etape **obligatoire**. Toutes les corrections suivantes sont deja dans le code preview mais pas encore en production :
+- Reconstruction du systeme d'authentification (AuthContext, suppression de RecoveryTokenHandler)
+- Mecanisme de fallback session (si le jeton est consomme par un scanner, la page detecte la session existante et affiche le formulaire quand meme)
 
-### Cause 2 : Pas de mecanisme de repli en cas de consommation du jeton
+Sans publication, le site de production continue d'utiliser l'ancien code defaillant.
 
-Les logs montrent que le jeton OTP est parfois consomme par une requete parallele (double-clic, onglet duplique, scanner de securite email Microsoft) avant que l'utilisateur ne voie le formulaire. La page actuelle ne verifie pas s'il existe deja une session valide quand `verifyOtp` echoue.
+### Etape 2 : Envoyer un unique lien de reinitialisation
 
-```text
-09:20:03 - POST /verify - 200 (jeton consomme par IP 48.209.x.x)
-09:21:09 - POST /verify - 403 "otp_expired" (tentative utilisateur)
-```
+Apres publication, envoyer **un seul** email de reinitialisation a `amonkou.nguessan@ansut.ci`. Avec le nouveau code :
+- Si le scanner Microsoft consomme le jeton en arriere-plan, la session sera creee
+- Quand AMONKOU clique sur le lien, le fallback detectera la session et affichera le formulaire de mot de passe
+- Il pourra enfin definir son mot de passe permanent
 
-## Ce qui sera modifie
+### Etape 3 : Verifier le resultat
 
-| Fichier | Action | Objectif |
-|---------|--------|----------|
-| `src/pages/ResetPasswordPage.tsx` | **Modifie** | Ajouter un mecanisme de repli : si verifyOtp echoue, verifier s'il existe deja une session valide avant d'afficher l'erreur |
+Confirmer que `password_set_at` n'est plus `null` apres que l'utilisateur a defini son mot de passe.
 
-Apres modification, il faudra **publier l'application** pour que le site de production utilise le nouveau code.
+## Aucune modification de code necessaire
 
-## Detail technique
-
-### Amelioration de `processToken()` dans `ResetPasswordPage.tsx`
-
-Le changement est cible sur la gestion d'erreur de `verifyOtp`. Actuellement, si le jeton est invalide, la page affiche directement "Lien expire ou invalide". La correction ajoute une verification : si une session existe malgre l'echec du jeton (parce qu'un processus parallele l'a deja consomme avec succes), le formulaire de mot de passe s'affiche quand meme.
-
-Logique actuelle (simplifiee) :
-
-```text
-verifyOtp(token_hash) echoue → afficher erreur
-```
-
-Logique corrigee :
-
-```text
-verifyOtp(token_hash) echoue → verifier session existante
-  → session trouvee → afficher formulaire mot de passe
-  → pas de session → afficher erreur avec formulaire de renvoi
-```
-
-Cela couvre les scenarios suivants :
-- Double-clic sur le lien (le premier onglet consomme le jeton, le deuxieme trouve la session)
-- Scanner de securite email (Microsoft Safe Links) qui consomme le jeton en arriere-plan
-- Rechargement de la page apres une verification reussie
-
-### Etape suivante obligatoire : publication
-
-Apres la correction du code, l'application devra etre **publiee** pour que le site `ansut-lens.lovable.app` utilise le nouveau systeme d'authentification au complet (la reconstruction de AuthContext, la suppression de RecoveryTokenHandler, et cette nouvelle amelioration).
+Le correctif est deja en place dans le code preview. La seule action requise est la **publication**.
 
