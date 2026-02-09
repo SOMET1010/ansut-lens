@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -182,9 +182,14 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [tokenError, setTokenError] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [awaitingClick, setAwaitingClick] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
+
+  // Store pending OTP info for deferred verification
+  const pendingTokenRef = useRef<{ tokenHash: string; type: 'recovery' | 'invite' } | null>(null);
 
   const form = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
@@ -195,6 +200,31 @@ export default function ResetPasswordPage() {
   });
 
   const watchedPassword = form.watch('password');
+
+  // Handle the actual OTP verification after user clicks
+  const handleConfirmClick = async () => {
+    const pending = pendingTokenRef.current;
+    if (!pending) return;
+
+    setVerifying(true);
+    const { error } = await supabase.auth.verifyOtp({
+      token_hash: pending.tokenHash,
+      type: pending.type === 'invite' ? 'invite' : 'recovery',
+    });
+
+    if (error) {
+      console.error('[ResetPassword] OTP error after click:', error.message);
+      setAwaitingClick(false);
+      setTokenError(true);
+      setVerifying(false);
+      return;
+    }
+
+    window.history.replaceState(null, '', window.location.pathname);
+    setAwaitingClick(false);
+    setVerifying(false);
+    setIsReady(true);
+  };
 
   // ── SINGLE token handler — the only place tokens are processed ──
   useEffect(() => {
@@ -211,7 +241,7 @@ export default function ResetPasswordPage() {
       const type = hashParams.get('type') || queryParams.get('type');
       const tokenHash = queryParams.get('token_hash');
 
-      // Case 1: Hash-based tokens (access_token + refresh_token)
+      // Case 1: Hash-based tokens (access_token + refresh_token) — not affected by scanners
       if (accessToken && refreshToken && (type === 'recovery' || type === 'invite')) {
         console.log('[ResetPassword] Processing hash token, type:', type);
         const { error } = await supabase.auth.setSession({
@@ -227,51 +257,22 @@ export default function ResetPasswordPage() {
           return;
         }
 
-        // Clean URL
         window.history.replaceState(null, '', window.location.pathname);
         setIsReady(true);
         return;
       }
 
-      // Case 2: OTP token_hash (email link format)
+      // Case 2: OTP token_hash — DEFER verification until user clicks
       if (tokenHash && (type === 'recovery' || type === 'invite')) {
-        console.log('[ResetPassword] Processing OTP token_hash, type:', type);
-        const { error } = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
-          type: type === 'invite' ? 'invite' : 'recovery',
-        });
-
+        console.log('[ResetPassword] Token detected, awaiting user click before verifyOtp');
         if (cancelled) return;
-
-        if (error) {
-          console.warn('[ResetPassword] OTP error:', error.message, '— checking for existing session (token may have been consumed by scanner/duplicate request)');
-          
-          // Fallback: check if a parallel process already consumed the token successfully
-          const { data: { session: fallbackSession } } = await supabase.auth.getSession();
-          
-          if (cancelled) return;
-          
-          if (fallbackSession) {
-            console.log('[ResetPassword] Fallback session found despite OTP error — proceeding');
-            window.history.replaceState(null, '', window.location.pathname);
-            setIsReady(true);
-            return;
-          }
-          
-          console.error('[ResetPassword] No fallback session — token is truly expired/invalid');
-          setTokenError(true);
-          return;
-        }
-
-        window.history.replaceState(null, '', window.location.pathname);
-        setIsReady(true);
+        pendingTokenRef.current = { tokenHash, type: type as 'recovery' | 'invite' };
+        setAwaitingClick(true);
         return;
       }
 
-      // Case 3: No token in URL — check if there's already a valid session
-      // (e.g. Supabase auto-processed the token before our code ran)
+      // Case 3: No token in URL — check for existing session
       const { data: { session } } = await supabase.auth.getSession();
-
       if (cancelled) return;
 
       if (session) {
@@ -280,7 +281,6 @@ export default function ResetPasswordPage() {
         return;
       }
 
-      // No token, no session → error
       console.warn('[ResetPassword] No token and no session');
       setTokenError(true);
     };
@@ -338,6 +338,42 @@ export default function ResetPasswordPage() {
   // ── Token error state ──
   if (tokenError) {
     return <TokenErrorView />;
+  }
+
+  // ── Awaiting user click (anti-scanner) ──
+  if (awaitingClick) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 p-4">
+        <Card className="w-full max-w-md glass">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <img src={logoAnsut} alt="ANSUT" className="w-20 h-20 rounded-xl object-contain bg-white p-2" />
+            </div>
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <ShieldCheck className="h-8 w-8 text-primary" />
+              </div>
+            </div>
+            <CardTitle className="text-xl font-bold">
+              Presque terminé !
+            </CardTitle>
+            <CardDescription className="text-base">
+              Cliquez sur le bouton ci-dessous pour accéder à la configuration de votre mot de passe.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              className="w-full gap-2"
+              onClick={handleConfirmClick}
+              disabled={verifying}
+            >
+              {verifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+              {verifying ? 'Vérification...' : 'Continuer'}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   // ── Loading state while processing token ──
