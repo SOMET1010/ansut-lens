@@ -19,7 +19,7 @@ import {
   Plus,
   PenLine
 } from 'lucide-react';
-import { useSocialInsights, useSocialStats, useCollectSocial, SocialInsight, WebPlateforme } from '@/hooks/useSocialInsights';
+import { useSocialInsights, useSocialStats, useCollectSocial, useCollectSocialApi, SocialInsight, WebPlateforme } from '@/hooks/useSocialInsights';
 import { SocialInsightFormDialog } from './SocialInsightFormDialog';
 import { cn } from '@/lib/utils';
 
@@ -156,6 +156,7 @@ export function SocialPulseWidget() {
   const { data: insights, isLoading: insightsLoading } = useSocialInsights(10);
   const { data: stats, isLoading: statsLoading } = useSocialStats();
   const collectMutation = useCollectSocial();
+  const collectApiMutation = useCollectSocialApi();
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
 
@@ -166,7 +167,7 @@ export function SocialPulseWidget() {
   const isLoading = insightsLoading || statsLoading;
 
   // Plateformes actives (nouvelles sources web)
-  const activePlatforms: WebPlateforme[] = ['blog', 'forum', 'news'];
+  const activePlatforms: WebPlateforme[] = ['blog', 'forum', 'news', 'twitter', 'linkedin'];
 
   return (
     <Card className="col-span-1 lg:col-span-2">
@@ -187,6 +188,20 @@ export function SocialPulseWidget() {
             >
               <Plus className="h-4 w-4" />
               Ajouter
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => collectApiMutation.mutate()}
+              disabled={collectApiMutation.isPending}
+              className="gap-2"
+            >
+              {collectApiMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Globe className="h-4 w-4" />
+              )}
+              APIs
             </Button>
             <Button
               variant="outline"
