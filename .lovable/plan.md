@@ -1,78 +1,38 @@
 
 
-# Intégration des APIs LinkedIn et Twitter/X
+# Ajout d'un cron job pour la collecte sociale API
 
-## Contexte
+## Objectif
 
-Les clés API LinkedIn et Twitter/X sont fournies. Facebook est en attente de verification. La table `social_api_config` existe deja avec les 3 plateformes desactivees. La fonction `collecte-social` actuelle ne fait que du scraping web via Firecrawl.
+Programmer l'execution automatique de la fonction `collecte-social-api` toutes les heures via pg_cron.
 
-## Etape 1 : Stocker les secrets
+## Implementation
 
-5 secrets a ajouter de maniere securisee :
+Une seule etape : executer une requete SQL pour creer le cron job dans pg_cron. Les extensions `pg_cron` et `pg_net` sont deja actives (d'autres cron jobs existent deja dans le projet).
 
-| Secret | Valeur |
-|--------|--------|
-| `LINKEDIN_CLIENT_ID` | 78og1qsnauynph |
-| `LINKEDIN_CLIENT_SECRET` | WPL_AP1.VFoCRxyFeH8pF8D2.1LAGjA== |
-| `TWITTER_CONSUMER_KEY` | wYeyVZGb1LBaC5jKMYEUMaBL8 |
-| `TWITTER_CONSUMER_SECRET` | QhIh8EaVW83RCeNe64CsnRE66wAW59ff9BCiMZkQIuUpGyvtkW |
-| `TWITTER_BEARER_TOKEN` | Le bearer token fourni |
-
-## Etape 2 : Creer la fonction `collecte-social-api`
-
-Nouvelle edge function dediee aux APIs officielles (separee de `collecte-social` qui reste pour le scraping web).
-
-### Twitter/X (API v2)
-
-- Endpoint : `https://api.x.com/2/tweets/search/recent`
-- Authentification : Bearer Token
-- Recherche par mots-cles de veille (table `mots_cles_veille`)
-- Extraction : tweets, auteurs, metriques d'engagement, hashtags
-- Limite : 10 000 tweets/mois (plan Basic)
-
-### LinkedIn (Marketing API)
-
-- Endpoint : `https://api.linkedin.com/v2/`
-- Authentification : OAuth 2.0 Client Credentials (client_id + client_secret)
-- Recherche de posts d'entreprises/pages suivies
-- Note : L'API LinkedIn est plus restrictive, limitee aux pages d'organisation auxquelles l'app a acces
-
-### Logique commune
-
-- Consulter `social_api_config` pour verifier quelles plateformes sont actives
-- Verifier les quotas avant chaque appel
-- Inserer les resultats dans `social_insights` avec `is_official_api = true`
-- Mettre a jour `quota_used` et `last_sync` dans `social_api_config`
-- Generer des alertes pour les insights critiques (sentiment < -0.3)
-
-## Etape 3 : Activer les plateformes
-
-Migration SQL pour activer Twitter et LinkedIn dans `social_api_config` :
+### SQL a executer
 
 ```sql
-UPDATE social_api_config SET enabled = true WHERE plateforme IN ('twitter', 'linkedin');
+SELECT cron.schedule(
+  'collecte-social-api-hourly',
+  '0 * * * *',
+  $$
+  SELECT net.http_post(
+    url := 'https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1/collecte-social-api',
+    headers := '{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxwa2Z3eGlzcmFubWV0YnRneHJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4NjkxMDQsImV4cCI6MjA4MjQ0NTEwNH0.5nP9S0X_oIhYYrHRf_R_eQcUXTACMSGamSCMu25fo1M"}'::jsonb,
+    body := '{"triggered_by": "cron"}'::jsonb
+  ) AS request_id;
+  $$
+);
 ```
 
-Facebook restera desactive jusqu'a validation de la verification.
+Ce job :
+- S'execute a la minute 0 de chaque heure (toutes les heures)
+- Appelle la fonction `collecte-social-api` via HTTP POST
+- Utilise la cle anon pour l'authentification
+- Sera visible et geeable depuis la page Admin > Cron Jobs
 
-## Etape 4 : Interface utilisateur
+## Fichiers concernes
 
-Le composant `SocialPulseWidget` et le hook `useSocialInsights` supportent deja les plateformes `twitter`, `linkedin`, `facebook`. Aucune modification UI majeure necessaire, les nouveaux insights apparaitront automatiquement dans le radar.
+Aucune modification de code n'est necessaire. Seule une migration SQL sera executee.
 
-Ajout possible : un bouton "Collecter APIs sociales" a cote du bouton existant "Collecter" pour lancer la fonction `collecte-social-api`.
-
-## Resume des fichiers
-
-| Fichier | Action |
-|---------|--------|
-| Secrets Lovable Cloud | Ajout de 5 secrets API |
-| `supabase/functions/collecte-social-api/index.ts` | Nouveau - collecte via APIs officielles Twitter et LinkedIn |
-| Migration SQL | Activer twitter et linkedin dans `social_api_config` |
-| `src/hooks/useSocialInsights.ts` | Ajouter mutation pour appeler `collecte-social-api` |
-| `src/components/radar/SocialPulseWidget.tsx` | Ajouter bouton de collecte API (optionnel) |
-
-## Points d'attention
-
-- Le Bearer Token Twitter doit etre decode (il contient des `%2F` et `%3D` qui sont des caracteres encodes URL)
-- L'API LinkedIn en mode Client Credentials a un acces limite : elle permet principalement de consulter les pages d'organisation, pas de faire des recherches libres
-- Les quotas sont geres automatiquement pour eviter les depassements
