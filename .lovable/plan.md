@@ -1,40 +1,69 @@
 
+# Correction definitive : bouton de confirmation anti-scanner
 
-# Debloquer le compte d'AMONKOU YVES
+## Le vrai probleme
 
-## Situation actuelle
+Le mecanisme de fallback (`getSession()` apres echec de `verifyOtp`) ne resout pas le probleme des scanners email car :
 
-AMONKOU YVES (`amonkou.nguessan@ansut.ci`) est dans une boucle :
-- Il recoit un lien de reinitialisation
-- Le scanner de securite email Microsoft (IP 48.209.x.x) consomme le jeton avant lui
-- Il voit "Lien expire ou invalide"
-- L'admin lui renvoie un nouveau lien, et le cycle recommence
-- Resultat : `password_set_at` est toujours `null` malgre plusieurs tentatives
+1. Le scanner Microsoft charge la page `reset-password?token_hash=xxx`
+2. Le JavaScript s'execute automatiquement et appelle `verifyOtp()`
+3. Le jeton est consomme, une session est creee **dans le contexte du scanner**
+4. Quand l'utilisateur ouvre le lien, `verifyOtp()` echoue ET `getSession()` retourne `null` (la session est dans le localStorage du scanner, pas du navigateur de l'utilisateur)
 
-Son compte est fonctionnel (email confirme, connexions enregistrees via recovery) mais il n'a jamais pu definir un mot de passe permanent.
+## Solution
 
-## Plan d'action
+Ajouter une **etape de confirmation manuelle** avant d'appeler `verifyOtp()`. Les scanners email chargent les pages mais ne cliquent jamais sur les boutons. C'est la methode standard recommandee pour contrer ce probleme.
 
-### Etape 1 : Publier l'application (action utilisateur)
+### Flux actuel
 
-C'est l'etape **obligatoire**. Toutes les corrections suivantes sont deja dans le code preview mais pas encore en production :
-- Reconstruction du systeme d'authentification (AuthContext, suppression de RecoveryTokenHandler)
-- Mecanisme de fallback session (si le jeton est consomme par un scanner, la page detecte la session existante et affiche le formulaire quand meme)
+```text
+Page chargee → verifyOtp() automatique → echec (scanner a deja consomme le jeton) → erreur
+```
 
-Sans publication, le site de production continue d'utiliser l'ancien code defaillant.
+### Nouveau flux
 
-### Etape 2 : Envoyer un unique lien de reinitialisation
+```text
+Page chargee → detection du token_hash dans l'URL → affichage d'un ecran "Cliquez pour continuer"
+→ utilisateur clique → verifyOtp() → succes → formulaire de mot de passe
+```
 
-Apres publication, envoyer **un seul** email de reinitialisation a `amonkou.nguessan@ansut.ci`. Avec le nouveau code :
-- Si le scanner Microsoft consomme le jeton en arriere-plan, la session sera creee
-- Quand AMONKOU clique sur le lien, le fallback detectera la session et affichera le formulaire de mot de passe
-- Il pourra enfin definir son mot de passe permanent
+Le scanner chargera la page mais verra juste un bouton et ne cliquera pas dessus. Le jeton restera intact pour l'utilisateur.
 
-### Etape 3 : Verifier le resultat
+## Fichier modifie
 
-Confirmer que `password_set_at` n'est plus `null` apres que l'utilisateur a defini son mot de passe.
+| Fichier | Action |
+|---------|--------|
+| `src/pages/ResetPasswordPage.tsx` | Ajouter un etat `awaitingClick` qui affiche un ecran intermediaire avec un bouton "Continuer" avant d'appeler `verifyOtp()` |
 
-## Aucune modification de code necessaire
+## Detail technique
 
-Le correctif est deja en place dans le code preview. La seule action requise est la **publication**.
+### Changements dans `processToken()`
 
+Au lieu d'appeler `verifyOtp()` immediatement quand un `token_hash` est detecte, la fonction stocke le token et affiche un ecran intermediaire :
+
+```text
+Si token_hash present :
+  → sauvegarder token_hash et type dans des refs
+  → mettre awaitingClick = true
+  → afficher ecran avec bouton "Continuer vers la reinitialisation"
+
+Quand l'utilisateur clique :
+  → appeler verifyOtp(token_hash)
+  → si succes → afficher formulaire mot de passe
+  → si echec → afficher ecran erreur avec option de renvoi
+```
+
+Le Case 1 (hash-based tokens avec `access_token` + `refresh_token`) reste inchange car ce format n'est pas affecte par les scanners (les tokens sont dans le fragment hash, invisible pour les requetes serveur).
+
+### Interface de l'ecran intermediaire
+
+Un ecran simple et rassurant avec :
+- Le logo ANSUT
+- Un message "Presque termine !" 
+- Un texte explicatif : "Cliquez sur le bouton ci-dessous pour acceder a la configuration de votre mot de passe"
+- Un bouton principal "Continuer"
+- Un indicateur de securite (icone ShieldCheck)
+
+### Publication necessaire
+
+Apres modification, l'application devra etre publiee pour que le correctif soit actif sur le site de production. Ensuite, un seul lien de reinitialisation devra etre envoye a AMONKOU YVES.
