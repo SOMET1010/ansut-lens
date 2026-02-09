@@ -809,6 +809,7 @@ export default function UsersPage() {
               user={user}
               status={usersStatus?.[user.id]}
               isCurrentUser={user.id === currentUser?.id}
+              onRoleChange={handleRoleChange}
               onToggle={(userId, action) => toggleUserMutation.mutate({ userId, action })}
               onDelete={(userId) => setDeleteUserId(userId)}
               onResendInvite={(userId, fullName, role) => resendInviteMutation.mutate({ userId, fullName, role })}

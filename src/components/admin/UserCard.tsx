@@ -1,9 +1,9 @@
-import { MoreVertical, Shield, User, Users, Mail, Clock, RefreshCw, UserCheck, UserX, Trash2, MailCheck, KeyRound, Building2, Wifi } from 'lucide-react';
+import { MoreVertical, Shield, User, Users, Mail, Clock, RefreshCw, UserCheck, UserX, Trash2, MailCheck, KeyRound, Building2, Wifi, Check } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Database } from '@/integrations/supabase/types';
@@ -269,6 +269,31 @@ export function UserCard({
                 Renvoyer l'invitation
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              {onRoleChange && (
+                <>
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <Shield className="mr-2 h-4 w-4" />
+                      Changer le rôle
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      {(Object.keys(roleLabels) as AppRole[]).map((role) => (
+                        <DropdownMenuItem
+                          key={role}
+                          disabled={user.role === role}
+                          onClick={() => onRoleChange(user.id, role)}
+                          className="gap-2"
+                        >
+                          {roleIcons[role]}
+                          {roleLabels[role]}
+                          {user.role === role && <Check className="ml-auto h-4 w-4" />}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               {user.disabled ? (
                 <DropdownMenuItem onClick={() => onToggle?.(user.id, 'enable')}>
                   <UserCheck className="mr-2 h-4 w-4" />
