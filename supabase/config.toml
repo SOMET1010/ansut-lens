@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.collecte-social]
 verify_jwt = false
+
+[functions.collecte-social-api]
+verify_jwt = false
