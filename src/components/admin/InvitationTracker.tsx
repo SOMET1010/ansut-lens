@@ -224,7 +224,7 @@ export function InvitationTracker({ users, usersStatus, onResendInvite, isResend
         invited: true, // always true since they have an invite log
         linkClicked: !!status.email_confirmed_at,
         passwordSet: !!status.password_set_at,
-        firstLogin: !!status.last_active_at,
+        firstLogin: !!status.password_set_at && !!status.last_active_at,
       };
 
       // Skip fully activated users
