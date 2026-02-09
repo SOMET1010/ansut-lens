@@ -1,14 +1,15 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ViewModeProvider } from "@/contexts/ViewModeContext";
 import { AlertNotificationProvider } from "@/components/notifications";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { ProtectedRoute, PermissionRoute, RecoveryTokenHandler } from "@/components/auth";
+import { ProtectedRoute, PermissionRoute } from "@/components/auth";
 import AuthPage from "@/pages/AuthPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import RadarPage from "@/pages/RadarPage";
@@ -37,6 +38,31 @@ import AccessDeniedPage from "@/pages/AccessDeniedPage";
 
 const queryClient = new QueryClient();
 
+/**
+ * Top-level redirect: if the URL contains a recovery/invite hash token
+ * and we're NOT already on the reset-password page, redirect there.
+ * This replaces the old RecoveryTokenHandler wrapper.
+ */
+function HashRedirect({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash) return;
+
+    const hashParams = new URLSearchParams(hash.substring(1));
+    const type = hashParams.get('type');
+
+    if ((type === 'recovery' || type === 'invite') && location.pathname !== '/auth/reset-password') {
+      console.log('[HashRedirect] Recovery/invite token detected, redirecting to reset-password');
+      navigate(`/auth/reset-password${hash}`, { replace: true });
+    }
+  }, [navigate, location.pathname]);
+
+  return <>{children}</>;
+}
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -47,7 +73,7 @@ const App = () => (
               <TooltipProvider>
                 <Toaster />
                 <BrowserRouter>
-                  <RecoveryTokenHandler>
+                  <HashRedirect>
                     <Routes>
                       {/* Routes publiques */}
                       <Route path="/auth" element={<AuthPage />} />
@@ -61,7 +87,6 @@ const App = () => (
                       
                       {/* Routes protégées */}
                       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-                        {/* Routes avec vérification de permission */}
                         <Route element={<PermissionRoute permission="view_radar" />}>
                           <Route path="/radar" element={<RadarPage />} />
                         </Route>
@@ -91,10 +116,8 @@ const App = () => (
                           <Route path="/flux/:id" element={<FluxDetailPage />} />
                         </Route>
                         
-                        {/* Profile accessible à tous les utilisateurs connectés */}
                         <Route path="/profile" element={<ProfilePage />} />
                         
-                        {/* Routes Admin avec permissions spécifiques */}
                         <Route element={<PermissionRoute permission="access_admin" />}>
                           <Route path="/admin" element={<AdminPage />} />
                           
@@ -138,7 +161,7 @@ const App = () => (
                       
                       <Route path="*" element={<NotFound />} />
                     </Routes>
-                  </RecoveryTokenHandler>
+                  </HashRedirect>
                 </BrowserRouter>
               </TooltipProvider>
             </AlertNotificationProvider>

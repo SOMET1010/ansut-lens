@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { AppRole } from '@/types';
@@ -10,7 +10,6 @@ interface AuthContextType {
   isLoading: boolean;
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -22,7 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchUserRole = async (userId: string) => {
+  const fetchUserRole = useCallback(async (userId: string): Promise<AppRole> => {
     try {
       const { data, error } = await supabase
         .from('user_roles')
@@ -31,56 +30,78 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) {
-        console.error('Error fetching role:', error);
-        return 'user' as AppRole;
+        console.error('[Auth] Error fetching role:', error.message);
+        return 'user';
       }
-
       return (data?.role as AppRole) || 'user';
     } catch (err) {
-      console.error('Error fetching role:', err);
-      return 'user' as AppRole;
+      console.error('[Auth] Error fetching role:', err);
+      return 'user';
     }
-  };
+  }, []);
+
+  const trackActivity = useCallback(async (userId: string) => {
+    try {
+      await supabase
+        .from('profiles')
+        .update({ last_active_at: new Date().toISOString() } as any)
+        .eq('id', userId);
+    } catch {
+      // Silently ignore tracking errors
+    }
+  }, []);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    let mounted = true;
+
+    // 1. Initialize from existing session
+    const initSession = async () => {
+      try {
+        const { data: { session: existingSession } } = await supabase.auth.getSession();
+
+        if (!mounted) return;
+
+        if (existingSession?.user) {
+          setSession(existingSession);
+          setUser(existingSession.user);
+          const userRole = await fetchUserRole(existingSession.user.id);
+          if (mounted) setRole(userRole);
+        }
+      } catch (err) {
+        console.error('[Auth] Init error:', err);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    };
+
+    initSession();
+
+    // 2. Listen for auth changes AFTER init
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        // Let RecoveryTokenHandler handle PASSWORD_RECOVERY redirect
-        // without interference from role fetching
+      async (event, newSession) => {
+        if (!mounted) return;
+
+        console.log('[Auth] Event:', event);
+
+        // PASSWORD_RECOVERY: just update session state, let ResetPasswordPage handle it
         if (event === 'PASSWORD_RECOVERY') {
-          setSession(session);
-          setUser(session?.user ?? null);
-          setIsLoading(false);
+          setSession(newSession);
+          setUser(newSession?.user ?? null);
           return;
         }
 
-        setSession(session);
-        setUser(session?.user ?? null);
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
 
-        // Defer role fetch to avoid deadlock
-        if (session?.user) {
-          setTimeout(() => {
-            fetchUserRole(session.user.id).then(setRole);
-          }, 0);
+        if (newSession?.user) {
+          // Fetch role without blocking
+          fetchUserRole(newSession.user.id).then(r => {
+            if (mounted) setRole(r);
+          });
 
-          // Track real activity — only for genuine password logins
-          // Exclude implicit logins from recovery/invite links
+          // Track activity on real logins only
           if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            const amr = (session as any)?.user?.amr;
-            const isPasswordLogin = Array.isArray(amr)
-              ? amr.some((a: any) => a.method === 'password')
-              : false;
-
-            // TOKEN_REFRESHED is always a real session continuation
-            // SIGNED_IN only counts if it's a password-based login
-            if (event === 'TOKEN_REFRESHED' || isPasswordLogin) {
-              supabase
-                .from('profiles')
-                .update({ last_active_at: new Date().toISOString() } as any)
-                .eq('id', session.user.id)
-                .then(() => {});
-            }
+            trackActivity(newSession.user.id);
           }
         } else {
           setRole(null);
@@ -90,63 +111,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [fetchUserRole, trackActivity]);
 
-      if (session?.user) {
-        fetchUserRole(session.user.id).then(setRole);
-      }
-
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error as Error | null };
-  };
+  }, []);
 
-  const signUp = async (email: string, password: string, fullName?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: { full_name: fullName },
-      },
-    });
-
-    return { error: error as Error | null };
-  };
-
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setRole(null);
-  };
+  }, []);
 
   const isAdmin = role === 'admin';
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session,
-        role,
-        isLoading,
-        isAdmin,
-        signIn,
-        signUp,
-        signOut,
-      }}
-    >
+    <AuthContext.Provider value={{ user, session, role, isLoading, isAdmin, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
