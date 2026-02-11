@@ -28,14 +28,19 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    const azureSmsUrl = Deno.env.get("AZURE_SMS_URL");
-    const azureSmsUsername = Deno.env.get("AZURE_SMS_USERNAME");
-    const azureSmsPassword = Deno.env.get("AZURE_SMS_PASSWORD");
-    const azureSmsFrom = Deno.env.get("AZURE_SMS_FROM") || "ANSUT";
+    const smsBaseUrl = Deno.env.get("AZURE_SMS_URL");
+    const smsUsername = Deno.env.get("AZURE_SMS_USERNAME");
+    const smsPassword = Deno.env.get("AZURE_SMS_PASSWORD");
+    const smsFrom = Deno.env.get("AZURE_SMS_FROM") || "ANSUT";
 
-    if (!azureSmsUrl || !azureSmsUsername || !azureSmsPassword) {
-      throw new Error("Configuration SMS Azure manquante (URL, USERNAME ou PASSWORD)");
+    if (!smsBaseUrl || !smsUsername || !smsPassword) {
+      throw new Error("Configuration SMS manquante (URL, USERNAME ou PASSWORD)");
     }
+
+    // Build the SendSMS endpoint URL
+    const smsApiUrl = smsBaseUrl.endsWith("/")
+      ? `${smsBaseUrl}api/SendSMS`
+      : `${smsBaseUrl}/api/SendSMS`;
 
     const payload: SmsPayload = await req.json();
     let message = "";
@@ -94,43 +99,49 @@ Deno.serve(async (req) => {
     // Tronquer le message à 160 caractères pour le SMS
     const smsMessage = message.length > 160 ? message.substring(0, 157) + "..." : message;
 
-    console.log(`Envoi SMS à ${destinataires.length} destinataire(s)`);
+    // Join all recipients with semicolons as per ANSUT API format
+    const toField = destinataires.join(";");
+
+    console.log(`Envoi SMS à ${destinataires.length} destinataire(s) via ${smsApiUrl}`);
 
     const results: SmsResult[] = [];
 
-    for (const numero of destinataires) {
-      try {
-        // Appel API Azure SMS
-        const authHeader = "Basic " + btoa(`${azureSmsUsername}:${azureSmsPassword}`);
+    try {
+      const response = await fetch(smsApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: toField,
+          from: smsFrom,
+          text: smsMessage,
+          username: smsUsername,
+          password: smsPassword,
+        }),
+      });
 
-        const response = await fetch(azureSmsUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: authHeader,
-          },
-          body: JSON.stringify({
-            from: azureSmsFrom,
-            to: numero,
-            message: smsMessage,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Erreur SMS vers ${numero}: ${response.status} - ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Erreur SMS API: ${response.status} - ${errorText}`);
+        // Mark all recipients as failed
+        for (const numero of destinataires) {
           results.push({
             destinataire: numero,
             statut: "failed",
             erreur: `HTTP ${response.status}: ${errorText}`,
           });
-        } else {
-          console.log(`SMS envoyé à ${numero}`);
+        }
+      } else {
+        const responseData = await response.text();
+        console.log(`SMS envoyé avec succès:`, responseData);
+        // Mark all recipients as sent
+        for (const numero of destinataires) {
           results.push({ destinataire: numero, statut: "sent" });
         }
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : String(err);
-        console.error(`Exception SMS vers ${numero}: ${errMsg}`);
+      }
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.error(`Exception SMS: ${errMsg}`);
+      for (const numero of destinataires) {
         results.push({
           destinataire: numero,
           statut: "failed",
