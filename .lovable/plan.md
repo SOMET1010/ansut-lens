@@ -1,55 +1,34 @@
 
 
-# Augmenter la frequence de collecte sociale API
+# Mettre a jour le TWITTER_BEARER_TOKEN
 
-## Situation actuelle
+## Contexte
 
-Le cron job `collecte-social-api-hourly` est configure pour s'executer **toutes les heures** (pas une fois par jour). Cependant, pour capter les informations en temps reel sur les reseaux sociaux, une frequence plus elevee est souhaitable.
+La collecte Twitter echoue avec une erreur `401 Unauthorized`, ce qui signifie que le Bearer Token actuel est invalide ou expire.
 
-## Contraintes a prendre en compte
+## Etapes
 
-- **Quotas API Twitter** : Le plan Basic offre 10 000 tweets/mois. A raison de 20 tweets par requete :
-  - Toutes les heures = ~14 400 requetes/mois (depasse le quota)
-  - Toutes les 15 min = ~57 600 requetes/mois (largement hors quota)
-  - Toutes les 30 min = ~28 800 requetes/mois (hors quota aussi)
-- **Le systeme de quota** est deja integre dans la fonction : si le quota est atteint, la collecte s'arrete automatiquement
+### 1. Obtenir un Bearer Token valide
 
-## Proposition
+Pour obtenir un nouveau Bearer Token Twitter/X :
 
-Passer la frequence de **toutes les heures** a **toutes les 15 minutes**, tout en gardant le systeme de quota existant comme garde-fou. Le code verifie deja le quota avant chaque appel API et s'arrete quand la limite est atteinte.
+1. Aller sur le **portail developpeur X** : https://developer.x.com/en/portal/dashboard
+2. Selectionner votre projet/application
+3. Aller dans **Keys and Tokens**
+4. Dans la section **Bearer Token**, cliquer sur **Regenerate** pour obtenir un nouveau token
+5. Copier le token genere
 
-## Implementation technique
+**Important** : Le plan Basic de l'API X (100$/mois) est requis pour acceder a l'endpoint `tweets/search/recent`. Le plan Free ne donne acces qu'a la publication de tweets.
 
-1. Supprimer l'ancien cron job
-2. Creer un nouveau cron job avec la frequence `*/15 * * * *` (toutes les 15 minutes)
+### 2. Mettre a jour le secret dans le projet
 
-### SQL a executer
+Une fois le token copie, je demanderai la mise a jour du secret `TWITTER_BEARER_TOKEN` via l'outil de gestion des secrets.
 
-```sql
--- Supprimer l'ancien job
-SELECT cron.unschedule('collecte-social-api-hourly');
+### 3. Tester la collecte
 
--- Creer le nouveau job toutes les 15 minutes
-SELECT cron.schedule(
-  'collecte-social-api-frequent',
-  '*/15 * * * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1/collecte-social-api',
-    headers := '{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxwa2Z3eGlzcmFubWV0YnRneHJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4NjkxMDQsImV4cCI6MjA4MjQ0NTEwNH0.5nP9S0X_oIhYYrHRf_R_eQcUXTACMSGamSCMu25fo1M"}'::jsonb,
-    body := '{"triggered_by": "cron"}'::jsonb
-  ) AS request_id;
-  $$
-);
-```
+Apres la mise a jour, lancer manuellement la fonction `collecte-social-api` pour verifier que la collecte Twitter fonctionne.
 
 ## Fichiers concernes
 
-Aucune modification de code. Seule une migration SQL pour remplacer le cron job.
-
-## Securite quota
-
-Le code existant dans `collecte-social-api` verifie deja les quotas :
-- Si `quota_used >= quota_limit`, la plateforme est ignoree
-- Cela protege contre la surconsommation meme avec une frequence elevee
+Aucune modification de code. Seule une mise a jour du secret `TWITTER_BEARER_TOKEN`.
 
