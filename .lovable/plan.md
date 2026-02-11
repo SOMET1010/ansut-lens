@@ -1,34 +1,31 @@
 
 
-# Mettre a jour le TWITTER_BEARER_TOKEN
+# Corriger l'URL de la passerelle SMS
 
-## Contexte
+## Probleme identifie
 
-La collecte Twitter echoue avec une erreur `401 Unauthorized`, ce qui signifie que le Bearer Token actuel est invalide ou expire.
+L'URL actuelle dans le secret `AZURE_SMS_URL` pointe vers `https://ansuthub.westeurope.cloudapp.azure.com/client/`, qui retourne une erreur **503 Service Unavailable**.
 
-## Etapes
+D'apres la collection Postman "WebGateway" analysee precedemment, la bonne URL de la passerelle SMS ANSUT est :
 
-### 1. Obtenir un Bearer Token valide
+**`https://smsgateway.ablele.net`**
 
-Pour obtenir un nouveau Bearer Token Twitter/X :
+## Actions a realiser
 
-1. Aller sur le **portail developpeur X** : https://developer.x.com/en/portal/dashboard
-2. Selectionner votre projet/application
-3. Aller dans **Keys and Tokens**
-4. Dans la section **Bearer Token**, cliquer sur **Regenerate** pour obtenir un nouveau token
-5. Copier le token genere
+### 1. Mettre a jour le secret AZURE_SMS_URL
 
-**Important** : Le plan Basic de l'API X (100$/mois) est requis pour acceder a l'endpoint `tweets/search/recent`. Le plan Free ne donne acces qu'a la publication de tweets.
+Remplacer la valeur actuelle par `https://smsgateway.ablele.net` (sans slash final, le code ajoute deja `/api/SendSMS`).
 
-### 2. Mettre a jour le secret dans le projet
+Les autres secrets sont corrects et n'ont pas besoin de modification :
+- `AZURE_SMS_USERNAME` : demo@ansut.local
+- `AZURE_SMS_PASSWORD` : AasKVgVvUnJeM_4c55X2
+- `AZURE_SMS_FROM` : ANSUT
 
-Une fois le token copie, je demanderai la mise a jour du secret `TWITTER_BEARER_TOKEN` via l'outil de gestion des secrets.
+### 2. Tester l'envoi SMS
 
-### 3. Tester la collecte
+Appeler la fonction `envoyer-sms` pour verifier que la passerelle repond correctement avec la nouvelle URL.
 
-Apres la mise a jour, lancer manuellement la fonction `collecte-social-api` pour verifier que la collecte Twitter fonctionne.
+## Aucune modification de code
 
-## Fichiers concernes
-
-Aucune modification de code. Seule une mise a jour du secret `TWITTER_BEARER_TOKEN`.
+Le code de la fonction `envoyer-sms` est deja correct. Seul le secret `AZURE_SMS_URL` doit etre mis a jour.
 
