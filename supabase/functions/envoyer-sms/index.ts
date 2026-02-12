@@ -6,56 +6,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-/**
- * Tente d'envoyer la requête en HTTPS, puis en HTTP (sans suivre les redirections) si SSL échoue.
- */
-async function fetchWithSSLFallback(
-  url: string,
-  body: string
-): Promise<{ ok: boolean; status: number; text: () => Promise<string> }> {
-  // Essai 1: HTTPS normal
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body,
-    });
-    return response;
-  } catch (err) {
-    const errMsg = err instanceof Error ? err.message : String(err);
-    console.warn(`HTTPS échoué (${errMsg}), tentative en HTTP...`);
-
-    // Essai 2: Fallback HTTP sans suivre les redirections
-    const httpUrl = url.replace(/^https:\/\//, "http://");
-    const response = await fetch(httpUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body,
-      redirect: "manual",
-    });
-
-    // Si c'est une redirection, on la signale mais on considère l'envoi comme tenté
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.get("location") || "unknown";
-      console.warn(`HTTP redirigé vers ${location} (status ${response.status})`);
-      // Tenter de suivre la redirection en HTTP aussi
-      if (location.startsWith("https://")) {
-        throw new Error(
-          `Le serveur redirige vers HTTPS (${location}). Impossible de contourner le certificat SSL. Contactez le fournisseur SMS pour obtenir un certificat valide.`
-        );
-      }
-      const redirectResponse = await fetch(location, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body,
-      });
-      return redirectResponse;
-    }
-
-    return response;
-  }
-}
-
 interface SmsPayload {
   alerteId?: string;
   message?: string;
@@ -165,7 +115,11 @@ Deno.serve(async (req) => {
         password: smsPassword,
       });
 
-      const response = await fetchWithSSLFallback(smsApiUrl, bodyPayload);
+      const response = await fetch(smsApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: bodyPayload,
+      });
 
       if (!response.ok) {
         const errorText = await response.text();
