@@ -1,23 +1,20 @@
 
 
-## Suppression du "+" dans les numéros SMS
+## Changement du nom d'expediteur SMS
 
 ### Probleme
-La passerelle SMS ANSUT rejette les numéros au format international avec le prefixe `+` (ex: `+2250709753232`). Il faut envoyer les numeros sans ce prefixe (ex: `2250709753232`).
+Le SMS recu affiche "ANSUT RADAR" comme expediteur au lieu de "ANSUT LENS".
 
 ### Modification
+Mettre a jour le secret `AZURE_SMS_FROM` avec la valeur `ANSUT LENS`.
 
-**Fichier** : `supabase/functions/envoyer-sms/index.ts`
-
-Ajouter un nettoyage des numeros juste avant la construction du champ `to`, en supprimant le caractere `+` en debut de numero :
-
+Aucune modification de code n'est necessaire -- la fonction `envoyer-sms` utilise deja ce secret pour le champ `from` :
 ```typescript
-// Nettoyer les numéros : retirer le '+' en début
-const cleanedDestinataires = destinataires.map(n => n.replace(/^\+/, ""));
-const toField = cleanedDestinataires.join(";");
+const smsFrom = Deno.env.get("AZURE_SMS_FROM") || "ANSUT";
 ```
 
-### Test
+### Verification
+Apres la mise a jour du secret, un SMS de test sera envoye au numero `+2250709753232` pour confirmer que l'en-tete affiche bien "ANSUT LENS".
 
-Apres deploiement, un SMS de test sera envoye au numero `2250709753232` (sans le `+`) pour verifier la reception effective.
-
+### Remarque
+Le nom d'expediteur SMS (Sender ID) est parfois limite a 11 caracteres par certaines passerelles. "ANSUT LENS" fait 10 caracteres, ce qui devrait etre accepte sans probleme.
