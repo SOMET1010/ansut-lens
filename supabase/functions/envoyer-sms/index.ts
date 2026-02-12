@@ -92,7 +92,9 @@ Deno.serve(async (req) => {
     }
 
     const smsMessage = message.length > 160 ? message.substring(0, 157) + "..." : message;
-    const toField = destinataires.join(";");
+    // Nettoyer les numéros : retirer le '+' en début
+    const cleanedDestinataires = destinataires.map(n => n.replace(/^\+/, ""));
+    const toField = cleanedDestinataires.join(";");
 
     console.log(`Envoi SMS à ${destinataires.length} destinataire(s) via ${smsApiUrl}`);
 
