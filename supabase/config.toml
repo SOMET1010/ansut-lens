@@ -59,3 +59,6 @@ verify_jwt = false
 
 [functions.collecte-social-api]
 verify_jwt = false
+
+[functions.diffuser-resume]
+verify_jwt = false

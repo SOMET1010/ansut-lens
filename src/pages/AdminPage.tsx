@@ -1,4 +1,4 @@
-import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode } from 'lucide-react';
+import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode, Radio } from 'lucide-react';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { SystemHealthWidget } from '@/components/admin/SystemHealthWidget';
 import { AdminNavCard } from '@/components/admin/AdminNavCard';
@@ -125,6 +125,16 @@ export default function AdminPage() {
           <Mail size={16} /> Communication
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+           <AdminNavCard
+            color="orange"
+            icon={<Radio size={24} />}
+            title="Diffusion Multicanale"
+            badge="SMS / Telegram / Email"
+            badgeVariant="info"
+            subtitle="Programmez l'envoi des résumés par SMS, Telegram et Email."
+            to="/admin/diffusion"
+            loading={isLoading}
+          />
           <AdminNavCard
             color="blue"
             icon={<Mail size={24} />}

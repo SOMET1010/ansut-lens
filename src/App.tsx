@@ -26,6 +26,7 @@ import UsersPage from "@/pages/admin/UsersPage";
 import AuditLogsPage from "@/pages/admin/AuditLogsPage";
 import CronJobsPage from "@/pages/admin/CronJobsPage";
 import NewslettersPage from "@/pages/admin/NewslettersPage";
+import DiffusionPage from "@/pages/admin/DiffusionPage";
 import SourcesPage from "@/pages/admin/SourcesPage";
 import RolesPage from "@/pages/admin/RolesPage";
 import AlertesHistoryPage from "@/pages/AlertesHistoryPage";
@@ -143,6 +144,7 @@ const App = () => (
                           
                           <Route element={<PermissionRoute permission="manage_newsletters" />}>
                             <Route path="/admin/newsletters" element={<NewslettersPage />} />
+                            <Route path="/admin/diffusion" element={<DiffusionPage />} />
                           </Route>
                           
                           <Route element={<PermissionRoute permission="manage_sources" />}>

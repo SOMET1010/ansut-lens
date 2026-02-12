@@ -322,6 +322,87 @@ export type Database = {
         }
         Relationships: []
       }
+      diffusion_logs: {
+        Row: {
+          canal: string
+          contenu_type: string
+          created_at: string
+          destinataires_count: number
+          details: Json | null
+          echec_count: number
+          id: string
+          message: string | null
+          succes_count: number
+        }
+        Insert: {
+          canal: string
+          contenu_type?: string
+          created_at?: string
+          destinataires_count?: number
+          details?: Json | null
+          echec_count?: number
+          id?: string
+          message?: string | null
+          succes_count?: number
+        }
+        Update: {
+          canal?: string
+          contenu_type?: string
+          created_at?: string
+          destinataires_count?: number
+          details?: Json | null
+          echec_count?: number
+          id?: string
+          message?: string | null
+          succes_count?: number
+        }
+        Relationships: []
+      }
+      diffusion_programmation: {
+        Row: {
+          actif: boolean
+          canal: string
+          contenu_type: string
+          created_at: string
+          dernier_envoi: string | null
+          destinataires: Json
+          frequence: string
+          heure_envoi: string
+          id: string
+          jours_envoi: number[] | null
+          prochain_envoi: string | null
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          canal: string
+          contenu_type?: string
+          created_at?: string
+          dernier_envoi?: string | null
+          destinataires?: Json
+          frequence?: string
+          heure_envoi?: string
+          id?: string
+          jours_envoi?: number[] | null
+          prochain_envoi?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          canal?: string
+          contenu_type?: string
+          created_at?: string
+          dernier_envoi?: string | null
+          destinataires?: Json
+          frequence?: string
+          heure_envoi?: string
+          id?: string
+          jours_envoi?: number[] | null
+          prochain_envoi?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dossiers: {
         Row: {
           auteur_id: string | null
