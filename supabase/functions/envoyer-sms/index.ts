@@ -37,10 +37,8 @@ Deno.serve(async (req) => {
       throw new Error("Configuration SMS manquante (URL, USERNAME ou PASSWORD)");
     }
 
-    // Build the SendSMS endpoint URL
-    const smsApiUrl = smsBaseUrl.endsWith("/")
-      ? `${smsBaseUrl}api/SendSMS`
-      : `${smsBaseUrl}/api/SendSMS`;
+    // Use AZURE_SMS_URL directly as the full endpoint URL
+    const smsApiUrl = smsBaseUrl.replace(/\/+$/, "");
 
     const payload: SmsPayload = await req.json();
     let message = "";
