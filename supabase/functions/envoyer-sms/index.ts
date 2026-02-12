@@ -63,7 +63,6 @@ Deno.serve(async (req) => {
 
       message = `🚨 ALERTE ${alerte.niveau?.toUpperCase()} - ${alerte.titre}\n${alerte.message || ""}`.trim();
 
-      // Récupérer les destinataires actifs
       const { data: dests, error: destError } = await supabase
         .from("sms_destinataires")
         .select("numero")
@@ -80,9 +79,7 @@ Deno.serve(async (req) => {
       message = payload.message;
       destinataires = payload.destinataires;
     } else {
-      throw new Error(
-        "Payload invalide: fournir alerteId ou message + destinataires"
-      );
+      throw new Error("Payload invalide: fournir alerteId ou message + destinataires");
     }
 
     if (destinataires.length === 0) {
@@ -96,10 +93,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Tronquer le message à 160 caractères pour le SMS
     const smsMessage = message.length > 160 ? message.substring(0, 157) + "..." : message;
-
-    // Join all recipients with semicolons as per ANSUT API format
     const toField = destinataires.join(";");
 
     console.log(`Envoi SMS à ${destinataires.length} destinataire(s) via ${smsApiUrl}`);
@@ -124,7 +118,6 @@ Deno.serve(async (req) => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`Erreur SMS API: ${response.status} - ${errorText}`);
-        // Mark all recipients as failed
         for (const numero of destinataires) {
           results.push({
             destinataire: numero,
@@ -135,7 +128,6 @@ Deno.serve(async (req) => {
       } else {
         const responseData = await response.text();
         console.log(`SMS envoyé avec succès:`, responseData);
-        // Mark all recipients as sent
         for (const numero of destinataires) {
           results.push({ destinataire: numero, statut: "sent" });
         }
