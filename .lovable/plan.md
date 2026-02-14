@@ -1,123 +1,191 @@
 
 
-## Interface de programmation des envois de resumes multicanaux
+# Nettoyage Total Anti-Vibecoding -- ANSUT RADAR
 
-### Objectif
-Creer une interface d'administration permettant de programmer l'envoi automatique des resumes (briefings quotidiens) via plusieurs canaux de communication : **SMS**, **Telegram**, **Email** -- avec **WhatsApp** prevu comme canal futur.
+## Phase 0 -- Inventaire et Diagnostic
 
-### Architecture
+### Fichiers morts (dead code)
 
-**Nouvelle table `diffusion_programmation`** pour stocker la configuration de chaque canal :
+| Fichier | Raison |
+|---------|--------|
+| `src/pages/Index.tsx` | Page "Welcome to Your Blank App" -- jamais affichee (route `/` redirige vers `/radar`) |
+| `src/App.css` | CSS Vite par defaut (logo spin, .card, .read-the-docs) -- jamais utilise |
+| `src/components/NavLink.tsx` | Wrapper NavLink custom -- zero import dans tout le projet |
+| `src/components/personnalites/ActeurFilters.tsx` | Remplace par `UnifiedFilterBar` -- zero import |
+| `src/components/personnalites/StatsBar.tsx` | Remplace par `CompactStats` -- zero import |
+| `src/components/personnalites/ActeurCard.tsx` | Remplace par `SmartActeurCard` -- zero import |
 
-| Colonne | Type | Description |
-|---------|------|-------------|
-| id | uuid | Cle primaire |
-| canal | varchar | `sms`, `telegram`, `email`, `whatsapp` |
-| actif | boolean | Canal actif/desactive |
-| frequence | varchar | `quotidien`, `hebdo`, `mensuel` |
-| heure_envoi | time | Heure d'envoi programmee |
-| jours_envoi | int[] | Jours d'envoi (1-7 pour hebdo, 1-28 pour mensuel) |
-| destinataires | jsonb | Liste des destinataires par canal |
-| contenu_type | varchar | `briefing`, `newsletter`, `alerte` |
-| dernier_envoi | timestamptz | Date du dernier envoi |
-| prochain_envoi | timestamptz | Prochain envoi calcule |
-| created_at | timestamptz | Date de creation |
-| updated_at | timestamptz | Date de mise a jour |
+### Duplication de logique
 
-### Composants a creer
+| Code duplique | Occurrences | Centralise dans |
+|---------------|-------------|-----------------|
+| `getInitials()` | 4 copies (AppSidebar, AvatarUpload, AuditLogsPage, activity-status.ts) | `src/utils/activity-status.ts` (deja present) |
 
-1. **`DiffusionSchedulerPage.tsx`** -- Nouvelle page admin `/admin/diffusion`
-   - En-tete avec bouton retour vers admin
-   - Vue d'ensemble des canaux avec statut
+### Usages de `any` a eliminer
 
-2. **`ChannelCard.tsx`** -- Carte par canal
-   - Icone et nom du canal (SMS, Telegram, Email, WhatsApp)
-   - Badge statut (actif/inactif/a venir)
-   - Toggle activation
-   - Configuration frequence et heure
-   - Gestion des destinataires specifiques au canal
-   - Bouton "Envoyer maintenant" pour test
+| Fichier | Ligne | Correction |
+|---------|-------|------------|
+| `src/pages/admin/DiffusionPage.tsx` | L131-133, L139, L236 | Typer `ChannelCardProps` avec les vrais types |
+| `src/hooks/useDiffusionScheduler.ts` | L12, L28, L67 | Typer `destinataires` et `details` avec interfaces |
+| `src/contexts/AuthContext.tsx` | L47 | Cast vers le type `profiles` correct |
+| `src/pages/ResetPasswordPage.tsx` | L315 | Idem |
+| `src/pages/admin/UsersPage.tsx` | L674 | Cast `role as AppRole` au lieu de `as any` |
 
-3. **`DiffusionHistory.tsx`** -- Historique des envois
-   - Tableau avec canal, date, statut, nombre de destinataires
-   - Filtres par canal et periode
+### `console.log` a retirer
 
-4. **`ChannelDestinataires.tsx`** -- Gestion des destinataires par canal
-   - SMS : numeros de telephone (existant dans `sms_destinataires`)
-   - Telegram : chat IDs
-   - Email : adresses email
-   - WhatsApp : numeros (desactive pour l'instant)
+| Fichier | Details |
+|---------|---------|
+| `src/pages/RadarPage.tsx` L89 | `console.log('View signal details:')` -- placeholder |
+| `src/hooks/useRealtimeAlerts.ts` L52 | `console.log('SMS critique envoye')` -- a remplacer par rien ou log conditionnel |
 
-### Integration avec l'existant
+Les `console.log` dans `AuthContext.tsx`, `ResetPasswordPage.tsx`, et `App.tsx` sont des logs systeme utiles prefixes `[Auth]` / `[HashRedirect]` -- a conserver.
 
-- Le canal **SMS** reutilise la fonction `envoyer-sms` existante
-- Le canal **Email** reutilise la fonction `envoyer-newsletter` / Resend
-- Le canal **Telegram** utilise l'endpoint unifie de la passerelle ANSUT (`/api/message/send` avec `channel: "telegram"`)
-- Le canal **WhatsApp** sera affiche avec un badge "Bientot disponible" et son toggle desactive
+### `AdminStatBadge` -- Exporte dans le barrel mais jamais importe ailleurs
 
-### Nouvelle edge function `diffuser-resume`
+Ce composant est exporte via `src/components/admin/index.ts` mais aucun fichier ne l'importe. A verifier si utilise dans `UserCard` ou similaire, sinon supprimer l'export.
 
-Une fonction backend unifiee qui :
-1. Recoit le canal et le type de contenu
-2. Genere le briefing via `generer-briefing` (ou recup le dernier)
-3. Dispatche vers le bon canal (SMS, Telegram, Email)
-4. Enregistre le resultat dans une table `diffusion_logs`
+---
 
-### Table `diffusion_logs`
+## Phase 1 -- Nettoyage immediat
 
-| Colonne | Type | Description |
-|---------|------|-------------|
-| id | uuid | Cle primaire |
-| canal | varchar | Canal utilise |
-| contenu_type | varchar | Type de contenu envoye |
-| message | text | Contenu envoye |
-| destinataires_count | int | Nombre de destinataires |
-| succes_count | int | Nombre de succes |
-| echec_count | int | Nombre d'echecs |
-| details | jsonb | Details par destinataire |
-| created_at | timestamptz | Date d'envoi |
+### 1.1 Supprimer les fichiers morts
+- Supprimer `src/pages/Index.tsx`
+- Supprimer `src/App.css`
+- Supprimer `src/components/NavLink.tsx`
+- Supprimer `src/components/personnalites/ActeurFilters.tsx`
+- Supprimer `src/components/personnalites/StatsBar.tsx`
+- Supprimer `src/components/personnalites/ActeurCard.tsx`
 
-### Navigation
+### 1.2 Retirer les imports d'App.css
+- Dans `src/main.tsx` ou `src/App.tsx` : retirer `import "./App.css"` si present
 
-- Ajout d'une carte dans la page Admin principale
-- Route : `/admin/diffusion`
-- Permission : `manage_newsletters` (reutilisation)
+### 1.3 Retirer les `console.log` inutiles
+- `RadarPage.tsx` L89 : remplacer le callback par un vrai handler ou un noop
+- `useRealtimeAlerts.ts` L52 : supprimer
 
-### Design de l'interface
+### 1.4 Nettoyer les imports inutiles
+- Verifier chaque page pour les imports non utilises (ex: `Users`, `Sparkles` dans certaines pages si non references)
 
-L'interface sera organisee en grille de cartes, une par canal :
+---
 
-```text
-+------------------+  +------------------+
-|  SMS             |  |  Telegram        |
-|  [actif]  toggle |  |  [actif]  toggle |
-|  Freq: Quotidien |  |  Freq: Hebdo     |
-|  08:00           |  |  09:00           |
-|  3 destinataires |  |  2 destinataires |
-|  [Configurer]    |  |  [Configurer]    |
-+------------------+  +------------------+
-+------------------+  +------------------+
-|  Email           |  |  WhatsApp        |
-|  [actif]  toggle |  |  [bientot] ---   |
-|  Freq: Hebdo     |  |  Non disponible  |
-|  10:00           |  |                  |
-|  15 destinataires|  |                  |
-|  [Configurer]    |  |                  |
-+------------------+  +------------------+
+## Phase 2 -- Elimination des `any` et typage strict
+
+### 2.1 Creer des interfaces pour la diffusion
+
+```typescript
+// Dans src/types/diffusion.ts
+export interface Destinataire {
+  nom: string;
+  numero?: string;
+  chat_id?: string;
+  email?: string;
+}
+
+export type CanalDiffusion = 'sms' | 'telegram' | 'email' | 'whatsapp';
+
+export interface DiffusionProgrammation {
+  id: string;
+  canal: CanalDiffusion;
+  actif: boolean;
+  frequence: string;
+  heure_envoi: string;
+  jours_envoi: number[] | null;
+  destinataires: Destinataire[];
+  contenu_type: string;
+  dernier_envoi: string | null;
+  prochain_envoi: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DiffusionLog {
+  id: string;
+  canal: CanalDiffusion;
+  contenu_type: string;
+  message: string | null;
+  destinataires_count: number;
+  succes_count: number;
+  echec_count: number;
+  details: Record<string, unknown> | null;
+  created_at: string;
+}
 ```
 
-En dessous, un historique des derniers envois avec filtres.
+### 2.2 Typer `ChannelCardProps` dans DiffusionPage
+- Remplacer `config: any`, `meta: any`, `Icon: any` par les vrais types
+- Remplacer `(d: any, i: number)` par `(d: Destinataire, i: number)`
 
-### Etapes d'implementation
+### 2.3 Eliminer `as any` dans AuthContext et ResetPasswordPage
+- Creer un type partiel pour les updates profil compatible avec le schema genere
 
-1. Creer les tables `diffusion_programmation` et `diffusion_logs` avec RLS
-2. Creer la fonction backend `diffuser-resume`
-3. Creer les composants UI (page, cartes canal, historique)
-4. Ajouter la route et la navigation depuis la page Admin
-5. Connecter les hooks et tester chaque canal
+---
 
-### Section technique
+## Phase 3 -- Deduplication `getInitials`
 
-- **RLS** : Les deux tables seront protegees avec des politiques limitant l'acces aux utilisateurs ayant la permission `manage_newsletters`
-- **Hook** : `useDiffusionScheduler.ts` pour CRUD sur `diffusion_programmation` et lecture de `diffusion_logs`
-- La passerelle ANSUT supporte deja Telegram via le meme endpoint avec le champ `channel` -- les memes secrets (`AZURE_SMS_URL`, `AZURE_SMS_USERNAME`, `AZURE_SMS_PASSWORD`) seront reutilises
+### 3.1 Centraliser
+- `src/utils/activity-status.ts` contient deja une version canonique
+- Modifier la signature pour accepter `(name: string | null | undefined, fallbackEmail?: string): string`
+
+### 3.2 Remplacer les copies locales
+- `AppSidebar.tsx` : supprimer la fonction locale, importer depuis `@/utils/activity-status`
+- `AvatarUpload.tsx` : idem
+- `AuditLogsPage.tsx` : idem
+
+---
+
+## Phase 4 -- Coherence UI/UX
+
+### 4.1 Pattern Loading/Empty/Error uniforme
+Les pages suivent deja un pattern assez coherent (Skeleton + empty states). Points a unifier :
+
+- `RadarPage.tsx` L89 : le `onViewDetails` est un `console.log` -- implementer ou supprimer le bouton
+- `DiffusionPage.tsx` : le empty state de l'historique utilise un `<p>` simple -- utiliser le meme pattern que les autres pages
+
+### 4.2 Pas de restructuration feature-first
+Le projet utilise deja une organisation coherente par domaine (`components/radar/`, `components/admin/`, `hooks/useRadarData.ts`, etc.). Une migration vers `/features/*` serait un refactor massif avec risque de regression pour un gain minimal. **Decision : conserver la structure actuelle** qui est deja bien organisee.
+
+---
+
+## Phase 5 -- Stabilite
+
+### 5.1 Deja en place
+- ErrorBoundary global : present dans `App.tsx`
+- Page 404 : `NotFound.tsx` en place
+- Page Access Denied : `AccessDeniedPage.tsx` en place
+- Auth guard : `ProtectedRoute` + `PermissionRoute` en place
+- Validation Zod : deja utilise dans `AuthPage.tsx`, `json-schemas.ts`
+
+### 5.2 Manquant
+- Aucun test unitaire ou smoke test -- a ajouter dans une phase ulterieure (P1)
+
+---
+
+## Resume des changements
+
+| Action | Fichiers | Risque |
+|--------|----------|--------|
+| Supprimer 6 fichiers morts | Index.tsx, App.css, NavLink.tsx, ActeurFilters.tsx, StatsBar.tsx, ActeurCard.tsx | Zero -- aucun import |
+| Retirer import App.css | App.tsx | Zero |
+| Retirer 2 console.log | RadarPage, useRealtimeAlerts | Zero fonctionnel |
+| Creer types diffusion | Nouveau fichier | Zero |
+| Typer DiffusionPage + hook | 2 fichiers | Faible -- meme logique |
+| Deduplication getInitials | 3 fichiers modifies | Faible -- meme comportement |
+| Typer `as any` AuthContext/ResetPassword | 2 fichiers | Faible |
+
+### Risques de regression
+- **Aucun fichier fonctionnel n'est supprime** -- uniquement du dead code
+- **Les types remplacent des `any`** -- meme comportement runtime, meilleure securite compile
+- **La deduplication `getInitials`** preservera les deux signatures (avec/sans email fallback)
+
+### TODO final
+
+| Priorite | Tache |
+|----------|-------|
+| P0 | Supprimer dead code + App.css (cette phase) |
+| P0 | Eliminer les `any` dans DiffusionPage/hook (cette phase) |
+| P0 | Dedupliquer `getInitials` (cette phase) |
+| P1 | Ajouter des tests smoke (routes principales chargent) |
+| P1 | Verifier `AdminStatBadge` -- supprimer si non utilise |
+| P2 | Implementer le `onViewDetails` du CriticalAlertBanner dans RadarPage |
+| P2 | Unifier les empty states avec un composant partage `EmptyState` |
+
