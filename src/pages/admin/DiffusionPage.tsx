@@ -13,10 +13,19 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import type { DiffusionProgrammation, Destinataire, CanalDiffusion } from '@/types/diffusion';
+import type { LucideIcon } from 'lucide-react';
 
-const CANAL_CONFIG = {
+interface CanalMeta {
+  label: string;
+  icon: LucideIcon;
+  color: string;
+  destLabel: string;
+  placeholder: string;
+}
+
+const CANAL_CONFIG: Record<CanalDiffusion, CanalMeta> = {
   sms: { label: 'SMS', icon: Phone, color: 'text-blue-500', destLabel: 'Numéro', placeholder: '225XXXXXXXXXX' },
   telegram: { label: 'Telegram', icon: Send, color: 'text-sky-400', destLabel: 'Chat ID', placeholder: '2250505XXXXXX' },
   email: { label: 'Email', icon: Mail, color: 'text-emerald-500', destLabel: 'Email', placeholder: 'nom@domaine.com' },
@@ -50,7 +59,7 @@ export default function DiffusionPage() {
           ))
         ) : (
           configs?.map((config) => {
-            const canal = config.canal as keyof typeof CANAL_CONFIG;
+            const canal = config.canal as CanalDiffusion;
             const meta = CANAL_CONFIG[canal];
             if (!meta) return null;
             const Icon = meta.icon;
@@ -68,7 +77,7 @@ export default function DiffusionPage() {
                 onToggle={(actif) => updateConfig.mutate({ id: config.id, updates: { actif } })}
                 onUpdateFrequence={(frequence) => updateConfig.mutate({ id: config.id, updates: { frequence } })}
                 onUpdateHeure={(heure_envoi) => updateConfig.mutate({ id: config.id, updates: { heure_envoi } })}
-                onUpdateDestinataires={(destinataires) => updateConfig.mutate({ id: config.id, updates: { destinataires } as any })}
+                onUpdateDestinataires={(destinataires) => updateConfig.mutate({ id: config.id, updates: { destinataires } })}
                 onSendNow={() => diffuser.mutate({ canal })}
                 isSending={diffuser.isPending}
               />
@@ -102,7 +111,7 @@ export default function DiffusionPage() {
               </TableHeader>
               <TableBody>
                 {logs.map((log) => {
-                  const canalMeta = CANAL_CONFIG[log.canal as keyof typeof CANAL_CONFIG];
+                  const canalMeta = CANAL_CONFIG[log.canal as CanalDiffusion];
                   return (
                     <TableRow key={log.id}>
                       <TableCell>
@@ -128,15 +137,15 @@ export default function DiffusionPage() {
 
 // --- ChannelCard component ---
 interface ChannelCardProps {
-  config: any;
-  meta: any;
-  Icon: any;
+  config: DiffusionProgrammation;
+  meta: CanalMeta;
+  Icon: LucideIcon;
   isWhatsapp: boolean;
   destCount: number;
   onToggle: (actif: boolean) => void;
   onUpdateFrequence: (f: string) => void;
   onUpdateHeure: (h: string) => void;
-  onUpdateDestinataires: (d: any[]) => void;
+  onUpdateDestinataires: (d: Destinataire[]) => void;
   onSendNow: () => void;
   isSending: boolean;
 }
@@ -149,7 +158,7 @@ function ChannelCard({ config, meta, Icon, isWhatsapp, destCount, onToggle, onUp
   const addDestinataire = () => {
     if (!newDest.trim()) return;
     const canal = config.canal;
-    const entry = canal === 'sms' || canal === 'whatsapp'
+    const entry: Destinataire = canal === 'sms' || canal === 'whatsapp'
       ? { nom: destName || newDest, numero: newDest }
       : canal === 'telegram'
         ? { nom: destName || newDest, chat_id: newDest }
@@ -233,7 +242,7 @@ function ChannelCard({ config, meta, Icon, isWhatsapp, destCount, onToggle, onUp
                   </DialogHeader>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      {(config.destinataires || []).map((d: any, i: number) => (
+                      {(config.destinataires || []).map((d: Destinataire, i: number) => (
                         <div key={i} className="flex items-center justify-between p-2 bg-muted rounded-md text-sm">
                           <span>{d.nom || d.email || d.numero || d.chat_id}</span>
                           <span className="text-muted-foreground text-xs">{d.email || d.numero || d.chat_id}</span>

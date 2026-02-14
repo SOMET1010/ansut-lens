@@ -85,8 +85,8 @@ export default function RadarPage() {
       {/* Critical Alert Banner */}
       <CriticalAlertBanner 
         signals={signaux || []}
-        onViewDetails={(signal) => {
-          console.log('View signal details:', signal.id);
+        onViewDetails={() => {
+          // TODO: implement signal detail view
         }}
       />
 

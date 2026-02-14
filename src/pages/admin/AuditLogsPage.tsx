@@ -54,6 +54,7 @@ import {
   PaginationEllipsis,
 } from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
+import { getInitials } from "@/utils/activity-status";
 
 const PAGE_SIZE = 25;
 
@@ -86,15 +87,6 @@ const roleLabels: Record<string, string> = {
   guest: "Invité",
 };
 
-const getInitials = (name: string | null | undefined): string => {
-  if (!name) return "?";
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-};
 
 export default function AuditLogsPage() {
   const [actionFilter, setActionFilter] = useState<string>("all");

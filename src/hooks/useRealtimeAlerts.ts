@@ -49,7 +49,7 @@ export function useRealtimeAlerts(): UseRealtimeAlertsReturn {
       if (error) {
         console.error('Erreur envoi SMS critique:', error.message);
       } else {
-        console.log('SMS critique envoyé:', data?.stats);
+        // SMS sent successfully
       }
     } catch (err) {
       console.error('Exception envoi SMS:', err);
