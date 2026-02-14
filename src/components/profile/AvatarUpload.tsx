@@ -3,6 +3,7 @@ import { Camera, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { getInitials } from '@/utils/activity-status';
 
 interface AvatarUploadProps {
   currentUrl?: string | null;
@@ -18,15 +19,6 @@ export function AvatarUpload({ currentUrl, fullName, onUpload, isUploading }: Av
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
-  const getInitials = (name?: string | null) => {
-    if (!name) return '?';
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

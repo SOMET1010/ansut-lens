@@ -1,33 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { DiffusionProgrammation, DiffusionLog, Destinataire } from '@/types/diffusion';
 
-export interface DiffusionProgrammation {
-  id: string;
-  canal: string;
-  actif: boolean;
-  frequence: string;
-  heure_envoi: string;
-  jours_envoi: number[] | null;
-  destinataires: any[];
-  contenu_type: string;
-  dernier_envoi: string | null;
-  prochain_envoi: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DiffusionLog {
-  id: string;
-  canal: string;
-  contenu_type: string;
-  message: string | null;
-  destinataires_count: number;
-  succes_count: number;
-  echec_count: number;
-  details: any;
-  created_at: string;
-}
+export type { DiffusionProgrammation, DiffusionLog, Destinataire };
 
 export function useDiffusionProgrammations() {
   return useQuery({
@@ -64,7 +40,7 @@ export function useUpdateDiffusionConfig() {
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<DiffusionProgrammation> }) => {
       const { error } = await supabase
         .from('diffusion_programmation')
-        .update(updates as any)
+        .update(updates as Record<string, unknown>)
         .eq('id', id);
       if (error) throw error;
     },

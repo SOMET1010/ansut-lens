@@ -671,7 +671,7 @@ export default function UsersPage() {
             users={users}
             usersStatus={usersStatus}
             onResendInvite={(userId, fullName, role) =>
-              resendInviteMutation.mutate({ userId, fullName, role: role as any })
+              resendInviteMutation.mutate({ userId, fullName, role: role as AppRole })
             }
             isResending={resendInviteMutation.isPending}
           />

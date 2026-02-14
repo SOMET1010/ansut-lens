@@ -309,10 +309,10 @@ export default function ResetPasswordPage() {
         const now = new Date().toISOString();
         await supabase
           .from('profiles')
-          .update({
+           .update({
             password_set_at: now,
             last_active_at: now,
-          } as any)
+          })
           .eq('id', user.id);
 
         await supabase.from('admin_audit_logs').insert({

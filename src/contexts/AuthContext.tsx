@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await supabase
         .from('profiles')
-        .update({ last_active_at: new Date().toISOString() } as any)
+        .update({ last_active_at: new Date().toISOString() })
         .eq('id', userId);
     } catch {
       // Silently ignore tracking errors

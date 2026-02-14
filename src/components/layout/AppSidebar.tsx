@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { getInitials } from '@/utils/activity-status';
 import logoAnsut from '@/assets/logo-ansut.jpg';
 
 // Menu avec permissions associées
@@ -92,18 +93,9 @@ export function AppSidebar() {
   // Vérifier si l'utilisateur a accès à l'administration
   const hasAdminAccess = isAdmin || hasPermission('manage_users') || hasPermission('manage_roles');
 
-  const getInitials = (name?: string | null, email?: string) => {
-    if (name) {
-      return name
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2);
-    }
-    if (email) {
-      return email[0].toUpperCase();
-    }
+  const getSidebarInitials = (name?: string | null, email?: string) => {
+    if (name) return getInitials(name);
+    if (email) return email[0].toUpperCase();
     return '?';
   };
 
@@ -203,7 +195,7 @@ export function AppSidebar() {
               <Avatar className="h-8 w-8">
                 <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || 'Avatar'} />
                 <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                  {getInitials(profile?.full_name, user.email)}
+                  {getSidebarInitials(profile?.full_name, user.email)}
                 </AvatarFallback>
               </Avatar>
               {!collapsed && (
