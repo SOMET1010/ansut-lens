@@ -5,3 +5,4 @@ export { IntelligenceFeed } from './IntelligenceFeed';
 export { CompactRadar } from './CompactRadar';
 export { SocialPulseWidget } from './SocialPulseWidget';
 export { SocialInsightFormDialog } from './SocialInsightFormDialog';
+export { RadarKpiTiles } from './RadarKpiTiles';

@@ -17,6 +17,7 @@ import {
   IntelligenceFeed,
   CompactRadar,
   SocialPulseWidget,
+  RadarKpiTiles,
 } from '@/components/radar';
 
 const periodLabels: Record<PeriodFilter, string> = {
@@ -79,7 +80,17 @@ export default function RadarPage() {
         </TabsList>
       </Tabs>
 
-      {/* Daily Briefing - Now uses its own data fetching via hook */}
+      {/* KPI Tiles */}
+      <RadarKpiTiles
+        mentions={kpis?.mentions ?? 0}
+        articles={kpis?.articles ?? 0}
+        alertesActives={kpis?.alertesActives ?? 0}
+        scoreInfluence={kpis?.scoreInfluence ?? 0}
+        periodLabel={periodLabels[period]}
+        isLoading={kpisLoading}
+      />
+
+      {/* Daily Briefing */}
       <DailyBriefing />
 
       {/* Critical Alert Banner */}
