@@ -18,6 +18,7 @@ import {
   CompactRadar,
   SocialPulseWidget,
   RadarKpiTiles,
+  RealtimeAlertFeed,
 } from '@/components/radar';
 
 const periodLabels: Record<PeriodFilter, string> = {
@@ -100,6 +101,9 @@ export default function RadarPage() {
           // TODO: implement signal detail view
         }}
       />
+
+      {/* Realtime Alert Feed */}
+      <RealtimeAlertFeed />
 
       {/* Social Pulse Widget */}
       <SocialPulseWidget />
