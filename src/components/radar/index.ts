@@ -6,3 +6,4 @@ export { CompactRadar } from './CompactRadar';
 export { SocialPulseWidget } from './SocialPulseWidget';
 export { SocialInsightFormDialog } from './SocialInsightFormDialog';
 export { RadarKpiTiles } from './RadarKpiTiles';
+export { RealtimeAlertFeed } from './RealtimeAlertFeed';
