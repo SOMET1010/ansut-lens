@@ -1,48 +1,65 @@
 
-# Fix: Onglets "Dashboard SPDI", "Revue Stabilite" et "Benchmark" vides
+# Fix : Barre de sentiment affichant 100% Negatif a tort
 
 ## Diagnostic
 
-Le probleme est dans le hook `useUserPermissions.ts` (ligne 36). La condition de chargement est trop stricte :
+Deux bugs distincts causent l'affichage "0% Positif, 0% Neutre, 100% Negatif" pour Djibril Ouattara :
 
-```typescript
-const isLoading = !role || isPending || isFetching || !isSuccess;
+### Bug 1 -- Affichage : `SentimentBar` gere mal le cas "aucune donnee"
+
+Quand aucune mention n'a de sentiment (`positif=0, neutre=0, negatif=0`), le calcul fait :
+```
+total = 0 + 0 + 0 || 1 = 1
+pPos = 0%
+pNeu = 0%
+pNeg = 100 - 0 - 0 = 100%   <-- faux !
 ```
 
-- `isFetching` reste `true` pendant les refetches en arriere-plan, ce qui bloque l'affichage
-- Quand `role` est `null` (avant la resolution de l'auth), `enabled: !!role` desactive la query, donc `isPending` reste `true` indefiniment
-- La combinaison fait que `PermissionRoute` affiche "Verification de l'acces..." en boucle au lieu du contenu
+Le 100% Negatif est un artefact mathematique, pas un vrai sentiment.
 
-L'ecran montre effectivement "Verification de l'acces..." de maniere permanente.
+### Bug 2 -- Donnees : le hook ne cherche le sentiment qu'au mauvais endroit
 
-## Correction
+Le hook `useActeurDigitalDashboard` cherche le sentiment uniquement dans la table `personnalites_mentions` -> `mentions`. Or pour Djibril Ouattara :
+- `personnalites_mentions` : **0 lignes** liees
+- `actualites` : **73 articles** le mentionnant, mais **tous ont `sentiment = null`**
+- `social_insights` : **0 lignes**
 
-### Fichier : `src/hooks/useUserPermissions.ts`
+Le hook ignore completement les articles de la table `actualites`, qui sont pourtant la source principale de donnees pour cet acteur.
 
-Simplifier la condition `isLoading` pour ne plus inclure `isFetching` (qui est vrai pendant les refetches) et utiliser une logique plus robuste :
+---
 
-```typescript
-// AVANT (bugge)
-const isLoading = !role || isPending || isFetching || !isSuccess;
+## Corrections
 
-// APRES (corrige)
-const isLoading = !role || (isPending && !isSuccess);
-```
+### 1. `SentimentBar.tsx` -- Gerer le cas "aucune donnee"
 
-Cette correction :
-- Attend que `role` soit defini (depuis AuthContext)
-- Attend le premier chargement reussi des permissions
-- Ne bloque plus l'UI pendant les refetches en arriere-plan
-- Resout le probleme d'affichage permanent de "Verification de l'acces..."
+Quand `positif + neutre + negatif === 0`, afficher un etat vide au lieu du calcul trompeur :
+- Afficher "Aucune donnee de sentiment" en texte grise
+- Barre grise uniforme en mode compact
 
-### Impact
+### 2. `useActeurDigitalDashboard.ts` -- Inclure les actualites dans le calcul du sentiment
 
-- Toutes les pages protegees par `PermissionRoute` beneficieront de la correction
-- Les onglets SPDI, Revue Stabilite et Benchmark s'afficheront correctement
-- Aucun impact sur la securite : la verification des permissions reste identique, seul l'etat de chargement change
+Modifier la query sentiment (lignes 69-91) pour aussi chercher dans `actualites` les articles mentionnant l'acteur par nom. Fusionner les resultats des deux sources (mentions + actualites) pour le decompte positif/neutre/negatif.
 
-### Un seul fichier modifie
+Le hook doit :
+- Recuperer le nom/prenom de l'acteur (via `personnalites`)
+- Chercher les actualites correspondantes filtrees par periode
+- Combiner avec les mentions existantes
+
+### 3. Enrichir le sentiment des articles existants (optionnel mais recommande)
+
+Les 73 articles de Djibril Ouattara ont tous `sentiment = null`. La fonction Edge `enrichir-actualite` pourrait etre invoquee pour combler ce manque. Ce point est secondaire car le fix principal (point 1) evitera deja l'affichage trompeur.
+
+---
+
+## Fichiers concernes
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/hooks/useUserPermissions.ts` | Corriger la condition `isLoading` (1 ligne) |
+| `src/components/spdi/SentimentBar.tsx` | Ajouter gestion du cas total=0, afficher "Aucune donnee" |
+| `src/hooks/useActeurDigitalDashboard.ts` | Inclure `actualites` dans le calcul du sentiment |
+
+## Impact
+
+- Corrige l'affichage trompeur "100% Negatif" pour tous les acteurs sans donnees
+- Enrichit le calcul sentiment en utilisant les articles (source principale)
+- Aucune modification de base de donnees requise
