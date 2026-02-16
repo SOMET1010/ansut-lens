@@ -1,123 +1,144 @@
 
-
-# Option A : Mode Comparatif "Duel d'Influence"
+# Fusion des menus "Acteurs cles" et "Presence Digitale" + Mise a jour de toute la documentation
 
 ## Objectif
 
-Ajouter un mode de benchmarking cote a cote sur la page Personnalites, permettant de selectionner deux acteurs et de comparer visuellement leurs metriques d'influence sur un meme ecran.
-
-## Pourquoi commencer par l'Option A
-
-- Les composants de base existent deja : `SPDIComparaisonTemporelle` (graphique Recharts multi-acteurs) et `SPDIComparaisonPairs` (rang, ecart a la moyenne)
-- Pas de nouvelle table ni de fonction Edge a creer
-- Valeur immediate pour les decideurs : "Qui gagne le narratif ?"
+1. **Fusionner** les 3 entrees de menu separees ("Acteurs cles", "Presence Digitale", "Revue SPDI") en une seule entree "Acteurs & Influence" avec navigation par onglets interne.
+2. **Mettre a jour** tous les fichiers de documentation pour refleter l'etat actuel de la plateforme (modules, Edge Functions, hooks, composants, fonctionnalites recentes).
 
 ---
 
-## Architecture de la fonctionnalite
+## Partie 1 : Fusion des menus
 
-### Nouveau composant : `SPDIBenchmarkPanel`
+### Situation actuelle
 
-Un panneau plein ecran (Dialog ou Sheet large) accessible depuis la page Personnalites via un bouton "Comparer". L'utilisateur selectionne deux acteurs et voit :
+Le sidebar contient 3 entrees separees partageant la meme permission `view_personnalites` :
+- **Acteurs cles** (`/personnalites`) - Cartographie des acteurs
+- **Presence Digitale** (`/presence-digitale`) - Dashboard SPDI individuel
+- **Revue SPDI** (`/spdi-review`) - Vue panoramique stabilite
+
+### Solution proposee
+
+Creer une page unifiee `/acteurs` avec un systeme d'onglets (Tabs) :
 
 ```text
-+---------------------------+---------------------------+
-|       ACTEUR A            |       ACTEUR B            |
-|  [Avatar] Nom Prenom     |  [Avatar] Nom Prenom      |
-|  Cercle 1 - DG ANSUT     |  Cercle 2 - Ministre      |
-+---------------------------+---------------------------+
-| Score SPDI: 72.4  +12%   | Score SPDI: 58.1  -3%     |
-| [====Sparkline 30j====]  | [====Sparkline 30j====]   |
-+---------------------------+---------------------------+
-|     SPARKLINES SUPERPOSEES SUR UN MEME GRAPHIQUE      |
-|  [Recharts LineChart avec 2 courbes colorees]         |
-+-------------------------------------------------------+
-| Sentiment A              | Sentiment B                |
-| [===Positif===][Neu][Neg]| [==Pos==][===Neutre===][N] |
-+---------------------------+---------------------------+
-| Part de Voix A           | Part de Voix B             |
-| [Donut] 18% du cercle    | [Donut] 12% du cercle     |
-+---------------------------+---------------------------+
-| Thematiques A            | Thematiques B              |
-| #Cloud #5G #IA           | #Regulation #PME #Infra    |
-+---------------------------+---------------------------+
-| VERDICT IA :                                          |
-| "L'acteur A domine sur LinkedIn (+40% de posts),      |
-|  mais B a un meilleur sentiment (+15 pts). B gagne    |
-|  sur les thematiques regulatoires."                   |
-+-------------------------------------------------------+
++--------------------------------------------------------------+
+| Acteurs & Influence                                           |
+| [Cartographie] [Dashboard SPDI] [Revue Stabilite] [Benchmark]|
++--------------------------------------------------------------+
+|                                                               |
+|   Contenu de l'onglet actif                                   |
+|                                                               |
++--------------------------------------------------------------+
 ```
-
-### Selecteur d'acteurs
-
-- Deux `<Select>` (Radix) filtres par nom/cercle
-- Auto-completion avec recherche
-- Possibilite de pre-remplir un acteur depuis sa fiche detail (bouton "Comparer avec...")
-
----
-
-## Modifications prevues
-
-### Fichiers crees
-
-**`src/components/spdi/SPDIBenchmarkPanel.tsx`**
-- Dialog pleine largeur avec layout en deux colonnes
-- Deux selecteurs d'acteurs (Radix Select avec recherche)
-- Affichage cote a cote : score, sparkline individuelle, sentiment, share of voice, thematiques
-- Graphique Recharts superpose avec les deux courbes
-- Section "Verdict IA" en bas (texte genere par le hook existant ou affichage statique des ecarts)
-
-**`src/hooks/useBenchmarkData.ts`**
-- Appelle `useActeurDigitalDashboard` pour chacun des deux acteurs selectionnes
-- Fusionne les sparkline data pour le graphique superpose
-- Calcule les ecarts : delta score, delta sentiment, delta share of voice
-- Genere un "verdict" textuel base sur les ecarts (logique locale, pas d'appel IA pour la v1)
 
 ### Fichiers modifies
 
-**`src/pages/PersonnalitesPage.tsx`**
-- Ajout d'un bouton "Comparer" a cote du toggle Liste/Radar dans le header
-- State `benchmarkOpen` pour ouvrir/fermer le panneau
-- Import et rendu de `SPDIBenchmarkPanel`
+**`src/components/layout/AppSidebar.tsx`**
+- Remplacer les 3 entrees (Acteurs cles, Presence Digitale, Revue SPDI) par une seule : "Acteurs & Influence" avec icone `Users`, URL `/acteurs`
 
-**`src/components/personnalites/ActeurDetail.tsx`**
-- Ajout d'un bouton "Comparer avec un pair" dans la section SPDI (visible uniquement si suivi actif)
-- Ce bouton ouvre le `SPDIBenchmarkPanel` avec l'acteur pre-selectionne en position A
+**`src/pages/ActeursInfluencePage.tsx`** (nouveau)
+- Page conteneur avec `Tabs` (Radix) et 4 onglets :
+  - **Cartographie** : contenu actuel de `PersonnalitesPage`
+  - **Dashboard SPDI** : contenu actuel de `PresenceDigitalePage`
+  - **Revue Stabilite** : contenu actuel de `SpdiReviewPage`
+  - **Benchmark** : acces direct au `SPDIBenchmarkPanel`
+- Les onglets seront synchronises avec l'URL via un query param `?tab=cartographie|spdi|revue|benchmark`
 
-**`src/components/spdi/index.ts`**
-- Export du nouveau `SPDIBenchmarkPanel`
+**`src/App.tsx`**
+- Remplacer les 3 routes (`/personnalites`, `/presence-digitale`, `/spdi-review`) par une route unique `/acteurs`
+- Ajouter des redirections depuis les anciennes URLs vers `/acteurs` avec le bon parametre d'onglet :
+  - `/personnalites` -> `/acteurs?tab=cartographie`
+  - `/presence-digitale` -> `/acteurs?tab=spdi`
+  - `/spdi-review` -> `/acteurs?tab=revue`
+
+**Pages existantes conservees** (mais plus utilisees comme routes directes)
+- `PersonnalitesPage.tsx`, `PresenceDigitalePage.tsx`, `SpdiReviewPage.tsx` restent comme composants internes importes par la nouvelle page unifiee. Ils seront refactores en composants (retrait du wrapper `div` de page si necessaire).
+
+---
+
+## Partie 2 : Mise a jour de la documentation
+
+### Etat actuel des docs vs realite
+
+Les docs mentionnent "9 Edge Functions" et "17 tables" alors qu'il y a maintenant **23 Edge Functions** et de nombreuses nouvelles fonctionnalites (Newsletters, SPDI, Benchmark, Formation PDF, etc.).
+
+### Fichiers a mettre a jour
+
+**`docs/OVERVIEW.md`**
+- Mettre a jour la liste des modules : passer de 7 a 9 modules (ajouter Flux personnalises, Presence Digitale/SPDI)
+- Fusionner la description "Acteurs cles" avec "Presence Digitale" en un seul module
+- Mettre a jour la feuille de route (retirer les elements deja implementes comme Export PDF)
+- Actualiser le schema d'architecture (mentionner Gemini au lieu de Grok)
+
+**`docs/ARCHITECTURE.md`**
+- Mettre a jour le nombre de tables (17 -> nombre reel + `social_insights`, `newsletters`, `role_permissions`, etc.)
+- Mettre a jour le nombre d'Edge Functions (9 -> 23)
+- Ajouter les hooks manquants (`useActeurDigitalDashboard`, `useBenchmarkData`, `useNewsletters`, `useNewsletterScheduler`, `useSocialInsights`, `useSpdiStatus`, etc.)
+- Ajouter les dossiers de composants manquants (`newsletter/`, `newsletter/studio/`, `formation/`, `presentation/`, `import-acteurs/`, `radar/`)
+- Mettre a jour les APIs externes (Gemini via Lovable AI au lieu de Grok/xAI)
+
+**`docs/EDGE-FUNCTIONS.md`**
+- Ajouter les 14 Edge Functions manquantes : `analyser-spdi`, `calculer-spdi`, `collecte-social`, `collecte-social-api`, `diffuser-resume`, `envoyer-newsletter`, `envoyer-sms`, `generate-password-link`, `generer-briefing`, `generer-newsletter`, `generer-requete-flux`, `list-users-status`, `reset-user-password`, `scheduler-newsletter`
+- Mettre a jour les secrets requis
+
+**`docs/DATABASE.md`**
+- Ajouter les tables manquantes (`social_insights`, `newsletters`, `newsletter_destinataires`, `role_permissions`, `flux_actualites`, etc.)
+- Mettre a jour le schema entite-relation
+
+**`docs/API.md`**
+- Ajouter les endpoints des nouvelles Edge Functions
+- Mettre a jour les exemples
+
+**`docs/README.md`**
+- Mettre a jour les compteurs (hooks 13+ -> 20+, composants 50+ -> 80+, Edge Functions 9 -> 23)
+- Mettre a jour la date de derniere modification
+
+**`docs/formation/USER.md`**
+- Fusionner les sections "Acteurs cles" avec la documentation sur la Presence Digitale et le Benchmark
+- Mettre a jour le tableau de navigation (nouveau menu unifie)
+- Ajouter la section sur les Newsletters et le Studio Newsletter
+
+**`docs/formation/ADMIN.md`**
+- Mettre a jour le tableau de navigation
+- Ajouter les sections SPDI Status, Diffusion, Sources, Roles & Permissions
+- Documenter les nouvelles Edge Functions d'administration
+
+**`docs/formation/COUNCIL-USER.md`**
+- Mettre a jour la navigation avec le menu unifie
+- Ajouter la mention du Dashboard d'Influence accessible
+
+**`docs/formation/GUEST.md`**
+- Aucun changement majeur (acces limite inchange)
+
+**`CHANGELOG.md`**
+- Ajouter une entree `[1.4.0]` documentant :
+  - Fusion des menus Acteurs/SPDI
+  - Module complet d'Analyse d'Influence Digitale (5 US)
+  - Mode Benchmark "Duel d'Influence"
+  - 23 Edge Functions (14 nouvelles)
+  - Studio Newsletter avec editeur WYSIWYG
+  - Systeme de permissions granulaires
+  - Guides de formation PDF
 
 ---
 
 ## Details techniques
 
-### Donnees utilisees (aucune nouvelle table)
+### Navigation par onglets
 
-Toutes les donnees proviennent des hooks existants :
-- `useActeurDigitalDashboard` : sparkline, sentiment, canaux, share of voice, thematiques
-- `usePersonnalites` : liste des acteurs pour les selecteurs
-- `presence_digitale_metrics` : scores SPDI pour le graphique superpose (via Recharts, comme `SPDIComparaisonTemporelle`)
+- Utilisation de `Tabs` / `TabsList` / `TabsContent` de Radix (deja installe via shadcn)
+- Le parametre URL `?tab=` permet le deep linking et le partage d'URLs
+- L'onglet par defaut est "cartographie"
 
-### Graphique superpose
+### Redirections
 
-Reutilisation du pattern de `SPDIComparaisonTemporelle` (Recharts `LineChart` avec deux `Line`) mais limite a exactement 2 acteurs pour la lisibilite, avec des couleurs fixes (bleu vs orange).
-
-### Verdict textuel (v1 - logique locale)
-
-Pas d'appel a l'IA pour la v1. Le verdict est genere par une fonction utilitaire qui compare les metriques :
-- Si ecart score > 10 pts : "X domine largement"
-- Si ecart sentiment > 20% : "Y a un meilleur sentiment"
-- Si share of voice A > B : "A a une plus grande part de voix"
-- Combinaison de ces constats en 2-3 phrases
+Les anciennes URLs (`/personnalites`, `/presence-digitale`, `/spdi-review`) resteront fonctionnelles via des `<Navigate>` dans le routeur, assurant la retrocompatibilite pour les favoris et liens existants.
 
 ### Aucune nouvelle dependance
 
-- Recharts (deja installe) pour le graphique superpose
-- Radix Select (deja installe) pour les selecteurs
-- SVG existants (MiniSparkline, SentimentBar, ShareOfVoiceDonut) reutilises dans les colonnes
+Tout repose sur des composants et bibliotheques deja installes.
 
-### Responsive
+### Impact sur les permissions
 
-- Sur desktop : 2 colonnes cote a cote
-- Sur mobile : empilement vertical (1 colonne)
-
+Aucun changement : la permission `view_personnalites` reste la seule requise pour acceder a la page unifiee, comme c'etait deja le cas pour les 3 pages separees.
