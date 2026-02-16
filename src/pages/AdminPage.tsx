@@ -1,4 +1,4 @@
-import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode, Radio } from 'lucide-react';
+import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode, Radio, Activity } from 'lucide-react';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { SystemHealthWidget } from '@/components/admin/SystemHealthWidget';
 import { AdminNavCard } from '@/components/admin/AdminNavCard';
@@ -192,6 +192,16 @@ export default function AdminPage() {
             badgeVariant="default"
             subtitle="Collecte automatisée et planification des tâches système."
             to="/admin/cron-jobs"
+            loading={isLoading}
+          />
+          <AdminNavCard
+            color="purple"
+            icon={<Activity size={24} />}
+            title="Statut SPDI Batch"
+            badge="Quotidien"
+            badgeVariant="info"
+            subtitle="Suivi du calcul automatique quotidien du SPDI."
+            to="/admin/spdi-status"
             loading={isLoading}
           />
         </div>
