@@ -208,7 +208,7 @@ serve(async (req) => {
         nb_mentions: nbMentions,
         nb_sources_distinctes: nbSources,
         regularite_mentions: Math.round(regularite * 10) / 10,
-        sentiment_moyen: Math.round(sentimentMoyen * 1000) / 1000,
+        sentiment_moyen: Math.round(Math.max(-9.99, Math.min(9.99, sentimentMoyen)) * 100) / 100,
         pct_themes_strategiques: Math.round(pctThemesStrategiques * 10) / 10,
         nb_controverses: nbControverses,
         nb_citations_directes: citationsDirectes,
