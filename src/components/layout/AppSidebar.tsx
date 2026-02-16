@@ -8,8 +8,6 @@ import {
   LogOut,
   User,
   Rss,
-  Activity,
-  TrendingUp,
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -59,24 +57,10 @@ const menuItems = [
     permission: 'create_flux'
   },
   { 
-    title: 'Acteurs clés', 
-    url: '/personnalites', 
+    title: 'Acteurs & Influence', 
+    url: '/acteurs', 
     icon: Users,
-    description: 'Fiches personnalités',
-    permission: 'view_personnalites'
-  },
-  { 
-    title: 'Présence Digitale', 
-    url: '/presence-digitale', 
-    icon: Activity,
-    description: 'Score SPDI & analyses',
-    permission: 'view_personnalites'
-  },
-  { 
-    title: 'Revue SPDI', 
-    url: '/spdi-review', 
-    icon: TrendingUp,
-    description: 'Stabilité & tendances',
+    description: 'Cartographie, SPDI & benchmark',
     permission: 'view_personnalites'
   },
   { 

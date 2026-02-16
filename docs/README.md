@@ -9,10 +9,10 @@ Bienvenue dans la documentation technique du projet ANSUT RADAR, plateforme de v
 | Document | Description |
 |----------|-------------|
 | [Architecture](./ARCHITECTURE.md) | Architecture technique, stack, patterns |
-| [Base de données](./DATABASE.md) | Schéma, 17 tables, RLS policies |
-| [Edge Functions](./EDGE-FUNCTIONS.md) | 9 fonctions backend documentées |
-| [Authentification](./AUTHENTICATION.md) | Flux auth, 4 rôles, permissions |
-| [Référence API](./API.md) | Endpoints, payloads, exemples curl |
+| [Base de données](./DATABASE.md) | Schéma, 30+ tables, RLS policies |
+| [Edge Functions](./EDGE-FUNCTIONS.md) | 23 fonctions backend documentées |
+| [Authentification](./AUTHENTICATION.md) | Flux auth, 4 rôles, permissions granulaires |
+| [Référence API](./API.md) | 23 endpoints, payloads, exemples |
 | [Contribution](./CONTRIBUTING.md) | Guide Git, conventions de code |
 | [Déploiement](./DEPLOYMENT.md) | Lovable Cloud, variables, CRON |
 | [Dépannage](./TROUBLESHOOTING.md) | FAQ, erreurs courantes, debug |
@@ -21,7 +21,7 @@ Bienvenue dans la documentation technique du projet ANSUT RADAR, plateforme de v
 
 | Document | Description |
 |----------|-------------|
-| [Présentation de la solution](./OVERVIEW.md) | Vue d'ensemble ANSUT RADAR |
+| [Présentation de la solution](./OVERVIEW.md) | Vue d'ensemble ANSUT RADAR (9 modules) |
 | [Index des formations](./formation/README.md) | Guides par profil utilisateur |
 | [Formation Administrateur](./formation/ADMIN.md) | Gestion de la plateforme |
 | [Formation Utilisateur](./formation/USER.md) | Analyse et veille quotidienne |
@@ -68,9 +68,15 @@ ansut-radar/
 ├── public/                  # Assets statiques
 ├── src/
 │   ├── assets/             # Images et médias
-│   ├── components/         # Composants React (50+)
+│   ├── components/         # Composants React (80+)
+│   │   ├── ui/             # shadcn/ui primitives
+│   │   ├── spdi/           # 15 composants SPDI
+│   │   ├── newsletter/     # Newsletter + Studio WYSIWYG
+│   │   ├── radar/          # Centre de Veille
+│   │   ├── personnalites/  # Acteurs & Influence
+│   │   └── ...             # 15 dossiers de composants
 │   ├── contexts/           # Contextes React (Auth, ViewMode)
-│   ├── hooks/              # Hooks personnalisés (13+)
+│   ├── hooks/              # Hooks personnalisés (25+)
 │   ├── integrations/       # Client Supabase (auto-généré)
 │   ├── lib/                # Utilitaires
 │   ├── pages/              # Pages de l'application
@@ -78,7 +84,7 @@ ansut-radar/
 │   └── utils/              # Fonctions utilitaires
 ├── supabase/
 │   ├── config.toml         # Configuration (auto-géré)
-│   └── functions/          # 9 Edge Functions
+│   └── functions/          # 23 Edge Functions
 ├── README.md               # Documentation principale
 └── CHANGELOG.md            # Historique des versions
 ```
@@ -95,4 +101,4 @@ L'accès au backend (base de données, logs, storage) se fait via l'interface Lo
 
 ---
 
-**Dernière mise à jour :** Janvier 2026
+**Dernière mise à jour :** Février 2026

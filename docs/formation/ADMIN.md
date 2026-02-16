@@ -5,9 +5,12 @@
 En tant qu'administrateur ANSUT RADAR, vous êtes responsable de :
 
 - **Gestion des utilisateurs** : invitations, rôles, désactivations
-- **Configuration de la veille** : mots-clés, catégories, sources
-- **Supervision technique** : tâches CRON, logs, performances
-- **Support utilisateurs** : assistance et résolution de problèmes
+- **Permissions** : configuration granulaire des droits d'accès par rôle
+- **Configuration de la veille** : mots-clés, catégories, sources média
+- **Newsletters** : gestion, génération et envoi
+- **Diffusion** : programmation des envois automatiques
+- **SPDI** : supervision des calculs et statuts
+- **Supervision technique** : tâches CRON, logs d'audit, performances
 
 ---
 
@@ -25,33 +28,37 @@ Le menu latéral affiche les entrées suivantes :
 
 | Icône | Menu | Description |
 |-------|------|-------------|
-| 📊 | Tableau de bord | Vue d'ensemble et KPIs |
-| 📰 | Actualités | Fil d'actualités enrichies |
+| 📊 | Centre de Veille | Radar stratégique et briefing |
+| 📰 | Actualités & Veille | Fil d'actualités enrichies |
 | 📡 | Mes Flux | Flux de veille personnalisés |
-| 👥 | Acteurs clés | Personnalités surveillées |
-| 📁 | Dossiers | Notes stratégiques |
+| 👥 | Acteurs & Influence | Cartographie, SPDI, Benchmark, Revue |
+| 📁 | Studio Publication | Notes et newsletters |
 | 🤖 | Assistant IA | Chatbot intelligent |
-| 🔔 | Alertes | Centre de notifications |
 | ⚙️ | **Administration** | Gestion de la plateforme |
 
 ---
 
 ## ⚙️ Interface d'Administration
 
-Accessible via le menu "Administration" (visible uniquement pour les admins).
+Accessible via le menu "Administration" (visible uniquement avec la permission `access_admin`).
 
 ### Sous-menus disponibles
 
 | Section | Route | Description |
 |---------|-------|-------------|
 | Utilisateurs | `/admin/users` | Gérer les comptes |
-| Rôles & Permissions | `/admin/roles` | Configurer les droits d'accès |
+| Rôles & Permissions | `/admin/roles` | Configurer les droits d'accès granulaires |
 | Mots-clés | `/admin/mots-cles` | Configurer la veille |
 | Sources | `/admin/sources` | Gérer les sources média |
 | Newsletters | `/admin/newsletters` | Gestion des newsletters |
-| Import Acteurs | `/admin/import-acteurs` | Import CSV |
-| Tâches CRON | `/admin/cron` | Planification automatique |
-| Logs d'audit | `/admin/audit` | Historique des actions |
+| Diffusion | `/admin/diffusion` | Programmation des envois automatiques |
+| SPDI Status | `/admin/spdi-status` | Supervision des calculs SPDI |
+| Import Acteurs | `/admin/import-acteurs` | Import CSV d'acteurs |
+| Tâches CRON | `/admin/cron-jobs` | Planification automatique |
+| Logs d'audit | `/admin/audit-logs` | Historique des actions |
+| Formation | `/admin/formation` | Guides PDF par profil |
+| Documentation | `/admin/documentation` | Doc technique intégrée |
+| Présentation | `/admin/presentation` | Slides de présentation |
 
 ---
 
@@ -63,23 +70,18 @@ Menu Administration → **Utilisateurs** (`/admin/users`)
 ### Inviter un nouvel utilisateur
 
 1. Cliquez sur **"Inviter un utilisateur"**
-2. Remplissez le formulaire :
-   - Email (obligatoire)
-   - Nom complet
-   - Département
-   - Rôle (admin, user, council_user, guest)
+2. Remplissez : Email, Nom complet, Département, Rôle
 3. Cliquez sur **"Envoyer l'invitation"**
-
-L'utilisateur reçoit un email personnalisé avec le logo ANSUT.
 
 ### Modifier un utilisateur
 
 | Action | Description |
 |--------|-------------|
-| Changer le rôle | Sélectionnez un nouveau rôle dans le menu déroulant |
-| Désactiver | Empêche la connexion sans supprimer le compte |
-| Réactiver | Restaure l'accès d'un compte désactivé |
-| Supprimer | Suppression définitive (irréversible) |
+| Changer le rôle | Sélectionnez un nouveau rôle |
+| Désactiver | Empêche la connexion |
+| Réactiver | Restaure l'accès |
+| Supprimer | Suppression définitive |
+| Réinitialiser MDP | Générer un lien de réinitialisation |
 
 ### Les 4 rôles
 
@@ -88,15 +90,11 @@ L'utilisateur reçoit un email personnalisé avec le logo ANSUT.
 | `admin` | Accès complet + Administration |
 | `user` | Toutes les fonctionnalités sauf admin |
 | `council_user` | Lecture + Flux personnels + Assistant IA |
-| `guest` | Tableau de bord + Actualités uniquement |
+| `guest` | Centre de Veille + Actualités uniquement |
 
 ---
 
 ## 🔐 Système de Permissions Granulaires
-
-### Fonctionnement
-
-ANSUT RADAR utilise un système de permissions granulaires permettant de contrôler précisément les accès de chaque rôle. Chaque permission peut être activée ou désactivée individuellement par rôle.
 
 ### Accès
 Menu Administration → **Rôles & Permissions** (`/admin/roles`)
@@ -106,220 +104,132 @@ Menu Administration → **Rôles & Permissions** (`/admin/roles`)
 La matrice de permissions affiche :
 - **En lignes** : les permissions disponibles, groupées par catégorie
 - **En colonnes** : les 4 rôles (Admin, User, Council User, Guest)
-- **Interaction** : Cochez/décochez pour activer/désactiver une permission
+- **Interaction** : Cochez/décochez pour activer/désactiver
 
-> ⚠️ **Note de sécurité** : Les permissions du rôle **Admin** ne peuvent pas être désactivées. Les modifications sont appliquées immédiatement.
-
----
+> ⚠️ Les permissions du rôle **Admin** ne peuvent pas être désactivées.
 
 ### Permissions de Consultation
 
-| Code | Libellé | Description |
-|------|---------|-------------|
-| `view_radar` | Voir le radar | Accès au tableau de bord et radar stratégique |
-| `view_actualites` | Voir les actualités | Accès au fil d'actualités enrichies |
-| `view_personnalites` | Voir les personnalités | Accès aux fiches acteurs clés |
-| `view_dossiers` | Voir les dossiers | Accès aux notes stratégiques |
-
----
+| Code | Libellé |
+|------|---------|
+| `view_radar` | Accès au Centre de Veille |
+| `view_actualites` | Accès aux actualités |
+| `view_personnalites` | Accès aux Acteurs & Influence |
+| `view_dossiers` | Accès au Studio Publication |
 
 ### Permissions d'Actions
 
-| Code | Libellé | Description |
-|------|---------|-------------|
-| `create_flux` | Créer des flux | Créer ses propres flux de veille personnalisés |
-| `edit_dossiers` | Modifier les dossiers | Créer et modifier des notes stratégiques |
-| `use_assistant` | Utiliser l'assistant IA | Interagir avec le chatbot intelligent |
-| `receive_alerts` | Recevoir des alertes | Recevoir les notifications et emails d'alerte |
-
----
+| Code | Libellé |
+|------|---------|
+| `create_flux` | Créer des flux de veille |
+| `edit_dossiers` | Créer/modifier des notes |
+| `use_assistant` | Utiliser l'assistant IA |
+| `receive_alerts` | Recevoir des alertes |
 
 ### Permissions d'Administration
 
-| Code | Libellé | Description |
-|------|---------|-------------|
-| `access_admin` | Accès administration | Permet d'accéder à la section admin |
-| `manage_users` | Gérer les utilisateurs | Inviter, désactiver, supprimer des comptes |
-| `manage_roles` | Gérer les rôles | Modifier les permissions par rôle |
-| `view_audit_logs` | Voir les logs d'audit | Consulter l'historique des actions |
-| `manage_cron_jobs` | Gérer les tâches CRON | Activer/désactiver les collectes automatiques |
-| `manage_keywords` | Gérer les mots-clés | Configurer la veille thématique |
-| `manage_sources` | Gérer les sources | Configurer les sources média |
-| `import_actors` | Importer des acteurs | Import en masse via CSV |
-| `manage_newsletters` | Gérer les newsletters | Créer, éditer et envoyer des newsletters |
+| Code | Libellé |
+|------|---------|
+| `access_admin` | Accès section admin |
+| `manage_users` | Gérer les utilisateurs |
+| `manage_roles` | Gérer les permissions |
+| `view_audit_logs` | Voir les logs d'audit |
+| `manage_cron_jobs` | Gérer les tâches CRON |
+| `manage_keywords` | Gérer les mots-clés |
+| `manage_sources` | Gérer les sources |
+| `import_actors` | Importer des acteurs |
+| `manage_newsletters` | Gérer les newsletters |
 
 ---
 
-### Matrice par défaut
+## 📧 Gestion des Newsletters
 
-| Permission | Admin | User | Council | Guest |
-|------------|:-----:|:----:|:-------:|:-----:|
-| **Consultation** |
-| view_radar | ✅ | ✅ | ✅ | ✅ |
-| view_actualites | ✅ | ✅ | ✅ | ✅ |
-| view_personnalites | ✅ | ✅ | ❌ | ❌ |
-| view_dossiers | ✅ | ✅ | ❌ | ❌ |
-| **Actions** |
-| create_flux | ✅ | ✅ | ✅ | ❌ |
-| edit_dossiers | ✅ | ✅ | ❌ | ❌ |
-| use_assistant | ✅ | ✅ | ✅ | ❌ |
-| receive_alerts | ✅ | ✅ | ✅ | ❌ |
-| **Administration** |
-| access_admin | ✅ | ❌ | ❌ | ❌ |
-| manage_* | ✅ | ❌ | ❌ | ❌ |
+### Accès
+Menu Administration → **Newsletters** (`/admin/newsletters`)
+
+- Voir toutes les newsletters générées
+- Valider ou rejeter les contenus
+- Programmer les envois
+- Consulter les statistiques d'envoi
 
 ---
 
-### Bonnes pratiques
+## 📡 Diffusion Automatisée
 
-1. **Principe du moindre privilège** : N'accordez que les permissions nécessaires
-2. **Tester après modification** : Vérifiez l'impact sur un utilisateur test
-3. **Documenter les changements** : Notez les raisons des modifications
-4. **Révision régulière** : Auditez les permissions trimestriellement
+### Accès
+Menu Administration → **Diffusion** (`/admin/diffusion`)
+
+- Programmer des envois par canal (email, SMS)
+- Configurer les destinataires par groupe
+- Définir la fréquence et l'heure d'envoi
+- Consulter les logs d'envoi
+
+---
+
+## 📊 SPDI Status
+
+### Accès
+Menu Administration → **SPDI Status** (`/admin/spdi-status`)
+
+- Voir le statut des calculs SPDI pour chaque acteur
+- Identifier les acteurs avec suivi actif/inactif
+- Forcer un recalcul manuel
+- Diagnostiquer les erreurs de calcul
+
+---
+
+## 🔤 Sources Média
+
+### Accès
+Menu Administration → **Sources** (`/admin/sources`)
+
+- Gérer les sources de veille (RSS, sites web, réseaux sociaux)
+- Configurer les paramètres de collecte par source
+- Activer/désactiver des sources
+- Voir la dernière date de collecte
 
 ---
 
 ## 🔤 Configuration des Mots-clés
 
 ### Accès
-Menu Administration → **Mots-clés de veille** (`/admin/mots-cles`)
+Menu Administration → **Mots-clés** (`/admin/mots-cles`)
 
 ### Ajouter un mot-clé
 
 1. Cliquez sur **"Ajouter un mot-clé"**
-2. Remplissez :
-   - Mot-clé principal (ex: "fibre optique")
-   - Variantes (ex: "FTTH", "fibre optique", "fiber")
-   - Catégorie de veille
-   - Quadrant du radar
-   - Score de criticité (1-10)
-   - Alerte automatique (oui/non)
-3. Sauvegardez
-
-### Impact sur la collecte
-
-Les mots-clés configurés sont utilisés par la tâche CRON `collecte-veille` pour :
-- Rechercher des actualités correspondantes
-- Enrichir automatiquement les articles
-- Déclencher des alertes si activé
-
----
-
-## 📥 Import d'Acteurs
-
-### Accès
-Menu Administration → **Import Acteurs** (`/admin/import-acteurs`)
-
-### Format CSV attendu
-
-```csv
-nom,prenom,fonction,organisation,categorie,cercle
-Dupont,Jean,Directeur,Orange CI,operateurs,1
-Martin,Marie,Ministre,Gouvernement,regulateurs,1
-```
-
-### Processus d'import
-
-1. Préparez votre fichier CSV
-2. Glissez-déposez ou sélectionnez le fichier
-3. Vérifiez la prévisualisation
-4. Corrigez les erreurs éventuelles
-5. Cliquez sur **"Importer"**
-
-### Gestion des doublons
-
-Le système détecte les doublons potentiels basés sur :
-- Nom + Prénom similaires
-- Même organisation
-
-Vous pouvez fusionner ou ignorer les doublons détectés.
+2. Remplissez : mot-clé, variantes, catégorie, quadrant, criticité
+3. Activez l'alerte automatique si nécessaire
 
 ---
 
 ## ⏰ Tâches CRON
 
 ### Accès
-Menu Administration → **Tâches CRON** (`/admin/cron`)
-
-### Tâches configurées
-
-| Tâche | Planification | Description |
-|-------|---------------|-------------|
-| `collecte-veille-critique` | Toutes les 6h | Collecte actualités prioritaires |
-| `collecte-veille-quotidienne` | Chaque jour 8h | Collecte complète |
-| `send-flux-digest` | Configurable | Envoi des digests email |
+Menu Administration → **Tâches CRON** (`/admin/cron-jobs`)
 
 ### Actions disponibles
 
 | Action | Description |
 |--------|-------------|
-| ▶️ Exécuter | Lancer manuellement la tâche |
+| ▶️ Exécuter | Lancer manuellement |
 | ⏸️ Suspendre | Désactiver temporairement |
-| ✏️ Modifier | Changer la planification CRON |
-| 📊 Historique | Consulter les exécutions passées |
-
-### Format de planification CRON
-
-```
-┌───────────── minute (0 - 59)
-│ ┌───────────── heure (0 - 23)
-│ │ ┌───────────── jour du mois (1 - 31)
-│ │ │ ┌───────────── mois (1 - 12)
-│ │ │ │ ┌───────────── jour de la semaine (0 - 6)
-│ │ │ │ │
-* * * * *
-```
-
-**Exemples :**
-- `0 */6 * * *` → Toutes les 6 heures
-- `0 8 * * *` → Chaque jour à 8h00
-- `0 8 * * 1-5` → Du lundi au vendredi à 8h00
+| ✏️ Modifier | Changer la planification |
+| 📊 Historique | Consulter les exécutions |
 
 ---
 
 ## 📋 Logs d'Audit
 
 ### Accès
-Menu Administration → **Logs d'audit** (`/admin/audit`)
-
-### Informations enregistrées
+Menu Administration → **Logs d'audit** (`/admin/audit-logs`)
 
 Chaque action admin est tracée avec :
 - Date et heure
 - Administrateur concerné
-- Type d'action (invite, role_change, disable, delete)
+- Type d'action
 - Utilisateur cible
-- Détails de l'action
-
-### Filtres disponibles
-
-- Par période (aujourd'hui, 7 jours, 30 jours, personnalisé)
-- Par administrateur
-- Par type d'action
-
----
-
-## 🔧 Résolution de Problèmes
-
-### Un utilisateur ne reçoit pas l'invitation
-
-1. Vérifiez l'adresse email saisie
-2. Demandez à l'utilisateur de vérifier ses spams
-3. Consultez les logs de la fonction `invite-user`
-4. Vérifiez que le secret `RESEND_API_KEY` est configuré
-
-### La collecte de veille ne fonctionne pas
-
-1. Vérifiez les tâches CRON dans `/admin/cron`
-2. Consultez l'historique des exécutions
-3. Vérifiez que des mots-clés actifs existent
-4. Consultez les logs de `collecte-veille`
-
-### Un utilisateur ne peut pas se connecter
-
-1. Vérifiez que le compte n'est pas désactivé
-2. Proposez la réinitialisation de mot de passe
-3. Vérifiez le rôle attribué
+- Détails JSON de l'action
 
 ---
 
@@ -328,25 +238,20 @@ Chaque action admin est tracée avec :
 ### Configuration initiale
 
 - [ ] Configurer les mots-clés de veille
+- [ ] Configurer les sources média
 - [ ] Importer les acteurs clés initiaux
+- [ ] Configurer les permissions par rôle
 - [ ] Vérifier les tâches CRON
 - [ ] Inviter les premiers utilisateurs
 - [ ] Tester le flux complet (collecte → enrichissement → alerte)
 
 ### Maintenance régulière
 
-- [ ] Consulter les logs d'audit hebdomadaires
+- [ ] Consulter les logs d'audit
 - [ ] Vérifier les exécutions CRON
-- [ ] Mettre à jour les mots-clés si nécessaire
+- [ ] Mettre à jour les mots-clés
+- [ ] Valider et envoyer les newsletters
 - [ ] Gérer les demandes d'accès
-
----
-
-## 📞 Support Technique
-
-Pour les problèmes techniques avancés :
-- Consultez la [documentation technique](../README.md)
-- Contactez l'équipe de développement
 
 ---
 
