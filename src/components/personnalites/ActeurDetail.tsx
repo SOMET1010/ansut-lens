@@ -1,3 +1,4 @@
+import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -6,11 +7,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { 
   Building2, MapPin, Star, AlertTriangle, Bell, 
   Twitter, Linkedin, Newspaper, ExternalLink,
   Wifi, Wallet, Landmark, GraduationCap, Activity, Pencil,
-  Archive, Trash2
+  Archive, Trash2, Eye, MessageSquare, Award, Users, Lightbulb, Zap
 } from 'lucide-react';
 import { CERCLE_LABELS, SOUS_CATEGORIE_LABELS } from '@/hooks/usePersonnalites';
 import { 
@@ -53,9 +56,29 @@ const getCategorieIcon = (categorie?: string) => {
   }
 };
 
+// Conseils par axe faible
+const AXES_CONSEILS: Record<string, { icon: typeof Eye; label: string; conseil: string }> = {
+  visibilite: { icon: Eye, label: 'Visibilité', conseil: 'Augmenter la fréquence des publications et communiqués de presse' },
+  qualite: { icon: MessageSquare, label: 'Qualité', conseil: 'Améliorer le sentiment en diversifiant les prises de parole positives' },
+  autorite: { icon: Award, label: 'Autorité', conseil: 'Participer à davantage de panels et conférences sectorielles' },
+  presence: { icon: Users, label: 'Présence', conseil: "Intensifier l'activité LinkedIn et l'engagement communautaire" },
+};
+
+const getAxesFaibles = (metrique: any) => {
+  if (!metrique) return [];
+  const axes = [
+    { key: 'visibilite', score: metrique.score_visibilite },
+    { key: 'qualite', score: metrique.score_qualite },
+    { key: 'autorite', score: metrique.score_autorite },
+    { key: 'presence', score: metrique.score_presence },
+  ];
+  return axes.filter(a => a.score != null && a.score < 40);
+};
+
 export function ActeurDetail({ personnalite, open, onOpenChange, onEdit, onArchive, onDelete }: ActeurDetailProps) {
   const { isAdmin } = useAuth();
   const toggleSuivi = useToggleSuiviSPDI();
+  const [calculLoading, setCalculLoading] = React.useState(false);
   
   // Récupérer les données SPDI si le suivi est actif (accès direct aux champs optionnels)
   const { data: metriqueSPDI } = useDerniereMetriqueSPDI(
@@ -255,6 +278,34 @@ export function ActeurDetail({ personnalite, open, onOpenChange, onEdit, onArchi
                   compact
                 />
                 
+                {/* Conseils par axe faible */}
+                {(() => {
+                  const axesFaibles = getAxesFaibles(metriqueSPDI);
+                  if (axesFaibles.length === 0) return null;
+                  return (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                        <Lightbulb className="h-3.5 w-3.5" />
+                        Axes à améliorer
+                      </h4>
+                      {axesFaibles.map(({ key, score }) => {
+                        const conseil = AXES_CONSEILS[key];
+                        if (!conseil) return null;
+                        const Icon = conseil.icon;
+                        return (
+                          <div key={key} className="flex items-start gap-2 p-2 bg-orange-50 dark:bg-orange-950/30 rounded-lg border border-orange-200 dark:border-orange-800">
+                            <Icon className="h-3.5 w-3.5 mt-0.5 text-orange-600 dark:text-orange-400 shrink-0" />
+                            <div>
+                              <span className="text-xs font-semibold text-orange-700 dark:text-orange-300">{conseil.label} ({Math.round(score)}/100)</span>
+                              <p className="text-xs text-orange-600/80 dark:text-orange-400/80">{conseil.conseil}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
                 {recommandationsSPDI && recommandationsSPDI.length > 0 && (
                   <SPDIRecommandations 
                     recommandations={recommandationsSPDI.slice(0, 2)} 
@@ -265,9 +316,34 @@ export function ActeurDetail({ personnalite, open, onOpenChange, onEdit, onArchi
             )}
             
             {suiviSPDIActif && !metriqueSPDI && (
-              <p className="text-xs text-muted-foreground text-center py-4">
-                Aucune métrique disponible. Les données seront collectées prochainement.
-              </p>
+              <div className="text-center py-4 space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Aucune métrique disponible.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  disabled={calculLoading}
+                  onClick={async () => {
+                    setCalculLoading(true);
+                    try {
+                      const { error } = await supabase.functions.invoke('calculer-spdi', {
+                        body: { personnalite_id: personnalite.id },
+                      });
+                      if (error) throw error;
+                      toast.success('Calcul SPDI lancé avec succès');
+                    } catch (err: any) {
+                      toast.error(`Erreur: ${err.message}`);
+                    } finally {
+                      setCalculLoading(false);
+                    }
+                  }}
+                >
+                  <Zap className="h-3.5 w-3.5" />
+                  {calculLoading ? 'Calcul en cours…' : 'Lancer le premier calcul'}
+                </Button>
+              </div>
             )}
           </div>
 
