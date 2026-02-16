@@ -209,6 +209,30 @@ export const usePreviewEnrichment = () => {
   });
 };
 
+export const useBatchSentiment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('enrichir-actualite', {
+        body: { batch_sentiment: true, limit: 200 }
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['actualites'] });
+      const enriched = data?.enriched ?? data?.nb_enriched ?? 0;
+      const total = data?.total ?? data?.nb_total ?? enriched;
+      toast.success(`${enriched} article${enriched > 1 ? 's' : ''} enrichi${enriched > 1 ? 's' : ''} sur ${total} traité${total > 1 ? 's' : ''}`);
+    },
+    onError: (error) => {
+      console.error('Erreur batch sentiment:', error);
+      toast.error("Erreur lors de l'analyse des sentiments");
+    },
+  });
+};
+
 // Hook pour récupérer les articles de la veille (24-48h) pour les comparaisons de tendances
 export const useYesterdayArticles = () => {
   return useQuery({

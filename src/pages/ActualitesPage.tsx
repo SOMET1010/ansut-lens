@@ -3,7 +3,7 @@ import { TrendingUp, Loader2, Newspaper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
-import { useActualites, useTriggerCollecte, useEnrichActualite, useYesterdayArticles } from '@/hooks/useActualites';
+import { useActualites, useTriggerCollecte, useEnrichActualite, useYesterdayArticles, useBatchSentiment } from '@/hooks/useActualites';
 import { useArticleClusters } from '@/hooks/useArticleClusters';
 import { useSidebarAnalytics } from '@/hooks/useSidebarAnalytics';
 import { ArticleCluster } from '@/components/actualites/ArticleCluster';
@@ -37,6 +37,7 @@ export default function ActualitesPage() {
 
   const triggerCollecte = useTriggerCollecte();
   const enrichActualite = useEnrichActualite();
+  const batchSentiment = useBatchSentiment();
 
   // Filtrer par recherche et tags actifs
   const filteredActualites = actualites?.filter(actu => {
@@ -119,6 +120,8 @@ export default function ActualitesPage() {
         onRefresh={handleRefresh}
         onExport={handleExport}
         isRefreshing={triggerCollecte.isPending}
+        onBatchSentiment={() => batchSentiment.mutate()}
+        isBatchingSentiment={batchSentiment.isPending}
       />
 
       {/* Barre de recherche principale */}

@@ -1,4 +1,4 @@
-import { Calendar, Download, RefreshCw, ChevronDown } from 'lucide-react';
+import { Calendar, Download, RefreshCw, ChevronDown, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -14,6 +14,8 @@ interface WatchHeaderProps {
   onRefresh: () => void;
   onExport?: () => void;
   isRefreshing?: boolean;
+  onBatchSentiment?: () => void;
+  isBatchingSentiment?: boolean;
 }
 
 const periodLabels: Record<string, string> = {
@@ -30,7 +32,9 @@ export function WatchHeader({
   onPeriodChange,
   onRefresh,
   onExport,
-  isRefreshing
+  isRefreshing,
+  onBatchSentiment,
+  isBatchingSentiment
 }: WatchHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -76,6 +80,14 @@ export function WatchHeader({
           <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
           Rafraîchir
         </Button>
+
+        {/* Bouton Analyser sentiments */}
+        {onBatchSentiment && (
+          <Button variant="outline" onClick={onBatchSentiment} disabled={isBatchingSentiment}>
+            <Sparkles className={`h-4 w-4 mr-2 ${isBatchingSentiment ? 'animate-spin' : ''}`} />
+            Analyser sentiments
+          </Button>
+        )}
 
         {/* Bouton Export */}
         {onExport && (
