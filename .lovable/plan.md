@@ -1,65 +1,46 @@
 
-# Fix : Barre de sentiment affichant 100% Negatif a tort
+# Enrichissement batch du sentiment via l'IA
 
-## Diagnostic
+## Contexte
 
-Deux bugs distincts causent l'affichage "0% Positif, 0% Neutre, 100% Negatif" pour Djibril Ouattara :
+La fonction backend `enrichir-actualite` supporte deja un mode `batch_sentiment` qui analyse le sentiment des articles via l'IA. Cependant, il n'existe aucun moyen de le declencher depuis l'interface. Actuellement les 509 articles ont deja un sentiment, mais les futurs articles collectes arriveront sans sentiment.
 
-### Bug 1 -- Affichage : `SentimentBar` gere mal le cas "aucune donnee"
+## Modifications
 
-Quand aucune mention n'a de sentiment (`positif=0, neutre=0, negatif=0`), le calcul fait :
-```
-total = 0 + 0 + 0 || 1 = 1
-pPos = 0%
-pNeu = 0%
-pNeg = 100 - 0 - 0 = 100%   <-- faux !
-```
+### 1. Hook `useActualites.ts` -- Ajouter une mutation batch sentiment
 
-Le 100% Negatif est un artefact mathematique, pas un vrai sentiment.
+Ajouter un nouveau hook `useBatchSentiment` qui :
+- Appelle `enrichir-actualite` avec `{ batch_sentiment: true, limit: 200 }`
+- Invalide le cache `actualites` apres succes
+- Affiche un toast avec le nombre d'articles enrichis
 
-### Bug 2 -- Donnees : le hook ne cherche le sentiment qu'au mauvais endroit
+### 2. Page `ActualitesPage.tsx` -- Ajouter le bouton et l'etat
 
-Le hook `useActeurDigitalDashboard` cherche le sentiment uniquement dans la table `personnalites_mentions` -> `mentions`. Or pour Djibril Ouattara :
-- `personnalites_mentions` : **0 lignes** liees
-- `actualites` : **73 articles** le mentionnant, mais **tous ont `sentiment = null`**
-- `social_insights` : **0 lignes**
+- Importer et utiliser le nouveau hook `useBatchSentiment`
+- Passer la mutation au composant `WatchHeader`
 
-Le hook ignore completement les articles de la table `actualites`, qui sont pourtant la source principale de donnees pour cet acteur.
+### 3. Composant `WatchHeader.tsx` -- Ajouter un bouton "Enrichir sentiments"
 
----
-
-## Corrections
-
-### 1. `SentimentBar.tsx` -- Gerer le cas "aucune donnee"
-
-Quand `positif + neutre + negatif === 0`, afficher un etat vide au lieu du calcul trompeur :
-- Afficher "Aucune donnee de sentiment" en texte grise
-- Barre grise uniforme en mode compact
-
-### 2. `useActeurDigitalDashboard.ts` -- Inclure les actualites dans le calcul du sentiment
-
-Modifier la query sentiment (lignes 69-91) pour aussi chercher dans `actualites` les articles mentionnant l'acteur par nom. Fusionner les resultats des deux sources (mentions + actualites) pour le decompte positif/neutre/negatif.
-
-Le hook doit :
-- Recuperer le nom/prenom de l'acteur (via `personnalites`)
-- Chercher les actualites correspondantes filtrees par periode
-- Combiner avec les mentions existantes
-
-### 3. Enrichir le sentiment des articles existants (optionnel mais recommande)
-
-Les 73 articles de Djibril Ouattara ont tous `sentiment = null`. La fonction Edge `enrichir-actualite` pourrait etre invoquee pour combler ce manque. Ce point est secondaire car le fix principal (point 1) evitera deja l'affichage trompeur.
-
----
+- Ajouter une prop optionnelle `onBatchSentiment` et `isBatchingSentiment`
+- Ajouter un bouton avec icone `Sparkles` dans la barre d'actions, a cote du bouton Rafraichir
+- Le bouton affiche un spinner pendant le traitement
+- Le bouton indique le nombre d'articles sans sentiment si disponible (optionnel)
 
 ## Fichiers concernes
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/components/spdi/SentimentBar.tsx` | Ajouter gestion du cas total=0, afficher "Aucune donnee" |
-| `src/hooks/useActeurDigitalDashboard.ts` | Inclure `actualites` dans le calcul du sentiment |
+| `src/hooks/useActualites.ts` | Ajouter hook `useBatchSentiment` |
+| `src/pages/ActualitesPage.tsx` | Brancher le hook et passer au header |
+| `src/components/actualites/WatchHeader.tsx` | Ajouter bouton "Analyser sentiments" |
 
-## Impact
+## Details techniques
 
-- Corrige l'affichage trompeur "100% Negatif" pour tous les acteurs sans donnees
-- Enrichit le calcul sentiment en utilisant les articles (source principale)
-- Aucune modification de base de donnees requise
+Le hook appellera :
+```typescript
+supabase.functions.invoke('enrichir-actualite', {
+  body: { batch_sentiment: true, limit: 200 }
+})
+```
+
+Le bouton sera desactive si aucun article n'est sans sentiment ou si le traitement est en cours. Un toast informera du resultat : "X articles enrichis sur Y traites".
