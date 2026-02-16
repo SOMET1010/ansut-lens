@@ -33,7 +33,7 @@ export function useUserPermissions() {
   });
 
   // Chargement en cours si le rôle n'est pas défini OU si les permissions ne sont pas encore chargées avec succès
-  const isLoading = !role || isPending || isFetching || !isSuccess;
+  const isLoading = !role || (isPending && !isSuccess);
 
   const hasPermission = (code: string): boolean => {
     return permissions?.includes(code) ?? false;
