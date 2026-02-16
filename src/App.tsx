@@ -36,6 +36,7 @@ import ProfilePage from "@/pages/ProfilePage";
 import FluxPage from "@/pages/FluxPage";
 import FluxDetailPage from "@/pages/FluxDetailPage";
 import PresenceDigitalePage from "@/pages/PresenceDigitalePage";
+import SpdiReviewPage from "@/pages/SpdiReviewPage";
 import NotFound from "@/pages/NotFound";
 import AccessDeniedPage from "@/pages/AccessDeniedPage";
 
@@ -101,6 +102,7 @@ const App = () => (
                         <Route element={<PermissionRoute permission="view_personnalites" />}>
                           <Route path="/personnalites" element={<PersonnalitesPage />} />
                           <Route path="/presence-digitale" element={<PresenceDigitalePage />} />
+                          <Route path="/spdi-review" element={<SpdiReviewPage />} />
                         </Route>
                         
                         <Route element={<PermissionRoute permission="view_dossiers" />}>

@@ -9,6 +9,7 @@ import {
   User,
   Rss,
   Activity,
+  TrendingUp,
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -69,6 +70,13 @@ const menuItems = [
     url: '/presence-digitale', 
     icon: Activity,
     description: 'Score SPDI & analyses',
+    permission: 'view_personnalites'
+  },
+  { 
+    title: 'Revue SPDI', 
+    url: '/spdi-review', 
+    icon: TrendingUp,
+    description: 'Stabilité & tendances',
     permission: 'view_personnalites'
   },
   { 
