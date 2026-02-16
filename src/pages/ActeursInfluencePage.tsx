@@ -1,10 +1,12 @@
 import { useSearchParams } from 'react-router-dom';
-import { Users } from 'lucide-react';
+import { Users, HelpCircle } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import PersonnalitesPage from '@/pages/PersonnalitesPage';
 import PresenceDigitalePage from '@/pages/PresenceDigitalePage';
 import SpdiReviewPage from '@/pages/SpdiReviewPage';
 import { SPDIBenchmarkPanel } from '@/components/spdi';
+import { ActeursQuickTour } from '@/components/acteurs/ActeursQuickTour';
 import { useState } from 'react';
 
 const TABS = [
@@ -20,6 +22,7 @@ export default function ActeursInfluencePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentTab = (searchParams.get('tab') as TabValue) || 'cartographie';
   const [benchmarkOpen, setBenchmarkOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
 
   const handleTabChange = (value: string) => {
     if (value === 'benchmark') {
@@ -36,6 +39,9 @@ export default function ActeursInfluencePage() {
           <div className="flex items-center gap-2 mr-auto">
             <Users className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold">Acteurs & Influence</h1>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setTourOpen(true)}>
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </Button>
           </div>
           <TabsList>
             {TABS.map((tab) => (
@@ -63,6 +69,8 @@ export default function ActeursInfluencePage() {
         open={benchmarkOpen}
         onOpenChange={setBenchmarkOpen}
       />
+
+      <ActeursQuickTour forceOpen={tourOpen} onOpenChange={setTourOpen} />
     </div>
   );
 }
