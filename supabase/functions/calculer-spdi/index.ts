@@ -19,6 +19,8 @@ serve(async (req) => {
 
     // Mode batch: calcul pour tous les acteurs suivis
     if (batch) {
+      const startTime = Date.now();
+
       const { data: acteurs, error: errActeurs } = await supabase
         .from("personnalites")
         .select("id")
@@ -43,7 +45,22 @@ serve(async (req) => {
         }
       }
 
-      console.log(`[calculer-spdi] Batch terminé: ${results.length} acteurs traités`);
+      const durationMs = Date.now() - startTime;
+      const hasErrors = results.some(r => r.error);
+
+      // Log dans collectes_log pour déclencher les notifications temps réel
+      await supabase.from("collectes_log").insert({
+        type: "calcul-spdi",
+        statut: hasErrors ? "error" : "success",
+        nb_resultats: results.length,
+        duree_ms: durationMs,
+        erreur: hasErrors
+          ? results.filter(r => r.error).map(r => `${r.id}: ${r.error}`).join("; ").slice(0, 500)
+          : null,
+        mots_cles_utilises: ["spdi", "batch"],
+      });
+
+      console.log(`[calculer-spdi] Batch terminé: ${results.length} acteurs traités en ${durationMs}ms`);
       return new Response(
         JSON.stringify({ batch: true, count: results.length, results }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
