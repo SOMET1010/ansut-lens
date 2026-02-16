@@ -15,7 +15,23 @@ interface SentimentBarProps {
 }
 
 export function SentimentBar({ positif, neutre, negatif, compact = false, className }: SentimentBarProps) {
-  const total = positif + neutre + negatif || 1;
+  const total = positif + neutre + negatif;
+
+  // No data: show empty state instead of misleading 100% negative
+  if (total === 0) {
+    if (compact) {
+      return (
+        <div className={cn('w-full h-[3px] rounded-full bg-muted-foreground/20', className)} />
+      );
+    }
+    return (
+      <div className={cn('space-y-1.5', className)}>
+        <div className="w-full h-2 rounded-full bg-muted-foreground/20" />
+        <p className="text-[10px] text-muted-foreground text-center">Aucune donnée de sentiment</p>
+      </div>
+    );
+  }
+
   const pPos = Math.round((positif / total) * 100);
   const pNeu = Math.round((neutre / total) * 100);
   const pNeg = 100 - pPos - pNeu;

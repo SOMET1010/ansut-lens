@@ -55,10 +55,13 @@ export function SPDIDashboardCompact({
 }: SPDIDashboardCompactProps) {
   const [periode, setPeriode] = useState<Periode>('30j');
 
+  const nomComplet = [personnalite.prenom, personnalite.nom].filter(Boolean).join(' ');
+
   const dashboard = useActeurDigitalDashboard(
     suiviActif ? personnalite.id : undefined,
     personnalite.cercle,
-    periode
+    periode,
+    nomComplet || undefined
   );
 
   const variation = dashboard.sparklineData.length >= 2

@@ -44,7 +44,8 @@ function periodeToConfig(periode: Periode) {
 export function useActeurDigitalDashboard(
   personnaliteId?: string,
   cercle?: number,
-  periode: Periode = '30j'
+  periode: Periode = '30j',
+  nomComplet?: string
 ): ActeurDigitalDashboard {
   const config = periodeToConfig(periode);
   const dateDebut = subDays(new Date(), config.days).toISOString().split('T')[0];
@@ -65,27 +66,56 @@ export function useActeurDigitalDashboard(
     },
   });
 
-  // Sentiment from mentions filtered by period
+  // Sentiment from mentions + actualites filtered by period
   const { data: sentiment, isLoading: sentLoading } = useQuery({
-    queryKey: ['spdi-sentiment', personnaliteId, periode],
+    queryKey: ['spdi-sentiment', personnaliteId, periode, nomComplet],
     enabled: !!personnaliteId,
     queryFn: async () => {
-      const { data } = await supabase
+      let pos = 0, neu = 0, neg = 0;
+
+      // Source 1: personnalites_mentions -> mentions
+      const { data: mentionLinks } = await supabase
         .from('personnalites_mentions')
         .select('mention_id, mentions(sentiment, date_mention)')
         .eq('personnalite_id', personnaliteId!);
 
-      let pos = 0, neu = 0, neg = 0;
-      for (const row of data ?? []) {
+      for (const row of mentionLinks ?? []) {
         const m = (row as Record<string, unknown>).mentions as { sentiment: number | null; date_mention: string | null } | null;
         if (!m) { neu++; continue; }
         if (m.date_mention && m.date_mention < dateDebut) continue;
         const s = m.sentiment;
-        if (s == null) { neu++; continue; }
+        if (s == null) continue; // skip nulls instead of counting as neutre
         if (s > 0.2) pos++;
         else if (s < -0.2) neg++;
         else neu++;
       }
+
+      // Source 2: actualites mentioning this actor by name
+      if (nomComplet) {
+        const searchTerms = nomComplet.split(' ').filter(t => t.length > 2);
+        if (searchTerms.length > 0) {
+          let query = supabase
+            .from('actualites')
+            .select('sentiment, date_publication')
+            .gte('date_publication', dateDebut)
+            .not('sentiment', 'is', null);
+
+          // Search by each name part in entites_personnes array
+          for (const term of searchTerms) {
+            query = query.ilike('titre', `%${term}%`);
+          }
+
+          const { data: articles } = await query.limit(500);
+          for (const art of articles ?? []) {
+            const s = art.sentiment;
+            if (s == null) continue;
+            if (s > 0.2) pos++;
+            else if (s < -0.2) neg++;
+            else neu++;
+          }
+        }
+      }
+
       return { positif: pos, neutre: neu, negatif: neg };
     },
   });
