@@ -34,6 +34,7 @@ import PresentationPage from "@/pages/PresentationPage";
 import ProfilePage from "@/pages/ProfilePage";
 import FluxPage from "@/pages/FluxPage";
 import FluxDetailPage from "@/pages/FluxDetailPage";
+import PresenceDigitalePage from "@/pages/PresenceDigitalePage";
 import NotFound from "@/pages/NotFound";
 import AccessDeniedPage from "@/pages/AccessDeniedPage";
 
@@ -84,7 +85,7 @@ const App = () => (
                       {/* Redirections */}
                       <Route path="/" element={<Navigate to="/radar" replace />} />
                       <Route path="/medias" element={<Navigate to="/radar" replace />} />
-                      <Route path="/presence-digitale" element={<Navigate to="/personnalites" replace />} />
+                      {/* Presence Digitale route handled below */}
                       
                       {/* Routes protégées */}
                       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
@@ -98,6 +99,7 @@ const App = () => (
                         
                         <Route element={<PermissionRoute permission="view_personnalites" />}>
                           <Route path="/personnalites" element={<PersonnalitesPage />} />
+                          <Route path="/presence-digitale" element={<PresenceDigitalePage />} />
                         </Route>
                         
                         <Route element={<PermissionRoute permission="view_dossiers" />}>
