@@ -1,95 +1,72 @@
 
-# Page de statut du calcul SPDI batch quotidien
 
-## Vue d'ensemble
-Ajouter une page d'administration dediee au suivi du cron job SPDI batch. Elle affichera les KPI du dernier calcul, l'historique des executions depuis `collectes_log` (filtre `type = 'calcul-spdi'`), et un bouton pour declencher manuellement un calcul batch.
+# Analyse SPDI visible sur les cartes d'acteurs + conseils d'amelioration
 
-## Structure
+## Objectif
+Remplacer l'indicateur "Heat" artificiel (calcule localement) par le vrai score SPDI de chaque acteur, et afficher des conseils d'amelioration directement sur les cartes et dans le panneau de detail.
 
-### 1. Nouvelle page : `src/pages/admin/SpdiStatusPage.tsx`
-- **Header** avec lien retour vers `/admin`, titre "Statut SPDI Batch", bouton "Lancer un calcul batch" et "Actualiser"
-- **KPI Cards** (ligne de 4 cartes) :
-  - Dernier statut (succes/erreur avec badge colore)
-  - Date du dernier calcul (format relatif)
-  - Nombre d'acteurs traites (dernier run)
-  - Duree moyenne des 10 derniers runs
-- **Historique des executions** : tableau avec date, statut, nb acteurs, duree, erreur eventuelle
-  - Donnees depuis `collectes_log` filtre `type = 'calcul-spdi'`, ordonne par `created_at DESC`, limite 50
-- **Acteurs suivis** : liste compacte des personnalites avec `suivi_spdi_actif = true` et leur dernier score
+## Changements prevus
 
-### 2. Hook : `src/hooks/useSpdiStatus.ts`
-- Query `collectes_log` filtree sur `type = 'calcul-spdi'`, limit 50, order by `created_at desc`
-- Query `personnalites` filtrees sur `suivi_spdi_actif = true` avec `score_spdi_actuel` et `derniere_mesure_spdi`
-- Mutation pour declencher `calculer-spdi` en mode batch via `supabase.functions.invoke`
+### 1. Carte d'acteur (`SmartActeurCard.tsx`)
 
-### 3. Routage : `src/App.tsx`
-- Ajouter route `/admin/spdi-status` sous la permission `manage_cron_jobs`
+**Remplacement du badge "Heat"** :
+- Supprimer le calcul `calculateMediaHeat` (faux indicateur base uniquement sur `score_influence`)
+- A la place, afficher le vrai `score_spdi_actuel` stocke en base quand `suivi_spdi_actif = true`
+- Couleur dynamique selon le score :
+  - Vert (80+) : Presence forte
+  - Bleu (60-79) : Presence solide  
+  - Orange (40-59) : Visibilite faible
+  - Rouge (0-39) : Risque d'invisibilite
+- Si le suivi SPDI n'est pas actif, afficher un petit badge gris "SPDI inactif" avec une icone info
 
-### 4. Lien dans la page Admin : `src/pages/AdminPage.tsx`
-- Ajouter une `AdminNavCard` dans la section "Supervision Technique" avec icone `Activity`, titre "Statut SPDI Batch"
+**Ajout d'un mini-conseil** :
+- Sous la jauge d'influence, afficher une ligne de texte courte selon le score :
+  - Score >= 80 : "Excellente visibilite"
+  - Score 60-79 : "Renforcer la presence LinkedIn"
+  - Score 40-59 : "Augmenter les prises de parole"
+  - Score < 40 : "Action urgente recommandee"
+  - Pas de suivi : "Activer le suivi SPDI"
+
+### 2. Panneau de detail (`ActeurDetail.tsx`)
+
+**Section SPDI enrichie** :
+- Quand le suivi est actif et qu'il y a des metriques, ajouter un resume textuel des axes faibles :
+  - Identifier automatiquement le ou les axes sous 40/100
+  - Afficher un conseil cible par axe faible (ex: "Visibilite faible : publier au moins 2 contenus/semaine sur LinkedIn")
+- Quand le suivi est actif mais sans metriques, afficher un bouton "Lancer le premier calcul" qui invoque `calculer-spdi`
+
+### 3. Donnees utilisees
+
+Les champs existent deja dans la table `personnalites` :
+- `suivi_spdi_actif` (boolean)
+- `score_spdi_actuel` (numeric)
+- `tendance_spdi` (text)
+
+Aucune modification de base de donnees n'est necessaire.
 
 ## Details techniques
 
-### `src/hooks/useSpdiStatus.ts`
-```typescript
-// Query 1: collectes_log filtre type='calcul-spdi'
-const { data: logs } = useQuery({
-  queryKey: ['spdi-batch-logs'],
-  queryFn: () => supabase
-    .from('collectes_log')
-    .select('*')
-    .eq('type', 'calcul-spdi')
-    .order('created_at', { ascending: false })
-    .limit(50)
-});
+### `SmartActeurCard.tsx`
+- Supprimer `calculateMediaHeat` et son appel
+- Utiliser `personnalite.score_spdi_actuel` et `personnalite.suivi_spdi_actif` directement (ces champs sont deja dans le type `Personnalite`)
+- Nouveau composant interne `SPDIBadge` qui affiche le score avec code couleur
+- Nouveau texte de conseil dans le footer, a cote de la jauge d'influence
 
-// Query 2: acteurs avec suivi SPDI actif
-const { data: acteurs } = useQuery({
-  queryKey: ['spdi-acteurs-suivis'],
-  queryFn: () => supabase
-    .from('personnalites')
-    .select('id, nom, prenom, score_spdi_actuel, derniere_mesure_spdi, tendance_spdi')
-    .eq('suivi_spdi_actif', true)
-    .order('score_spdi_actuel', { ascending: false })
-});
+### `ActeurDetail.tsx`
+- Ajouter une fonction `getAxesConseil(metriqueSPDI)` qui retourne les conseils pour chaque axe faible
+- Afficher les conseils sous la jauge SPDI dans une liste avec des icones
+- Ajouter un bouton "Premier calcul" quand metriques absentes + suivi actif
 
-// Mutation: lancer batch
-const runBatch = useMutation({
-  mutationFn: () => supabase.functions.invoke('calculer-spdi', {
-    body: { batch: true }
-  })
-});
-```
+### Conseils par axe (logique cote client, pas d'appel IA)
 
-### `src/pages/admin/SpdiStatusPage.tsx`
-- Utilise les composants UI existants : Card, Table, Badge, Button, Skeleton
-- KPI calculees depuis les logs : dernier statut, date, nb resultats, duree moyenne
-- Tableau historique avec colonnes : Date, Statut (badge vert/rouge), Acteurs traites, Duree, Erreur
-- Section acteurs avec petite table : Nom, Score actuel, Derniere mesure, Tendance (badge)
-
-### Route dans `src/App.tsx`
-```typescript
-<Route element={<PermissionRoute permission="manage_cron_jobs" />}>
-  <Route path="/admin/cron-jobs" element={<CronJobsPage />} />
-  <Route path="/admin/spdi-status" element={<SpdiStatusPage />} />
-</Route>
-```
-
-### Carte admin dans `src/pages/AdminPage.tsx`
-Ajout dans la section "Supervision Technique" a cote de la carte "Taches CRON" :
-```typescript
-<AdminNavCard
-  color="purple"
-  icon={<Activity size={24} />}
-  title="Statut SPDI Batch"
-  badge={/* dernier statut */}
-  subtitle="Suivi du calcul automatique quotidien du SPDI."
-  to="/admin/spdi-status"
-/>
+```text
+Visibilite < 40 : "Augmenter la frequence des publications et communiques de presse"
+Qualite < 40 : "Ameliorer le sentiment en diversifiant les prises de parole positives"
+Autorite < 40 : "Participer a davantage de panels et conferences sectorielles"
+Presence < 40 : "Intensifier l'activite LinkedIn et l'engagement communautaire"
 ```
 
 ## Fichiers modifies
-- **Nouveau** : `src/pages/admin/SpdiStatusPage.tsx`
-- **Nouveau** : `src/hooks/useSpdiStatus.ts`
-- **Modifie** : `src/App.tsx` (ajout route)
-- **Modifie** : `src/pages/AdminPage.tsx` (ajout carte nav)
+- **Modifie** : `src/components/personnalites/SmartActeurCard.tsx` (badge SPDI + mini-conseil)
+- **Modifie** : `src/components/personnalites/ActeurDetail.tsx` (conseils par axe faible + bouton premier calcul)
+
