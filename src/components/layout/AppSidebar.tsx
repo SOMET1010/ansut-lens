@@ -8,6 +8,7 @@ import {
   LogOut,
   User,
   Rss,
+  Activity,
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -61,6 +62,13 @@ const menuItems = [
     url: '/personnalites', 
     icon: Users,
     description: 'Fiches personnalités',
+    permission: 'view_personnalites'
+  },
+  { 
+    title: 'Présence Digitale', 
+    url: '/presence-digitale', 
+    icon: Activity,
+    description: 'Score SPDI & analyses',
     permission: 'view_personnalites'
   },
   { 
