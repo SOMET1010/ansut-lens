@@ -1,49 +1,82 @@
 
-# Real-Time Alert Feed for Critical Mentions
+# Planification du calcul SPDI automatique via cron quotidien avec notifications
 
-## What will be added
+## Objectif
+Ajouter une tache cron `pg_cron` qui appelle quotidiennement la fonction `calculer-spdi` en mode batch, et enregistrer les resultats dans la table `collectes_log` pour declencher les notifications temps reel existantes (toast pour les admins).
 
-A live-updating alert feed widget on the Radar page that shows critical and warning alerts in real time, with auto-scroll to the newest entry. It leverages the existing `useRealtimeAlerts` hook (already subscribed to `alertes` table via Postgres realtime) and the `AlertNotificationProvider` context.
+## Ce qui existe deja
+- La fonction `calculer-spdi` supporte le mode `batch: true` (calcule pour tous les acteurs avec `suivi_spdi_actif = true`)
+- Le systeme de notifications temps reel (`useRealtimeCronAlerts`) ecoute les insertions dans `collectes_log` et affiche des toasts
+- La page CRON (`/admin/cron-jobs`) affiche tous les jobs et leur historique
+- 7 cron jobs sont deja configures (collecte-veille, flux-digest, newsletter, collecte-social)
 
-## Component: `RealtimeAlertFeed`
+## Plan d'implementation
 
-**Location**: `src/components/radar/RealtimeAlertFeed.tsx`
+### Etape 1 : Modifier la fonction `calculer-spdi` pour logger les resultats
+Ajouter a la fin du mode batch une insertion dans `collectes_log` avec :
+- `type`: `"calcul-spdi"`
+- `statut`: `"success"` ou `"error"`
+- `nb_resultats`: nombre d'acteurs traites
+- `duree_ms`: temps d'execution total
+- `erreur`: message en cas d'echec
 
-A card containing:
-- Header with unread count badge and "Marquer tout lu" button
-- A `ScrollArea` (max-height ~320px) showing the latest alerts
-- Each alert row displays: level icon (color-coded), title, message excerpt, relative timestamp, and read/unread indicator
-- Auto-scroll: a `useEffect` + `useRef` on the scroll container that scrolls to top whenever `recentAlerts` changes (newest first)
-- Empty state when no alerts exist
+Cela activera automatiquement les notifications temps reel pour les admins connectes.
 
-**Alert level styling**:
-| Level | Icon | Color |
-|-------|------|-------|
-| critical | ShieldAlert | Red (destructive) |
-| warning | AlertTriangle | Orange/Amber |
-| info | Info | Blue |
+### Etape 2 : Creer le cron job quotidien
+Inserer via SQL (outil insert, pas migration) un job `pg_cron` :
+- **Nom** : `calcul-spdi-quotidien`
+- **Schedule** : `0 5 * * *` (tous les jours a 5h UTC, avant la collecte de veille a 8h)
+- **Action** : `net.http_post` vers `/functions/v1/calculer-spdi` avec `body: {"batch": true}`
 
-**Interactions**:
-- Click an alert row to mark it as read (via `markAsRead` from context)
-- "Marquer tout lu" button calls `markAllAsRead`
+### Etape 3 : Mettre a jour `supabase/config.toml`
+Ajouter `[functions.calculer-spdi]` avec `verify_jwt = false` pour permettre l'appel depuis pg_cron.
 
-## Technical approach
+## Details techniques
 
-### 1. Create `src/components/radar/RealtimeAlertFeed.tsx`
-- Import `useAlertNotifications` from `AlertNotificationProvider` (already wraps the app)
-- Use `ScrollArea` for the feed container
-- `useRef` + `useEffect` to auto-scroll to top on new alerts
-- Typed props: none needed (self-contained, reads from context)
+### Modification de `supabase/functions/calculer-spdi/index.ts`
+Ajout dans le bloc `if (batch)`, apres le calcul, d'un insert dans `collectes_log` :
 
-### 2. Update `src/components/radar/index.ts`
-- Add `RealtimeAlertFeed` export
+```typescript
+const startTime = Date.now();
+// ... existing batch logic ...
+const durationMs = Date.now() - startTime;
+const hasErrors = results.some(r => r.error);
 
-### 3. Update `src/pages/RadarPage.tsx`
-- Import and place `RealtimeAlertFeed` between `CriticalAlertBanner` and `SocialPulseWidget`
+await supabase.from("collectes_log").insert({
+  type: "calcul-spdi",
+  statut: hasErrors ? "error" : "success",
+  nb_resultats: results.length,
+  duree_ms: durationMs,
+  erreur: hasErrors
+    ? results.filter(r => r.error).map(r => `${r.id}: ${r.error}`).join("; ").slice(0, 500)
+    : null,
+  mots_cles_utilises: ["spdi", "batch"],
+});
+```
 
-### Files changed
-- **Create**: `src/components/radar/RealtimeAlertFeed.tsx`
-- **Edit**: `src/components/radar/index.ts` (add export)
-- **Edit**: `src/pages/RadarPage.tsx` (add import + JSX)
+### SQL pour le cron job
+```sql
+SELECT cron.schedule(
+  'calcul-spdi-quotidien',
+  '0 5 * * *',
+  $$
+  SELECT net.http_post(
+    url := 'https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1/calculer-spdi',
+    headers := '{"Content-Type": "application/json", "Authorization": "Bearer <anon_key>"}'::jsonb,
+    body := '{"batch": true}'::jsonb
+  ) AS request_id;
+  $$
+);
+```
 
-No database or migration changes needed -- the `alertes` table already has realtime enabled and the subscription hook is already active.
+### Ajout dans `supabase/config.toml`
+```toml
+[functions.calculer-spdi]
+verify_jwt = false
+```
+
+## Resultat attendu
+- Chaque jour a 5h UTC, le SPDI de tous les acteurs suivis est recalcule automatiquement
+- Les admins connectes recoivent un toast en temps reel (succes ou erreur)
+- Le job apparait dans la page "Taches planifiees (CRON)" avec son historique
+- Aucune nouvelle table ni composant UI necessaire
