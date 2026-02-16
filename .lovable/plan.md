@@ -1,79 +1,123 @@
 
 
-# Montee en gamme du module "Analyse d'Influence Digitale"
+# Option A : Mode Comparatif "Duel d'Influence"
 
-## Etat des lieux
+## Objectif
 
-La majorite des composants visuels existent deja (SentimentBar, MiniSparkline, ShareOfVoiceDonut, PresenceCanaux, SPDIDashboardCompact, SPDIRecommandations). Cependant, plusieurs lacunes subsistent par rapport aux criteres d'acceptation demandes.
+Ajouter un mode de benchmarking cote a cote sur la page Personnalites, permettant de selectionner deux acteurs et de comparer visuellement leurs metriques d'influence sur un meme ecran.
 
-## Ecarts identifies et corrections prevues
+## Pourquoi commencer par l'Option A
 
-### US #1 : Tooltips sur la barre de sentiment
-- **Existant** : La barre segmentee tri-couleur est en place
-- **Manquant** : Aucun tooltip au survol des segments
-- **Action** : Ajouter des Radix Tooltips sur chaque segment de `SentimentBar.tsx` affichant le pourcentage exact et le label ("62% Positif", etc.)
+- Les composants de base existent deja : `SPDIComparaisonTemporelle` (graphique Recharts multi-acteurs) et `SPDIComparaisonPairs` (rang, ecart a la moyenne)
+- Pas de nouvelle table ni de fonction Edge a creer
+- Valeur immediate pour les decideurs : "Qui gagne le narratif ?"
 
-### US #2 : Sparkline 30 jours + filtre de periode
-- **Existant** : Sparkline SVG avec 7 points, delta affiche
-- **Manquant** : La sparkline ne montre que 7 mesures quel que soit le contexte ; aucun filtre de periode
-- **Action** :
-  - Ajouter un `useState` de periode (7j / 30j / 1an) dans `SPDIDashboardCompact` avec un sélecteur de boutons
-  - Modifier `useActeurDigitalDashboard` pour accepter un parametre `periode` et adapter la requete sparkline (limit 7 / 30 / 365 et filtre `date_mesure >= now - X jours`)
-  - Filtrer aussi la requete sentiment et canaux selon la meme periode
+---
 
-### US #3 : Share of Voice - pourcentage dans le donut
-- **Existant** : Donut SVG + rang + ecart vs moyenne
-- **Manquant** : Le pourcentage de part de voix reelle (mentions acteur / total mentions cercle) n'est pas affiche
-- **Action** : Calculer `sharePercent = (monScore / totalMentionsCercle) * 100` dans le hook et l'afficher au centre du donut
+## Architecture de la fonctionnalite
 
-### US #4 : Extraction des thematiques depuis les donnees NLP
-- **Existant** : Le bloc badges affiche `personnalite.thematiques` mais `topThematiques` du hook retourne toujours un tableau vide
-- **Manquant** : Agregation des `entites_detectees` et `hashtags` depuis la table `social_insights` liee a l'acteur
-- **Action** :
-  - Ajouter une requete dans `useActeurDigitalDashboard` qui joint `personnalites_mentions` avec `social_insights` (via `mention_id`) pour agreger les hashtags et entites les plus frequents
-  - Retourner les 6 termes les plus recurrents dans `topThematiques`
-  - Fusionner avec les thematiques manuelles de la personnalite (sans doublon)
+### Nouveau composant : `SPDIBenchmarkPanel`
 
-### US #5 : IA Insights - deja fonctionnel
-- **Existant** : La carte "IA Insights" remonte les 2 premieres recommandations avec icones, priorite, canal et thematique
-- **Action** : Aucune modification majeure. Le filtrage par periode (US#2) s'appliquera aussi aux recommandations affichees
+Un panneau plein ecran (Dialog ou Sheet large) accessible depuis la page Personnalites via un bouton "Comparer". L'utilisateur selectionne deux acteurs et voit :
 
-### Contrainte : Filtre de periode global
-- Ajout de 3 boutons (7j / 30j / 1an) dans le header du dashboard compact
-- Propagation de la periode selectionnee a toutes les requetes du hook
+```text
++---------------------------+---------------------------+
+|       ACTEUR A            |       ACTEUR B            |
+|  [Avatar] Nom Prenom     |  [Avatar] Nom Prenom      |
+|  Cercle 1 - DG ANSUT     |  Cercle 2 - Ministre      |
++---------------------------+---------------------------+
+| Score SPDI: 72.4  +12%   | Score SPDI: 58.1  -3%     |
+| [====Sparkline 30j====]  | [====Sparkline 30j====]   |
++---------------------------+---------------------------+
+|     SPARKLINES SUPERPOSEES SUR UN MEME GRAPHIQUE      |
+|  [Recharts LineChart avec 2 courbes colorees]         |
++-------------------------------------------------------+
+| Sentiment A              | Sentiment B                |
+| [===Positif===][Neu][Neg]| [==Pos==][===Neutre===][N] |
++---------------------------+---------------------------+
+| Part de Voix A           | Part de Voix B             |
+| [Donut] 18% du cercle    | [Donut] 12% du cercle     |
++---------------------------+---------------------------+
+| Thematiques A            | Thematiques B              |
+| #Cloud #5G #IA           | #Regulation #PME #Infra    |
++---------------------------+---------------------------+
+| VERDICT IA :                                          |
+| "L'acteur A domine sur LinkedIn (+40% de posts),      |
+|  mais B a un meilleur sentiment (+15 pts). B gagne    |
+|  sur les thematiques regulatoires."                   |
++-------------------------------------------------------+
+```
+
+### Selecteur d'acteurs
+
+- Deux `<Select>` (Radix) filtres par nom/cercle
+- Auto-completion avec recherche
+- Possibilite de pre-remplir un acteur depuis sa fiche detail (bouton "Comparer avec...")
+
+---
+
+## Modifications prevues
+
+### Fichiers crees
+
+**`src/components/spdi/SPDIBenchmarkPanel.tsx`**
+- Dialog pleine largeur avec layout en deux colonnes
+- Deux selecteurs d'acteurs (Radix Select avec recherche)
+- Affichage cote a cote : score, sparkline individuelle, sentiment, share of voice, thematiques
+- Graphique Recharts superpose avec les deux courbes
+- Section "Verdict IA" en bas (texte genere par le hook existant ou affichage statique des ecarts)
+
+**`src/hooks/useBenchmarkData.ts`**
+- Appelle `useActeurDigitalDashboard` pour chacun des deux acteurs selectionnes
+- Fusionne les sparkline data pour le graphique superpose
+- Calcule les ecarts : delta score, delta sentiment, delta share of voice
+- Genere un "verdict" textuel base sur les ecarts (logique locale, pas d'appel IA pour la v1)
+
+### Fichiers modifies
+
+**`src/pages/PersonnalitesPage.tsx`**
+- Ajout d'un bouton "Comparer" a cote du toggle Liste/Radar dans le header
+- State `benchmarkOpen` pour ouvrir/fermer le panneau
+- Import et rendu de `SPDIBenchmarkPanel`
+
+**`src/components/personnalites/ActeurDetail.tsx`**
+- Ajout d'un bouton "Comparer avec un pair" dans la section SPDI (visible uniquement si suivi actif)
+- Ce bouton ouvre le `SPDIBenchmarkPanel` avec l'acteur pre-selectionne en position A
+
+**`src/components/spdi/index.ts`**
+- Export du nouveau `SPDIBenchmarkPanel`
 
 ---
 
 ## Details techniques
 
-### Fichiers modifies
+### Donnees utilisees (aucune nouvelle table)
 
-**`src/components/spdi/SentimentBar.tsx`**
-- Importer `Tooltip, TooltipContent, TooltipTrigger, TooltipProvider` depuis Radix
-- Envelopper chaque segment `<div>` dans un `<TooltipTrigger>` avec un `<TooltipContent>` affichant : "{X}% {Label}" + nombre brut de mentions
-- Le mode `compact` reste sans tooltip (trop petit)
+Toutes les donnees proviennent des hooks existants :
+- `useActeurDigitalDashboard` : sparkline, sentiment, canaux, share of voice, thematiques
+- `usePersonnalites` : liste des acteurs pour les selecteurs
+- `presence_digitale_metrics` : scores SPDI pour le graphique superpose (via Recharts, comme `SPDIComparaisonTemporelle`)
 
-**`src/hooks/useActeurDigitalDashboard.ts`**
-- Ajouter un parametre `periode: '7j' | '30j' | '1an'` (defaut: '30j')
-- Sparkline : adapter `limit` et ajouter un filtre `gte('date_mesure', dateDebut)` calcule depuis la periode
-- Sentiment : filtrer les mentions par date via jointure avec `social_insights.date_publication` ou `mentions.date_mention`
-- Canaux : pas de changement (toujours la derniere mesure)
-- Share of Voice : calculer `totalMentionsCercle` (somme de toutes les mentions du cercle) et retourner `sharePercent`
-- Nouvelle requete thematiques : agreger `hashtags` et `entites_detectees` depuis `social_insights` lies via `personnalites_mentions`, compter les occurrences, retourner le top 6
-- Typer strictement le retour avec des interfaces dediees (pas de `any`)
+### Graphique superpose
 
-**`src/components/spdi/SPDIDashboardCompact.tsx`**
-- Ajouter un `useState<'7j' | '30j' | '1an'>('30j')` pour la periode
-- Afficher 3 boutons segmentes sous le titre "Presence Digitale Institutionnelle"
-- Passer la periode au hook `useActeurDigitalDashboard`
-- Le Bloc E (thematiques) utilisera desormais les `topThematiques` du hook au lieu du tableau vide
+Reutilisation du pattern de `SPDIComparaisonTemporelle` (Recharts `LineChart` avec deux `Line`) mais limite a exactement 2 acteurs pour la lisibilite, avec des couleurs fixes (bleu vs orange).
 
-**`src/components/spdi/ShareOfVoiceDonut.tsx`**
-- Ajouter une prop `sharePercent: number`
-- Afficher le pourcentage au centre du donut en superposition SVG `<text>`
+### Verdict textuel (v1 - logique locale)
 
-### Aucune modification de base de donnees
-Toutes les tables necessaires existent : `presence_digitale_metrics`, `personnalites_mentions`, `mentions`, `social_insights`, `personnalites`.
+Pas d'appel a l'IA pour la v1. Le verdict est genere par une fonction utilitaire qui compare les metriques :
+- Si ecart score > 10 pts : "X domine largement"
+- Si ecart sentiment > 20% : "Y a un meilleur sentiment"
+- Si share of voice A > B : "A a une plus grande part de voix"
+- Combinaison de ces constats en 2-3 phrases
 
 ### Aucune nouvelle dependance
-Tooltips via Radix (deja installe), SVG pur pour les micro-visualisations.
+
+- Recharts (deja installe) pour le graphique superpose
+- Radix Select (deja installe) pour les selecteurs
+- SVG existants (MiniSparkline, SentimentBar, ShareOfVoiceDonut) reutilises dans les colonnes
+
+### Responsive
+
+- Sur desktop : 2 colonnes cote a cote
+- Sur mobile : empilement vertical (1 colonne)
+
