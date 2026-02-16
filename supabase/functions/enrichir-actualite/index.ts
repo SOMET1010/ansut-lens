@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface MotCleVeille {
@@ -19,7 +19,6 @@ interface MotCleVeille {
   } | { nom: string; code: string; }[] | null;
 }
 
-// Helper to get category name from joined data
 const getCategoryName = (cat: MotCleVeille['categories_veille']): string | undefined => {
   if (!cat) return undefined;
   if (Array.isArray(cat)) return cat[0]?.nom;
@@ -36,9 +35,116 @@ interface EnrichmentResult {
   analyse_summary: string;
 }
 
-// Normalisation : lowercase + suppression accents
-const normalize = (str: string): string => 
+const normalize = (str: string): string =>
   str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+// ---------- Batch Sentiment Analysis ----------
+
+interface ArticleForSentiment {
+  id: string;
+  titre: string;
+  resume: string | null;
+}
+
+async function analyzeSentimentBatch(
+  articles: ArticleForSentiment[],
+  apiKey: string
+): Promise<Map<string, number>> {
+  const results = new Map<string, number>();
+
+  // Process in chunks of 20 to fit in context
+  const chunkSize = 20;
+  for (let i = 0; i < articles.length; i += chunkSize) {
+    const chunk = articles.slice(i, i + chunkSize);
+
+    const articleList = chunk.map((a, idx) =>
+      `[${idx}] "${a.titre}"${a.resume ? ` — ${a.resume.slice(0, 150)}` : ''}`
+    ).join('\n');
+
+    const prompt = `Analyse le sentiment de chaque article ci-dessous. Attribue un score entre -1.0 (très négatif) et +1.0 (très positif). 0.0 = neutre.
+
+Réponds UNIQUEMENT avec un JSON array de nombres, un par article, dans l'ordre. Exemple: [-0.3, 0.5, 0.0]
+
+Articles:
+${articleList}`;
+
+    try {
+      const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash-lite',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.1,
+        }),
+      });
+
+      if (!resp.ok) {
+        console.error(`[enrichir-actualite] AI API error: ${resp.status}`);
+        continue;
+      }
+
+      const data = await resp.json();
+      const text = data.choices?.[0]?.message?.content ?? '';
+
+      // Extract JSON array from response
+      const match = text.match(/\[[\s\S]*?\]/);
+      if (match) {
+        const scores: number[] = JSON.parse(match[0]);
+        for (let j = 0; j < Math.min(scores.length, chunk.length); j++) {
+          const score = Math.max(-1, Math.min(1, Number(scores[j]) || 0));
+          results.set(chunk[j].id, Math.round(score * 100) / 100);
+        }
+      }
+    } catch (err) {
+      console.error('[enrichir-actualite] Sentiment chunk error:', err);
+    }
+  }
+
+  return results;
+}
+
+async function handleBatchSentiment(supabase: ReturnType<typeof createClient>, apiKey: string, limit: number) {
+  // Fetch articles missing sentiment
+  const { data: articles, error } = await supabase
+    .from('actualites')
+    .select('id, titre, resume')
+    .is('sentiment', null)
+    .order('date_publication', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  if (!articles?.length) {
+    return { success: true, message: 'Aucun article sans sentiment', processed: 0 };
+  }
+
+  console.log(`[enrichir-actualite] Batch sentiment: ${articles.length} articles to process`);
+
+  const scores = await analyzeSentimentBatch(articles as ArticleForSentiment[], apiKey);
+
+  // Update in DB
+  let updated = 0;
+  for (const [id, score] of scores) {
+    const { error: upErr } = await supabase
+      .from('actualites')
+      .update({ sentiment: score })
+      .eq('id', id);
+
+    if (upErr) {
+      console.error(`[enrichir-actualite] Update error for ${id}:`, upErr);
+    } else {
+      updated++;
+    }
+  }
+
+  console.log(`[enrichir-actualite] Batch sentiment done: ${updated}/${articles.length} updated`);
+  return { success: true, processed: articles.length, updated, scores: Object.fromEntries(scores) };
+}
+
+// ---------- Main Handler ----------
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -47,6 +153,7 @@ serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     return new Response(JSON.stringify({ error: 'Configuration manquante' }), {
@@ -58,7 +165,27 @@ serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   try {
-    const { actualite_id, content, titre, resume } = await req.json();
+    const body = await req.json();
+
+    // --- Batch sentiment mode ---
+    if (body.batch_sentiment) {
+      if (!LOVABLE_API_KEY) {
+        return new Response(JSON.stringify({ error: 'LOVABLE_API_KEY non configurée' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const limit = Math.min(body.limit || 100, 500);
+      const result = await handleBatchSentiment(supabase, LOVABLE_API_KEY, limit);
+
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // --- Original single-article enrichment mode ---
+    const { actualite_id, content, titre, resume } = body;
 
     console.log('[enrichir-actualite] Démarrage enrichissement', { actualite_id, hasContent: !!content });
 
@@ -149,20 +276,17 @@ serve(async (req) => {
     // 4. Calculer les résultats
     const importance = Math.min(100, Math.round(totalScore * 0.3));
 
-    // Quadrant dominant
     const sortedQuadrants = Object.entries(quadrantScores)
       .filter(([_, score]) => score > 0)
       .sort((a, b) => b[1] - a[1]);
     const dominantQuadrant = sortedQuadrants[0]?.[0] || 'market';
 
-    // Normaliser la distribution des quadrants (0-100)
     const maxQuadrantScore = Math.max(...Object.values(quadrantScores), 1);
     const quadrantDistribution: Record<string, number> = {};
     for (const [quadrant, score] of Object.entries(quadrantScores)) {
       quadrantDistribution[quadrant] = Math.round((score / maxQuadrantScore) * 100);
     }
 
-    // Catégorie dominante
     const sortedCategories = Object.entries(categoryScores)
       .sort((a, b) => b[1] - a[1]);
     const dominantCategory = sortedCategories[0]?.[0] || 'Actualités sectorielles';
@@ -181,17 +305,37 @@ serve(async (req) => {
 
     // 5. Mettre à jour l'actualité si on a un ID
     if (actualite_id) {
+      // Also compute sentiment via AI if available and sentiment is null
+      let sentimentScore: number | null = null;
+      if (LOVABLE_API_KEY && actualiteData && actualiteData.sentiment == null) {
+        try {
+          const sentimentMap = await analyzeSentimentBatch(
+            [{ id: actualite_id, titre: actualiteData.titre, resume: actualiteData.resume }],
+            LOVABLE_API_KEY
+          );
+          sentimentScore = sentimentMap.get(actualite_id) ?? null;
+        } catch (e) {
+          console.error('[enrichir-actualite] Sentiment AI error:', e);
+        }
+      }
+
+      const updatePayload: Record<string, unknown> = {
+        tags: matchedKeywords,
+        categorie: dominantCategory,
+        importance,
+        analyse_ia: JSON.stringify({
+          ...enrichment,
+          enrichi_le: new Date().toISOString()
+        })
+      };
+
+      if (sentimentScore != null) {
+        updatePayload.sentiment = sentimentScore;
+      }
+
       const { error: updateError } = await supabase
         .from('actualites')
-        .update({
-          tags: matchedKeywords,
-          categorie: dominantCategory,
-          importance,
-          analyse_ia: JSON.stringify({
-            ...enrichment,
-            enrichi_le: new Date().toISOString()
-          })
-        })
+        .update(updatePayload)
         .eq('id', actualite_id);
 
       if (updateError) {
@@ -226,8 +370,8 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('[enrichir-actualite] Erreur:', error);
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Erreur inconnue' 
+    return new Response(JSON.stringify({
+      error: error instanceof Error ? error.message : 'Erreur inconnue'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
