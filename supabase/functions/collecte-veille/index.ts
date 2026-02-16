@@ -52,6 +52,72 @@ interface CollectedActualite {
   source_type: 'perplexity' | 'grok_twitter';
 }
 
+interface InsertedArticle {
+  id: string;
+  titre: string;
+  resume: string | null;
+}
+
+// ============= INLINE SENTIMENT ANALYSIS =============
+async function analyzeSentimentInline(
+  articles: InsertedArticle[],
+  apiKey: string
+): Promise<Map<string, number>> {
+  const results = new Map<string, number>();
+  const chunkSize = 20;
+
+  for (let i = 0; i < articles.length; i += chunkSize) {
+    const chunk = articles.slice(i, i + chunkSize);
+
+    const articleList = chunk.map((a, idx) =>
+      `[${idx}] "${a.titre}"${a.resume ? ` — ${a.resume.slice(0, 150)}` : ''}`
+    ).join('\n');
+
+    const prompt = `Analyse le sentiment de chaque article ci-dessous. Attribue un score entre -1.0 (très négatif) et +1.0 (très positif). 0.0 = neutre.
+
+Réponds UNIQUEMENT avec un JSON array de nombres, un par article, dans l'ordre. Exemple: [-0.3, 0.5, 0.0]
+
+Articles:
+${articleList}`;
+
+    try {
+      const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash-lite',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.1,
+        }),
+      });
+
+      if (!resp.ok) {
+        console.error(`[collecte-veille] Sentiment AI error: ${resp.status}`);
+        continue;
+      }
+
+      const data = await resp.json();
+      const text = data.choices?.[0]?.message?.content ?? '';
+
+      const match = text.match(/\[[\s\S]*?\]/);
+      if (match) {
+        const scores: number[] = JSON.parse(match[0]);
+        for (let j = 0; j < Math.min(scores.length, chunk.length); j++) {
+          const score = Math.max(-1, Math.min(1, Number(scores[j]) || 0));
+          results.set(chunk[j].id, Math.round(score * 100) / 100);
+        }
+      }
+    } catch (err) {
+      console.error('[collecte-veille] Sentiment chunk error:', err);
+    }
+  }
+
+  return results;
+}
+
 // ============= PERPLEXITY COLLECTION =============
 async function collectePerplexity(
   keywordsString: string,
@@ -276,6 +342,7 @@ serve(async (req) => {
   const XAI_API_KEY = Deno.env.get('XAI_API_KEY');
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     console.error('Missing required environment variables');
@@ -382,6 +449,7 @@ serve(async (req) => {
     // 4. Insérer les actualités dans la base
     let insertedCount = 0;
     const alertes: string[] = [];
+    const insertedArticles: InsertedArticle[] = [];
 
     for (const actu of allActualites) {
       if (!actu.titre) continue;
@@ -435,8 +503,8 @@ serve(async (req) => {
       const dominantQuadrant = Object.entries(quadrantScores)
         .sort((a, b) => b[1] - a[1])[0]?.[0] || 'market';
 
-      // Insérer l'actualité
-      const { error: insertError } = await supabase
+      // Insérer l'actualité et récupérer l'ID
+      const { data: inserted, error: insertError } = await supabase
         .from('actualites')
         .insert({
           titre: actu.titre,
@@ -457,12 +525,17 @@ serve(async (req) => {
             source_collecte: actu.source_type,
             collecte_date: new Date().toISOString()
           })
-        });
+        })
+        .select('id');
 
       if (insertError) {
         console.error('[collecte-veille] Erreur insertion:', insertError);
       } else {
         insertedCount++;
+        const newId = inserted?.[0]?.id;
+        if (newId) {
+          insertedArticles.push({ id: newId, titre: actu.titre, resume: actu.resume });
+        }
         console.log(`[collecte-veille] [${actu.source_type}] Inséré: ${actu.titre.substring(0, 50)}...`);
       }
 
@@ -478,6 +551,29 @@ serve(async (req) => {
             reference_type: 'actualite',
           });
       }
+    }
+
+    // 4b. Analyse sentiment IA automatique sur les articles insérés
+    let nbSentimentsEnrichis = 0;
+    if (LOVABLE_API_KEY && insertedArticles.length > 0) {
+      try {
+        console.log(`[collecte-veille] Analyse sentiment IA pour ${insertedArticles.length} articles...`);
+        const sentimentScores = await analyzeSentimentInline(insertedArticles, LOVABLE_API_KEY);
+
+        for (const [id, score] of sentimentScores) {
+          const { error: upErr } = await supabase
+            .from('actualites')
+            .update({ sentiment: score })
+            .eq('id', id);
+
+          if (!upErr) nbSentimentsEnrichis++;
+        }
+        console.log(`[collecte-veille] Sentiment enrichi: ${nbSentimentsEnrichis}/${insertedArticles.length}`);
+      } catch (sentErr) {
+        console.error('[collecte-veille] Erreur sentiment (non-bloquante):', sentErr);
+      }
+    } else if (!LOVABLE_API_KEY) {
+      console.log('[collecte-veille] LOVABLE_API_KEY absente, sentiment skippé');
     }
 
     // 5. Matcher les actualités avec les flux utilisateurs
@@ -600,6 +696,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       nb_resultats: insertedCount,
+      nb_sentiments_enrichis: nbSentimentsEnrichis,
       mots_cles_utilises: topKeywords,
       sources_utilisees: sourcesUtilisees,
       alertes_declenchees: alertes,
