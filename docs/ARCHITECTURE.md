@@ -2,7 +2,7 @@
 
 ## Vue d'ensemble
 
-ANSUT RADAR est une Single Page Application (SPA) React avec un backend serverless via Lovable Cloud (Supabase).
+ANSUT RADAR est une Single Page Application (SPA) React avec un backend serverless via Lovable Cloud.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -20,7 +20,7 @@ ANSUT RADAR est une Single Page Application (SPA) React avec un backend serverle
 │                    LOVABLE CLOUD                             │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐   │
 │  │  PostgreSQL  │  │Edge Functions│  │     Storage      │   │
-│  │  (17 tables) │  │  (9 funcs)   │  │    (avatars)     │   │
+│  │ (30+ tables) │  │ (23 funcs)   │  │    (avatars)     │   │
 │  └──────────────┘  └──────────────┘  └──────────────────┘   │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐   │
 │  │     Auth     │  │   Realtime   │  │   CRON Jobs      │   │
@@ -32,8 +32,8 @@ ANSUT RADAR est une Single Page Application (SPA) React avec un backend serverle
 ┌─────────────────────────────────────────────────────────────┐
 │                    APIs EXTERNES                             │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐   │
-│  │  Perplexity  │  │   Grok (xAI) │  │     Resend       │   │
-│  │  (recherche) │  │  (analyse IA)│  │    (emails)      │   │
+│  │  Perplexity  │  │Google Gemini │  │     Resend       │   │
+│  │  (recherche) │  │ (Lovable AI) │  │    (emails)      │   │
 │  └──────────────┘  └──────────────┘  └──────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -52,15 +52,15 @@ ANSUT RADAR est une Single Page Application (SPA) React avec un backend serverle
 | TanStack Query | 5.x | Cache & data fetching |
 | React Router | 6.x | Routing SPA |
 | Recharts | 2.x | Graphiques & visualisations |
-| Framer Motion | - | Animations (via shadcn) |
+| @dnd-kit | - | Drag & drop (Studio Newsletter) |
 
 ### Backend (Lovable Cloud)
 
 | Service | Usage |
 |---------|-------|
-| PostgreSQL | Base de données (17 tables) |
-| Edge Functions | API serverless (9 fonctions) |
-| Auth | Authentification (4 rôles) |
+| PostgreSQL | Base de données (30+ tables) |
+| Edge Functions | API serverless (23 fonctions) |
+| Auth | Authentification (4 rôles + permissions granulaires) |
 | Storage | Stockage fichiers (avatars) |
 | Realtime | WebSocket temps réel |
 | pg_cron | Tâches planifiées |
@@ -70,8 +70,9 @@ ANSUT RADAR est une Single Page Application (SPA) React avec un backend serverle
 | API | Usage | Secret |
 |-----|-------|--------|
 | Perplexity | Recherche web IA | `PERPLEXITY_API_KEY` |
-| Grok (xAI) | Analyse et génération IA | `XAI_API_KEY` |
+| Google Gemini | Analyse et génération IA (via Lovable AI) | Géré automatiquement |
 | Resend | Envoi d'emails | `RESEND_API_KEY` |
+| SMS API | Envoi d'alertes SMS | `SMS_API_KEY` |
 
 ## Patterns & Conventions
 
@@ -83,16 +84,25 @@ src/components/
 ├── auth/               # Composants d'authentification
 ├── layout/             # AppHeader, AppSidebar, AppLayout
 ├── personnalites/      # Composants métier Personnalités
-├── actualites/         # Composants métier Actualités
-├── dossiers/           # Composants métier Dossiers
+├── actualites/         # Composants métier Actualités (clusters, sidebar, search)
+├── dossiers/           # Composants métier Dossiers & Newsletter widget
 ├── flux/               # Composants métier Flux de veille
-├── spdi/               # Composants SPDI (Score Présence Digitale)
-├── assistant/          # Composants Assistant IA
-├── notifications/      # Système d'alertes
-└── profile/            # Gestion profil utilisateur
+├── spdi/               # Composants SPDI (15 composants : Gauge, Radar, Evolution, Benchmark, etc.)
+├── radar/              # Composants Centre de Veille (Briefing, Intelligence, Social, Alertes)
+├── assistant/          # Composants Assistant IA (Chat, Context, Document, Mode)
+├── newsletter/         # Composants Newsletter (Editor, Preview, Scheduler, Destinataires)
+│   └── studio/         # Studio WYSIWYG (Canvas, Blocks, Toolbar, Properties)
+│       └── blocks/     # Blocs individuels (Header, Article, Edito, Tech, etc.)
+├── formation/          # Composants Formation (GuideViewer, GuidePDFLayout)
+├── presentation/       # Composants Présentation (SlideLayout, 12 slides)
+├── import-acteurs/     # Import CSV acteurs (EditableCell, StatsPanel, SourceBadge)
+├── admin/              # Composants Administration (UserCard, RolePermissions, Audit, etc.)
+├── documentation/      # Composants Doc Technique (TechDocContent, PDFLayout)
+├── notifications/      # Système d'alertes (NotificationCenter, AlertNotificationProvider)
+└── profile/            # Gestion profil utilisateur (AvatarUpload, ChangePassword, ProfileForm)
 ```
 
-### Hooks Personnalisés
+### Hooks Personnalisés (20+)
 
 | Hook | Fichier | Description |
 |------|---------|-------------|
@@ -103,12 +113,27 @@ src/components/
 | `useFluxVeille` | `hooks/useFluxVeille.ts` | Gestion flux de veille |
 | `useConversationsIA` | `hooks/useConversationsIA.ts` | Historique conversations IA |
 | `usePresenceDigitale` | `hooks/usePresenceDigitale.ts` | Métriques SPDI |
+| `useActeurDigitalDashboard` | `hooks/useActeurDigitalDashboard.ts` | Dashboard influence par acteur |
+| `useBenchmarkData` | `hooks/useBenchmarkData.ts` | Comparaison Benchmark SPDI |
+| `useSocialInsights` | `hooks/useSocialInsights.ts` | Données réseaux sociaux |
+| `useSpdiStatus` | `hooks/useSpdiStatus.ts` | Status calculs SPDI |
 | `useRadarData` | `hooks/useRadarData.ts` | KPIs du radar |
+| `useDailyBriefing` | `hooks/useDailyBriefing.ts` | Briefing quotidien IA |
+| `useArticleClusters` | `hooks/useArticleClusters.ts` | Clustering d'actualités |
+| `useNewsletters` | `hooks/useNewsletters.ts` | CRUD newsletters |
+| `useNewsletterScheduler` | `hooks/useNewsletterScheduler.ts` | Programmation envois |
+| `useDiffusionScheduler` | `hooks/useDiffusionScheduler.ts` | Diffusion automatisée |
+| `useSourcesMedia` | `hooks/useSourcesMedia.ts` | Gestion sources média |
 | `useCronJobs` | `hooks/useCronJobs.ts` | Gestion CRON (admin) |
 | `useUserProfile` | `hooks/useUserProfile.ts` | Profil utilisateur |
+| `useUserPermissions` | `hooks/useUserPermissions.ts` | Permissions granulaires |
+| `useRolePermissions` | `hooks/useRolePermissions.ts` | Config permissions par rôle |
 | `useRealtimeAlerts` | `hooks/useRealtimeAlerts.ts` | Alertes temps réel |
+| `useRealtimeCronAlerts` | `hooks/useRealtimeCronAlerts.ts` | Alertes CRON temps réel |
 | `useAlertesHistory` | `hooks/useAlertesHistory.ts` | Historique alertes |
 | `useMotsClesVeille` | `hooks/useMotsClesVeille.ts` | Mots-clés de veille |
+| `useAdminStats` | `hooks/useAdminStats.ts` | Statistiques admin |
+| `useSidebarAnalytics` | `hooks/useSidebarAnalytics.ts` | Analytics sidebar |
 
 ### Gestion d'État
 
@@ -170,6 +195,7 @@ PostgreSQL ──► supabase.channel().on('postgres_changes') ──► Compone
 Toutes les tables ont RLS activé avec des politiques basées sur :
 - `auth.uid()` pour les données utilisateur
 - `has_role(auth.uid(), 'admin')` pour les données admin
+- `has_permission(auth.uid(), 'code')` pour les permissions granulaires
 
 ### Protection des Routes
 
@@ -177,8 +203,10 @@ Toutes les tables ont RLS activé avec des politiques basées sur :
 // Route protégée standard
 <ProtectedRoute><Page /></ProtectedRoute>
 
-// Route admin uniquement
-<AdminRoute><AdminPage /></AdminRoute>
+// Route basée sur les permissions
+<PermissionRoute permission="view_personnalites">
+  <ActeursInfluencePage />
+</PermissionRoute>
 ```
 
 ### Edge Functions
@@ -186,7 +214,7 @@ Toutes les tables ont RLS activé avec des politiques basées sur :
 Toutes les Edge Functions vérifient :
 1. Token JWT valide
 2. Rôle approprié via `has_role()`
-3. Permissions spécifiques par action
+3. Permissions spécifiques via `has_permission()`
 
 ---
 

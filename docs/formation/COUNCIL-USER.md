@@ -6,9 +6,9 @@ En tant que membre du conseil (council_user) ANSUT RADAR, vous bénéficiez d'un
 
 ### Ce que vous pouvez faire
 
-- ✅ Consulter le tableau de bord et les indicateurs
+- ✅ Consulter le Centre de Veille et les indicateurs
 - ✅ Parcourir les actualités enrichies
-- ✅ Consulter les fiches des acteurs clés
+- ✅ Consulter les Acteurs & Influence (cartographie, Dashboard SPDI, Revue, Benchmark)
 - ✅ Créer vos propres flux de veille
 - ✅ Utiliser l'assistant IA
 - ✅ Recevoir des alertes personnalisées
@@ -36,79 +36,38 @@ Votre menu latéral affiche :
 
 | Icône | Menu | Description |
 |-------|------|-------------|
-| 📊 | Tableau de bord | Vue d'ensemble stratégique |
-| 📰 | Actualités | Fil d'information enrichi |
+| 📊 | Centre de Veille | Radar stratégique et briefing |
+| 📰 | Actualités & Veille | Fil d'information enrichi |
 | 📡 | Mes Flux | Vos flux personnalisés |
-| 👥 | Acteurs clés | Personnalités surveillées |
+| 👥 | Acteurs & Influence | Cartographie, SPDI, Benchmark |
 | 🤖 | Assistant IA | Questions-réponses intelligent |
-| 🔔 | Alertes | Vos notifications |
 
 ---
 
-## 📊 Tableau de Bord
+## 📊 Centre de Veille
 
-Le tableau de bord vous offre une **vue synthétique** de la veille stratégique :
-
-### Indicateurs clés
+Le Centre de Veille vous offre une **vue synthétique** :
 
 | Indicateur | Description |
 |------------|-------------|
-| Score SPDI | Présence digitale globale de l'ANSUT |
+| Briefing quotidien | Synthèse IA des informations du jour |
 | Alertes actives | Informations nécessitant attention |
-| Tendance | Évolution sur les derniers jours |
-
-### Graphiques
-
-- **Évolution temporelle** du score SPDI
-- **Radar des axes** (Visibilité, Qualité, Autorité, Présence)
-- **Répartition** des actualités par catégorie
+| KPIs de veille | Indicateurs clés de performance |
 
 ---
 
-## 📰 Actualités
+## 👥 Acteurs & Influence
 
-### Parcourir le fil
+### Navigation par onglets
 
-Les actualités sont présentées par ordre chronologique avec :
-- Titre et source
-- Date de publication
-- Score d'importance
-- Indicateur de fraîcheur (couleur)
+Le module unifié offre 4 vues :
 
-### Filtrer les informations
-
-| Filtre | Utilisation |
+| Onglet | Description |
 |--------|-------------|
-| Période | Aujourd'hui, semaine, mois |
-| Catégorie | Thématique spécifique |
-| Importance | Niveau minimum souhaité |
-
-### Consulter le détail
-
-Cliquez sur une actualité pour voir :
-- Le contenu complet
-- L'analyse IA (résumé, sentiment, importance)
-- Les acteurs mentionnés
-- Le lien vers la source originale
-
----
-
-## 👥 Acteurs Clés
-
-### Vue cartographique
-
-Les personnalités sont organisées par :
-- **Cercle de priorité** (1, 2 ou 3)
-- **Catégorie** (opérateurs, régulateurs, etc.)
-
-### Consulter une fiche
-
-Chaque fiche présente :
-- Identité et fonction
-- Organisation d'appartenance
-- Score SPDI personnel
-- Tendance (↑ hausse, → stable, ↓ baisse)
-- Dernières mentions dans l'actualité
+| **Cartographie** | Fiches acteurs par cercle et catégorie |
+| **Dashboard SPDI** | Analyse détaillée d'un acteur (score, axes, évolution, recommandations IA) |
+| **Revue Stabilité** | Vue panoramique des tendances et risques |
+| **Benchmark** | Comparaison de deux acteurs côte à côte |
 
 ### Comprendre le SPDI
 
@@ -116,49 +75,27 @@ Le Score de Présence Digitale et d'Influence mesure :
 
 | Score | Interprétation |
 |-------|----------------|
-| 80-100 | Très influent |
-| 60-79 | Influent |
-| 40-59 | Modéré |
-| 20-39 | Faible |
-| 0-19 | Très faible |
+| 80-100 | Très influent (vert) |
+| 60-79 | Influent (bleu) |
+| 40-59 | Modéré (orange) |
+| 0-39 | Faible (rouge) |
 
 ---
 
 ## 📡 Mes Flux
 
-### Créer un flux personnalisé
-
-Vous pouvez créer vos propres flux de veille pour suivre des sujets spécifiques :
+Créez vos propres flux de veille :
 
 1. Cliquez sur **"Créer un flux"**
 2. Nommez votre flux (ex: "Régulation 5G")
-3. Ajoutez des mots-clés pertinents
+3. Ajoutez des mots-clés ou utilisez la génération IA
 4. Configurez les alertes souhaitées
-5. Sauvegardez
-
-### Configurer les notifications
-
-| Option | Description |
-|--------|-------------|
-| Alerte email | Recevoir un email à chaque correspondance |
-| Alerte push | Notification dans l'interface |
-| Digest | Résumé périodique (quotidien, hebdomadaire) |
-
-### Gérer vos flux
-
-- Modifiez les critères à tout moment
-- Désactivez temporairement un flux
-- Supprimez les flux obsolètes
 
 ---
 
 ## 🤖 Assistant IA
 
-### Poser des questions
-
 L'assistant IA répond à vos questions en s'appuyant sur les données de veille :
-
-**Exemples de questions :**
 
 | Question | Ce que vous obtenez |
 |----------|---------------------|
@@ -167,73 +104,15 @@ L'assistant IA répond à vos questions en s'appuyant sur les données de veille
 | "Quelle est la tendance du secteur télécom ?" | Vue d'ensemble du sentiment |
 | "Qui sont les acteurs les plus actifs ?" | Classement par visibilité |
 
-### Bonnes pratiques
-
-- Soyez précis dans vos demandes
-- Mentionnez les périodes si pertinent
-- N'hésitez pas à demander des précisions
-
----
-
-## 🔔 Alertes
-
-### Consulter vos notifications
-
-Le menu Alertes affiche un badge rouge si vous avez des notifications non lues.
-
-### Types d'alertes
-
-| Niveau | Signification |
-|--------|---------------|
-| 🔴 Critique | Information majeure à consulter |
-| 🟠 Avertissement | Point d'attention |
-| 🔵 Information | Pour votre information |
-
-### Actions possibles
-
-- **Marquer comme lue** : retirer du compteur
-- **Voir la source** : accéder à l'actualité concernée
-- **Marquer comme traitée** : archiver
-
----
-
-## 👤 Mon Profil
-
-### Accéder à votre profil
-
-Cliquez sur votre avatar (coin supérieur droit) → **Mon profil**
-
-### Modifier vos informations
-
-- Nom affiché
-- Photo de profil (avatar)
-- Département
-
-### Changer votre mot de passe
-
-1. Section "Changer le mot de passe"
-2. Ancien mot de passe
-3. Nouveau mot de passe (2 fois)
-4. Sauvegarder
-
 ---
 
 ## 💡 Conseils d'Utilisation
 
-### Pour une veille efficace
-
 1. **Créez 2-3 flux ciblés** sur vos sujets prioritaires
-2. **Consultez le tableau de bord** en début de journée
+2. **Consultez le Centre de Veille** en début de journée
 3. **Utilisez l'assistant IA** pour des synthèses rapides
-4. **Configurez les alertes email** pour les sujets critiques
-
-### Questions fréquentes
-
-| Question | Réponse |
-|----------|---------|
-| Je ne vois pas les Dossiers | Normal, cette fonction est réservée aux utilisateurs analystes |
-| Comment modifier un acteur ? | Contactez un administrateur |
-| Puis-je inviter quelqu'un ? | Non, seuls les administrateurs peuvent inviter |
+4. **Explorez le Dashboard SPDI** pour comprendre l'influence des acteurs clés
+5. **Configurez les alertes email** pour les sujets critiques
 
 ---
 

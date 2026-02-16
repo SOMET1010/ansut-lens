@@ -9,9 +9,82 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ### À venir
 - Calcul automatique SPDI via CRON quotidien
-- Export PDF des dossiers analytiques
 - Intégration LinkedIn API directe
 - Tableau de bord personnalisable par utilisateur
+
+---
+
+## [1.4.0] - 2026-02-16
+
+### Nom de version : Acteurs & Influence Unifiés
+
+### Added
+
+#### Fusion Menu Acteurs & Influence
+- Nouvelle page unifiée `/acteurs` avec navigation par onglets (Tabs Radix)
+- 4 onglets : Cartographie, Dashboard SPDI, Revue Stabilité, Benchmark
+- Synchronisation URL via query param `?tab=cartographie|spdi|revue|benchmark`
+- Redirections rétrocompatibles depuis `/personnalites`, `/presence-digitale`, `/spdi-review`
+- Entrée de menu unique "Acteurs & Influence" dans le sidebar
+
+#### Module d'Analyse d'Influence Digitale
+- Score SPDI composite (4 axes : Visibilité 30%, Qualité 25%, Autorité 25%, Présence 20%)
+- Edge Function `calculer-spdi` avec clamp sécurisé pour `sentiment_moyen` (numeric 3,2)
+- Edge Function `analyser-spdi` : recommandations stratégiques via Gemini (4 piliers)
+- Dashboard SPDI individuel : jauge, radar axes, évolution historique, comparaison pairs
+- Revue de Stabilité : KPIs globaux, tableau synthèse, comparaison temporelle, classement par axe
+- 15 composants SPDI (GaugeCard, AxesRadar, EvolutionChart, BenchmarkPanel, StabilityTable, etc.)
+
+#### Mode Benchmark "Duel d'Influence"
+- Composant `SPDIBenchmarkPanel` : comparaison côte à côte de 2 acteurs
+- Hook `useBenchmarkData` : données comparatives
+
+#### Studio Newsletter WYSIWYG
+- Éditeur visuel avec blocs drag & drop (@dnd-kit)
+- 11 types de blocs : Header, Édito, Article, Tech, Chiffre, Agenda, Image, Bouton, Séparateur, Texte, Footer
+- Prévisualisation responsive (Desktop 650px, Tablette 768px, Mobile 375px)
+- Export HTML complet pour envoi
+- Edge Functions : `generer-newsletter`, `envoyer-newsletter`, `scheduler-newsletter`
+
+#### Système de Permissions Granulaires
+- Table `role_permissions` + `permissions_registry`
+- Hook `useUserPermissions` : vérification permissions côté client
+- Composant `PermissionRoute` : protection routes par permission
+- Interface admin de configuration (matrice rôles × permissions)
+- Fonction RPC `has_permission()` côté base de données
+
+#### Diffusion Automatisée
+- Programmation multi-canal (email, SMS) avec table `diffusion_programmation`
+- Edge Function `diffuser-resume` : envoi automatique par canal
+- Edge Function `envoyer-sms` : alertes SMS critiques
+- Logs d'envoi avec statistiques
+
+#### Guides de Formation PDF
+- Composant `GuideViewer` : visualisation des guides par profil
+- Composant `GuidePDFLayout` : mise en page pour export PDF
+- Page admin `/admin/formation` : accès aux guides
+
+#### Edge Functions (14 nouvelles, total 23)
+- `analyser-spdi`, `calculer-spdi` : analyse et calcul SPDI
+- `collecte-social`, `collecte-social-api` : collecte données sociales
+- `diffuser-resume` : diffusion automatisée
+- `envoyer-newsletter`, `envoyer-sms` : envoi par canal
+- `generate-password-link`, `reset-user-password` : gestion mots de passe
+- `generer-briefing` : briefing quotidien IA
+- `generer-newsletter` : génération contenu newsletter
+- `generer-requete-flux` : génération requête flux par IA
+- `list-users-status` : statut utilisateurs
+- `scheduler-newsletter` : programmation newsletters
+
+### Changed
+- Menu sidebar : 3 entrées (Acteurs, Présence Digitale, Revue SPDI) → 1 entrée "Acteurs & Influence"
+- Routes : `/personnalites`, `/presence-digitale`, `/spdi-review` redirigent vers `/acteurs?tab=...`
+- Documentation complète mise à jour (OVERVIEW, ARCHITECTURE, DATABASE, EDGE-FUNCTIONS, API, README, formations)
+- Compteurs docs : 17 tables → 30+, 9 Edge Functions → 23, 13 hooks → 25+, 50 composants → 80+
+- API IA : référence Grok/xAI remplacée par Google Gemini (via Lovable AI)
+
+### Security
+- Clamp sécurisé `sentiment_moyen` dans `calculer-spdi` pour éviter overflow numeric(3,2)
 
 ---
 
@@ -47,13 +120,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ### Database
 - `20260102220621` : Ajout contraintes CHECK
-  - `personnalites` : cercle (1-4), score_influence (0-100), score_spdi_actuel (0-100)
-  - `signaux` : score_impact (0-100), niveau (info/attention/critique/urgent)
-  - `alertes` : niveau (info/warning/error/critical)
-  - `dossiers` : statut et catégorie validés
-  - `actualites` : importance (1-5), sentiment (-1 à 1)
-  - `presence_digitale_recommandations` : priorité validée
-- `20260102210845` : Table `admin_audit_logs` avec index sur admin_id et created_at
+- `20260102210845` : Table `admin_audit_logs` avec index
 
 ---
 
@@ -63,27 +130,17 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ### Added
 - Page `/admin/users` : Gestion complète des utilisateurs
-  - Liste paginée avec recherche
-  - Modification rôles (admin, user, council_user, guest)
-  - Activation/désactivation comptes
-  - Suppression avec confirmation
 - Page `/admin/audit-logs` : Historique des actions administrateur
-  - Filtrage par action et période
-  - Détails JSON des modifications
-- Edge Function `invite-user` : Invitation par email avec lien magique
-- Edge Function `manage-user` : Activation/désactivation/suppression comptes
+- Edge Function `invite-user` : Invitation par email
+- Edge Function `manage-user` : Activation/désactivation/suppression
 - Edge Function `update-user-role` : Modification rôles avec audit
-- Composant `AdminRoute` : Protection routes admin
-- Hook `useAuditLogs` : Récupération logs audit
 
 ### Security
 - Fonction RPC `has_role()` avec SECURITY DEFINER
-- Protection auto-modification (impossibilité de modifier son propre rôle/compte)
-- Audit logging systématique de toutes actions admin
-- Vérification rôle admin côté Edge Function
+- Audit logging systématique
 
 ### Database
-- `20260101233957` : Ajout colonne `disabled` (boolean, default false) sur table `profiles`
+- `20260101233957` : Ajout colonne `disabled` sur `profiles`
 
 ---
 
@@ -93,21 +150,13 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ### Fixed
 - RLS `signaux` : ouverture lecture pour rôles anon + authenticated
-- RLS `mentions` : ouverture lecture pour rôles anon + authenticated
-- RLS `alertes` : alertes système (user_id = NULL) visibles pour tous les utilisateurs authentifiés
+- RLS `mentions` : ouverture lecture
+- RLS `alertes` : alertes système visibles pour tous
 
 ### Added
-- Realtime sur table `alertes` pour notifications push temps réel
-- Composant `AlertNotificationProvider` : écoute changements alertes
-- Hook `useRealtimeAlerts` : abonnement canal Supabase
-
-### Changed
-- Optimisation requêtes alertes avec index sur `traitee` et `created_at`
-
-### Database
-- `20251230154735` : Corrections policies RLS signaux, mentions, alertes
-- `20251230003101` : Configuration supplémentaire collecte
-- `20251230002851` : Ajout policies RLS permissives pour lecture publique
+- Realtime sur table `alertes`
+- Composant `AlertNotificationProvider`
+- Hook `useRealtimeAlerts`
 
 ---
 
@@ -118,101 +167,25 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 ### Added
 
 #### Core Features
-- **Dashboard Radar** : Vue stratégique avec 4 quadrants (Opportunités, Menaces, Forces, Faiblesses)
+- **Dashboard Radar** : Vue stratégique avec 4 quadrants
 - **Fil d'actualités** : Collecte automatisée multi-sources avec enrichissement IA
-- **Personnalités** : Gestion des acteurs stratégiques avec cercles d'influence (1-4)
+- **Personnalités** : Gestion des acteurs stratégiques avec cercles d'influence
 - **SPDI** : Score de Présence Digitale Institutionnelle (4 axes, scoring 0-100)
-- **Assistant IA** : Chat contextuel avec streaming SSE et historique conversations
-- **Dossiers analytiques** : Notes structurées en Markdown avec catégorisation
-- **Alertes** : Système de notifications temps réel multi-niveaux
+- **Assistant IA** : Chat contextuel avec streaming SSE
+- **Dossiers analytiques** : Notes structurées en Markdown
+- **Alertes** : Système de notifications temps réel
 
 #### Pages (12)
-- `/` : Dashboard Radar principal
-- `/actualites` : Fil d'actualités avec filtres
-- `/personnalites` : Annuaire des personnalités
-- `/assistant` : Chat IA contextuel
-- `/dossiers` : Dossiers analytiques
-- `/alertes` : Historique des alertes
-- `/profile` : Profil utilisateur
-- `/auth` : Authentification
-- `/admin` : Administration
-- `/admin/users` : Gestion utilisateurs
-- `/admin/mots-cles` : Configuration mots-clés veille
-- `/admin/audit-logs` : Logs d'audit
-
-#### Composants (50+)
-- Composants shadcn/ui personnalisés
-- Composants SPDI (Gauge, Radar, Evolution, Recommandations, Comparaison)
-- Composants layout (AppHeader, AppSidebar, AppLayout)
-- Composants notifications (NotificationCenter, AlertNotificationProvider)
-
-#### Hooks (13)
-- `useActualites` : Gestion actualités
-- `usePersonnalites` : Gestion personnalités
-- `usePresenceDigitale` : Métriques SPDI
-- `useConversationsIA` : Historique assistant
-- `useDossiers` : CRUD dossiers
-- `useMotsClesVeille` : Configuration veille
-- `useAlertesHistory` : Historique alertes
-- `useRealtimeAlerts` : Notifications temps réel
-- `useRadarData` : KPIs dashboard
-- `useUserProfile` : Profil utilisateur
-- `useDeduplicationActeurs` : Détection doublons import
-- `use-mobile` : Détection responsive
-- `use-toast` : Notifications UI
+- `/`, `/actualites`, `/personnalites`, `/assistant`, `/dossiers`, `/alertes`
+- `/profile`, `/auth`, `/admin`, `/admin/users`, `/admin/mots-cles`, `/admin/audit-logs`
 
 #### Edge Functions (7)
-- `collecte-veille` : Collecte automatisée sources
-- `enrichir-actualite` : Enrichissement IA des articles
-- `generer-acteurs` : Génération acteurs depuis actualités
-- `assistant-ia` : Chat IA avec streaming SSE
-- `invite-user` : Invitation utilisateurs
-- `manage-user` : Gestion comptes
-- `update-user-role` : Modification rôles
+- `collecte-veille`, `enrichir-actualite`, `generer-acteurs`, `assistant-ia`
+- `invite-user`, `manage-user`, `update-user-role`
 
 ### Authentication
 - 4 rôles : `admin`, `user`, `council_user`, `guest`
-- Routes protégées avec `ProtectedRoute` et `AdminRoute`
-- RLS (Row Level Security) sur 17 tables
-- Auto-création profil via trigger `on_auth_user_created`
-
-### Database
-
-#### Tables (17)
-- `profiles` : Profils utilisateurs
-- `user_roles` : Rôles utilisateurs
-- `personnalites` : Acteurs stratégiques
-- `personnalites_mentions` : Liaison personnalités-mentions
-- `mentions` : Mentions médiatiques
-- `actualites` : Articles et news
-- `sources_media` : Sources de veille
-- `alertes` : Notifications système
-- `signaux` : Signaux stratégiques
-- `dossiers` : Dossiers analytiques
-- `conversations_ia` : Historique assistant
-- `mots_cles_veille` : Mots-clés de veille
-- `categories_veille` : Catégories mots-clés
-- `collectes_log` : Logs de collecte
-- `config_seuils` : Configuration seuils
-- `presence_digitale_metrics` : Métriques SPDI
-- `presence_digitale_recommandations` : Recommandations IA
-
-#### Fonctions RPC
-- `has_role(role, user_id)` : Vérification rôle
-- `get_user_role(user_id)` : Récupération rôle
-
-#### Enum
-- `app_role` : admin | user | council_user | guest
-
-### Migrations initiales
-- `20251228000138` : Schéma initial complet
-- `20251228001948` : Extensions PostgreSQL
-- `20251228004309` : Données de référence
-- `20251228004355` : Configuration mots-clés
-- `20251228090401` : Tables veille additionnelles
-- `20251228091548` : Tables SPDI
-- `20251228094801` : Configuration Realtime alertes
-- `20251228101200` : Optimisations index
+- RLS sur 17 tables
 
 ---
 
@@ -220,14 +193,14 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ### Types de changements
 - **Added** : Nouvelles fonctionnalités
-- **Changed** : Modifications de fonctionnalités existantes
-- **Deprecated** : Fonctionnalités qui seront supprimées
+- **Changed** : Modifications existantes
+- **Deprecated** : Fonctionnalités à supprimer
 - **Removed** : Fonctionnalités supprimées
 - **Fixed** : Corrections de bugs
 - **Security** : Corrections de vulnérabilités
 - **Database** : Migrations et modifications schéma
 
 ### Versioning
-- **MAJOR** (X.0.0) : Changements incompatibles avec versions précédentes
+- **MAJOR** (X.0.0) : Changements incompatibles
 - **MINOR** (0.X.0) : Nouvelles fonctionnalités rétrocompatibles
-- **PATCH** (0.0.X) : Corrections de bugs rétrocompatibles
+- **PATCH** (0.0.X) : Corrections de bugs

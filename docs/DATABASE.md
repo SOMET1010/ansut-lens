@@ -2,195 +2,91 @@
 
 ## Vue d'ensemble
 
-La base de données PostgreSQL contient **17 tables** avec Row Level Security (RLS) activé sur toutes les tables.
+La base de données PostgreSQL contient **30+ tables** avec Row Level Security (RLS) activé sur toutes les tables.
 
-## Schéma Entité-Relation
+## Tables par Domaine
 
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│    profiles     │     │   user_roles    │     │    alertes      │
-│─────────────────│     │─────────────────│     │─────────────────│
-│ id (PK, FK)     │◄────│ user_id (FK)    │     │ id (PK)         │
-│ full_name       │     │ role            │     │ user_id (FK)    │
-│ avatar_url      │     │ created_at      │     │ titre           │
-│ department      │     └─────────────────┘     │ message         │
-│ disabled        │                              │ niveau          │
-│ created_at      │                              │ type            │
-│ updated_at      │                              │ lue             │
-└─────────────────┘                              │ traitee         │
-        │                                        └─────────────────┘
-        │
-        ▼
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   dossiers      │     │conversations_ia │     │   flux_veille   │
-│─────────────────│     │─────────────────│     │─────────────────│
-│ id (PK)         │     │ id (PK)         │     │ id (PK)         │
-│ auteur_id (FK)  │     │ user_id (FK)    │     │ user_id (FK)    │
-│ titre           │     │ titre           │     │ nom             │
-│ contenu         │     │ messages (JSON) │     │ mots_cles[]     │
-│ categorie       │     │ created_at      │     │ categories_ids[]│
-│ statut          │     │ updated_at      │     │ quadrants[]     │
-│ resume          │     └─────────────────┘     │ importance_min  │
-└─────────────────┘                              │ alerte_email    │
-                                                 │ alerte_push     │
-                                                 └────────┬────────┘
-                                                          │
-┌─────────────────┐     ┌─────────────────┐              │
-│  personnalites  │     │flux_actualites  │◄─────────────┘
-│─────────────────│     │─────────────────│
-│ id (PK)         │     │ id (PK)         │     ┌─────────────────┐
-│ nom             │     │ flux_id (FK)    │────►│   actualites    │
-│ prenom          │     │ actualite_id(FK)│     │─────────────────│
-│ fonction        │     │ score_match     │     │ id (PK)         │
-│ organisation    │     │ notifie         │     │ titre           │
-│ cercle          │     └─────────────────┘     │ contenu         │
-│ score_spdi      │                              │ source_id (FK)  │
-│ reseaux (JSON)  │                              │ categorie       │
-│ alertes_config  │     ┌─────────────────┐     │ importance      │
-│ suivi_spdi_actif│     │  sources_media  │◄────│ sentiment       │
-└────────┬────────┘     │─────────────────│     │ tags[]          │
-         │              │ id (PK)         │     │ analyse_ia      │
-         │              │ nom             │     └─────────────────┘
-         │              │ type            │
-         │              │ url             │
-         │              │ actif           │
-         │              └─────────────────┘
-         │
-         ▼
-┌─────────────────────────────────┐     ┌─────────────────┐
-│ presence_digitale_metrics       │     │    mentions     │
-│─────────────────────────────────│     │─────────────────│
-│ id (PK)                         │     │ id (PK)         │
-│ personnalite_id (FK)            │     │ contenu         │
-│ date_mesure                     │     │ source          │
-│ score_spdi                      │     │ auteur          │
-│ score_visibilite                │     │ sentiment       │
-│ score_autorite                  │     │ score_influence │
-│ score_presence                  │     │ est_critique    │
-│ score_qualite                   │     └─────────────────┘
-│ nb_mentions                     │              │
-│ sentiment_moyen                 │              ▼
-└─────────────────────────────────┘     ┌─────────────────────────┐
-                                        │personnalites_mentions   │
-┌─────────────────┐                     │─────────────────────────│
-│    signaux      │                     │ personnalite_id (FK)    │
-│─────────────────│                     │ mention_id (FK)         │
-│ id (PK)         │                     └─────────────────────────┘
-│ titre           │
-│ quadrant        │     ┌─────────────────┐     ┌─────────────────┐
-│ niveau          │     │mots_cles_veille │     │categories_veille│
-│ tendance        │     │─────────────────│     │─────────────────│
-│ score_impact    │     │ id (PK)         │     │ id (PK)         │
-│ actif           │     │ mot_cle         │────►│ code            │
-└─────────────────┘     │ categorie_id(FK)│     │ nom             │
-                        │ variantes[]     │     │ couleur         │
-                        │ quadrant        │     │ priorite        │
-                        │ alerte_auto     │     └─────────────────┘
-                        └─────────────────┘
+### Utilisateurs & Auth (4 tables)
 
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│  collectes_log  │     │admin_audit_logs │     │audit_consultations│
-│─────────────────│     │─────────────────│     │─────────────────│
-│ id (PK)         │     │ id (PK)         │     │ id (PK)         │
-│ type            │     │ admin_id (FK)   │     │ user_id (FK)    │
-│ statut          │     │ action          │     │ action          │
-│ nb_resultats    │     │ target_user_id  │     │ resource_type   │
-│ duree_ms        │     │ details (JSON)  │     │ resource_id     │
-│ erreur          │     │ ip_address      │     │ metadata (JSON) │
-│ mots_cles[]     │     │ created_at      │     │ created_at      │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
+| Table | Description |
+|-------|-------------|
+| `profiles` | Profils utilisateurs (id FK auth.users, full_name, avatar_url, department, disabled) |
+| `user_roles` | Rôles utilisateurs (enum app_role) |
+| `role_permissions` | Permissions par rôle (granulaires, activables/désactivables) |
+| `permissions_registry` | Registre des permissions disponibles (code, label_fr, category) |
 
-┌─────────────────────────────────────┐
-│ presence_digitale_recommandations   │
-│─────────────────────────────────────│
-│ id (PK)                             │
-│ personnalite_id (FK)                │
-│ titre                               │
-│ message                             │
-│ type                                │
-│ priorite                            │
-│ canal                               │
-│ actif                               │
-└─────────────────────────────────────┘
-```
+### Veille & Actualités (6 tables)
 
-## Tables Principales
+| Table | Description |
+|-------|-------------|
+| `actualites` | Articles et news collectés (titre, contenu, analyse_ia, sentiment, importance) |
+| `sources_media` | Sources de veille (nom, type, url, platform_config) |
+| `mots_cles_veille` | Mots-clés de veille (variantes, quadrant, score_criticite) |
+| `categories_veille` | Catégories thématiques (code, couleur, priorite) |
+| `collectes_log` | Logs de collecte (statut, nb_resultats, duree_ms) |
+| `config_seuils` | Configuration seuils (clé-valeur JSON) |
 
-### `profiles`
-Profils utilisateurs liés à `auth.users`.
+### Flux Personnalisés (2 tables)
 
-| Colonne | Type | Description |
-|---------|------|-------------|
-| id | uuid (PK) | ID utilisateur (FK auth.users) |
-| full_name | text | Nom complet |
-| avatar_url | text | URL avatar |
-| department | text | Département |
-| disabled | boolean | Compte désactivé |
-| created_at | timestamptz | Date création |
-| updated_at | timestamptz | Dernière modification |
+| Table | Description |
+|-------|-------------|
+| `flux_veille` | Flux de veille personnalisés par utilisateur |
+| `flux_actualites` | Liaison flux-actualités (score_match, notifie) |
 
-### `user_roles`
-Rôles des utilisateurs (enum `app_role`).
+### Acteurs & SPDI (5 tables)
 
-| Colonne | Type | Description |
-|---------|------|-------------|
-| id | uuid (PK) | Identifiant unique |
-| user_id | uuid (FK) | Référence utilisateur |
-| role | app_role | admin, user, council_user, guest |
-| created_at | timestamptz | Date assignation |
+| Table | Description |
+|-------|-------------|
+| `personnalites` | Acteurs stratégiques (nom, fonction, cercle, score_spdi, suivi_spdi_actif) |
+| `personnalites_mentions` | Liaison personnalités-mentions |
+| `mentions` | Mentions médiatiques (sentiment, score_influence, est_critique) |
+| `presence_digitale_metrics` | Métriques SPDI historiques (4 axes, nb_mentions, sentiment_moyen) |
+| `presence_digitale_recommandations` | Recommandations IA (titre, type, priorite, canal) |
 
-### `personnalites`
-Acteurs du secteur télécoms surveillés.
+### Social & Insights (3 tables)
 
-| Colonne | Type | Description |
-|---------|------|-------------|
-| id | uuid (PK) | Identifiant unique |
-| nom | text | Nom de famille |
-| prenom | text | Prénom |
-| fonction | text | Poste occupé |
-| organisation | text | Entreprise/institution |
-| cercle | integer | 1-5 (proximité stratégique) |
-| score_spdi_actuel | integer | Score présence digitale |
-| suivi_spdi_actif | boolean | Suivi activé |
-| reseaux | jsonb | Liens réseaux sociaux |
-| alertes_config | jsonb | Configuration alertes |
-| tags | text[] | Tags de classification |
-| thematiques | text[] | Thématiques suivies |
+| Table | Description |
+|-------|-------------|
+| `social_insights` | Données réseaux sociaux (plateforme, engagement, hashtags, entites) |
+| `social_api_config` | Configuration APIs sociales (plateforme, quota, enabled) |
+| `signaux` | Signaux stratégiques (quadrant, niveau, tendance, score_impact) |
 
-### `actualites`
-Articles et actualités collectés.
+### Newsletters & Diffusion (5 tables)
 
-| Colonne | Type | Description |
-|---------|------|-------------|
-| id | uuid (PK) | Identifiant unique |
-| titre | text | Titre de l'article |
-| contenu | text | Contenu complet |
-| resume | text | Résumé généré |
-| source_id | uuid (FK) | Source média |
-| source_nom | text | Nom de la source |
-| source_url | text | URL de l'article |
-| categorie | text | Catégorie thématique |
-| importance | integer | Score 1-10 |
-| sentiment | integer | -100 à +100 |
-| tags | text[] | Tags automatiques |
-| analyse_ia | text | Analyse IA complète |
-| date_publication | timestamptz | Date publication |
+| Table | Description |
+|-------|-------------|
+| `newsletters` | Newsletters générées (contenu JSON, html_complet, statut, ton) |
+| `newsletter_destinataires` | Destinataires newsletter (email, type, frequence) |
+| `newsletter_programmation` | Programmation envois automatiques (frequence, heure, cible) |
+| `diffusion_programmation` | Programmation diffusion multi-canal (email, SMS) |
+| `diffusion_logs` | Logs d'envoi (canal, destinataires_count, succes_count) |
 
-### `flux_veille`
-Flux de veille personnalisés par utilisateur.
+### SMS (2 tables)
 
-| Colonne | Type | Description |
-|---------|------|-------------|
-| id | uuid (PK) | Identifiant unique |
-| user_id | uuid (FK) | Propriétaire |
-| nom | text | Nom du flux |
-| mots_cles | text[] | Mots-clés de filtrage |
-| categories_ids | text[] | Catégories suivies |
-| quadrants | text[] | Quadrants du radar |
-| importance_min | integer | Seuil d'importance |
-| alerte_email | boolean | Notifications email |
-| alerte_push | boolean | Notifications push |
-| frequence_digest | text | hourly, daily, weekly |
+| Table | Description |
+|-------|-------------|
+| `sms_destinataires` | Destinataires SMS (numero, nom, role_filtre) |
+| `sms_logs` | Logs SMS (destinataire, statut, erreur) |
+
+### Documents & IA (2 tables)
+
+| Table | Description |
+|-------|-------------|
+| `dossiers` | Dossiers stratégiques (titre, contenu Markdown, categorie, statut) |
+| `conversations_ia` | Historique assistant IA (messages JSON) |
+
+### Alertes & Notifications (1 table)
+
+| Table | Description |
+|-------|-------------|
+| `alertes` | Notifications système (niveau, type, lue, traitee) |
+
+### Audit (2 tables)
+
+| Table | Description |
+|-------|-------------|
+| `admin_audit_logs` | Actions administrateur (action, target_user_id, details JSON) |
+| `audit_consultations` | Consultations utilisateurs (resource_type, metadata) |
 
 ## Enum `app_role`
 
@@ -210,69 +106,39 @@ CREATE TYPE app_role AS ENUM ('admin', 'user', 'council_user', 'guest');
 ### `has_role(user_id, role)`
 Vérifie si un utilisateur possède un rôle.
 
-```sql
-CREATE FUNCTION has_role(_user_id uuid, _role app_role)
-RETURNS boolean
-LANGUAGE sql STABLE SECURITY DEFINER
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM user_roles
-    WHERE user_id = _user_id AND role = _role
-  )
-$$;
-```
-
 ### `get_user_role(user_id)`
 Retourne le rôle principal d'un utilisateur.
 
-```sql
-CREATE FUNCTION get_user_role(_user_id uuid)
-RETURNS app_role
-LANGUAGE sql STABLE SECURITY DEFINER
-AS $$
-  SELECT role FROM user_roles
-  WHERE user_id = _user_id
-  ORDER BY CASE role 
-    WHEN 'admin' THEN 1 
-    WHEN 'user' THEN 2 
-    WHEN 'council_user' THEN 3 
-    WHEN 'guest' THEN 4 
-  END
-  LIMIT 1
-$$;
-```
+### `has_permission(user_id, permission)`
+Vérifie si un utilisateur possède une permission spécifique via son rôle.
+
+### `get_cron_jobs()` / `get_cron_history()`
+Fonctions de gestion des tâches CRON planifiées.
+
+### `toggle_cron_job()` / `update_cron_schedule()`
+Activation/désactivation et modification des planifications CRON.
 
 ## Row Level Security (RLS)
 
 ### Pattern Standard
 
 ```sql
--- Lecture : utilisateur authentifié ou admin
+-- Lecture : utilisateur authentifié
 CREATE POLICY "select_policy" ON table_name
-FOR SELECT USING (
-  auth.uid() = user_id 
-  OR has_role(auth.uid(), 'admin')
-);
+FOR SELECT USING (auth.uid() IS NOT NULL);
 
 -- Écriture : propriétaire uniquement
 CREATE POLICY "insert_policy" ON table_name
 FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "update_policy" ON table_name
-FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "delete_policy" ON table_name
-FOR DELETE USING (auth.uid() = user_id);
 ```
 
-### Tables Publiques (Lecture)
+### Tables Publiques (Lecture authentifiée)
 
-Certaines tables sont en lecture publique pour les utilisateurs authentifiés :
-
-- `personnalites` - Tous les utilisateurs peuvent consulter
+- `personnalites` - Tous les utilisateurs authentifiés
 - `actualites` - Actualités visibles par tous
 - `categories_veille` - Référentiel public
 - `signaux` - Signaux du radar publics
+- `social_insights` - Données sociales publiques
 
 ## Migrations
 
@@ -282,28 +148,6 @@ Les migrations sont gérées automatiquement par Lovable Cloud. Pour ajouter une
 2. Écrire le SQL avec RLS policies
 3. Attendre l'approbation utilisateur
 4. Les types TypeScript sont régénérés automatiquement
-
-### Exemple de Migration
-
-```sql
--- Créer une nouvelle table
-CREATE TABLE public.ma_table (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL,
-  titre TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Activer RLS
-ALTER TABLE public.ma_table ENABLE ROW LEVEL SECURITY;
-
--- Créer les policies
-CREATE POLICY "Users can view own data" ON public.ma_table
-FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own data" ON public.ma_table
-FOR INSERT WITH CHECK (auth.uid() = user_id);
-```
 
 ---
 

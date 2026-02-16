@@ -14,7 +14,7 @@ import AuthPage from "@/pages/AuthPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import RadarPage from "@/pages/RadarPage";
 import ActualitesPage from "@/pages/ActualitesPage";
-import PersonnalitesPage from "@/pages/PersonnalitesPage";
+import ActeursInfluencePage from "@/pages/ActeursInfluencePage";
 import DossiersPage from "@/pages/DossiersPage";
 import AssistantPage from "@/pages/AssistantPage";
 import AdminPage from "@/pages/AdminPage";
@@ -35,8 +35,6 @@ import PresentationPage from "@/pages/PresentationPage";
 import ProfilePage from "@/pages/ProfilePage";
 import FluxPage from "@/pages/FluxPage";
 import FluxDetailPage from "@/pages/FluxDetailPage";
-import PresenceDigitalePage from "@/pages/PresenceDigitalePage";
-import SpdiReviewPage from "@/pages/SpdiReviewPage";
 import NotFound from "@/pages/NotFound";
 import AccessDeniedPage from "@/pages/AccessDeniedPage";
 
@@ -87,7 +85,9 @@ const App = () => (
                       {/* Redirections */}
                       <Route path="/" element={<Navigate to="/radar" replace />} />
                       <Route path="/medias" element={<Navigate to="/radar" replace />} />
-                      {/* Presence Digitale route handled below */}
+                      <Route path="/personnalites" element={<Navigate to="/acteurs?tab=cartographie" replace />} />
+                      <Route path="/presence-digitale" element={<Navigate to="/acteurs?tab=spdi" replace />} />
+                      <Route path="/spdi-review" element={<Navigate to="/acteurs?tab=revue" replace />} />
                       
                       {/* Routes protégées */}
                       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
@@ -100,9 +100,7 @@ const App = () => (
                         </Route>
                         
                         <Route element={<PermissionRoute permission="view_personnalites" />}>
-                          <Route path="/personnalites" element={<PersonnalitesPage />} />
-                          <Route path="/presence-digitale" element={<PresenceDigitalePage />} />
-                          <Route path="/spdi-review" element={<SpdiReviewPage />} />
+                          <Route path="/acteurs" element={<ActeursInfluencePage />} />
                         </Route>
                         
                         <Route element={<PermissionRoute permission="view_dossiers" />}>

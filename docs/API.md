@@ -8,16 +8,10 @@ https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1
 
 ## Authentification
 
-Toutes les requêtes (sauf CORS preflight) nécessitent un header Authorization :
+Toutes les requêtes nécessitent un header Authorization :
 
 ```
 Authorization: Bearer <jwt_token>
-```
-
-Pour obtenir le token :
-```typescript
-const { data: { session } } = await supabase.auth.getSession();
-const token = session?.access_token;
 ```
 
 ## Headers Standards
@@ -33,283 +27,156 @@ apikey: <anon_key>
 | Code | Signification |
 |------|---------------|
 | 200 | Succès |
-| 201 | Créé avec succès |
-| 400 | Requête invalide (payload manquant/incorrect) |
+| 400 | Requête invalide |
 | 401 | Non authentifié |
-| 403 | Non autorisé (rôle insuffisant) |
-| 404 | Ressource non trouvée |
+| 403 | Non autorisé |
 | 409 | Conflit (doublon) |
 | 500 | Erreur serveur |
 
 ---
 
-## Endpoints
+## Endpoints (23 fonctions)
 
-### POST /assistant-ia
+### Intelligence & Veille
 
-Assistant IA conversationnel avec streaming.
-
-**Request:**
-```bash
-curl -N -X POST \
-  'https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1/assistant-ia' \
-  -H 'Authorization: Bearer <token>' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "message": "Résume les actualités du jour",
-    "context": "veille",
-    "conversationId": null
-  }'
-```
-
-**Response (SSE Stream):**
-```
-data: {"type":"text","content":"Voici un résumé"}
-data: {"type":"text","content":" des actualités..."}
-data: {"type":"done","conversationId":"abc123"}
-```
-
-**Contextes:** `general`, `veille`, `personnalites`, `actualites`
-
----
-
-### POST /collecte-veille
-
-Collecte d'actualités (réservé CRON/service).
-
-**Request:**
-```bash
-curl -X POST \
-  'https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1/collecte-veille' \
-  -H 'Authorization: Bearer <service_role_key>' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "mode": "full",
-    "categories": ["regulation", "operateurs"],
-    "limit": 50
-  }'
-```
-
-**Response:**
+#### POST /assistant-ia
+Assistant IA conversationnel avec streaming SSE.
 ```json
-{
-  "success": true,
-  "stats": {
-    "total": 45,
-    "inserted": 38,
-    "duplicates": 7,
-    "duration_ms": 12500
-  }
-}
+{"message": "Résume les actualités du jour", "context": "veille"}
 ```
 
----
+#### POST /collecte-veille
+Collecte d'actualités (CRON/service).
+```json
+{"mode": "full", "categories": ["regulation"], "limit": 50}
+```
 
-### POST /enrichir-actualite
-
+#### POST /enrichir-actualite
 Enrichit une actualité avec l'IA.
-
-**Request:**
-```bash
-curl -X POST \
-  'https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1/enrichir-actualite' \
-  -H 'Authorization: Bearer <token>' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "actualiteId": "550e8400-e29b-41d4-a716-446655440000"
-  }'
+```json
+{"actualiteId": "uuid"}
 ```
 
-**Response:**
+#### POST /generer-briefing
+Génère le briefing quotidien IA.
 ```json
-{
-  "success": true,
-  "enrichment": {
-    "importance": 8,
-    "sentiment": 15,
-    "tags": ["5G", "régulation"],
-    "categorie": "regulation",
-    "resume": "Résumé généré...",
-    "analyse_ia": "Analyse complète..."
-  }
-}
+{"date": "2026-02-16"}
+```
+
+#### POST /generer-requete-flux
+Génère une requête de flux via IA.
+```json
+{"description": "Suivre la 5G en Afrique"}
 ```
 
 ---
 
-### POST /generer-acteurs
+### SPDI & Social
 
-Génère des acteurs pour une catégorie (admin).
+#### POST /calculer-spdi
+Calcule le score SPDI d'un acteur.
+```json
+{"personnalite_id": "uuid"}
+```
+**Réponse:** `{"score_final": 72.5, "axes": {"visibilite": 80, "qualite": 65, "autorite": 70, "presence": 75}}`
 
-**Request:**
-```bash
-curl -X POST \
-  'https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1/generer-acteurs' \
-  -H 'Authorization: Bearer <admin_token>' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "categorie": "operateurs",
-    "pays": "Côte d'\''Ivoire",
-    "limit": 20
-  }'
+#### POST /analyser-spdi
+Analyse IA et recommandations stratégiques.
+```json
+{"personnalite_id": "uuid"}
 ```
 
-**Response:**
+#### POST /collecte-social
+Collecte données sociales (scraping).
+
+#### POST /collecte-social-api
+Collecte via APIs officielles.
+
+---
+
+### Newsletter & Diffusion
+
+#### POST /generer-newsletter
+Génère contenu newsletter par IA.
 ```json
-{
-  "success": true,
-  "acteurs": [
-    {
-      "nom": "Kouassi",
-      "prenom": "Jean",
-      "fonction": "DG",
-      "organisation": "Orange CI",
-      "cercle": 1
-    }
-  ],
-  "count": 15
-}
+{"date_debut": "2026-02-01", "date_fin": "2026-02-15", "ton": "formel", "cible": "direction"}
+```
+
+#### POST /envoyer-newsletter
+Envoie une newsletter aux destinataires.
+```json
+{"newsletter_id": "uuid", "destinataires": ["email@example.com"]}
+```
+
+#### POST /scheduler-newsletter
+Programmation automatique des newsletters.
+
+#### POST /diffuser-resume
+Diffusion résumé quotidien par canal.
+```json
+{"canal": "email", "contenu_type": "briefing"}
+```
+
+#### POST /envoyer-sms
+Envoi d'alertes SMS.
+```json
+{"message": "Alerte critique", "destinataires": ["+225XXXXXXXXXX"]}
+```
+
+#### POST /send-flux-digest
+Envoi digest email flux de veille (service).
+```json
+{"frequence": "daily", "forceAll": false}
 ```
 
 ---
 
-### POST /invite-user
+### Administration Utilisateurs
 
+#### POST /invite-user
 Invite un nouvel utilisateur (admin).
-
-**Request:**
-```bash
-curl -X POST \
-  'https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1/invite-user' \
-  -H 'Authorization: Bearer <admin_token>' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "email": "nouveau@example.com",
-    "fullName": "Jean Dupont",
-    "role": "user",
-    "redirectUrl": "https://ansut-lens.lovable.app/auth/reset-password"
-  }'
-```
-
-**Response:**
 ```json
-{
-  "success": true,
-  "message": "Invitation envoyée à nouveau@example.com",
-  "userId": "550e8400-e29b-41d4-a716-446655440000"
-}
+{"email": "nouveau@example.com", "fullName": "Jean Dupont", "role": "user"}
 ```
 
-**Erreurs:**
-- `400` - Champs manquants
-- `403` - Non admin
-- `409` - Email déjà utilisé
-
----
-
-### POST /manage-user
-
-Gère les comptes utilisateurs (admin).
-
-**Désactiver:**
-```bash
-curl -X POST \
-  'https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1/manage-user' \
-  -H 'Authorization: Bearer <admin_token>' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "userId": "550e8400-e29b-41d4-a716-446655440000",
-    "action": "disable"
-  }'
+#### POST /manage-user
+Gère les comptes (admin).
+```json
+{"userId": "uuid", "action": "disable"}
 ```
-
 **Actions:** `enable`, `disable`, `delete`
 
----
-
-### POST /update-user-role
-
-Modifie le rôle d'un utilisateur (admin).
-
-**Request:**
-```bash
-curl -X POST \
-  'https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1/update-user-role' \
-  -H 'Authorization: Bearer <admin_token>' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "userId": "550e8400-e29b-41d4-a716-446655440000",
-    "newRole": "council_user"
-  }'
-```
-
-**Response:**
+#### POST /update-user-role
+Modifie le rôle (admin).
 ```json
-{
-  "success": true,
-  "previousRole": "user",
-  "newRole": "council_user"
-}
+{"userId": "uuid", "newRole": "council_user"}
 ```
 
----
-
-### POST /manage-cron-jobs
-
+#### POST /manage-cron-jobs
 Gère les tâches CRON (admin).
-
-**Lister:**
-```bash
-curl -X POST \
-  'https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1/manage-cron-jobs' \
-  -H 'Authorization: Bearer <admin_token>' \
-  -H 'Content-Type: application/json' \
-  -d '{"action": "list"}'
-```
-
-**Toggle:**
 ```json
-{"action": "toggle", "jobId": 123}
+{"action": "list"}
 ```
 
-**Modifier schedule:**
+#### POST /generer-acteurs
+Génère des acteurs pour une catégorie (admin).
 ```json
-{"action": "update_schedule", "jobId": 123, "schedule": "0 8 * * *"}
+{"categorie": "operateurs", "pays": "Côte d'Ivoire", "limit": 20}
 ```
 
-**Exécuter maintenant:**
+#### POST /list-users-status
+Liste le statut des utilisateurs.
+
+#### POST /generate-password-link
+Génère un lien de réinitialisation.
 ```json
-{"action": "run_now", "jobName": "collecte-veille"}
+{"userId": "uuid"}
 ```
 
----
-
-### POST /send-flux-digest
-
-Envoie les digests email (service).
-
-**Request:**
-```bash
-curl -X POST \
-  'https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1/send-flux-digest' \
-  -H 'Authorization: Bearer <service_role_key>' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "frequence": "daily",
-    "forceAll": false
-  }'
-```
-
-**Response:**
+#### POST /reset-user-password
+Réinitialise le mot de passe (admin).
 ```json
-{
-  "success": true,
-  "stats": {
-    "flux_processed": 15,
-    "emails_sent": 12,
-    "errors": 0
-  }
-}
+{"userId": "uuid", "newPassword": "..."}
 ```
 
 ---
@@ -317,13 +184,8 @@ curl -X POST \
 ## Gestion des Erreurs
 
 ### Format Standard
-
 ```json
-{
-  "error": "Message d'erreur",
-  "code": "ERROR_CODE",
-  "details": {}
-}
+{"error": "Message d'erreur", "code": "ERROR_CODE"}
 ```
 
 ### Codes d'Erreur Courants
@@ -335,30 +197,7 @@ curl -X POST \
 | `VALIDATION_ERROR` | Payload invalide |
 | `NOT_FOUND` | Ressource introuvable |
 | `CONFLICT` | Doublon détecté |
-| `RATE_LIMITED` | Trop de requêtes |
 | `INTERNAL_ERROR` | Erreur serveur |
-
-### Exemple de Gestion
-
-```typescript
-try {
-  const { data, error } = await supabase.functions.invoke('invite-user', {
-    body: { email, fullName, role }
-  });
-  
-  if (error) throw error;
-  
-  toast.success('Invitation envoyée');
-} catch (err) {
-  if (err.message.includes('409')) {
-    toast.error('Cet email est déjà utilisé');
-  } else if (err.message.includes('403')) {
-    toast.error('Droits insuffisants');
-  } else {
-    toast.error('Une erreur est survenue');
-  }
-}
-```
 
 ---
 
