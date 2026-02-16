@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Award, Building2, TrendingUp, Network, Eye, Pencil, MoreHorizontal, Archive, Trash2 } from 'lucide-react';
+import { Award, Building2, Network, Eye, Pencil, MoreHorizontal, Archive, Trash2, Info, Activity } from 'lucide-react';
 import { CERCLE_LABELS } from '@/hooks/usePersonnalites';
 import type { Personnalite, CercleStrategique } from '@/types';
 import { cn } from '@/lib/utils';
@@ -27,14 +27,24 @@ interface SmartActeurCardProps {
   onDelete?: () => void;
 }
 
-// Calcul du "Heat" - Visibilité médiatique récente
-const calculateMediaHeat = (personnalite: Personnalite): number => {
-  const baseScore = personnalite.score_influence ?? 50;
-  const hasRecentActivity = personnalite.derniere_activite && 
-    new Date(personnalite.derniere_activite) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  
-  if (hasRecentActivity) return Math.min(baseScore + 20, 100);
-  return baseScore;
+// --- SPDI helpers ---
+
+const getSPDIColor = (score: number) => {
+  if (score >= 80) return { text: 'text-green-600 dark:text-green-400', bg: 'bg-green-500', badge: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800' };
+  if (score >= 60) return { text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500', badge: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800' };
+  if (score >= 40) return { text: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-500', badge: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/50 dark:text-orange-300 dark:border-orange-800' };
+  return { text: 'text-red-600 dark:text-red-400', bg: 'bg-red-500', badge: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800' };
+};
+
+const getSPDIAdvice = (personnalite: Personnalite): { text: string; color: string } => {
+  if (!personnalite.suivi_spdi_actif) {
+    return { text: 'Activer le suivi SPDI', color: 'text-muted-foreground' };
+  }
+  const score = personnalite.score_spdi_actuel ?? 0;
+  if (score >= 80) return { text: 'Excellente visibilité', color: 'text-green-600 dark:text-green-400' };
+  if (score >= 60) return { text: 'Renforcer la présence LinkedIn', color: 'text-blue-600 dark:text-blue-400' };
+  if (score >= 40) return { text: 'Augmenter les prises de parole', color: 'text-orange-600 dark:text-orange-400' };
+  return { text: 'Action urgente recommandée', color: 'text-red-600 dark:text-red-400' };
 };
 
 // Connexions simulées basées sur le même cercle/organisation
@@ -113,12 +123,15 @@ export function SmartActeurCard({
 }: SmartActeurCardProps) {
   const cercleStyles = getCercleStyles(personnalite.cercle);
   const initials = `${personnalite.prenom?.[0] || ''}${personnalite.nom[0]}`.toUpperCase();
-  const mediaHeat = calculateMediaHeat(personnalite);
   const connections = getConnections(personnalite, allPersonnalites);
   const remainingConnections = Math.max(0, allPersonnalites.filter(p => 
     p.id !== personnalite.id && p.cercle === personnalite.cercle
   ).length - 3);
   const influenceScore = personnalite.score_influence ?? 50;
+
+  const suiviActif = personnalite.suivi_spdi_actif ?? false;
+  const scoreSPDI = personnalite.score_spdi_actuel;
+  const spdiAdvice = getSPDIAdvice(personnalite);
 
   return (
     <div 
@@ -136,7 +149,7 @@ export function SmartActeurCard({
       {/* Header : Avatar + Infos principales */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex gap-4 min-w-0">
-          {/* Avatar avec Heat indicator */}
+          {/* Avatar avec badge SPDI */}
           <div className="relative shrink-0">
             <Avatar className={cn('h-14 w-14 border', cercleStyles.avatar)}>
               {personnalite.photo_url && (
@@ -147,24 +160,43 @@ export function SmartActeurCard({
               </AvatarFallback>
             </Avatar>
             
-            {/* Heat indicator - affiché si > 50 */}
-            {mediaHeat > 50 && (
+            {/* Badge SPDI */}
+            {suiviActif && scoreSPDI != null ? (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="absolute -bottom-1 -right-1 bg-background p-0.5 rounded-full shadow-sm">
-                      <div className="flex items-center gap-0.5 bg-destructive text-destructive-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                        <TrendingUp className="h-2 w-2" />
-                        {mediaHeat}%
+                      <div className={cn(
+                        'flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full border',
+                        getSPDIColor(scoreSPDI).badge
+                      )}>
+                        <Activity className="h-2 w-2" />
+                        {Math.round(scoreSPDI)}
                       </div>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
-                    <p className="text-xs">Visibilité médiatique élevée</p>
+                    <p className="text-xs">Score SPDI — Présence digitale</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-            )}
+            ) : !suiviActif ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="absolute -bottom-1 -right-1 bg-background p-0.5 rounded-full shadow-sm">
+                      <div className="flex items-center gap-0.5 bg-muted text-muted-foreground text-[9px] font-medium px-1.5 py-0.5 rounded-full border border-border">
+                        <Info className="h-2 w-2" />
+                        SPDI
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p className="text-xs">Suivi SPDI inactif</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : null}
           </div>
           
           <div className="min-w-0">
@@ -273,60 +305,67 @@ export function SmartActeurCard({
         </div>
       )}
 
-      {/* Footer : Connexions & Influence */}
-      <div className="pt-4 border-t border-border/30 flex items-center justify-between mt-auto">
-        
-        {/* Mini-réseau de connexions */}
-        <div className="flex flex-col gap-1">
-          <span className="text-[10px] text-muted-foreground font-medium uppercase flex items-center gap-1">
-            <Network className="h-3 w-3" /> Connexions
-          </span>
-          <div className="flex -space-x-2">
-            {connections.length > 0 ? (
-              <>
-                {connections.map((c) => (
-                  <TooltipProvider key={c.id}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Avatar className="h-6 w-6 border-2 border-background cursor-pointer">
-                          {c.photo_url && <AvatarImage src={c.photo_url} alt={c.nom} />}
-                          <AvatarFallback className="text-[8px] font-bold bg-muted">
-                            {c.nom[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <p className="text-xs">{c.prenom} {c.nom}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                ))}
-                {remainingConnections > 0 && (
-                  <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[9px] font-medium text-muted-foreground border-2 border-background">
-                    +{remainingConnections}
-                  </div>
-                )}
-              </>
-            ) : (
-              <span className="text-[10px] text-muted-foreground/60">—</span>
-            )}
+      {/* Footer : Connexions, Influence & Conseil SPDI */}
+      <div className="pt-4 border-t border-border/30 flex flex-col gap-3 mt-auto">
+        <div className="flex items-center justify-between">
+          {/* Mini-réseau de connexions */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] text-muted-foreground font-medium uppercase flex items-center gap-1">
+              <Network className="h-3 w-3" /> Connexions
+            </span>
+            <div className="flex -space-x-2">
+              {connections.length > 0 ? (
+                <>
+                  {connections.map((c) => (
+                    <TooltipProvider key={c.id}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Avatar className="h-6 w-6 border-2 border-background cursor-pointer">
+                            {c.photo_url && <AvatarImage src={c.photo_url} alt={c.nom} />}
+                            <AvatarFallback className="text-[8px] font-bold bg-muted">
+                              {c.nom[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          <p className="text-xs">{c.prenom} {c.nom}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ))}
+                  {remainingConnections > 0 && (
+                    <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[9px] font-medium text-muted-foreground border-2 border-background">
+                      +{remainingConnections}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <span className="text-[10px] text-muted-foreground/60">—</span>
+              )}
+            </div>
+          </div>
+
+          {/* Jauge d'influence */}
+          <div className="text-right">
+            <span className="text-[10px] text-muted-foreground font-medium uppercase">Influence</span>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary rounded-full transition-all" 
+                  style={{ width: `${influenceScore}%` }}
+                />
+              </div>
+              <span className="text-xs font-bold text-primary">
+                {influenceScore}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Jauge d'influence */}
-        <div className="text-right">
-          <span className="text-[10px] text-muted-foreground font-medium uppercase">Influence</span>
-          <div className="flex items-center gap-2 mt-1">
-            <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary rounded-full transition-all" 
-                style={{ width: `${influenceScore}%` }}
-              />
-            </div>
-            <span className="text-xs font-bold text-primary">
-              {influenceScore}
-            </span>
-          </div>
+        {/* Mini-conseil SPDI */}
+        <div className={cn('text-[11px] font-medium flex items-center gap-1', spdiAdvice.color)}>
+          <Activity className="h-3 w-3 shrink-0" />
+          {spdiAdvice.text}
         </div>
       </div>
     </div>
