@@ -22,7 +22,7 @@ import {
   useToggleSuiviSPDI,
   INTERPRETATION_LABELS,
 } from '@/hooks/usePresenceDigitale';
-import { SPDIGaugeCard, SPDIRecommandations } from '@/components/spdi';
+import { SPDIDashboardCompact } from '@/components/spdi';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Personnalite, CercleStrategique, Tendance } from '@/types';
 import { cn } from '@/lib/utils';
@@ -249,103 +249,32 @@ export function ActeurDetail({ personnalite, open, onOpenChange, onEdit, onArchi
 
           <Separator className="my-4" />
 
-          {/* Section SPDI - Présence Digitale Institutionnelle */}
-          <div className="mb-4">
-            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              Présence Digitale Institutionnelle
-            </h3>
-            
-            {/* Toggle suivi SPDI */}
-            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg mb-3">
-              <div>
-                <Label className="text-sm font-medium">Suivi SPDI</Label>
-                <p className="text-xs text-muted-foreground">Activer le suivi de présence digitale</p>
-              </div>
-              <Switch 
-                checked={suiviSPDIActif} 
-                onCheckedChange={handleToggleSuivi}
-                disabled={toggleSuivi.isPending}
-              />
-            </div>
-            
-            {/* Afficher les métriques si suivi actif */}
-            {suiviSPDIActif && metriqueSPDI && (
-              <div className="space-y-3">
-                <SPDIGaugeCard 
-                  score={metriqueSPDI.score_final}
-                  tendance={tendanceSPDI}
-                  compact
-                />
-                
-                {/* Conseils par axe faible */}
-                {(() => {
-                  const axesFaibles = getAxesFaibles(metriqueSPDI);
-                  if (axesFaibles.length === 0) return null;
-                  return (
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                        <Lightbulb className="h-3.5 w-3.5" />
-                        Axes à améliorer
-                      </h4>
-                      {axesFaibles.map(({ key, score }) => {
-                        const conseil = AXES_CONSEILS[key];
-                        if (!conseil) return null;
-                        const Icon = conseil.icon;
-                        return (
-                          <div key={key} className="flex items-start gap-2 p-2 bg-orange-50 dark:bg-orange-950/30 rounded-lg border border-orange-200 dark:border-orange-800">
-                            <Icon className="h-3.5 w-3.5 mt-0.5 text-orange-600 dark:text-orange-400 shrink-0" />
-                            <div>
-                              <span className="text-xs font-semibold text-orange-700 dark:text-orange-300">{conseil.label} ({Math.round(score)}/100)</span>
-                              <p className="text-xs text-orange-600/80 dark:text-orange-400/80">{conseil.conseil}</p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-
-                {recommandationsSPDI && recommandationsSPDI.length > 0 && (
-                  <SPDIRecommandations 
-                    recommandations={recommandationsSPDI.slice(0, 2)} 
-                    compact 
-                  />
-                )}
-              </div>
-            )}
-            
-            {suiviSPDIActif && !metriqueSPDI && (
-              <div className="text-center py-4 space-y-2">
-                <p className="text-xs text-muted-foreground">
-                  Aucune métrique disponible.
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5"
-                  disabled={calculLoading}
-                  onClick={async () => {
-                    setCalculLoading(true);
-                    try {
-                      const { error } = await supabase.functions.invoke('calculer-spdi', {
-                        body: { personnalite_id: personnalite.id },
-                      });
-                      if (error) throw error;
-                      toast.success('Calcul SPDI lancé avec succès');
-                    } catch (err: any) {
-                      toast.error(`Erreur: ${err.message}`);
-                    } finally {
-                      setCalculLoading(false);
-                    }
-                  }}
-                >
-                  <Zap className="h-3.5 w-3.5" />
-                  {calculLoading ? 'Calcul en cours…' : 'Lancer le premier calcul'}
-                </Button>
-              </div>
-            )}
-          </div>
+          {/* Section SPDI - Dashboard Compact */}
+          <SPDIDashboardCompact
+            personnalite={personnalite}
+            suiviActif={suiviSPDIActif}
+            scoreSPDI={scoreSPDI}
+            tendance={tendanceSPDI}
+            onToggleSuivi={handleToggleSuivi}
+            toggleLoading={toggleSuivi.isPending}
+            recommandations={recommandationsSPDI ?? undefined}
+            hasMetrique={!!metriqueSPDI}
+            onLancerCalcul={async () => {
+              setCalculLoading(true);
+              try {
+                const { error } = await supabase.functions.invoke('calculer-spdi', {
+                  body: { personnalite_id: personnalite.id },
+                });
+                if (error) throw error;
+                toast.success('Calcul SPDI lancé avec succès');
+              } catch (err: any) {
+                toast.error(`Erreur: ${err.message}`);
+              } finally {
+                setCalculLoading(false);
+              }
+            }}
+            calculLoading={calculLoading}
+          />
 
           <Separator className="my-4" />
 

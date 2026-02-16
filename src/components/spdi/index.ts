@@ -7,3 +7,8 @@ export { SPDIAlerteBanner } from './SPDIAlerteBanner';
 export { SPDIComparaisonTemporelle } from './SPDIComparaisonTemporelle';
 export { SPDIStabilityTable } from './SPDIStabilityTable';
 export { SPDIAxesRanking } from './SPDIAxesRanking';
+export { SPDIDashboardCompact } from './SPDIDashboardCompact';
+export { MiniSparkline } from './MiniSparkline';
+export { SentimentBar } from './SentimentBar';
+export { ShareOfVoiceDonut } from './ShareOfVoiceDonut';
+export { PresenceCanaux } from './PresenceCanaux';

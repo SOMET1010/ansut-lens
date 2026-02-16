@@ -15,6 +15,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Award, Building2, Network, Eye, Pencil, MoreHorizontal, Archive, Trash2, Info, Activity } from 'lucide-react';
 import { CERCLE_LABELS } from '@/hooks/usePersonnalites';
+import { MiniSparkline } from '@/components/spdi/MiniSparkline';
+import { SentimentBar } from '@/components/spdi/SentimentBar';
+import { useActeurDigitalDashboard } from '@/hooks/useActeurDigitalDashboard';
 import type { Personnalite, CercleStrategique } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -132,6 +135,10 @@ export function SmartActeurCard({
   const suiviActif = personnalite.suivi_spdi_actif ?? false;
   const scoreSPDI = personnalite.score_spdi_actuel;
   const spdiAdvice = getSPDIAdvice(personnalite);
+  const dashboard = useActeurDigitalDashboard(
+    suiviActif ? personnalite.id : undefined,
+    personnalite.cercle
+  );
 
   return (
     <div 
@@ -197,8 +204,13 @@ export function SmartActeurCard({
                 </Tooltip>
               </TooltipProvider>
             ) : null}
+            {/* Mini sparkline under avatar */}
+            {suiviActif && dashboard.sparklineData.length >= 2 && (
+              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
+                <MiniSparkline data={dashboard.sparklineData} width={40} height={12} />
+              </div>
+            )}
           </div>
-          
           <div className="min-w-0">
             <h3 className="text-lg font-bold text-foreground leading-tight group-hover:text-primary transition-colors truncate">
               {personnalite.prenom} {personnalite.nom}
@@ -302,6 +314,13 @@ export function SmartActeurCard({
               +{personnalite.thematiques.length - 3}
             </span>
           )}
+        </div>
+      )}
+
+      {/* Compact sentiment bar */}
+      {suiviActif && (
+        <div className="mb-3">
+          <SentimentBar {...dashboard.sentimentDistribution} compact />
         </div>
       )}
 
