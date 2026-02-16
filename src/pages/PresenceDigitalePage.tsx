@@ -14,6 +14,7 @@ import {
   SPDIRecommandations,
   SPDIComparaisonPairs,
   SPDIAlerteBanner,
+  SPDIComparaisonTemporelle,
 } from '@/components/spdi';
 import {
   useActeursSPDI,
@@ -168,6 +169,9 @@ export default function PresenceDigitalePage() {
           ) : evolution ? (
             <SPDIEvolutionChart evolution={evolution} onPeriodeChange={setPeriode} />
           ) : null}
+
+          {/* Row 2.5: Comparaison temporelle multi-acteurs */}
+          <SPDIComparaisonTemporelle />
 
           {/* Row 3: Recommandations + Comparaison */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
