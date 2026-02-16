@@ -1,15 +1,17 @@
+import { useState } from 'react';
 import { Activity, TrendingUp, TrendingDown, Lightbulb, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { RecommandationSPDI } from '@/types';
 import { MiniSparkline } from './MiniSparkline';
 import { SentimentBar } from './SentimentBar';
 import { PresenceCanaux } from './PresenceCanaux';
 import { ShareOfVoiceDonut } from './ShareOfVoiceDonut';
 import { SPDIRecommandations } from './SPDIRecommandations';
-import { useActeurDigitalDashboard } from '@/hooks/useActeurDigitalDashboard';
+import { useActeurDigitalDashboard, type Periode } from '@/hooks/useActeurDigitalDashboard';
 import { cn } from '@/lib/utils';
 import type { Personnalite, Tendance } from '@/types';
 
@@ -20,7 +22,7 @@ interface SPDIDashboardCompactProps {
   tendance: Tendance;
   onToggleSuivi: () => void;
   toggleLoading: boolean;
-  recommandations?: any[];
+  recommandations?: RecommandationSPDI[];
   onLancerCalcul?: () => void;
   calculLoading?: boolean;
   hasMetrique: boolean;
@@ -32,6 +34,12 @@ const getSPDIColor = (score: number) => {
   if (score >= 40) return 'text-orange-600 dark:text-orange-400';
   return 'text-red-600 dark:text-red-400';
 };
+
+const PERIODES: { value: Periode; label: string }[] = [
+  { value: '7j', label: '7j' },
+  { value: '30j', label: '30j' },
+  { value: '1an', label: '1an' },
+];
 
 export function SPDIDashboardCompact({
   personnalite,
@@ -45,9 +53,12 @@ export function SPDIDashboardCompact({
   calculLoading,
   hasMetrique,
 }: SPDIDashboardCompactProps) {
+  const [periode, setPeriode] = useState<Periode>('30j');
+
   const dashboard = useActeurDigitalDashboard(
     suiviActif ? personnalite.id : undefined,
-    personnalite.cercle
+    personnalite.cercle,
+    periode
   );
 
   const variation = dashboard.sparklineData.length >= 2
@@ -61,10 +72,30 @@ export function SPDIDashboardCompact({
 
   return (
     <div className="mb-4">
-      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-        <Activity className="h-4 w-4" />
-        Présence Digitale Institutionnelle
-      </h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <Activity className="h-4 w-4" />
+          Présence Digitale Institutionnelle
+        </h3>
+        {suiviActif && hasMetrique && (
+          <div className="flex rounded-md border border-border overflow-hidden">
+            {PERIODES.map((p) => (
+              <button
+                key={p.value}
+                onClick={() => setPeriode(p.value)}
+                className={cn(
+                  'px-2 py-0.5 text-[10px] font-medium transition-colors',
+                  periode === p.value
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                )}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Toggle */}
       <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg mb-3">
