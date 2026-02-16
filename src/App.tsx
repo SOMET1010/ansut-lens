@@ -25,6 +25,7 @@ import ImportActeursPage from "@/pages/admin/ImportActeursPage";
 import UsersPage from "@/pages/admin/UsersPage";
 import AuditLogsPage from "@/pages/admin/AuditLogsPage";
 import CronJobsPage from "@/pages/admin/CronJobsPage";
+import SpdiStatusPage from "@/pages/admin/SpdiStatusPage";
 import NewslettersPage from "@/pages/admin/NewslettersPage";
 import DiffusionPage from "@/pages/admin/DiffusionPage";
 import SourcesPage from "@/pages/admin/SourcesPage";
@@ -142,6 +143,7 @@ const App = () => (
                           
                           <Route element={<PermissionRoute permission="manage_cron_jobs" />}>
                             <Route path="/admin/cron-jobs" element={<CronJobsPage />} />
+                            <Route path="/admin/spdi-status" element={<SpdiStatusPage />} />
                           </Route>
                           
                           <Route element={<PermissionRoute permission="manage_newsletters" />}>
