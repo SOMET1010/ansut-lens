@@ -13,7 +13,7 @@ import {
   Building2, MapPin, Star, AlertTriangle, Bell, 
   Twitter, Linkedin, Newspaper, ExternalLink,
   Wifi, Wallet, Landmark, GraduationCap, Activity, Pencil,
-  Archive, Trash2, Eye, MessageSquare, Award, Users, Lightbulb, Zap
+  Archive, Trash2, Eye, MessageSquare, Award, Users, Lightbulb, Zap, Swords
 } from 'lucide-react';
 import { CERCLE_LABELS, SOUS_CATEGORIE_LABELS } from '@/hooks/usePersonnalites';
 import { 
@@ -34,6 +34,7 @@ interface ActeurDetailProps {
   onEdit?: () => void;
   onArchive?: () => void;
   onDelete?: () => void;
+  onCompare?: (acteur: Personnalite) => void;
 }
 
 const getCercleColors = (cercle: CercleStrategique) => {
@@ -75,7 +76,7 @@ const getAxesFaibles = (metrique: any) => {
   return axes.filter(a => a.score != null && a.score < 40);
 };
 
-export function ActeurDetail({ personnalite, open, onOpenChange, onEdit, onArchive, onDelete }: ActeurDetailProps) {
+export function ActeurDetail({ personnalite, open, onOpenChange, onEdit, onArchive, onDelete, onCompare }: ActeurDetailProps) {
   const { isAdmin } = useAuth();
   const toggleSuivi = useToggleSuiviSPDI();
   const [calculLoading, setCalculLoading] = React.useState(false);
@@ -275,6 +276,21 @@ export function ActeurDetail({ personnalite, open, onOpenChange, onEdit, onArchi
             }}
             calculLoading={calculLoading}
           />
+
+          {/* Compare button */}
+          {suiviSPDIActif && onCompare && (
+            <div className="flex justify-end mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => onCompare(personnalite)}
+              >
+                <Swords className="h-3.5 w-3.5" />
+                Comparer avec un pair
+              </Button>
+            </div>
+          )}
 
           <Separator className="my-4" />
 

@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Users, Sparkles, UserPlus, Plus, List, Target } from 'lucide-react';
+import { Users, Sparkles, UserPlus, Plus, List, Target, Swords } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePersonnalites, usePersonnalitesStats, useUpdatePersonnalite, useDeletePersonnalite, CERCLE_LABELS, type PersonnalitesFilters } from '@/hooks/usePersonnalites';
@@ -24,6 +24,7 @@ import { CercleHeader } from '@/components/personnalites/CercleHeader';
 import { ActeurDetail } from '@/components/personnalites/ActeurDetail';
 import { ActeurFormDialog } from '@/components/personnalites/ActeurFormDialog';
 import { RadarVisualization } from '@/components/personnalites/RadarVisualization';
+import { SPDIBenchmarkPanel } from '@/components/spdi';
 import type { Personnalite, CercleStrategique } from '@/types';
 
 type ViewMode = 'list' | 'radar';
@@ -37,6 +38,8 @@ export default function PersonnalitesPage() {
   const [editingActeur, setEditingActeur] = useState<Personnalite | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [deletingActeur, setDeletingActeur] = useState<Personnalite | null>(null);
+  const [benchmarkOpen, setBenchmarkOpen] = useState(false);
+  const [benchmarkPreselected, setBenchmarkPreselected] = useState<Personnalite | null>(null);
   const { isAdmin } = useAuth();
 
   const { data: personnalites, isLoading } = usePersonnalites(filters);
@@ -147,6 +150,16 @@ export default function PersonnalitesPage() {
             </ToggleGroupItem>
           </ToggleGroup>
           
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => { setBenchmarkPreselected(null); setBenchmarkOpen(true); }}
+          >
+            <Swords className="h-4 w-4" />
+            <span className="hidden sm:inline">Comparer</span>
+          </Button>
+
           {isAdmin && (
             <Button onClick={openCreateDialog} className="gap-2" size="sm">
               <Plus className="h-4 w-4" />
@@ -256,6 +269,11 @@ export default function PersonnalitesPage() {
         }}
         onArchive={selectedActeur ? () => handleArchive(selectedActeur) : undefined}
         onDelete={selectedActeur ? () => handleDeleteRequest(selectedActeur) : undefined}
+        onCompare={(acteur) => {
+          setDetailOpen(false);
+          setBenchmarkPreselected(acteur);
+          setBenchmarkOpen(true);
+        }}
       />
 
       {/* Form dialog */}
@@ -263,6 +281,13 @@ export default function PersonnalitesPage() {
         open={formDialogOpen}
         onOpenChange={handleDialogClose}
         acteur={editingActeur ?? undefined}
+      />
+
+      {/* Benchmark panel */}
+      <SPDIBenchmarkPanel
+        open={benchmarkOpen}
+        onOpenChange={setBenchmarkOpen}
+        preselectedActeur={benchmarkPreselected}
       />
 
       {/* Dialog de confirmation de suppression */}

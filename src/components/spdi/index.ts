@@ -12,3 +12,4 @@ export { MiniSparkline } from './MiniSparkline';
 export { SentimentBar } from './SentimentBar';
 export { ShareOfVoiceDonut } from './ShareOfVoiceDonut';
 export { PresenceCanaux } from './PresenceCanaux';
+export { SPDIBenchmarkPanel } from './SPDIBenchmarkPanel';
