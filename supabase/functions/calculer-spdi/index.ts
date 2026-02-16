@@ -14,7 +14,42 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { personnalite_id } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { personnalite_id, batch } = body;
+
+    // Mode batch: calcul pour tous les acteurs suivis
+    if (batch) {
+      const { data: acteurs, error: errActeurs } = await supabase
+        .from("personnalites")
+        .select("id")
+        .eq("suivi_spdi_actif", true);
+      if (errActeurs) throw errActeurs;
+
+      const results: { id: string; score: number | null; error?: string }[] = [];
+      for (const acteur of (acteurs || [])) {
+        try {
+          const res = await fetch(`${supabaseUrl}/functions/v1/calculer-spdi`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${supabaseKey}`,
+            },
+            body: JSON.stringify({ personnalite_id: acteur.id }),
+          });
+          const data = await res.json();
+          results.push({ id: acteur.id, score: data.score_final ?? null, error: data.error });
+        } catch (e) {
+          results.push({ id: acteur.id, score: null, error: e instanceof Error ? e.message : "unknown" });
+        }
+      }
+
+      console.log(`[calculer-spdi] Batch terminé: ${results.length} acteurs traités`);
+      return new Response(
+        JSON.stringify({ batch: true, count: results.length, results }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     if (!personnalite_id) throw new Error("personnalite_id requis");
 
     // 1. Get the personnalite
