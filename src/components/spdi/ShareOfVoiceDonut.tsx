@@ -5,10 +5,11 @@ interface ShareOfVoiceDonutProps {
   moyenneCercle: number;
   rang: number;
   total: number;
+  sharePercent?: number;
   className?: string;
 }
 
-export function ShareOfVoiceDonut({ monScore, moyenneCercle, rang, total, className }: ShareOfVoiceDonutProps) {
+export function ShareOfVoiceDonut({ monScore, moyenneCercle, rang, total, sharePercent = 0, className }: ShareOfVoiceDonutProps) {
   const size = 56;
   const strokeWidth = 6;
   const radius = (size - strokeWidth) / 2;
@@ -20,28 +21,33 @@ export function ShareOfVoiceDonut({ monScore, moyenneCercle, rang, total, classN
 
   return (
     <div className={cn('flex items-center gap-3', className)}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="hsl(var(--muted))"
-          strokeWidth={strokeWidth}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="hsl(var(--primary))"
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          className="transition-all duration-500"
-        />
-      </svg>
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} className="-rotate-90">
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="hsl(var(--muted))"
+            strokeWidth={strokeWidth}
+          />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="hsl(var(--primary))"
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            className="transition-all duration-500"
+          />
+        </svg>
+        <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-foreground">
+          {sharePercent}%
+        </span>
+      </div>
       <div className="text-xs space-y-0.5">
         <div className="font-bold text-foreground">{rang}<sup>e</sup>/{total}</div>
         <div className={cn(
