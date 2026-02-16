@@ -1,62 +1,136 @@
 
 
-# Page de Revue de Stabilite SPDI globale
+# Redesign du Dashboard d'Influence - Presence Digitale dans les fiches acteurs
 
 ## Objectif
-Creer une page dediee `/spdi-review` qui offre une vue panoramique de la stabilite et des tendances SPDI de tous les acteurs suivis, avec des indicateurs de risque et des comparaisons croisees.
 
-## Contenu de la page
+Transformer la section "Presence Digitale Institutionnelle" du panneau de detail acteur (`ActeurDetail.tsx`) d'un simple interrupteur ON/OFF en un veritable tableau de bord analytique compact. Enrichir egalement la carte acteur (`SmartActeurCard.tsx`) avec des indicateurs visuels plus riches.
 
-### Section 1 : KPI globaux (en haut)
-Quatre cartes resume :
-- **Acteurs suivis** : nombre total avec suivi SPDI actif
-- **Score moyen** : moyenne des `score_spdi_actuel` de tous les acteurs
-- **En hausse** : nombre d'acteurs avec `tendance_spdi = 'hausse'`
-- **En alerte** : nombre d'acteurs avec score < 40 (risque d'invisibilite)
+## Vue d'ensemble des changements
 
-### Section 2 : Tableau de synthese
-Un tableau triable affichant pour chaque acteur suivi :
-- Nom, cercle
-- Score SPDI actuel (badge colore vert/bleu/orange/rouge)
-- Tendance (icone fleche + texte hausse/stable/baisse)
-- Variation sur 30 jours (calculee depuis `presence_digitale_metrics`)
-- Mini-conseil (meme logique que sur les cartes acteurs)
+Le redesign se concentre sur deux zones : la carte acteur (apercu rapide) et le panneau lateral de detail (analyse approfondie). Toutes les donnees necessaires existent deja dans la base : `presence_digitale_metrics`, `personnalites_mentions`, `mentions`, `social_insights` et `actualites`.
 
-### Section 3 : Graphique de comparaison temporelle
-Reutilisation du composant `SPDIComparaisonTemporelle` existant, mais en version pleine largeur avec tous les acteurs pre-selectionnes.
+---
 
-### Section 4 : Classement par axe
-Quatre mini-cartes (Visibilite, Qualite, Autorite, Presence) montrant le top 3 et le bottom 3 des acteurs pour chaque axe, bases sur la derniere mesure dans `presence_digitale_metrics`.
+## 1. Panneau de detail acteur - Nouveau Dashboard SPDI
 
-## Navigation
-- Ajout dans la sidebar sous "Presence Digitale" (meme permission `view_personnalites`)
-- Icone : `TrendingUp` de lucide-react
-- Label : "Revue SPDI"
+Remplacement de la section SPDI actuelle (lignes 252-348 de `ActeurDetail.tsx`) par un dashboard structure en blocs visuels compacts.
+
+### Bloc A : Vitalite Digitale (Sparkline + Score)
+- Remplacer le simple score numerique par une **micro-courbe sparkline** (7 derniers jours) a cote du score SPDI
+- Indicateur de tendance avec fleche et pourcentage de variation
+- Donnees : `presence_digitale_metrics` (derniers 7 points de `score_spdi`)
+
+### Bloc B : Barre de Sentiment Tri-couleur
+- Barre horizontale segmentee montrant la repartition **Positif / Neutre / Negatif**
+- Calcul depuis `mentions` liees a l'acteur via `personnalites_mentions` (champ `sentiment` : -1 a 1)
+- Seuils : sentiment > 0.2 = positif, -0.2 a 0.2 = neutre, < -0.2 = negatif
+- Affichage des pourcentages a cote de la barre
+
+### Bloc C : Matrice de Presence par Canal
+- Mini-jauges horizontales pour chaque canal : **LinkedIn**, **Presse**, **Conferences**
+- Donnees issues de `presence_digitale_metrics` : `activite_linkedin`, `nb_citations_directes` (proxy presse), `nb_invitations_panels` (proxy conferences)
+- Normalisation sur 100 pour l'affichage en jauge
+
+### Bloc D : Share of Voice (Part de Voix)
+- Mini donut chart comparant le nombre de mentions de l'acteur vs la moyenne de son cercle
+- Donnees : `presence_digitale_metrics.nb_mentions` de l'acteur vs moyenne des acteurs du meme cercle
+- Affichage du rang et de l'ecart a la moyenne
+
+### Bloc E : Mots-cles / Thematiques
+- Affichage des thematiques de l'acteur (`personnalite.thematiques`) sous forme de badges cliquables
+- Enrichissement avec les `entites_detectees` et `hashtags` des `social_insights` lies (si disponibles)
+
+### Bloc F : Carte IA Insights (Actionnable)
+- Remonter les 1-2 recommandations IA les plus prioritaires directement dans le panneau
+- Format "carte conseil" avec icone, texte court et action recommandee
+- Donnees : `presence_digitale_recommandations` (deja utilise, mais mis en avant visuellement)
+
+---
+
+## 2. Carte acteur - Indicateurs enrichis
+
+### Ajout d'une micro-sparkline
+- Sous le score SPDI badge, ajouter une ligne de 7 points montrant la tendance recente
+- Composant SVG leger inline (pas de Recharts pour la carte, trop lourd)
+
+### Barre de sentiment compacte
+- Petite barre tri-couleur (3px de haut) sous les tags thematiques
+- Meme logique de calcul que le Bloc B mais en version ultra-compacte
+
+---
+
+## 3. Nouveau hook : `useActeurDigitalDashboard`
+
+Un hook dedie qui regroupe toutes les donnees necessaires au dashboard en un seul appel optimise :
+
+```text
+Entrees : personnaliteId
+Sorties :
+  - sparklineData: number[] (7 derniers scores SPDI)
+  - sentimentDistribution: { positif: number, neutre: number, negatif: number }
+  - canauxPresence: { linkedin: number, presse: number, conferences: number }
+  - shareOfVoice: { monScore: number, moyenneCercle: number, rang: number, total: number }
+  - topThematiques: string[]
+```
+
+### Requetes :
+1. **Sparkline** : `presence_digitale_metrics` filtre sur les 7 derniers jours, champ `score_spdi`
+2. **Sentiment** : jointure `personnalites_mentions` -> `mentions`, agregation du champ `sentiment`
+3. **Canaux** : derniere ligne de `presence_digitale_metrics` pour `activite_linkedin`, `nb_citations_directes`, `nb_invitations_panels`
+4. **Share of Voice** : `presence_digitale_metrics.nb_mentions` pour tous les acteurs du meme cercle
+
+---
+
+## 4. Nouveau composant : `SPDIDashboardCompact`
+
+Composant dedie qui encapsule les Blocs A a F dans une mise en page structuree. Il remplace la section SPDI actuelle dans `ActeurDetail.tsx`.
+
+Structure visuelle :
+```text
++---------------------------------------+
+| Vitalite Digitale    [Sparkline] 72.4  |
+|   +12% sur 7j                         |
++---------------------------------------+
+| Sentiment  [====Positif===][Neutre][N] |
+|            62%        28%    10%       |
++---------------------------------------+
+| Canaux          | Part de Voix        |
+| LinkedIn  ===== | [Donut] 2e/8        |
+| Presse    ====  | +5.2 pts vs moy     |
+| Conf.     ==    |                     |
++---------------------------------------+
+| #Cloud  #5G  #Inclusion  #Innovation  |
++---------------------------------------+
+| IA Insight : "Renforcer presence..."  |
+|              [Action recommandee]     |
++---------------------------------------+
+```
+
+---
 
 ## Details techniques
 
 ### Fichiers crees
-- **`src/pages/SpdiReviewPage.tsx`** : la page principale avec les 4 sections
-- **`src/components/spdi/SPDIStabilityTable.tsx`** : le tableau de synthese triable
-- **`src/components/spdi/SPDIAxesRanking.tsx`** : les mini-cartes de classement par axe
+- **`src/components/spdi/SPDIDashboardCompact.tsx`** : le nouveau dashboard compact (Blocs A-F)
+- **`src/components/spdi/SentimentBar.tsx`** : barre de sentiment tri-couleur reutilisable
+- **`src/components/spdi/MiniSparkline.tsx`** : composant SVG sparkline leger
+- **`src/components/spdi/ShareOfVoiceDonut.tsx`** : mini donut chart SVG
+- **`src/components/spdi/PresenceCanaux.tsx`** : mini-jauges par canal
+- **`src/hooks/useActeurDigitalDashboard.ts`** : hook de donnees agregees
 
 ### Fichiers modifies
-- **`src/App.tsx`** : ajout de la route `/spdi-review` sous le meme groupe `view_personnalites`
-- **`src/components/layout/AppSidebar.tsx`** : ajout de l'entree "Revue SPDI" dans le menu
-- **`src/components/spdi/index.ts`** : export des deux nouveaux composants
+- **`src/components/personnalites/ActeurDetail.tsx`** : remplacement de la section SPDI (lignes 252-348) par `<SPDIDashboardCompact />`
+- **`src/components/personnalites/SmartActeurCard.tsx`** : ajout sparkline + barre sentiment compacte
+- **`src/components/spdi/index.ts`** : export des nouveaux composants
 
-### Donnees utilisees
-Toutes les donnees existent deja :
-- `personnalites` : `score_spdi_actuel`, `tendance_spdi`, `suivi_spdi_actif`, `cercle`
-- `presence_digitale_metrics` : `score_spdi`, `score_visibilite`, `score_qualite`, `score_autorite`, `score_presence`, `date_mesure`, `personnalite_id`
+### Bibliotheques
+- Pas de nouvelles dependances : les micro-visualisations (sparkline, donut, barres) seront en SVG pur pour la performance
+- Recharts est utilise uniquement dans les pages dediees, pas dans les cartes
 
-Aucune modification de base de donnees requise.
+### Compatibilite dark mode
+- Tous les composants utilisent les variables CSS Tailwind (`text-foreground`, `bg-muted`, etc.)
+- Les couleurs de sentiment utilisent des classes semantiques avec variantes dark
 
-### Requetes principales
-1. **KPI globaux** : `SELECT count(*), avg(score_spdi_actuel), count(CASE WHEN tendance_spdi='hausse'), count(CASE WHEN score_spdi_actuel < 40)` depuis `personnalites WHERE suivi_spdi_actif = true`
-2. **Tableau** : tous les acteurs avec `suivi_spdi_actif = true` + jointure avec la derniere mesure de `presence_digitale_metrics` pour la variation 30j
-3. **Classement axes** : derniere mesure par acteur depuis `presence_digitale_metrics`, tri par chaque score d'axe
-
-### Logique de variation 30j
-Pour chaque acteur, comparer le score SPDI le plus recent avec celui d'il y a ~30 jours dans `presence_digitale_metrics`. La difference donne la variation affichee dans le tableau.
-
+### Aucune modification de base de donnees
+- Toutes les donnees existent deja dans les tables `presence_digitale_metrics`, `personnalites_mentions`, `mentions` et `personnalites`
