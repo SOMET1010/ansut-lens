@@ -5,3 +5,5 @@ export { SPDIRecommandations } from './SPDIRecommandations';
 export { SPDIComparaisonPairs } from './SPDIComparaisonPairs';
 export { SPDIAlerteBanner } from './SPDIAlerteBanner';
 export { SPDIComparaisonTemporelle } from './SPDIComparaisonTemporelle';
+export { SPDIStabilityTable } from './SPDIStabilityTable';
+export { SPDIAxesRanking } from './SPDIAxesRanking';
