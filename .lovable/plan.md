@@ -1,65 +1,46 @@
 
 
-## Spotlight Quick Search (Cmd+K)
+## AI Briefing Generator Button in the Header
 
-Replace the static search input in the global header with a Spotlight-style command palette that searches across four data domains in real time.
+Add a "Briefing DG" button to the global header that opens a popover displaying an AI-generated executive briefing, powered by Google Gemini Flash (via the existing `generer-briefing` backend function).
 
 ### What it does
 
-- Pressing `Ctrl+K` (or `Cmd+K` on Mac), or clicking the search bar in the header, opens a full-screen command dialog
-- As the user types, it queries four tables in parallel: Actualites, Personnalites, Sources Media, and Dossiers
-- Results are grouped by category with icons, and clicking a result navigates to the relevant page
-- Debounced search (300ms) to avoid excessive queries
-- Keyboard navigation built-in (provided by cmdk library already installed)
+- A new briefing icon button (Briefcase icon) appears in the header toolbar, between the sync badge and the theme toggle
+- Clicking it opens a popover panel showing the DG briefing
+- The briefing is generated on-demand using the existing `generer-briefing` edge function (Google Gemini Flash)
+- A "Regenerate" button lets users refresh the briefing
+- Shows loading skeleton while generating, error states with fallback, and critical alerts count
+- Uses the existing `useDailyBriefing` hook which already handles caching (2h TTL), error fallback, and state management
 
-### Navigation targets
+### Files to modify
 
-| Category | Table | Display | Navigate to |
-|---|---|---|---|
-| Actualites | `actualites` | titre + source_nom | `/actualites` |
-| Personnalites | `personnalites` | nom + fonction + organisation | `/acteurs` |
-| Sources Media | `sources_media` | nom + type | `/admin/sources` |
-| Dossiers | `dossiers` | titre + categorie | `/dossiers` |
+1. **`src/components/layout/AppHeader.tsx`**
+   - Import `Popover`, `PopoverTrigger`, `PopoverContent` from shadcn
+   - Import `useDailyBriefing` hook
+   - Import `Briefcase`, `RefreshCw`, `ShieldAlert`, `AlertCircle` icons
+   - Import `RelativeTime` component
+   - Add a popover-wrapped icon button in the header toolbar (before the theme toggle)
+   - Inside the popover: render briefing title, content, generation timestamp, regenerate button, and alerts indicator
+   - The popover panel will be ~400px wide with a max-height and scroll area
 
-### Quick actions (no search needed)
+### No new files, no backend changes
 
-Static items always visible when the search is empty:
-- Centre de Veille -> `/radar`
-- Actualites -> `/actualites`
-- Acteurs & Influence -> `/acteurs`
-- Dossiers -> `/dossiers`
-- Assistant IA -> `/assistant`
-
-### Files to create/modify
-
-1. **New: `src/components/layout/SpotlightSearch.tsx`**
-   - Uses `CommandDialog`, `CommandInput`, `CommandList`, `CommandGroup`, `CommandItem`, `CommandEmpty` from the existing `cmdk`-based UI component
-   - Registers a global `keydown` listener for Ctrl/Cmd+K
-   - On input change (debounced 300ms), runs 4 parallel Supabase queries with `.ilike` text search, limited to 5 results each
-   - Each result item calls `useNavigate()` on click and closes the dialog
-   - Shows loading skeleton while fetching
-
-2. **Modified: `src/components/layout/AppHeader.tsx`**
-   - Remove the static `Input` search field
-   - Replace with a clickable button styled like a search bar that shows the `Ctrl+K` shortcut hint
-   - Clicking it opens the `SpotlightSearch` dialog
-   - Import and render `SpotlightSearch`
+The existing `generer-briefing` edge function and `useDailyBriefing` hook already provide all the backend logic, caching, and error handling needed. This change is purely a UI addition to the header.
 
 ### Technical details
 
-**Search query approach** (inside SpotlightSearch):
-```typescript
-// Parallel queries with Promise.all
-const [actualites, personnalites, sources, dossiers] = await Promise.all([
-  supabase.from('actualites').select('id, titre, source_nom').ilike('titre', `%${query}%`).limit(5),
-  supabase.from('personnalites').select('id, nom, prenom, fonction, organisation').or(`nom.ilike.%${query}%,fonction.ilike.%${query}%,organisation.ilike.%${query}%`).limit(5),
-  supabase.from('sources_media').select('id, nom, type').ilike('nom', `%${query}%`).limit(5),
-  supabase.from('dossiers').select('id, titre, categorie').ilike('titre', `%${query}%`).limit(5),
-]);
+The header button will use the existing hook directly:
+
+```tsx
+const { briefing, generatedAt, alertsCount, isLoading, isGenerating, error, regenerate } = useDailyBriefing();
 ```
 
-**Keyboard shortcut**: `useEffect` with `keydown` event for `k` key + metaKey/ctrlKey.
+The popover content will display:
+- Title: "Briefing DG"
+- Timestamp via `RelativeTime`
+- Briefing text (or loading skeleton / error fallback)
+- Critical alerts count badge if > 0
+- Regenerate button with spinning icon during generation
 
-**No database changes needed.** All tables already have `SELECT` policies for authenticated users.
-
-**No new dependencies.** Uses the existing `cmdk` package (already installed) via the shadcn Command component.
+The button itself will show a subtle badge dot when there are critical alerts, drawing attention to the briefing.
