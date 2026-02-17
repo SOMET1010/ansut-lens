@@ -91,7 +91,7 @@ export function AppSidebar() {
   const visibleMenuItems = menuItems.filter(item => hasPermission(item.permission));
   
   // Vérifier si l'utilisateur a accès à l'administration
-  const hasAdminAccess = isAdmin || hasPermission('manage_users') || hasPermission('manage_roles');
+  const hasAdminAccess = hasPermission('access_admin');
 
   const getSidebarInitials = (name?: string | null, email?: string) => {
     if (name) return getInitials(name);

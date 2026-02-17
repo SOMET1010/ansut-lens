@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users, ChevronDown, MoreVertical, UserX, UserCheck, Trash2, RefreshCw, Clock, Search, X, MailCheck, KeyRound, LayoutGrid, List } from 'lucide-react';
+import { ArrowLeft, UserPlus, Loader2, Mail, Shield, User, Users, ChevronDown, MoreVertical, UserX, UserCheck, Trash2, RefreshCw, Clock, Search, X, MailCheck, KeyRound, LayoutGrid, List, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -1006,6 +1006,10 @@ export default function UsersPage() {
                                   Renvoyer l'invitation
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
+                                <span className="px-2 py-1.5 text-xs font-semibold text-destructive flex items-center gap-1">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  Actions dangereuses
+                                </span>
                                 {user.disabled ? (
                                   <DropdownMenuItem
                                     onClick={() => toggleUserMutation.mutate({ userId: user.id, action: 'enable' })}
@@ -1016,14 +1020,17 @@ export default function UsersPage() {
                                   </DropdownMenuItem>
                                 ) : (
                                   <DropdownMenuItem
-                                    onClick={() => toggleUserMutation.mutate({ userId: user.id, action: 'disable' })}
+                                    onClick={() => {
+                                      toast.info('Cette action sera tracée dans le journal d\'audit.');
+                                      toggleUserMutation.mutate({ userId: user.id, action: 'disable' });
+                                    }}
                                     disabled={toggleUserMutation.isPending}
+                                    className="text-destructive focus:text-destructive"
                                   >
                                     <UserX className="mr-2 h-4 w-4" />
                                     Désactiver
                                   </DropdownMenuItem>
                                 )}
-                                <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   onClick={() => setDeleteUserId(user.id)}
                                   className="text-destructive focus:text-destructive"
@@ -1064,6 +1071,12 @@ export default function UsersPage() {
       {/* Dialog de confirmation de suppression */}
       <AlertDialog open={!!deleteUserId} onOpenChange={(open) => !open && setDeleteUserId(null)}>
         <AlertDialogContent>
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 mb-2 flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <p className="text-sm text-destructive font-medium">
+              Cette action sera tracée dans le journal d'audit.
+            </p>
+          </div>
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer définitivement ?</AlertDialogTitle>
             <AlertDialogDescription>

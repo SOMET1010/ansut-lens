@@ -6,3 +6,4 @@ export { RoleAccreditationCard } from './RoleAccreditationCard';
 export { RolePermissionsDialog } from './RolePermissionsDialog';
 export { SystemHealthWidget } from './SystemHealthWidget';
 export { AdminNavCard } from './AdminNavCard';
+export { DangerZoneAlert } from './DangerZoneAlert';
