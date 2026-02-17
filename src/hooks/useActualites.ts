@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -148,11 +149,15 @@ export const useCollectesHistory = () => {
   });
 };
 
+export type CollectePhase = 'idle' | 'collecting' | 'sentiment' | 'done';
+
 export const useTriggerCollecte = () => {
   const queryClient = useQueryClient();
+  const [phase, setPhase] = useState<CollectePhase>('idle');
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: async (type: 'critique' | 'quotidienne' | 'hebdo' = 'critique') => {
+      setPhase('collecting');
       const { data, error } = await supabase.functions.invoke('collecte-veille', {
         body: { type, recency: type === 'critique' ? 24 : type === 'quotidienne' ? 72 : 168 }
       });
@@ -161,16 +166,31 @@ export const useTriggerCollecte = () => {
       return data;
     },
     onSuccess: (data) => {
+      const nbSentiments = data?.nb_sentiments_enrichis ?? 0;
+      if (nbSentiments > 0) {
+        setPhase('sentiment');
+        // Brief visual pause to show sentiment phase completed
+        setTimeout(() => setPhase('done'), 1200);
+      } else {
+        setPhase('done');
+      }
+      setTimeout(() => setPhase('idle'), 2500);
+
       queryClient.invalidateQueries({ queryKey: ['actualites'] });
       queryClient.invalidateQueries({ queryKey: ['last-collecte'] });
       queryClient.invalidateQueries({ queryKey: ['collectes-history'] });
-      toast.success(`Collecte terminée : ${data.nb_resultats} nouvelles actualités`);
+
+      const sentimentMsg = nbSentiments > 0 ? ` • ${nbSentiments} sentiment${nbSentiments > 1 ? 's' : ''} analysé${nbSentiments > 1 ? 's' : ''}` : '';
+      toast.success(`Collecte terminée : ${data.nb_resultats} nouvelles actualités${sentimentMsg}`);
     },
     onError: (error) => {
+      setPhase('idle');
       console.error('Erreur collecte:', error);
       toast.error('Erreur lors de la collecte');
     },
   });
+
+  return { ...mutation, phase };
 };
 
 export const useEnrichActualite = () => {

@@ -1,4 +1,4 @@
-import { Calendar, Download, RefreshCw, ChevronDown, Sparkles } from 'lucide-react';
+import { Calendar, Download, RefreshCw, ChevronDown, Sparkles, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -6,6 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import type { CollectePhase } from '@/hooks/useActualites';
 
 interface WatchHeaderProps {
   newArticlesCount: number;
@@ -14,6 +15,7 @@ interface WatchHeaderProps {
   onRefresh: () => void;
   onExport?: () => void;
   isRefreshing?: boolean;
+  collectePhase?: CollectePhase;
   onBatchSentiment?: () => void;
   isBatchingSentiment?: boolean;
 }
@@ -26,6 +28,13 @@ const periodLabels: Record<string, string> = {
   'all': 'Tout'
 };
 
+const phaseLabels: Record<CollectePhase, string> = {
+  idle: 'Rafraîchir',
+  collecting: 'Collecte en cours…',
+  sentiment: 'Analyse sentiments…',
+  done: 'Terminé ✓',
+};
+
 export function WatchHeader({
   newArticlesCount,
   selectedPeriod,
@@ -33,9 +42,13 @@ export function WatchHeader({
   onRefresh,
   onExport,
   isRefreshing,
+  collectePhase = 'idle',
   onBatchSentiment,
   isBatchingSentiment
 }: WatchHeaderProps) {
+  const isActive = collectePhase !== 'idle' && collectePhase !== 'done';
+  const refreshLabel = isRefreshing ? phaseLabels[collectePhase] : 'Rafraîchir';
+
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
       <div>
@@ -71,14 +84,19 @@ export function WatchHeader({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Bouton Rafraîchir */}
+        {/* Bouton Rafraîchir avec phase */}
         <Button 
           variant="outline" 
           onClick={onRefresh}
           disabled={isRefreshing}
+          className={collectePhase === 'sentiment' ? 'border-primary/50 text-primary' : collectePhase === 'done' ? 'border-green-500/50 text-green-600' : ''}
         >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-          Rafraîchir
+          {collectePhase === 'sentiment' ? (
+            <Brain className="h-4 w-4 mr-2 animate-pulse" />
+          ) : (
+            <RefreshCw className={`h-4 w-4 mr-2 ${isActive ? 'animate-spin' : ''}`} />
+          )}
+          {refreshLabel}
         </Button>
 
         {/* Bouton Analyser sentiments */}

@@ -120,6 +120,7 @@ export default function ActualitesPage() {
         onRefresh={handleRefresh}
         onExport={handleExport}
         isRefreshing={triggerCollecte.isPending}
+        collectePhase={triggerCollecte.phase}
         onBatchSentiment={() => batchSentiment.mutate()}
         isBatchingSentiment={batchSentiment.isPending}
       />
