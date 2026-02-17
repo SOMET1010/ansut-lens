@@ -1,4 +1,4 @@
-import { Eye, Zap, Settings } from 'lucide-react';
+import { Eye, Zap, Settings, AlertTriangle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -64,6 +64,12 @@ export function RolePermissionsDialog({
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 flex items-start gap-3">
+            <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+            <p className="text-xs text-muted-foreground">
+              Les modifications prennent effet immédiatement pour tous les utilisateurs de ce rôle. Les changements sont tracés dans le journal d'audit.
+            </p>
+          </div>
           {Object.entries(CATEGORY_CONFIG).map(([categoryKey, categoryConfig]) => {
             const permissions = permissionsByCategory[categoryKey] ?? [];
             if (permissions.length === 0) return null;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Clock, Play, RefreshCw, Settings2, CheckCircle2, XCircle, Loader2, FlaskConical } from 'lucide-react';
+import { ArrowLeft, Clock, Play, RefreshCw, Settings2, CheckCircle2, XCircle, Loader2, FlaskConical, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -102,8 +102,14 @@ export default function CronJobsPage() {
     setEditingJob(null);
   };
 
-  const handleToggle = async (jobId: number) => {
-    await toggleJob.mutateAsync(jobId);
+  const handleToggle = async (job: CronJob) => {
+    if (job.active) {
+      toast.warning('Désactiver cette tâche peut causer des lacunes dans la collecte de données.', {
+        description: 'Cette action sera tracée dans le journal d\'audit.',
+        duration: 5000,
+      });
+    }
+    await toggleJob.mutateAsync(job.jobid);
   };
 
   const handleRunNow = async (jobId: number) => {
@@ -193,7 +199,7 @@ export default function CronJobsPage() {
                       <div className="flex items-center gap-2">
                         <Switch
                           checked={job.active}
-                          onCheckedChange={() => handleToggle(job.jobid)}
+                          onCheckedChange={() => handleToggle(job)}
                           disabled={toggleJob.isPending}
                         />
                         <Badge variant={job.active ? 'default' : 'secondary'}>
