@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Mail, Sparkles, Calendar } from 'lucide-react';
+import { ArrowLeft, Mail, Sparkles, Calendar, BarChart2 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,6 +11,7 @@ import {
   DestinataireManager,
   NewsletterScheduler
 } from '@/components/newsletter';
+import { WeeklyDigestConfig } from '@/components/newsletter/WeeklyDigestConfig';
 import { useNewsletter } from '@/hooks/useNewsletters';
 import type { Newsletter } from '@/types/newsletter';
 
@@ -80,6 +81,10 @@ export default function NewslettersPage() {
               <Calendar className="h-4 w-4" />
               Programmation
             </TabsTrigger>
+            <TabsTrigger value="digest" className="gap-2">
+              <BarChart2 className="h-4 w-4" />
+              Digest Hebdo
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="newsletters">
@@ -92,6 +97,12 @@ export default function NewslettersPage() {
 
           <TabsContent value="programmation">
             <NewsletterScheduler />
+          </TabsContent>
+
+          <TabsContent value="digest">
+            <div className="max-w-2xl mx-auto">
+              <WeeklyDigestConfig />
+            </div>
           </TabsContent>
         </Tabs>
       )}

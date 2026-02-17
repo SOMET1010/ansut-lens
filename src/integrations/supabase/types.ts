@@ -1447,6 +1447,51 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_digest_config: {
+        Row: {
+          actif: boolean
+          created_at: string
+          derniere_execution: string | null
+          heure_envoi: string
+          id: string
+          include_sentiment_chart: boolean
+          include_top_sources: boolean
+          jour_envoi: number
+          nb_top_stories: number
+          recipients: string[]
+          sentiment_alert_threshold: number
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          created_at?: string
+          derniere_execution?: string | null
+          heure_envoi?: string
+          id?: string
+          include_sentiment_chart?: boolean
+          include_top_sources?: boolean
+          jour_envoi?: number
+          nb_top_stories?: number
+          recipients?: string[]
+          sentiment_alert_threshold?: number
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          created_at?: string
+          derniere_execution?: string | null
+          heure_envoi?: string
+          id?: string
+          include_sentiment_chart?: boolean
+          include_top_sources?: boolean
+          jour_envoi?: number
+          nb_top_stories?: number
+          recipients?: string[]
+          sentiment_alert_threshold?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
