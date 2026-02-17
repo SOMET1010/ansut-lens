@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,9 +34,34 @@ serve(async (req) => {
   }
 
   try {
+    // --- Authentication ---
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Non authentifié' }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: 'Non authentifié' }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    // --- End Authentication ---
+
     const { nom, description } = await req.json();
 
-    if (!nom || nom.trim().length === 0) {
+    if (!nom || typeof nom !== 'string' || nom.trim().length === 0) {
       return new Response(
         JSON.stringify({ error: "Le nom du flux est requis" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -51,10 +77,13 @@ serve(async (req) => {
       );
     }
 
-    const userMessage = `Nom du flux: ${nom.trim()}
-Description: ${description?.trim() || 'Non fournie - génère une description appropriée'}`;
+    const safeName = nom.trim().slice(0, 200);
+    const safeDescription = typeof description === 'string' ? description.trim().slice(0, 500) : '';
 
-    console.log("Generating flux configuration for:", nom);
+    const userMessage = `Nom du flux: ${safeName}
+Description: ${safeDescription || 'Non fournie - génère une description appropriée'}`;
+
+    console.log("Generating flux configuration for:", safeName);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -106,7 +135,6 @@ Description: ${description?.trim() || 'Non fournie - génère une description ap
     // Parse the JSON from the AI response
     let config;
     try {
-      // Try to extract JSON from the response (in case there's extra text)
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         config = JSON.parse(jsonMatch[0]);
@@ -148,7 +176,7 @@ Description: ${description?.trim() || 'Non fournie - génère une description ap
   } catch (error) {
     console.error("generer-requete-flux error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Erreur inconnue" }),
+      JSON.stringify({ error: "Erreur serveur" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
