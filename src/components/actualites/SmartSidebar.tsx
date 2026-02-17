@@ -1,11 +1,28 @@
-import { BarChart2, Hash, Globe, User, TrendingUp, TrendingDown, Minus, AlertCircle } from 'lucide-react';
+import { BarChart2, Hash, Globe, User, TrendingUp, TrendingDown, Minus, AlertCircle, Activity, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 
 interface TrendInfo {
   delta: number;
   direction: 'up' | 'down' | 'stable';
+}
+
+interface CategorySentiment {
+  category: string;
+  avgSentiment: number;
+  count: number;
+  alert: boolean;
+}
+
+interface SentimentHealth {
+  overallAvg: number;
+  pendingCount: number;
+  enrichedCount: number;
+  alertActive: boolean;
+  byCategory: CategorySentiment[];
 }
 
 interface SidebarAnalytics {
@@ -19,6 +36,7 @@ interface SidebarAnalytics {
     neutral: TrendInfo;
     negative: TrendInfo;
   };
+  sentimentHealth: SentimentHealth;
   topConcepts: Array<{ tag: string; count: number; active: boolean }>;
   topSources: Array<{ name: string; count: number }>;
   trendingPeople: Array<{ name: string; mentions: number }>;
@@ -80,7 +98,7 @@ export function SmartSidebar({
   onPersonClick,
   onSourceClick 
 }: SmartSidebarProps) {
-  const { sentimentDistribution, sentimentTrends, topConcepts, topSources, trendingPeople } = analytics;
+  const { sentimentDistribution, sentimentTrends, sentimentHealth, topConcepts, topSources, trendingPeople } = analytics;
 
   return (
     <div className="space-y-5">
@@ -154,7 +172,98 @@ export function SmartSidebar({
         </CardContent>
       </Card>
 
-      {/* Widget : Concepts Clés (avec état vide) */}
+      {/* Widget : Sentiment Health Monitor */}
+      <Card className={cn(
+        "border-border/50 transition-colors",
+        sentimentHealth.alertActive && "border-destructive/50 bg-destructive/5"
+      )}>
+        <CardContent className="p-5">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase mb-3 flex items-center gap-2">
+            <Activity className="h-3.5 w-3.5" /> Moniteur Sentiment
+            {sentimentHealth.alertActive && (
+              <span className="ml-auto flex items-center gap-1 text-[10px] font-semibold text-destructive normal-case">
+                <AlertTriangle className="h-3 w-3" /> Seuil critique
+              </span>
+            )}
+          </h3>
+
+          {/* Overall score + enrichment progress */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "text-2xl font-black",
+                sentimentHealth.overallAvg > 0.1 ? "text-green-600 dark:text-green-400" :
+                sentimentHealth.overallAvg < -0.1 ? "text-red-600 dark:text-red-400" :
+                "text-muted-foreground"
+              )}>
+                {sentimentHealth.overallAvg > 0 ? '+' : ''}{sentimentHealth.overallAvg.toFixed(2)}
+              </span>
+              <span className="text-[10px] text-muted-foreground leading-tight">
+                Score<br/>global
+              </span>
+            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1.5 text-xs">
+                  {sentimentHealth.pendingCount > 0 ? (
+                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      {sentimentHealth.pendingCount} en attente
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                      <CheckCircle2 className="h-3 w-3" />
+                      100% enrichi
+                    </span>
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                {sentimentHealth.enrichedCount} analysés / {sentimentHealth.enrichedCount + sentimentHealth.pendingCount} total
+              </TooltipContent>
+            </Tooltip>
+          </div>
+
+          {/* Enrichment progress bar */}
+          {sentimentHealth.pendingCount > 0 && (
+            <div className="mb-4">
+              <Progress 
+                value={(sentimentHealth.enrichedCount / (sentimentHealth.enrichedCount + sentimentHealth.pendingCount)) * 100} 
+                className="h-1.5"
+              />
+            </div>
+          )}
+
+          {/* Per-category breakdown */}
+          {sentimentHealth.byCategory.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Par catégorie</p>
+              {sentimentHealth.byCategory.map(cat => (
+                <div key={cat.category} className="flex items-center gap-2 text-xs">
+                  <span className={cn(
+                    "w-3 h-3 rounded-sm shrink-0",
+                    cat.alert ? "bg-red-500/80" :
+                    cat.avgSentiment > 0.1 ? "bg-green-500/60" :
+                    "bg-muted-foreground/40"
+                  )} />
+                  <span className="truncate flex-1 text-foreground">{cat.category}</span>
+                  <span className="text-muted-foreground">({cat.count})</span>
+                  <span className={cn(
+                    "font-semibold w-10 text-right",
+                    cat.alert ? "text-red-600 dark:text-red-400" :
+                    cat.avgSentiment > 0.1 ? "text-green-600 dark:text-green-400" :
+                    "text-muted-foreground"
+                  )}>
+                    {cat.avgSentiment > 0 ? '+' : ''}{cat.avgSentiment.toFixed(1)}
+                  </span>
+                  {cat.alert && <AlertTriangle className="h-3 w-3 text-red-500 shrink-0" />}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card className="border-border/50">
         <CardContent className="p-5 min-h-[140px]">
           <h3 className="text-xs font-bold text-muted-foreground uppercase mb-4 flex items-center gap-2">

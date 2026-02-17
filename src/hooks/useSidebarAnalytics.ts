@@ -11,6 +11,21 @@ interface TrendInfo {
   direction: 'up' | 'down' | 'stable';
 }
 
+interface CategorySentiment {
+  category: string;
+  avgSentiment: number;
+  count: number;
+  alert: boolean; // true if avg sentiment crosses threshold
+}
+
+interface SentimentHealth {
+  overallAvg: number;
+  pendingCount: number;
+  enrichedCount: number;
+  alertActive: boolean; // negative sentiment > 40%
+  byCategory: CategorySentiment[];
+}
+
 interface SidebarAnalytics {
   sentimentDistribution: {
     positive: number;
@@ -22,6 +37,7 @@ interface SidebarAnalytics {
     neutral: TrendInfo;
     negative: TrendInfo;
   };
+  sentimentHealth: SentimentHealth;
   topConcepts: Array<{ tag: string; count: number; active: boolean }>;
   topSources: Array<{ name: string; count: number }>;
   trendingPeople: Array<{ name: string; mentions: number }>;
@@ -43,6 +59,13 @@ export function useSidebarAnalytics(
           positive: defaultTrend,
           neutral: defaultTrend,
           negative: defaultTrend
+        },
+        sentimentHealth: {
+          overallAvg: 0,
+          pendingCount: 0,
+          enrichedCount: 0,
+          alertActive: false,
+          byCategory: []
         },
         topConcepts: [],
         topSources: [],
@@ -153,9 +176,46 @@ export function useSidebarAnalytics(
       .sort((a, b) => b.mentions - a.mentions)
       .slice(0, 5);
 
+    // === Sentiment Health Dashboard ===
+    const enrichedArticles = articles.filter(a => a.sentiment != null);
+    const pendingCount = articles.length - enrichedArticles.length;
+    const overallAvg = enrichedArticles.length > 0
+      ? enrichedArticles.reduce((sum, a) => sum + (a.sentiment ?? 0), 0) / enrichedArticles.length
+      : 0;
+
+    // Per-category sentiment
+    const catMap = new Map<string, { sum: number; count: number }>();
+    enrichedArticles.forEach(a => {
+      const cat = a.categorie || 'Autres';
+      const entry = catMap.get(cat) || { sum: 0, count: 0 };
+      entry.sum += a.sentiment ?? 0;
+      entry.count++;
+      catMap.set(cat, entry);
+    });
+
+    const ALERT_THRESHOLD = -0.15;
+    const byCategory: CategorySentiment[] = Array.from(catMap.entries())
+      .map(([category, { sum, count }]) => ({
+        category,
+        avgSentiment: Math.round((sum / count) * 100) / 100,
+        count,
+        alert: (sum / count) < ALERT_THRESHOLD
+      }))
+      .sort((a, b) => a.avgSentiment - b.avgSentiment)
+      .slice(0, 6);
+
+    const sentimentHealth: SentimentHealth = {
+      overallAvg: Math.round(overallAvg * 100) / 100,
+      pendingCount,
+      enrichedCount: enrichedArticles.length,
+      alertActive: sentimentDistribution.negative > 40,
+      byCategory
+    };
+
     return {
       sentimentDistribution,
       sentimentTrends,
+      sentimentHealth,
       topConcepts,
       topSources,
       trendingPeople
