@@ -62,7 +62,7 @@ export function ArticleCluster({
       {/* Header principal */}
       <div className="p-5">
         <div className="flex justify-between items-start mb-3">
-          {/* Badge de Score + Source */}
+          {/* Badge de Score + Source + Sentiment */}
           <div className="flex items-center gap-2 flex-wrap">
             <Badge 
               variant="default" 
@@ -73,6 +73,33 @@ export function ArticleCluster({
             >
               {score}% Pertinence
             </Badge>
+            {/* Sentiment indicator */}
+            {mainArticle.sentiment != null ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className={cn(
+                    "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold",
+                    mainArticle.sentiment > 0.2 ? "bg-green-500/15 text-green-700 dark:text-green-400" :
+                    mainArticle.sentiment < -0.2 ? "bg-red-500/15 text-red-700 dark:text-red-400" :
+                    "bg-muted text-muted-foreground"
+                  )}>
+                    {mainArticle.sentiment > 0.2 ? '😊' : mainArticle.sentiment < -0.2 ? '😟' : '😐'}
+                    {mainArticle.sentiment > 0 ? '+' : ''}{mainArticle.sentiment.toFixed(1)}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>Sentiment IA : {mainArticle.sentiment.toFixed(2)}</TooltipContent>
+              </Tooltip>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    En attente
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>Sentiment non encore analysé</TooltipContent>
+              </Tooltip>
+            )}
             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
               {mainArticle.source_nom ?? 'Source inconnue'} • {freshness.label}
             </span>
