@@ -1,12 +1,18 @@
 import { useState } from 'react';
-import { Search, Moon, Sun } from 'lucide-react';
+import { Search, Moon, Sun, Briefcase, RefreshCw, ShieldAlert, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { RelativeTime } from '@/components/ui/relative-time';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { useTheme } from 'next-themes';
+import { useDailyBriefing } from '@/hooks/useDailyBriefing';
 import { NotificationCenter } from '@/components/notifications';
 import { SpotlightSearch } from './SpotlightSearch';
+import { cn } from '@/lib/utils';
 import type { ViewMode } from '@/types';
 
 const modeLabels: Record<ViewMode, string> = {
@@ -25,10 +31,23 @@ export function AppHeader() {
   const { mode, setMode } = useViewMode();
   const { theme, setTheme } = useTheme();
   const [spotlightOpen, setSpotlightOpen] = useState(false);
+  const {
+    briefing,
+    generatedAt,
+    alertsCount,
+    isLoading,
+    isGenerating,
+    error,
+    regenerate,
+  } = useDailyBriefing();
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
+
+  const displayBriefing = briefing || (error
+    ? "Le briefing n'a pas pu être généré. Le système de veille continue de surveiller les sources."
+    : "Aucune actualité récente. Le système de veille est actif.");
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -72,6 +91,73 @@ export function AppHeader() {
             <span className="h-2 w-2 rounded-full bg-signal-positive animate-pulse" />
             Sync OK
           </Badge>
+
+          {/* Briefing DG */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative">
+                <Briefcase className="h-4 w-4" />
+                {alertsCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive" />
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-[400px] p-0">
+              <div className="p-4 border-b border-border">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">
+                    📍 Briefing DG
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    {generatedAt && (
+                      <span className="text-xs text-muted-foreground">
+                        <RelativeTime date={generatedAt} />
+                      </span>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={regenerate}
+                      disabled={isGenerating}
+                      title="Régénérer le briefing"
+                    >
+                      <RefreshCw className={cn("h-3.5 w-3.5 text-muted-foreground", isGenerating && "animate-spin")} />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <ScrollArea className="max-h-[300px]">
+                <div className="p-4">
+                  {isLoading ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-3/4" />
+                    </div>
+                  ) : (
+                    <>
+                      <p className={cn("text-sm text-foreground leading-relaxed", isGenerating && "opacity-50")}>
+                        {displayBriefing}
+                      </p>
+                      {alertsCount > 0 && (
+                        <p className="mt-3 text-sm text-destructive font-medium flex items-center gap-2">
+                          <ShieldAlert className="h-4 w-4" />
+                          {alertsCount} alerte{alertsCount > 1 ? 's' : ''} critique{alertsCount > 1 ? 's' : ''}
+                        </p>
+                      )}
+                      {error && !briefing && (
+                        <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          Service temporairement indisponible
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
 
           {/* Theme Toggle */}
           <Button variant="ghost" size="icon" onClick={toggleTheme}>
