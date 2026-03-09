@@ -47,7 +47,7 @@ function isValidUrl(urlStr: string): boolean {
   try {
     const url = new URL(urlStr);
     return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
+  } catch (_e) {
     return false;
   }
 }
@@ -64,8 +64,8 @@ async function verifyUrlExists(urlStr: string): Promise<boolean> {
       redirect: 'follow',
     });
     clearTimeout(timeout);
-    return resp.ok || resp.status === 403; // 403 often means page exists but blocks bots
-  } catch {
+    return resp.ok || resp.status === 403;
+  } catch (_e) {
     return false;
   }
 }
