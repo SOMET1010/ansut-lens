@@ -269,7 +269,7 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours).`;
           try {
             const hostname = new URL(c).hostname.toLowerCase();
             return hostname.includes(sourceLower) || sourceLower.includes(hostname.replace('www.', ''));
-          } catch { return false; }
+          } catch (_e) { return false; }
         });
         if (matchedCitation) {
           realUrl = matchedCitation;
