@@ -47,7 +47,7 @@ function isValidUrl(urlStr: string): boolean {
   try {
     const url = new URL(urlStr);
     return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
+  } catch (_e) {
     return false;
   }
 }
@@ -64,8 +64,8 @@ async function verifyUrlExists(urlStr: string): Promise<boolean> {
       redirect: 'follow',
     });
     clearTimeout(timeout);
-    return resp.ok || resp.status === 403; // 403 often means page exists but blocks bots
-  } catch {
+    return resp.ok || resp.status === 403;
+  } catch (_e) {
     return false;
   }
 }
@@ -221,13 +221,13 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours).`;
     } else if (Array.isArray(parsed)) {
       rawActualites = parsed;
     }
-  } catch {
+  } catch (_e) {
     try {
       const jsonArrayMatch = content.match(/\[[\s\S]*?\]/);
       if (jsonArrayMatch) {
         rawActualites = JSON.parse(jsonArrayMatch[0]);
       }
-    } catch {
+    } catch (_e2) {
       console.error('[collecte-veille] Échec parsing Perplexity');
     }
   }
@@ -269,7 +269,7 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours).`;
           try {
             const hostname = new URL(c).hostname.toLowerCase();
             return hostname.includes(sourceLower) || sourceLower.includes(hostname.replace('www.', ''));
-          } catch { return false; }
+          } catch (_e) { return false; }
         });
         if (matchedCitation) {
           realUrl = matchedCitation;
@@ -364,14 +364,14 @@ Réponds TOUJOURS avec un JSON valide:
     } else if (Array.isArray(parsed)) {
       rawActualites = parsed;
     }
-  } catch {
+  } catch (_e) {
     try {
       const jsonMatch = content.match(/\{[\s\S]*"actualites"[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         rawActualites = parsed.actualites || [];
       }
-    } catch {
+    } catch (_e2) {
       console.error('[collecte-veille] Échec parsing Grok');
     }
   }
@@ -697,7 +697,7 @@ serve(async (req) => {
                 if (analyse.quadrant_dominant && fluxQuadrants.includes(analyse.quadrant_dominant)) {
                   scoreMatch += 15;
                 }
-              } catch {}
+              } catch (_e) {}
             }
 
             const importanceMin = flux.importance_min || 0;
