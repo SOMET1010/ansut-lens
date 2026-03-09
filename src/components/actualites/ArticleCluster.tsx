@@ -134,8 +134,17 @@ export function ArticleCluster({
             </h3>
           </a>
         ) : (
-          <h3 className="text-lg font-bold text-foreground mb-2 leading-tight">
+          <h3 className="text-lg font-bold text-foreground mb-2 leading-tight flex items-start gap-2">
             {mainArticle.titre}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border mt-0.5 shrink-0">
+                  <AlertCircle className="h-3 w-3" />
+                  Pas de lien
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>Aucun lien source vérifié disponible pour cet article</TooltipContent>
+            </Tooltip>
           </h3>
         )}
         
