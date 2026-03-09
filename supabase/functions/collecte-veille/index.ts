@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface MotCleVeille {
@@ -20,28 +20,11 @@ interface MotCleVeille {
   } | { nom: string; code: string; }[] | null;
 }
 
-// Helper to get category name from joined data
 const getCategoryName = (cat: MotCleVeille['categories_veille']): string | undefined => {
   if (!cat) return undefined;
   if (Array.isArray(cat)) return cat[0]?.nom;
   return cat.nom;
 };
-
-interface PerplexityResult {
-  titre: string;
-  resume: string;
-  source: string;
-  url: string;
-  date_publication: string;
-}
-
-interface GrokResult {
-  titre: string;
-  resume: string;
-  auteur_twitter?: string;
-  url: string;
-  date_publication: string;
-}
 
 interface CollectedActualite {
   titre: string;
@@ -50,12 +33,41 @@ interface CollectedActualite {
   url: string;
   date_publication: string;
   source_type: 'perplexity' | 'grok_twitter';
+  url_verified: boolean;
 }
 
 interface InsertedArticle {
   id: string;
   titre: string;
   resume: string | null;
+}
+
+// ============= URL VALIDATION =============
+function isValidUrl(urlStr: string): boolean {
+  try {
+    const url = new URL(urlStr);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+// Quick HEAD check to verify URL exists (with timeout)
+async function verifyUrlExists(urlStr: string): Promise<boolean> {
+  if (!isValidUrl(urlStr)) return false;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const resp = await fetch(urlStr, { 
+      method: 'HEAD', 
+      signal: controller.signal,
+      redirect: 'follow',
+    });
+    clearTimeout(timeout);
+    return resp.ok || resp.status === 403; // 403 often means page exists but blocks bots
+  } catch {
+    return false;
+  }
 }
 
 // ============= INLINE SENTIMENT ANALYSIS =============
@@ -139,7 +151,9 @@ Mais inclut aussi toute actualité récente sur:
 - Cybersécurité en Afrique de l'Ouest
 - Événements tech (SITEC, AfricaTech, etc.)
 
-Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours) avec leurs vraies URLs.`;
+IMPORTANT: Pour chaque actualité, indique le NUMÉRO de la citation source (ex: [1], [2], etc.) correspondant aux sources que tu as consultées. Ne fabrique JAMAIS d'URL.
+
+Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours).`;
 
   const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
     method: 'POST',
@@ -152,7 +166,7 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours) avec leur
       messages: [
         { 
           role: 'system', 
-          content: 'Tu es un assistant spécialisé dans la veille stratégique sur les télécommunications en Côte d\'Ivoire. Tu dois TOUJOURS répondre avec un objet JSON valide contenant un tableau "actualites".' 
+          content: 'Tu es un assistant de veille stratégique sur les télécommunications en Côte d\'Ivoire. Tu dois TOUJOURS répondre avec un objet JSON valide contenant un tableau "actualites". Pour les URLs, utilise UNIQUEMENT le numéro de citation (ex: "citation_index": 1) correspondant à tes sources. Ne génère JAMAIS d\'URL toi-même.' 
         },
         { role: 'user', content: perplexityPrompt }
       ],
@@ -172,10 +186,10 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours) avec leur
                     titre: { type: 'string', description: 'Titre de l\'article' },
                     resume: { type: 'string', description: 'Résumé en 2-3 phrases' },
                     source: { type: 'string', description: 'Nom du média source' },
-                    url: { type: 'string', description: 'URL de l\'article' },
+                    citation_index: { type: 'number', description: 'Numéro de la citation source (1-indexed)' },
                     date_publication: { type: 'string', description: 'Date au format YYYY-MM-DD' }
                   },
-                  required: ['titre', 'resume', 'source', 'url', 'date_publication']
+                  required: ['titre', 'resume', 'source', 'date_publication']
                 }
               }
             },
@@ -194,39 +208,87 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours) avec leur
 
   const perplexityData = await perplexityResponse.json();
   const content = perplexityData.choices?.[0]?.message?.content || '{}';
-  const citations = perplexityData.citations || [];
+  const citations: string[] = perplexityData.citations || [];
 
-  console.log('[collecte-veille] Réponse Perplexity reçue, parsing...');
+  console.log(`[collecte-veille] Perplexity: ${citations.length} citations reçues`);
 
-  // Parser les résultats avec plusieurs stratégies de fallback
-  let actualites: PerplexityResult[] = [];
+  // Parser les résultats
+  let rawActualites: any[] = [];
   try {
     const parsed = JSON.parse(content);
     if (parsed.actualites && Array.isArray(parsed.actualites)) {
-      actualites = parsed.actualites;
+      rawActualites = parsed.actualites;
     } else if (Array.isArray(parsed)) {
-      actualites = parsed;
+      rawActualites = parsed;
     }
   } catch {
     try {
       const jsonArrayMatch = content.match(/\[[\s\S]*?\]/);
       if (jsonArrayMatch) {
-        actualites = JSON.parse(jsonArrayMatch[0]);
+        rawActualites = JSON.parse(jsonArrayMatch[0]);
       }
     } catch {
       console.error('[collecte-veille] Échec parsing Perplexity');
     }
   }
 
-  // Validation et transformation
-  const validActualites = actualites
+  // Map citation indices to real URLs
+  const validActualites: CollectedActualite[] = rawActualites
     .filter(a => a && a.titre && typeof a.titre === 'string')
-    .map(a => ({
-      ...a,
-      source_type: 'perplexity' as const
-    }));
+    .map(a => {
+      // Try to get the real URL from citations array
+      let realUrl = '';
+      let urlVerified = false;
 
-  console.log(`[collecte-veille] Perplexity: ${validActualites.length} actualités`);
+      // Method 1: Use citation_index if provided
+      const citIdx = a.citation_index;
+      if (typeof citIdx === 'number' && citIdx >= 1 && citIdx <= citations.length) {
+        realUrl = citations[citIdx - 1];
+        urlVerified = true;
+      }
+
+      // Method 2: If AI provided a url field, check if it matches a citation
+      if (!urlVerified && a.url && typeof a.url === 'string') {
+        // Check if the AI-provided URL is actually in the citations list
+        const matchedCitation = citations.find(c => c === a.url);
+        if (matchedCitation) {
+          realUrl = matchedCitation;
+          urlVerified = true;
+        } else {
+          // URL is likely hallucinated - still store it but mark as unverified
+          realUrl = a.url;
+          urlVerified = false;
+          console.warn(`[collecte-veille] URL potentiellement fabriquée: ${a.url}`);
+        }
+      }
+
+      // Method 3: Try to find citation by matching source name
+      if (!realUrl && a.source && citations.length > 0) {
+        const sourceLower = (a.source || '').toLowerCase();
+        const matchedCitation = citations.find(c => {
+          try {
+            const hostname = new URL(c).hostname.toLowerCase();
+            return hostname.includes(sourceLower) || sourceLower.includes(hostname.replace('www.', ''));
+          } catch { return false; }
+        });
+        if (matchedCitation) {
+          realUrl = matchedCitation;
+          urlVerified = true;
+        }
+      }
+
+      return {
+        titre: a.titre,
+        resume: a.resume || '',
+        source: a.source || 'Perplexity',
+        url: realUrl,
+        date_publication: a.date_publication || new Date().toISOString().split('T')[0],
+        source_type: 'perplexity' as const,
+        url_verified: urlVerified,
+      };
+    });
+
+  console.log(`[collecte-veille] Perplexity: ${validActualites.length} actualités (${validActualites.filter(a => a.url_verified).length} URLs vérifiées)`);
   return { actualites: validActualites, citations };
 }
 
@@ -245,11 +307,10 @@ Cibles spécifiques sur Twitter/X:
 - Comptes officiels: @OrangeCIV, @MTNCotedIvoire, @MoovAfrica_CI, @ARTCI_CI, @ANSUT_CI
 - Ministères et institutions ivoiriennes liées au numérique
 - Journalistes tech et influenceurs télécom africains
-- Acteurs du secteur: CEO, directeurs, responsables télécoms
-- Hashtags: #TelecomCI #NumériqueCI #CotedIvoire #TechAfrique
 
-Retourne les 5 à 8 tweets/posts les plus pertinents et récents avec leurs URLs Twitter.
-Format de réponse JSON obligatoire.`;
+IMPORTANT: Ne retourne QUE des tweets/posts que tu peux vérifier comme existants. Pour chaque tweet, fournis l'URL EXACTE au format https://x.com/username/status/TWEET_ID. Si tu n'es pas certain de l'URL exacte, ne l'inclus PAS et mets "url": null.
+
+Retourne les 5 à 8 tweets/posts les plus pertinents et récents.`;
 
   const grokResponse = await fetch('https://api.x.ai/v1/chat/completions', {
     method: 'POST',
@@ -262,15 +323,16 @@ Format de réponse JSON obligatoire.`;
       messages: [
         { 
           role: 'system', 
-          content: `Tu es un assistant spécialisé dans la veille Twitter/X sur les télécommunications en Afrique.
-Tu dois TOUJOURS répondre avec un objet JSON valide au format suivant:
+          content: `Tu es un assistant de veille Twitter/X sur les télécommunications en Afrique.
+RÈGLE CRITIQUE: Ne retourne QUE des informations que tu peux vérifier. Ne FABRIQUE JAMAIS de tweets, de comptes ou d'URLs. Si tu ne trouves pas de tweets récents pertinents, retourne un tableau vide.
+Réponds TOUJOURS avec un JSON valide:
 {
   "actualites": [
     {
-      "titre": "Résumé du tweet en une phrase",
-      "resume": "Contenu détaillé du tweet ou thread",
-      "auteur_twitter": "@handle de l'auteur",
-      "url": "URL du tweet (format https://x.com/user/status/id)",
+      "titre": "Résumé du tweet",
+      "resume": "Contenu détaillé",
+      "auteur_twitter": "@handle",
+      "url": "https://x.com/user/status/ID ou null si incertain",
       "date_publication": "YYYY-MM-DD"
     }
   ]
@@ -279,7 +341,7 @@ Tu dois TOUJOURS répondre avec un objet JSON valide au format suivant:
         { role: 'user', content: grokPrompt }
       ],
       max_tokens: 4000,
-      temperature: 0.3,
+      temperature: 0.1, // Lower temperature for more factual output
     }),
   });
 
@@ -294,41 +356,63 @@ Tu dois TOUJOURS répondre avec un objet JSON valide au format suivant:
 
   console.log('[collecte-veille] Réponse Grok reçue, parsing...');
 
-  // Parser les résultats
-  let actualites: GrokResult[] = [];
+  let rawActualites: any[] = [];
   try {
     const parsed = JSON.parse(content);
     if (parsed.actualites && Array.isArray(parsed.actualites)) {
-      actualites = parsed.actualites;
+      rawActualites = parsed.actualites;
     } else if (Array.isArray(parsed)) {
-      actualites = parsed;
+      rawActualites = parsed;
     }
   } catch {
-    // Fallback: extraire JSON du texte
     try {
       const jsonMatch = content.match(/\{[\s\S]*"actualites"[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
-        actualites = parsed.actualites || [];
+        rawActualites = parsed.actualites || [];
       }
     } catch {
       console.error('[collecte-veille] Échec parsing Grok');
     }
   }
 
-  // Validation et transformation
-  const validActualites = actualites
-    .filter(a => a && a.titre && typeof a.titre === 'string')
-    .map(a => ({
-      titre: a.titre,
-      resume: a.resume,
-      source: a.auteur_twitter || 'Twitter/X',
-      url: a.url,
-      date_publication: a.date_publication,
-      source_type: 'grok_twitter' as const
-    }));
+  // Validate and transform - verify Twitter URLs have proper format
+  const validActualites: CollectedActualite[] = [];
+  
+  for (const a of rawActualites) {
+    if (!a || !a.titre || typeof a.titre !== 'string') continue;
+    
+    let url = a.url || '';
+    let urlVerified = false;
+    
+    // Validate Twitter URL format: must match https://x.com/user/status/NUMBER
+    if (url && typeof url === 'string') {
+      const twitterPattern = /^https?:\/\/(x\.com|twitter\.com)\/\w+\/status\/\d+$/;
+      if (twitterPattern.test(url)) {
+        // Verify the URL actually exists
+        urlVerified = await verifyUrlExists(url);
+        if (!urlVerified) {
+          console.warn(`[collecte-veille] URL Twitter invalide (404): ${url}`);
+          url = ''; // Don't store invalid URLs
+        }
+      } else {
+        console.warn(`[collecte-veille] Format URL Twitter invalide: ${url}`);
+        url = '';
+      }
+    }
 
-  console.log(`[collecte-veille] Grok: ${validActualites.length} tweets/posts`);
+    validActualites.push({
+      titre: a.titre,
+      resume: a.resume || '',
+      source: a.auteur_twitter || 'Twitter/X',
+      url,
+      date_publication: a.date_publication || new Date().toISOString().split('T')[0],
+      source_type: 'grok_twitter' as const,
+      url_verified: urlVerified,
+    });
+  }
+
+  console.log(`[collecte-veille] Grok: ${validActualites.length} tweets (${validActualites.filter(a => a.url_verified).length} URLs vérifiées)`);
   return { actualites: validActualites, citations: [] };
 }
 
@@ -352,7 +436,6 @@ serve(async (req) => {
     });
   }
 
-  // Au moins une API doit être configurée
   if (!PERPLEXITY_API_KEY && !XAI_API_KEY) {
     console.error('Aucune API de collecte configurée (Perplexity ou Grok)');
     return new Response(JSON.stringify({ error: 'Aucune API de collecte configurée' }), {
@@ -437,10 +520,8 @@ serve(async (req) => {
 
     console.log(`[collecte-veille] Sources utilisées: ${sourcesUtilisees.join(', ')}`);
 
-    // Attendre toutes les réponses en parallèle
     const results = await Promise.all(collectePromises);
 
-    // Fusionner les résultats
     const allActualites: CollectedActualite[] = results.flatMap(r => r.actualites);
     const allCitations: string[] = results.flatMap(r => r.citations);
 
@@ -496,14 +577,13 @@ serve(async (req) => {
         }
       }
 
-      // Calculer l'importance (plafonné à 100)
       const importance = Math.min(100, Math.round(totalScore * 0.3));
-
-      // Déterminer le quadrant dominant
       const dominantQuadrant = Object.entries(quadrantScores)
         .sort((a, b) => b[1] - a[1])[0]?.[0] || 'market';
 
-      // Insérer l'actualité et récupérer l'ID
+      // Only store URL if it's valid
+      const sourceUrl = (actu.url && isValidUrl(actu.url)) ? actu.url : null;
+
       const { data: inserted, error: insertError } = await supabase
         .from('actualites')
         .insert({
@@ -511,7 +591,7 @@ serve(async (req) => {
           resume: actu.resume,
           contenu: actu.resume,
           source_nom: actu.source,
-          source_url: actu.url,
+          source_url: sourceUrl,
           source_type: actu.source_type,
           date_publication: actu.date_publication || new Date().toISOString(),
           tags: matchedKeywords,
@@ -523,6 +603,7 @@ serve(async (req) => {
             quadrant_scores: quadrantScores,
             collecte_type: type,
             source_collecte: actu.source_type,
+            url_verified: actu.url_verified,
             collecte_date: new Date().toISOString()
           })
         })
@@ -536,10 +617,9 @@ serve(async (req) => {
         if (newId) {
           insertedArticles.push({ id: newId, titre: actu.titre, resume: actu.resume });
         }
-        console.log(`[collecte-veille] [${actu.source_type}] Inséré: ${actu.titre.substring(0, 50)}...`);
+        console.log(`[collecte-veille] [${actu.source_type}] Inséré: ${actu.titre.substring(0, 50)}... (URL ${actu.url_verified ? '✓' : '✗'})`);
       }
 
-      // Créer une alerte si mot-clé critique détecté
       if (hasAlertKeyword) {
         await supabase
           .from('alertes')
@@ -553,7 +633,7 @@ serve(async (req) => {
       }
     }
 
-    // 4b. Analyse sentiment IA automatique sur les articles insérés
+    // 4b. Analyse sentiment IA automatique
     let nbSentimentsEnrichis = 0;
     if (LOVABLE_API_KEY && insertedArticles.length > 0) {
       try {
@@ -584,7 +664,6 @@ serve(async (req) => {
       .eq('actif', true);
 
     if (fluxActifs && fluxActifs.length > 0) {
-      // Récupérer les actualités récemment insérées (dernières 2 heures pour être sûr)
       const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
       const { data: recentActus } = await supabase
         .from('actualites')
@@ -594,11 +673,9 @@ serve(async (req) => {
       if (recentActus && recentActus.length > 0) {
         for (const flux of fluxActifs) {
           for (const actu of recentActus) {
-            // Calculer le score de match
             let scoreMatch = 0;
             const fullContent = `${actu.titre} ${actu.resume || ''}`.toLowerCase();
 
-            // Match par mots-clés personnalisés
             const fluxMotsCles = (flux.mots_cles as string[]) || [];
             for (const kw of fluxMotsCles) {
               if (fullContent.includes(kw.toLowerCase())) {
@@ -606,7 +683,6 @@ serve(async (req) => {
               }
             }
 
-            // Match par tags de l'actualité
             const actuTags = (actu.tags as string[]) || [];
             for (const tag of actuTags) {
               if (fluxMotsCles.some(kw => kw.toLowerCase() === tag.toLowerCase())) {
@@ -614,7 +690,6 @@ serve(async (req) => {
               }
             }
 
-            // Match par quadrant
             const fluxQuadrants = (flux.quadrants as string[]) || [];
             if (fluxQuadrants.length > 0 && actu.analyse_ia) {
               try {
@@ -625,19 +700,15 @@ serve(async (req) => {
               } catch {}
             }
 
-            // Vérifier l'importance minimum
             const importanceMin = flux.importance_min || 0;
             const actuImportance = actu.importance || 0;
             if (actuImportance >= importanceMin) {
               scoreMatch += 10;
             } else if (importanceMin > 0) {
-              // Ne pas matcher si en dessous du seuil
               continue;
             }
 
-            // Si score suffisant, créer l'association
             if (scoreMatch >= 20) {
-              // Vérifier si pas déjà associé
               const { data: existing } = await supabase
                 .from('flux_actualites')
                 .select('id')
@@ -655,7 +726,6 @@ serve(async (req) => {
                     notifie: false,
                   });
 
-                // Créer une alerte si push activé
                 if (flux.alerte_push) {
                   await supabase
                     .from('alertes')
@@ -710,7 +780,6 @@ serve(async (req) => {
     const duration = Date.now() - startTime;
     console.error('[collecte-veille] Erreur:', error);
 
-    // Logger l'erreur
     await supabase
       .from('collectes_log')
       .insert({
