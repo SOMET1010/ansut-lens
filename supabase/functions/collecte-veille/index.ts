@@ -364,7 +364,7 @@ Réponds TOUJOURS avec un JSON valide:
     } else if (Array.isArray(parsed)) {
       rawActualites = parsed;
     }
-  } catch {
+  } catch (_e) {
     try {
       const jsonMatch = content.match(/\{[\s\S]*"actualites"[\s\S]*\}/);
       if (jsonMatch) {
