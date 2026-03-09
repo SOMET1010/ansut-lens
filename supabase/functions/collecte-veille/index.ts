@@ -371,7 +371,7 @@ Réponds TOUJOURS avec un JSON valide:
         const parsed = JSON.parse(jsonMatch[0]);
         rawActualites = parsed.actualites || [];
       }
-    } catch {
+    } catch (_e2) {
       console.error('[collecte-veille] Échec parsing Grok');
     }
   }
