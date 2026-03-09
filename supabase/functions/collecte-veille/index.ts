@@ -697,7 +697,7 @@ serve(async (req) => {
                 if (analyse.quadrant_dominant && fluxQuadrants.includes(analyse.quadrant_dominant)) {
                   scoreMatch += 15;
                 }
-              } catch {}
+              } catch (_e) {}
             }
 
             const importanceMin = flux.importance_min || 0;
