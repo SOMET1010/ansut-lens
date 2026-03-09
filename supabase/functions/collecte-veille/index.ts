@@ -221,7 +221,7 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours).`;
     } else if (Array.isArray(parsed)) {
       rawActualites = parsed;
     }
-  } catch {
+  } catch (_e) {
     try {
       const jsonArrayMatch = content.match(/\[[\s\S]*?\]/);
       if (jsonArrayMatch) {
