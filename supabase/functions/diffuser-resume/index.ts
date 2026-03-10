@@ -70,8 +70,8 @@ Deno.serve(async (req) => {
     const payload: DiffuserPayload = await req.json();
     const { canal, contenu_type = "briefing" } = payload;
 
-    if (!canal || !["sms", "telegram", "email"].includes(canal)) {
-      throw new Error("Canal invalide. Utilisez: sms, telegram, email");
+    if (!canal || !["sms", "telegram", "email", "whatsapp"].includes(canal)) {
+      throw new Error("Canal invalide. Utilisez: sms, telegram, email, whatsapp");
     }
 
     // 1. Récupérer la config du canal
