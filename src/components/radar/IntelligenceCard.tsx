@@ -1,4 +1,4 @@
-import { ExternalLink, Bookmark, Share2, Globe, Clock, Zap } from 'lucide-react';
+import { ExternalLink, Bookmark, Share2, Globe, Clock, Zap, Target } from 'lucide-react';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { cn } from '@/lib/utils';
 import { Actualite } from '@/types';
