@@ -70,6 +70,7 @@ PUBLICATION ANSUT :
 - Date : ${pub.date_publication}
 - Contenu : ${pub.contenu?.substring(0, 1000)}
 - Likes : ${pub.likes_count}, Partages : ${pub.shares_count}, Commentaires : ${pub.comments_count}
+${pub.resume_commentaires ? `- Commentaires bruts : ${pub.resume_commentaires.substring(0, 500)}` : ""}
 
 ARTICLES DE PRESSE RÉCENTS (pour détecter les reprises) :
 ${(actualites || []).slice(0, 30).map((a: any) => `- ${a.titre} (${a.source_nom})`).join("\n")}
@@ -83,7 +84,9 @@ Analyse :
 3. Estime la portée totale (en nombre de personnes atteintes)
 4. Score de résonance sur 100
 5. Y a-t-il un gap entre l'effort de communication et la couverture obtenue ?
-6. Recommandation pour améliorer la résonance`;
+6. Recommandation pour améliorer la résonance
+7. Résume le sentiment des commentaires citoyens (positif, négatif, demandes fréquentes)
+8. Quelle action concrète devrait prendre la Com en réponse à cette publication ?`;
 
         const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
@@ -113,6 +116,8 @@ Analyse :
                     score_resonance: { type: "number" },
                     gap_media: { type: "string" },
                     recommandation_ia: { type: "string" },
+                    resume_commentaires: { type: "string", description: "Résumé du sentiment et demandes des citoyens dans les commentaires" },
+                    action_com: { type: "string", description: "Action concrète suggérée pour la Com" },
                   },
                   required: ["nb_reprises_presse", "score_resonance", "recommandation_ia"],
                 },
@@ -137,8 +142,16 @@ Analyse :
               portee_estimee: analysis.portee_estimee || 0,
               score_resonance: Math.min(100, Math.max(0, analysis.score_resonance || 0)),
               gap_media: analysis.gap_media,
-              recommandation_ia: analysis.recommandation_ia,
+              recommandation_ia: `${analysis.recommandation_ia || ""}${analysis.resume_commentaires ? "\n\n💬 Commentaires : " + analysis.resume_commentaires : ""}${analysis.action_com ? "\n\n🎯 Action Com : " + analysis.action_com : ""}`,
             });
+
+            // Update publication with comment summary
+            if (analysis.resume_commentaires) {
+              await supabase
+                .from("publications_institutionnelles")
+                .update({ resume_commentaires: analysis.resume_commentaires })
+                .eq("id", pub.id);
+            }
 
             results.push({ publication_id: pub.id, score: analysis.score_resonance });
           }
