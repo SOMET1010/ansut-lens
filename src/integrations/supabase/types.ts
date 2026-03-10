@@ -529,6 +529,56 @@ export type Database = {
         }
         Relationships: []
       }
+      echo_metrics: {
+        Row: {
+          created_at: string | null
+          gap_media: string | null
+          id: string
+          influenceurs_citant: string[] | null
+          nb_citations_influenceurs: number | null
+          nb_reprises_presse: number | null
+          portee_estimee: number | null
+          publication_id: string | null
+          recommandation_ia: string | null
+          score_resonance: number | null
+          sources_reprises: string[] | null
+        }
+        Insert: {
+          created_at?: string | null
+          gap_media?: string | null
+          id?: string
+          influenceurs_citant?: string[] | null
+          nb_citations_influenceurs?: number | null
+          nb_reprises_presse?: number | null
+          portee_estimee?: number | null
+          publication_id?: string | null
+          recommandation_ia?: string | null
+          score_resonance?: number | null
+          sources_reprises?: string[] | null
+        }
+        Update: {
+          created_at?: string | null
+          gap_media?: string | null
+          id?: string
+          influenceurs_citant?: string[] | null
+          nb_citations_influenceurs?: number | null
+          nb_reprises_presse?: number | null
+          portee_estimee?: number | null
+          publication_id?: string | null
+          recommandation_ia?: string | null
+          score_resonance?: number | null
+          sources_reprises?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "echo_metrics_publication_id_fkey"
+            columns: ["publication_id"]
+            isOneToOne: false
+            referencedRelation: "publications_institutionnelles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evenements_strategiques: {
         Row: {
           boost_actif: boolean | null
@@ -978,6 +1028,51 @@ export type Database = {
         }
         Relationships: []
       }
+      part_de_voix: {
+        Row: {
+          created_at: string | null
+          gap_analyse: string | null
+          id: string
+          mois: string
+          nb_articles_presse: number | null
+          nb_mentions_social: number | null
+          nb_publications_ansut: number | null
+          periode: string
+          ratio_earned_owned: number | null
+          recommandation_ia: string | null
+          top_sujets_ansut: Json | null
+          top_sujets_presse: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          gap_analyse?: string | null
+          id?: string
+          mois: string
+          nb_articles_presse?: number | null
+          nb_mentions_social?: number | null
+          nb_publications_ansut?: number | null
+          periode: string
+          ratio_earned_owned?: number | null
+          recommandation_ia?: string | null
+          top_sujets_ansut?: Json | null
+          top_sujets_presse?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          gap_analyse?: string | null
+          id?: string
+          mois?: string
+          nb_articles_presse?: number | null
+          nb_mentions_social?: number | null
+          nb_publications_ansut?: number | null
+          periode?: string
+          ratio_earned_owned?: number | null
+          recommandation_ia?: string | null
+          top_sujets_ansut?: Json | null
+          top_sujets_presse?: Json | null
+        }
+        Relationships: []
+      }
       permissions_registry: {
         Row: {
           category: string
@@ -1305,6 +1400,80 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      publications_institutionnelles: {
+        Row: {
+          auteur: string | null
+          comments_count: number | null
+          contenu: string | null
+          created_at: string | null
+          date_publication: string | null
+          est_officiel: boolean | null
+          hashtags: string[] | null
+          id: string
+          likes_count: number | null
+          media_urls: string[] | null
+          plateforme: string
+          resume_commentaires: string | null
+          sentiment_commentaires: number | null
+          shares_count: number | null
+          type_contenu: string
+          updated_at: string | null
+          url_original: string | null
+          vip_compte_id: string | null
+          vues_count: number | null
+        }
+        Insert: {
+          auteur?: string | null
+          comments_count?: number | null
+          contenu?: string | null
+          created_at?: string | null
+          date_publication?: string | null
+          est_officiel?: boolean | null
+          hashtags?: string[] | null
+          id?: string
+          likes_count?: number | null
+          media_urls?: string[] | null
+          plateforme?: string
+          resume_commentaires?: string | null
+          sentiment_commentaires?: number | null
+          shares_count?: number | null
+          type_contenu?: string
+          updated_at?: string | null
+          url_original?: string | null
+          vip_compte_id?: string | null
+          vues_count?: number | null
+        }
+        Update: {
+          auteur?: string | null
+          comments_count?: number | null
+          contenu?: string | null
+          created_at?: string | null
+          date_publication?: string | null
+          est_officiel?: boolean | null
+          hashtags?: string[] | null
+          id?: string
+          likes_count?: number | null
+          media_urls?: string[] | null
+          plateforme?: string
+          resume_commentaires?: string | null
+          sentiment_commentaires?: number | null
+          shares_count?: number | null
+          type_contenu?: string
+          updated_at?: string | null
+          url_original?: string | null
+          vip_compte_id?: string | null
+          vues_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publications_institutionnelles_vip_compte_id_fkey"
+            columns: ["vip_compte_id"]
+            isOneToOne: false
+            referencedRelation: "vip_comptes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       radar_proximite: {
         Row: {
