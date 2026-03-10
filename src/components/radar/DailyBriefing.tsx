@@ -215,7 +215,7 @@ export function DailyBriefing() {
             </div>
             
             {/* Briefing content with inline source citations */}
-            <p className={cn(
+            <div className={cn(
               "text-foreground leading-relaxed",
               isGenerating && "opacity-50"
             )}>
@@ -224,7 +224,7 @@ export function DailyBriefing() {
               ) : (
                 displayBriefing
               )}
-            </p>
+            </div>
             
             {/* Sources list */}
             {sources.length > 0 && (

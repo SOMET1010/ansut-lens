@@ -101,19 +101,29 @@ serve(async (req) => {
     // Filter out previously rejected articles
     const filteredActualites = actualites.filter(a => !rejectedIds.has((a as any).id));
 
-    // Only include articles with valid source URLs (anti-hallucination)
+    // Only include articles with valid, accessible source URLs (anti-hallucination)
+    // Also deduplicate by title similarity
+    const seenTitles = new Set<string>();
     const verifiedActualites = filteredActualites.filter(a => {
-      if (!a.source_url) return true; // Allow articles without URL but flag them
+      // Reject articles without source URL — unsourced = unverifiable
+      if (!a.source_url) return false;
       try {
         new URL(a.source_url);
-        return true;
       } catch {
         return false;
       }
+      // Deduplicate by normalized title (first 40 chars lowercase)
+      const titleKey = a.titre.toLowerCase().substring(0, 40).trim();
+      if (seenTitles.has(titleKey)) return false;
+      seenTitles.add(titleKey);
+      return true;
     });
 
-    // Build context with numbered sources for citation
-    const sourcesMap = verifiedActualites.slice(0, 7).map((a, i) => ({
+    // Also deduplicate sources in the output list
+    const seenSources = new Set<string>();
+    const uniqueActualites = verifiedActualites.slice(0, 7);
+
+    const sourcesMap = uniqueActualites.map((a, i) => ({
       index: i + 1,
       titre: a.titre,
       source_nom: a.source_nom || 'Source inconnue',
