@@ -1,0 +1,1 @@
+DELETE FROM actualites WHERE id = 'ec0ddafa-6307-4bf2-8b6a-e3430c29eebd'
