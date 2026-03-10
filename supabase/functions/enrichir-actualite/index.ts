@@ -305,17 +305,54 @@ serve(async (req) => {
 
     // 5. Mettre à jour l'actualité si on a un ID
     if (actualite_id) {
-      // Also compute sentiment via AI if available and sentiment is null
+      // Also compute sentiment + impact_ansut via AI if available
       let sentimentScore: number | null = null;
-      if (LOVABLE_API_KEY && actualiteData && actualiteData.sentiment == null) {
+      let impactAnsut: string | null = null;
+
+      if (LOVABLE_API_KEY && actualiteData) {
         try {
-          const sentimentMap = await analyzeSentimentBatch(
-            [{ id: actualite_id, titre: actualiteData.titre, resume: actualiteData.resume }],
-            LOVABLE_API_KEY
-          );
-          sentimentScore = sentimentMap.get(actualite_id) ?? null;
+          // Sentiment analysis
+          if (actualiteData.sentiment == null) {
+            const sentimentMap = await analyzeSentimentBatch(
+              [{ id: actualite_id, titre: actualiteData.titre, resume: actualiteData.resume }],
+              LOVABLE_API_KEY
+            );
+            sentimentScore = sentimentMap.get(actualite_id) ?? null;
+          }
+
+          // Impact ANSUT analysis
+          const impactPrompt = `Analyse cet article de veille et détermine s'il a un impact sur les missions de l'ANSUT (Agence Nationale du Service Universel des Télécommunications de Côte d'Ivoire).
+
+Missions ANSUT : service universel télécom, déploiement 5G rural, cybersécurité nationale, inclusion numérique, régulation télécom, connectivité des zones reculées, transformation digitale de l'État.
+
+Titre: "${actualiteData.titre}"
+${actualiteData.resume ? `Résumé: "${actualiteData.resume}"` : ''}
+${actualiteData.contenu ? `Extrait: "${actualiteData.contenu.slice(0, 300)}"` : ''}
+
+Si l'article a un lien avec les missions de l'ANSUT, rédige 1-2 phrases d'impact concret. Sinon, réponds exactement "null".`;
+
+          const impactResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'google/gemini-2.5-flash-lite',
+              messages: [{ role: 'user', content: impactPrompt }],
+              temperature: 0.2,
+            }),
+          });
+
+          if (impactResp.ok) {
+            const impactData = await impactResp.json();
+            const impactText = impactData.choices?.[0]?.message?.content?.trim() ?? '';
+            if (impactText && impactText.toLowerCase() !== 'null' && impactText.length > 10) {
+              impactAnsut = impactText;
+            }
+          }
         } catch (e) {
-          console.error('[enrichir-actualite] Sentiment AI error:', e);
+          console.error('[enrichir-actualite] AI analysis error:', e);
         }
       }
 
@@ -331,6 +368,9 @@ serve(async (req) => {
 
       if (sentimentScore != null) {
         updatePayload.sentiment = sentimentScore;
+      }
+      if (impactAnsut != null) {
+        updatePayload.impact_ansut = impactAnsut;
       }
 
       const { error: updateError } = await supabase

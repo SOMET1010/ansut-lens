@@ -121,6 +121,17 @@ export function IntelligenceCard({ actualite, onOpenSource, onSave, onShare }: I
           </p>
         )}
 
+        {/* Impact ANSUT */}
+        {actualite.impact_ansut && (
+          <div className="flex items-start gap-2 mb-3 p-2.5 rounded-md bg-primary/5 border border-primary/20">
+            <Target size={14} className="text-primary mt-0.5 shrink-0" />
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Impact ANSUT</span>
+              <p className="text-xs text-foreground/80 leading-relaxed mt-0.5">{actualite.impact_ansut}</p>
+            </div>
+          </div>
+        )}
+
         {/* Tags */}
         {actualite.tags && actualite.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">

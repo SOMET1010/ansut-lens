@@ -95,6 +95,9 @@ export default function RadarPage() {
       {/* Daily Briefing */}
       <DailyBriefing />
 
+      {/* Weak Signal Detector */}
+      <WeakSignalDetector />
+
       {/* Critical Alert Banner */}
       <CriticalAlertBanner 
         signals={signaux || []}

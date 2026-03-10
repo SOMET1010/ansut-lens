@@ -126,6 +126,7 @@ export function useIntelligenceFeed(limit: number = 50) {
         analyse_ia: a.analyse_ia || undefined,
         pourquoi_important: a.pourquoi_important || undefined,
         sentiment: a.sentiment ?? undefined,
+        impact_ansut: (a as any).impact_ansut || undefined,
       }));
     },
     refetchInterval: 60000
