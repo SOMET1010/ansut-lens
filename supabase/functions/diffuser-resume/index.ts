@@ -169,6 +169,19 @@ Deno.serve(async (req) => {
           else { const errorText = await response.text(); echec_count++; details.push({ destinataire: email, statut: "failed", erreur: errorText }); }
         } catch (err) { echec_count++; details.push({ destinataire: email, statut: "failed", erreur: String(err) }); }
       }
+    } else if (canal === "whatsapp") {
+      for (const dest of destinataires) {
+        const numero = (dest.numero || dest).replace(/^\+/, "");
+        try {
+          const response = await fetch(unifiedUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ to: numero, from: smsFrom, content: message, username, password, channel: "WhatsApp" }),
+          });
+          if (response.ok) { succes_count++; details.push({ destinataire: numero, statut: "sent" }); }
+          else { const errorText = await response.text(); echec_count++; details.push({ destinataire: numero, statut: "failed", erreur: errorText }); }
+        } catch (err) { echec_count++; details.push({ destinataire: numero, statut: "failed", erreur: String(err) }); }
+      }
     }
 
     // 4. Enregistrer le log

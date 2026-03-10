@@ -251,7 +251,6 @@ function ChannelCard({ config, meta, Icon, destCount, onToggle, onUpdateFrequenc
               </Button>
             </div>
           </>
-        )}
       </CardContent>
     </Card>
   );
