@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+// Using native Deno.serve
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -282,4 +282,4 @@ async function sendNotificationEmail(
   }
 }
 
-serve(handler);
+Deno.serve(handler);
