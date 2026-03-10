@@ -154,7 +154,7 @@ export default function AdminPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <PermissionGate permission="manage_newsletters">
             <AdminNavCard
-              color="red"
+              color="orange"
               icon={<Eye size={24} />}
               title="Shadow Tracker VIP"
               badge="Temps réel"
