@@ -416,6 +416,73 @@ Réponds TOUJOURS avec un JSON valide:
   return { actualites: validActualites, citations: [] };
 }
 
+// ============= GOOGLE NEWS via FIRECRAWL SEARCH =============
+async function collecteGoogleNews(
+  keywordsString: string,
+  FIRECRAWL_API_KEY: string,
+  boostKeywords: string[] = []
+): Promise<{ actualites: CollectedActualite[], citations: string[] }> {
+  console.log('[collecte-veille] Collecte Google News via Firecrawl Search...');
+
+  const queries = [
+    `${keywordsString} site:news.google.com OR site:fraternitematin.ci OR site:abidjan.net`,
+  ];
+
+  // Add boost keywords for active events
+  if (boostKeywords.length > 0) {
+    queries.push(boostKeywords.join(' OR '));
+  }
+
+  const allActualites: CollectedActualite[] = [];
+
+  for (const query of queries) {
+    try {
+      const response = await fetch('https://api.firecrawl.dev/v1/search', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query,
+          limit: 8,
+          tbs: 'qdr:d', // Last 24 hours
+          scrapeOptions: { formats: ['markdown'] },
+        }),
+      });
+
+      if (!response.ok) {
+        console.error(`[collecte-veille] Firecrawl search error: ${response.status}`);
+        continue;
+      }
+
+      const data = await response.json();
+      const results = data.data || [];
+
+      for (const result of results) {
+        if (!result.title || !result.url) continue;
+        allActualites.push({
+          titre: result.title,
+          resume: result.description || result.markdown?.substring(0, 300) || '',
+          source: (() => {
+            try { return new URL(result.url).hostname.replace('www.', ''); }
+            catch { return 'Google News'; }
+          })(),
+          url: result.url,
+          date_publication: new Date().toISOString().split('T')[0],
+          source_type: 'google_news',
+          url_verified: true,
+        });
+      }
+    } catch (err) {
+      console.error('[collecte-veille] Firecrawl search error:', err);
+    }
+  }
+
+  console.log(`[collecte-veille] Google News: ${allActualites.length} résultats`);
+  return { actualites: allActualites, citations: [] };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
