@@ -59,6 +59,9 @@ serve(async (req) => {
         } else if (platform === "linkedin") {
           const collected = await collectLinkedIn(supabase, config);
           results[platform] = { collected, errors: [] };
+        } else if (platform === "facebook") {
+          const collected = await collectFacebook(supabase, config);
+          results[platform] = { collected, errors: [] };
         }
       } catch (err) {
         console.error(`Error collecting ${platform}:`, err);
