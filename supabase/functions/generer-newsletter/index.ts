@@ -25,7 +25,7 @@ interface NewsletterContenu {
   a_venir: Array<{ type: string; titre: string; date?: string }>;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

@@ -28,7 +28,7 @@ FORMAT :
 - Ton professionnel, direct et stratégique.
 - Pas de formule de politesse.`;
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }

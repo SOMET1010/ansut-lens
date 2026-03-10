@@ -12,7 +12,7 @@ interface UpdateRoleRequest {
   newRole: "admin" | "user" | "council_user" | "guest";
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

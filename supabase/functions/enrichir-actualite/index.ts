@@ -146,7 +146,7 @@ async function handleBatchSentiment(supabase: ReturnType<typeof createClient>, a
 
 // ---------- Main Handler ----------
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }

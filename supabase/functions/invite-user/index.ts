@@ -107,7 +107,7 @@ function generateInvitationEmailHtml(inviteLink: string, userName: string, baseU
   `.trim();
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

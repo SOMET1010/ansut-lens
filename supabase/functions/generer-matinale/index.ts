@@ -44,7 +44,7 @@ Règles :
 - Le post LinkedIn doit valoriser l'ANSUT et le numérique en Côte d'Ivoire
 - Si aucune mention directe de l'ANSUT n'est trouvée, suggère un angle de rebond`;
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }

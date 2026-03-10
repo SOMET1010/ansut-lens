@@ -28,7 +28,7 @@ Tu DOIS retourner UNIQUEMENT un JSON valide avec cette structure exacte :
   "description": "Description courte et claire du flux de veille"
 }`;
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

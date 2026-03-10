@@ -20,7 +20,7 @@ async function sendViaGateway(to: string, subject: string, htmlContent: string) 
   return response;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
