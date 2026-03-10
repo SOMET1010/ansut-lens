@@ -20,6 +20,7 @@ import {
   RadarKpiTiles,
   RealtimeAlertFeed,
   WeakSignalDetector,
+  MediaImpactWidget,
 } from '@/components/radar';
 
 const periodLabels: Record<PeriodFilter, string> = {
