@@ -96,6 +96,12 @@ export default function RadarPage() {
         <EchoResonanceWidget />
       </div>
 
+      {/* Influenceurs Métier + Radar de Proximité */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <InfluenceursMetierWidget />
+        <RadarProximiteWidget />
+      </div>
+
       {/* KPI Tiles */}
       <RadarKpiTiles
         mentions={kpis?.mentions ?? 0}
