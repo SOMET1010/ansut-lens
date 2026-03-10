@@ -166,6 +166,45 @@ export type Database = {
         }
         Relationships: []
       }
+      analyses_visuelles: {
+        Row: {
+          auteur: string | null
+          created_at: string | null
+          id: string
+          image_url: string
+          logos_detectes: string[] | null
+          pertinence_ansut: boolean | null
+          plateforme: string | null
+          resultat_analyse: Json | null
+          score_pertinence: number | null
+          source_url: string | null
+        }
+        Insert: {
+          auteur?: string | null
+          created_at?: string | null
+          id?: string
+          image_url: string
+          logos_detectes?: string[] | null
+          pertinence_ansut?: boolean | null
+          plateforme?: string | null
+          resultat_analyse?: Json | null
+          score_pertinence?: number | null
+          source_url?: string | null
+        }
+        Update: {
+          auteur?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string
+          logos_detectes?: string[] | null
+          pertinence_ansut?: boolean | null
+          plateforme?: string | null
+          resultat_analyse?: Json | null
+          score_pertinence?: number | null
+          source_url?: string | null
+        }
+        Relationships: []
+      }
       audit_consultations: {
         Row: {
           action: string
@@ -1216,6 +1255,51 @@ export type Database = {
           last_active_at?: string | null
           password_set_at?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      radar_proximite: {
+        Row: {
+          created_at: string | null
+          date_detection: string | null
+          description: string | null
+          id: string
+          organisme: string | null
+          pays: string
+          projet_ansut_equivalent: string | null
+          recommandation_com: string | null
+          similitude_score: number | null
+          source_url: string | null
+          titre: string
+          traite: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          date_detection?: string | null
+          description?: string | null
+          id?: string
+          organisme?: string | null
+          pays: string
+          projet_ansut_equivalent?: string | null
+          recommandation_com?: string | null
+          similitude_score?: number | null
+          source_url?: string | null
+          titre: string
+          traite?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          date_detection?: string | null
+          description?: string | null
+          id?: string
+          organisme?: string | null
+          pays?: string
+          projet_ansut_equivalent?: string | null
+          recommandation_com?: string | null
+          similitude_score?: number | null
+          source_url?: string | null
+          titre?: string
+          traite?: boolean | null
         }
         Relationships: []
       }
