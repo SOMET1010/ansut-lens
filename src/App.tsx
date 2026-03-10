@@ -161,6 +161,10 @@ const App = () => (
                             <Route path="/admin/matinale" element={<MatinalePage />} />
                           </Route>
                           
+                          <Route element={<PermissionRoute permission="manage_keywords" />}>
+                            <Route path="/admin/evenements" element={<EvenementsPage />} />
+                          </Route>
+                          
                           <Route element={<PermissionRoute permission="manage_roles" />}>
                             <Route path="/admin/roles" element={<RolesPage />} />
                           </Route>

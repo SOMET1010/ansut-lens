@@ -77,3 +77,6 @@ verify_jwt = false
 
 [functions.generer-matinale]
 verify_jwt = false
+
+[functions.generer-rapport-evenement]
+verify_jwt = false

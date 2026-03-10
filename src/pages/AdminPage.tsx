@@ -131,6 +131,18 @@ export default function AdminPage() {
               loading={isLoading}
             />
           </PermissionGate>
+          <PermissionGate permission="manage_keywords">
+            <AdminNavCard
+              color="purple"
+              icon={<CalendarDays size={24} />}
+              title="Événements Stratégiques"
+              badge="Boost"
+              badgeVariant="warning"
+              subtitle="Calendrier MWC, Gitex, etc. avec mode Boost de collecte."
+              to="/admin/evenements"
+              loading={isLoading}
+            />
+          </PermissionGate>
         </div>
       </section>
 
