@@ -80,6 +80,27 @@ export function ProfileForm({ email, fullName, phone, onSubmit, isSubmitting }: 
           )}
         />
 
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Téléphone</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="+225 0701020304"
+                  {...field}
+                  disabled={isSubmitting}
+                />
+              </FormControl>
+              <p className="text-xs text-muted-foreground">
+                Utilisé pour les notifications WhatsApp
+              </p>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <div className="space-y-2">
           <label className="text-sm font-medium text-muted-foreground">
             Email
