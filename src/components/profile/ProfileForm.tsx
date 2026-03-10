@@ -20,6 +20,13 @@ const profileSchema = z.object({
     .trim()
     .min(1, 'Le nom est requis')
     .max(100, 'Le nom ne peut pas dépasser 100 caractères'),
+  phone: z
+    .string()
+    .trim()
+    .max(20, 'Le numéro ne peut pas dépasser 20 caractères')
+    .regex(/^(\+?\d{1,4}[\s-]?)?\d{6,15}$/, 'Format invalide (ex: +225 0701020304)')
+    .optional()
+    .or(z.literal('')),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -27,27 +34,29 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 interface ProfileFormProps {
   email?: string;
   fullName?: string | null;
-  onSubmit: (data: { full_name: string }) => void;
+  phone?: string | null;
+  onSubmit: (data: { full_name: string; phone?: string }) => void;
   isSubmitting?: boolean;
 }
 
-export function ProfileForm({ email, fullName, onSubmit, isSubmitting }: ProfileFormProps) {
+export function ProfileForm({ email, fullName, phone, onSubmit, isSubmitting }: ProfileFormProps) {
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       full_name: fullName || '',
+      phone: phone || '',
     },
   });
 
   // Update form when profile data loads
   useEffect(() => {
     if (fullName !== undefined) {
-      form.reset({ full_name: fullName || '' });
+      form.reset({ full_name: fullName || '', phone: phone || '' });
     }
-  }, [fullName, form]);
+  }, [fullName, phone, form]);
 
   const handleSubmit = (data: ProfileFormValues) => {
-    onSubmit({ full_name: data.full_name });
+    onSubmit({ full_name: data.full_name, phone: data.phone || undefined });
   };
 
   return (
@@ -66,6 +75,27 @@ export function ProfileForm({ email, fullName, onSubmit, isSubmitting }: Profile
                   disabled={isSubmitting}
                 />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Téléphone</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="+225 0701020304"
+                  {...field}
+                  disabled={isSubmitting}
+                />
+              </FormControl>
+              <p className="text-xs text-muted-foreground">
+                Utilisé pour les notifications WhatsApp
+              </p>
               <FormMessage />
             </FormItem>
           )}

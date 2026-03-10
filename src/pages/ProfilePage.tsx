@@ -64,6 +64,7 @@ export default function ProfilePage() {
           <ProfileForm
             email={user?.email}
             fullName={profile?.full_name}
+            phone={profile?.phone}
             onSubmit={updateProfile}
             isSubmitting={isUpdating}
           />
