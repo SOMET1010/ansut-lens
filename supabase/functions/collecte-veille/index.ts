@@ -504,8 +504,8 @@ serve(async (req) => {
     });
   }
 
-  if (!PERPLEXITY_API_KEY && !XAI_API_KEY) {
-    console.error('Aucune API de collecte configurée (Perplexity ou Grok)');
+  if (!PERPLEXITY_API_KEY && !XAI_API_KEY && !FIRECRAWL_API_KEY) {
+    console.error('Aucune API de collecte configurée (Perplexity, Grok ou Firecrawl)');
     return new Response(JSON.stringify({ error: 'Aucune API de collecte configurée' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
