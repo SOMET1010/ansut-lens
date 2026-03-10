@@ -11,3 +11,5 @@ export { RadarKpiTiles } from './RadarKpiTiles';
 export { RealtimeAlertFeed } from './RealtimeAlertFeed';
 export { WeakSignalDetector } from './WeakSignalDetector';
 export { default as MediaImpactWidget } from './MediaImpactWidget';
+export { default as ShareOfVoiceWidget } from './ShareOfVoiceWidget';
+export { default as EchoResonanceWidget } from './EchoResonanceWidget';

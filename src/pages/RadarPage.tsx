@@ -21,6 +21,8 @@ import {
   RealtimeAlertFeed,
   WeakSignalDetector,
   MediaImpactWidget,
+  ShareOfVoiceWidget,
+  EchoResonanceWidget,
 } from '@/components/radar';
 
 const periodLabels: Record<PeriodFilter, string> = {
