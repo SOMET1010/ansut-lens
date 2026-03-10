@@ -191,9 +191,6 @@ function ChannelCard({ config, meta, Icon, destCount, onToggle, onUpdateFrequenc
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {isWhatsapp ? (
-          <p className="text-sm text-muted-foreground">Ce canal sera disponible prochainement.</p>
-        ) : (
           <>
             <div className="grid grid-cols-2 gap-3">
               <div>
