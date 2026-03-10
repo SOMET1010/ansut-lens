@@ -143,6 +143,18 @@ export default function AdminPage() {
               loading={isLoading}
             />
           </PermissionGate>
+          <PermissionGate permission="manage_keywords">
+            <AdminNavCard
+              color="purple"
+              icon={<Radar size={24} />}
+              title="Veille Sémantique"
+              badge="IA Multimodale"
+              badgeVariant="info"
+              subtitle="Territoires d'expression, influenceurs, analyse visuelle et radar de proximité."
+              to="/admin/veille-semantique"
+              loading={isLoading}
+            />
+          </PermissionGate>
         </div>
       </section>
 
