@@ -20,6 +20,7 @@ import {
   RadarKpiTiles,
   RealtimeAlertFeed,
   WeakSignalDetector,
+  MediaImpactWidget,
 } from '@/components/radar';
 
 const periodLabels: Record<PeriodFilter, string> = {
@@ -81,6 +82,9 @@ export default function RadarPage() {
           ))}
         </TabsList>
       </Tabs>
+
+      {/* Media Impact Widget - for Com team */}
+      <MediaImpactWidget />
 
       {/* KPI Tiles */}
       <RadarKpiTiles
