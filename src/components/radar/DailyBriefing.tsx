@@ -133,7 +133,7 @@ export function DailyBriefing() {
                   </Button>
                 )}
                 {reported && (
-                  <span className="flex items-center gap-1 text-xs text-green-600">
+                  <span className="flex items-center gap-1 text-xs text-primary">
                     <CheckCircle className="h-3.5 w-3.5" />
                     Signalé
                   </span>
