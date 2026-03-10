@@ -30,6 +30,7 @@ import NewslettersPage from "@/pages/admin/NewslettersPage";
 import DiffusionPage from "@/pages/admin/DiffusionPage";
 import SourcesPage from "@/pages/admin/SourcesPage";
 import RolesPage from "@/pages/admin/RolesPage";
+import MatinalePage from "@/pages/admin/MatinalePage";
 import AlertesHistoryPage from "@/pages/AlertesHistoryPage";
 import PresentationPage from "@/pages/PresentationPage";
 import ProfilePage from "@/pages/ProfilePage";
