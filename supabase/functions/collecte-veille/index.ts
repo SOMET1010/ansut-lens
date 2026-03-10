@@ -32,7 +32,7 @@ interface CollectedActualite {
   source: string;
   url: string;
   date_publication: string;
-  source_type: 'perplexity' | 'grok_twitter';
+  source_type: 'perplexity' | 'grok_twitter' | 'google_news';
   url_verified: boolean;
 }
 
@@ -416,6 +416,73 @@ Réponds TOUJOURS avec un JSON valide:
   return { actualites: validActualites, citations: [] };
 }
 
+// ============= GOOGLE NEWS via FIRECRAWL SEARCH =============
+async function collecteGoogleNews(
+  keywordsString: string,
+  FIRECRAWL_API_KEY: string,
+  boostKeywords: string[] = []
+): Promise<{ actualites: CollectedActualite[], citations: string[] }> {
+  console.log('[collecte-veille] Collecte Google News via Firecrawl Search...');
+
+  const queries = [
+    `${keywordsString} site:news.google.com OR site:fraternitematin.ci OR site:abidjan.net`,
+  ];
+
+  // Add boost keywords for active events
+  if (boostKeywords.length > 0) {
+    queries.push(boostKeywords.join(' OR '));
+  }
+
+  const allActualites: CollectedActualite[] = [];
+
+  for (const query of queries) {
+    try {
+      const response = await fetch('https://api.firecrawl.dev/v1/search', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query,
+          limit: 8,
+          tbs: 'qdr:d', // Last 24 hours
+          scrapeOptions: { formats: ['markdown'] },
+        }),
+      });
+
+      if (!response.ok) {
+        console.error(`[collecte-veille] Firecrawl search error: ${response.status}`);
+        continue;
+      }
+
+      const data = await response.json();
+      const results = data.data || [];
+
+      for (const result of results) {
+        if (!result.title || !result.url) continue;
+        allActualites.push({
+          titre: result.title,
+          resume: result.description || result.markdown?.substring(0, 300) || '',
+          source: (() => {
+            try { return new URL(result.url).hostname.replace('www.', ''); }
+            catch { return 'Google News'; }
+          })(),
+          url: result.url,
+          date_publication: new Date().toISOString().split('T')[0],
+          source_type: 'google_news',
+          url_verified: true,
+        });
+      }
+    } catch (err) {
+      console.error('[collecte-veille] Firecrawl search error:', err);
+    }
+  }
+
+  console.log(`[collecte-veille] Google News: ${allActualites.length} résultats`);
+  return { actualites: allActualites, citations: [] };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -424,6 +491,7 @@ serve(async (req) => {
   const startTime = Date.now();
   const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
   const XAI_API_KEY = Deno.env.get('XAI_API_KEY');
+  const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY');
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -436,8 +504,8 @@ serve(async (req) => {
     });
   }
 
-  if (!PERPLEXITY_API_KEY && !XAI_API_KEY) {
-    console.error('Aucune API de collecte configurée (Perplexity ou Grok)');
+  if (!PERPLEXITY_API_KEY && !XAI_API_KEY && !FIRECRAWL_API_KEY) {
+    console.error('Aucune API de collecte configurée (Perplexity, Grok ou Firecrawl)');
     return new Response(JSON.stringify({ error: 'Aucune API de collecte configurée' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -492,6 +560,25 @@ serve(async (req) => {
     const topKeywords = motsCles.slice(0, 10).map((m) => m.mot_cle);
     const keywordsString = topKeywords.join(', ');
 
+    // 2b. Check for active boost events to add extra keywords
+    const today = new Date().toISOString().split('T')[0];
+    const { data: boostEvents } = await supabase
+      .from('evenements_strategiques')
+      .select('nom, mots_cles')
+      .eq('boost_actif', true)
+      .lte('date_debut', today)
+      .gte('date_fin', today);
+
+    const boostKeywords: string[] = (boostEvents || []).flatMap(e => e.mots_cles || []);
+    if (boostKeywords.length > 0) {
+      console.log(`[collecte-veille] 🔥 Mode Boost actif: ${boostKeywords.join(', ')}`);
+    }
+
+    // Combine regular + boost keywords for Perplexity/Grok
+    const enrichedKeywords = boostKeywords.length > 0
+      ? `${keywordsString}, ${boostKeywords.slice(0, 5).join(', ')}`
+      : keywordsString;
+
     // 3. Appels parallèles aux APIs disponibles
     const sourcesUtilisees: string[] = [];
     const collectePromises: Promise<{ actualites: CollectedActualite[], citations: string[] }>[] = [];
@@ -499,7 +586,7 @@ serve(async (req) => {
     if (PERPLEXITY_API_KEY) {
       sourcesUtilisees.push('perplexity');
       collectePromises.push(
-        collectePerplexity(keywordsString, PERPLEXITY_API_KEY)
+        collectePerplexity(enrichedKeywords, PERPLEXITY_API_KEY)
           .catch(err => {
             console.error('[collecte-veille] Erreur Perplexity (continue):', err.message);
             return { actualites: [], citations: [] };
@@ -510,9 +597,20 @@ serve(async (req) => {
     if (XAI_API_KEY) {
       sourcesUtilisees.push('grok_twitter');
       collectePromises.push(
-        collecteGrok(keywordsString, XAI_API_KEY)
+        collecteGrok(enrichedKeywords, XAI_API_KEY)
           .catch(err => {
             console.error('[collecte-veille] Erreur Grok (continue):', err.message);
+            return { actualites: [], citations: [] };
+          })
+      );
+    }
+
+    if (FIRECRAWL_API_KEY) {
+      sourcesUtilisees.push('google_news');
+      collectePromises.push(
+        collecteGoogleNews(enrichedKeywords, FIRECRAWL_API_KEY, boostKeywords)
+          .catch(err => {
+            console.error('[collecte-veille] Erreur Google News (continue):', err.message);
             return { actualites: [], citations: [] };
           })
       );

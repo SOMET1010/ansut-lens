@@ -442,6 +442,54 @@ export type Database = {
         }
         Relationships: []
       }
+      evenements_strategiques: {
+        Row: {
+          boost_actif: boolean | null
+          categorie: string | null
+          created_at: string | null
+          date_debut: string
+          date_fin: string
+          description: string | null
+          frequence_boost: string | null
+          id: string
+          importance: number | null
+          lieu: string | null
+          mots_cles: string[] | null
+          nom: string
+          updated_at: string | null
+        }
+        Insert: {
+          boost_actif?: boolean | null
+          categorie?: string | null
+          created_at?: string | null
+          date_debut: string
+          date_fin: string
+          description?: string | null
+          frequence_boost?: string | null
+          id?: string
+          importance?: number | null
+          lieu?: string | null
+          mots_cles?: string[] | null
+          nom: string
+          updated_at?: string | null
+        }
+        Update: {
+          boost_actif?: boolean | null
+          categorie?: string | null
+          created_at?: string | null
+          date_debut?: string
+          date_fin?: string
+          description?: string | null
+          frequence_boost?: string | null
+          id?: string
+          importance?: number | null
+          lieu?: string | null
+          mots_cles?: string[] | null
+          nom?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       flux_actualites: {
         Row: {
           actualite_id: string

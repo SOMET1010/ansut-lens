@@ -1,4 +1,4 @@
-import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode, Radio, Activity, Newspaper } from 'lucide-react';
+import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode, Radio, Activity, Newspaper, CalendarDays } from 'lucide-react';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { SystemHealthWidget } from '@/components/admin/SystemHealthWidget';
 import { AdminNavCard } from '@/components/admin/AdminNavCard';
@@ -128,6 +128,18 @@ export default function AdminPage() {
               badgeVariant="info"
               subtitle="Import et génération d'acteurs via Perplexity IA."
               to="/admin/import-acteurs"
+              loading={isLoading}
+            />
+          </PermissionGate>
+          <PermissionGate permission="manage_keywords">
+            <AdminNavCard
+              color="purple"
+              icon={<CalendarDays size={24} />}
+              title="Événements Stratégiques"
+              badge="Boost"
+              badgeVariant="warning"
+              subtitle="Calendrier MWC, Gitex, etc. avec mode Boost de collecte."
+              to="/admin/evenements"
               loading={isLoading}
             />
           </PermissionGate>
