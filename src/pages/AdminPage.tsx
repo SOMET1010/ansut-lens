@@ -1,4 +1,4 @@
-import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode, Radio, Activity, Newspaper, CalendarDays, Eye, FileText, Radar } from 'lucide-react';
+import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode, Radio, Activity, Newspaper, CalendarDays, Eye, FileText, Radar, Megaphone } from 'lucide-react';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { SystemHealthWidget } from '@/components/admin/SystemHealthWidget';
 import { AdminNavCard } from '@/components/admin/AdminNavCard';
@@ -164,6 +164,18 @@ export default function AdminPage() {
           <Mail size={16} /> Communication
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <PermissionGate permission="manage_newsletters">
+            <AdminNavCard
+              color="blue"
+              icon={<Megaphone size={24} />}
+              title="Auto-Veille Institutionnelle"
+              badge="Miroir"
+              badgeVariant="info"
+              subtitle="Mesurez la résonance de vos publications, part de voix et VIP tracker."
+              to="/admin/auto-veille"
+              loading={isLoading}
+            />
+          </PermissionGate>
           <PermissionGate permission="manage_newsletters">
             <AdminNavCard
               color="orange"
