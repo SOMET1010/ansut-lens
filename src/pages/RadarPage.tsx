@@ -23,6 +23,8 @@ import {
   MediaImpactWidget,
   ShareOfVoiceWidget,
   EchoResonanceWidget,
+  InfluenceursMetierWidget,
+  RadarProximiteWidget,
 } from '@/components/radar';
 
 const periodLabels: Record<PeriodFilter, string> = {
@@ -92,6 +94,12 @@ export default function RadarPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <ShareOfVoiceWidget />
         <EchoResonanceWidget />
+      </div>
+
+      {/* Influenceurs Métier + Radar de Proximité */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <InfluenceursMetierWidget />
+        <RadarProximiteWidget />
       </div>
 
       {/* KPI Tiles */}
