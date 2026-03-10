@@ -83,6 +83,9 @@ export default function RadarPage() {
         </TabsList>
       </Tabs>
 
+      {/* Media Impact Widget - for Com team */}
+      <MediaImpactWidget />
+
       {/* KPI Tiles */}
       <RadarKpiTiles
         mentions={kpis?.mentions ?? 0}
