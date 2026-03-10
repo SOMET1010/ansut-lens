@@ -105,14 +105,23 @@ async function collectTwitter(
   config: any,
   query: string
 ): Promise<number> {
-  // Decode the bearer token (may contain URL-encoded chars)
   let bearerToken = Deno.env.get("TWITTER_BEARER_TOKEN") || "";
   bearerToken = decodeURIComponent(bearerToken);
-
   if (!bearerToken) throw new Error("TWITTER_BEARER_TOKEN not configured");
 
+  // Get ANSUT VIP accounts on Twitter to prioritize their tweets
+  const { data: vipAccounts } = await supabase
+    .from("vip_comptes")
+    .select("identifiant")
+    .eq("plateforme", "twitter")
+    .eq("actif", true);
+
+  // Build query: ANSUT accounts + general keywords
+  const fromClauses = (vipAccounts || []).map((v: any) => `from:${v.identifiant}`).join(" OR ");
+  const fullQuery = fromClauses ? `(${fromClauses}) OR (${query})` : query;
+
   const url = new URL("https://api.x.com/2/tweets/search/recent");
-  url.searchParams.set("query", query);
+  url.searchParams.set("query", fullQuery);
   url.searchParams.set("max_results", "20");
   url.searchParams.set(
     "tweet.fields",
