@@ -151,8 +151,31 @@ export default function AdminPage() {
         <h2 className="text-sm font-bold text-muted-foreground uppercase flex items-center gap-2">
           <Mail size={16} /> Communication
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <PermissionGate permission="manage_newsletters">
+            <AdminNavCard
+              color="red"
+              icon={<Eye size={24} />}
+              title="Shadow Tracker VIP"
+              badge="Temps réel"
+              badgeVariant="warning"
+              subtitle="Surveillance des publications des directeurs sur les réseaux sociaux."
+              to="/admin/shadow-tracker"
+              loading={isLoading}
+            />
+          </PermissionGate>
+          <PermissionGate permission="manage_newsletters">
+            <AdminNavCard
+              color="emerald"
+              icon={<FileText size={24} />}
+              title="Coffre-fort Contenus"
+              badge="Libre-service"
+              badgeVariant="success"
+              subtitle="Bibliothèque de posts pré-validés pour les directeurs."
+              to="/admin/coffre-contenu"
+              loading={isLoading}
+            />
+          </PermissionGate>
             <AdminNavCard
               color="orange"
               icon={<Radio size={24} />}
