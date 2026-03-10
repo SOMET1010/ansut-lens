@@ -74,7 +74,8 @@ Deno.serve(async (req) => {
       throw new Error("Configuration SMS manquante (URL, USERNAME ou PASSWORD)");
     }
 
-    const smsApiUrl = smsBaseUrl.replace(/\/+$/, "");
+    // Build unified endpoint URL
+    const unifiedUrl = smsBaseUrl.replace(/\/api\/SendSMS\/?$/i, "") + "/api/message/send";
 
     const payload: SmsPayload = await req.json();
     let message = "";
@@ -124,15 +125,15 @@ Deno.serve(async (req) => {
     const cleanedDestinataires = destinataires.map(n => n.replace(/^\+/, ""));
     const toField = cleanedDestinataires.join(";");
 
-    console.log(`Envoi SMS à ${destinataires.length} destinataire(s) via ${smsApiUrl}`);
+    console.log(`Envoi SMS à ${destinataires.length} destinataire(s) via ${unifiedUrl}`);
 
     const results: SmsResult[] = [];
 
     try {
-      const response = await fetch(smsApiUrl, {
+      const response = await fetch(unifiedUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to: toField, from: smsFrom, text: smsMessage, username: smsUsername, password: smsPassword }),
+        body: JSON.stringify({ to: toField, from: smsFrom, content: smsMessage, username: smsUsername, password: smsPassword }),
       });
 
       if (!response.ok) {
@@ -142,6 +143,7 @@ Deno.serve(async (req) => {
           results.push({ destinataire: numero, statut: "failed", erreur: `HTTP ${response.status}` });
         }
       } else {
+        await response.text();
         for (const numero of destinataires) {
           results.push({ destinataire: numero, statut: "sent" });
         }

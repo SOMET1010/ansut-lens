@@ -6,6 +6,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+async function sendViaGateway(to: string, subject: string, htmlContent: string) {
+  const baseUrl = Deno.env.get('AZURE_SMS_URL')!;
+  const username = Deno.env.get('AZURE_SMS_USERNAME')!;
+  const password = Deno.env.get('AZURE_SMS_PASSWORD')!;
+  const unifiedUrl = baseUrl.replace(/\/api\/SendSMS\/?$/i, '') + '/api/message/send';
+
+  const response = await fetch(unifiedUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ to, subject, content: htmlContent, ishtml: true, username, password, channel: 'Email' }),
+  });
+  return response;
+}
+
 const MATINALE_PROMPT = `Tu es le rédacteur en chef de la communication de l'ANSUT (Agence Nationale du Service Universel des Télécommunications de Côte d'Ivoire).
 
 Génère un briefing matinal "Spécial Communication" structuré en 3 sections EXACTES au format JSON :
@@ -39,7 +53,6 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
     if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: 'LOVABLE_API_KEY not configured' }), {
@@ -109,7 +122,7 @@ serve(async (req) => {
 
     console.log('[Matinale] Generating with', (articles || []).length, 'articles');
 
-    // Call AI with tool calling for structured output
+    // Call AI
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -173,37 +186,23 @@ serve(async (req) => {
       const status = aiResponse.status;
       const errText = await aiResponse.text();
       console.error('[Matinale] AI error:', status, errText);
-      if (status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
-          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      if (status === 402) {
-        return new Response(JSON.stringify({ error: 'AI credits exhausted' }), {
-          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      return new Response(JSON.stringify({ error: 'AI service error' }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      if (status === 429) return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (status === 402) return new Response(JSON.stringify({ error: 'AI credits exhausted' }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ error: 'AI service error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const aiData = await aiResponse.json();
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
       console.error('[Matinale] No tool call in response:', JSON.stringify(aiData));
-      return new Response(JSON.stringify({ error: 'AI did not return structured data' }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(JSON.stringify({ error: 'AI did not return structured data' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const matinale = JSON.parse(toolCall.function.arguments);
     console.log('[Matinale] Generated successfully');
 
     // Generate HTML email
-    const dateStr = new Date().toLocaleDateString('fr-FR', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-    });
+    const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
     const tonaliteColor = matinale.veille_reputation.tonalite === 'positif' ? '#10b981'
       : matinale.veille_reputation.tonalite === 'negatif' ? '#ef4444' : '#f59e0b';
@@ -217,14 +216,10 @@ serve(async (req) => {
 <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:20px 0;">
 <tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
-
-<!-- Header -->
 <tr><td style="background:linear-gradient(135deg,#1e3a5f,#2563eb);padding:30px;text-align:center;">
   <h1 style="color:#ffffff;margin:0;font-size:24px;">📰 La Matinale ANSUT</h1>
   <p style="color:#93c5fd;margin:8px 0 0;font-size:14px;">${dateStr}</p>
 </td></tr>
-
-<!-- Flash Info -->
 <tr><td style="padding:24px;">
   <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid #2563eb;padding-bottom:8px;">⚡ Flash Info</h2>
   ${matinale.flash_info.map((item: any) => `
@@ -234,8 +229,6 @@ serve(async (req) => {
     <p style="margin:0;color:#6b7280;font-size:11px;">Source : ${item.source}</p>
   </div>`).join('')}
 </td></tr>
-
-<!-- Veille Réputation -->
 <tr><td style="padding:0 24px 24px;">
   <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid ${tonaliteColor};padding-bottom:8px;">🎯 Veille Réputation ${tonaliteLabel}</h2>
   <div style="padding:16px;background-color:#fefce8;border-radius:8px;">
@@ -244,8 +237,6 @@ serve(async (req) => {
     <p style="margin:0;font-size:12px;color:#6b7280;">Mentions clés : ${matinale.veille_reputation.mentions_cles.map((m: string) => `<span style="display:inline-block;background:#e5e7eb;padding:2px 8px;border-radius:12px;margin:2px;font-size:11px;">${m}</span>`).join(' ')}</p>` : ''}
   </div>
 </td></tr>
-
-<!-- Prêt-à-Poster -->
 <tr><td style="padding:0 24px 24px;">
   <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid #8b5cf6;padding-bottom:8px;">📝 Prêt-à-Poster LinkedIn</h2>
   <div style="padding:16px;background-color:#f5f3ff;border-radius:8px;border:1px dashed #8b5cf6;">
@@ -253,34 +244,24 @@ serve(async (req) => {
     <p style="margin:0;font-size:12px;color:#7c3aed;font-style:italic;">💡 Angle : ${matinale.pret_a_poster.angle}</p>
   </div>
 </td></tr>
-
-<!-- Footer -->
 <tr><td style="background-color:#f8fafc;padding:20px;text-align:center;border-top:1px solid #e5e7eb;">
   <p style="margin:0;color:#9ca3af;font-size:11px;">ANSUT RADAR — Veille Stratégique & Communication</p>
   <p style="margin:4px 0 0;color:#9ca3af;font-size:11px;">Généré automatiquement par IA à partir de ${(articles || []).length} articles</p>
 </td></tr>
-
 </table>
 </td></tr>
 </table>
 </body>
 </html>`;
 
-    // If preview only, return without sending
     if (previewOnly) {
       return new Response(JSON.stringify({
-        matinale,
-        html: htmlEmail,
-        articles_count: (articles || []).length,
-        generated_at: new Date().toISOString(),
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+        matinale, html: htmlEmail, articles_count: (articles || []).length, generated_at: new Date().toISOString(),
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // Get recipients
     if (recipients.length === 0) {
-      // Fetch from diffusion_programmation for "matinale" or newsletter_destinataires
       const { data: destData } = await supabase
         .from('newsletter_destinataires')
         .select('email')
@@ -290,24 +271,8 @@ serve(async (req) => {
 
     if (recipients.length === 0) {
       return new Response(JSON.stringify({
-        matinale,
-        html: htmlEmail,
-        warning: 'Aucun destinataire configuré',
-        articles_count: (articles || []).length,
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Send via Resend
-    if (!RESEND_API_KEY) {
-      return new Response(JSON.stringify({
-        matinale,
-        html: htmlEmail,
-        error: 'RESEND_API_KEY not configured',
-      }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+        matinale, html: htmlEmail, warning: 'Aucun destinataire configuré', articles_count: (articles || []).length,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     console.log(`[Matinale] Sending to ${recipients.length} recipients`);
@@ -318,20 +283,9 @@ serve(async (req) => {
 
     for (const email of recipients) {
       try {
-        const res = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${RESEND_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: 'ANSUT RADAR <no-reply@notifications.ansut.ci>',
-            to: email,
-            subject,
-            html: htmlEmail,
-          }),
-        });
+        const res = await sendViaGateway(email, subject, htmlEmail);
         if (res.ok) {
+          await res.text();
           successCount++;
         } else {
           failCount++;
@@ -345,25 +299,14 @@ serve(async (req) => {
 
     // Log the diffusion
     await supabase.from('diffusion_logs').insert({
-      canal: 'email',
-      contenu_type: 'matinale',
-      destinataires_count: recipients.length,
-      succes_count: successCount,
-      echec_count: failCount,
-      message: subject,
+      canal: 'email', contenu_type: 'matinale', destinataires_count: recipients.length, succes_count: successCount, echec_count: failCount, message: subject,
     });
 
     console.log(`[Matinale] Sent: ${successCount}, Failed: ${failCount}`);
 
     return new Response(JSON.stringify({
-      matinale,
-      sent: successCount,
-      failed: failCount,
-      articles_count: (articles || []).length,
-      generated_at: new Date().toISOString(),
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+      matinale, sent: successCount, failed: failCount, articles_count: (articles || []).length, generated_at: new Date().toISOString(),
+    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error) {
     console.error('[Matinale] Unexpected error:', error);
