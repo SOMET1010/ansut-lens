@@ -139,16 +139,25 @@ export default function ActualitesPage() {
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
         {/* Colonne principale (70%) - Flux d'articles */}
         <main className="w-full lg:w-3/4 space-y-4">
-          {/* Label de section */}
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              Les immanquables
-            </h2>
-            <span className="text-xs text-muted-foreground">
-              {clusters.length} sujet{clusters.length > 1 ? 's' : ''} • Trié par pertinence
-            </span>
-          </div>
+          {/* Tabs: Immanquables vs Pour Vous */}
+          <Tabs defaultValue="immanquables" className="w-full">
+            <div className="flex items-center justify-between">
+              <TabsList>
+                <TabsTrigger value="immanquables" className="gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Les immanquables
+                </TabsTrigger>
+                <TabsTrigger value="pour-vous" className="gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Pour vous
+                </TabsTrigger>
+              </TabsList>
+              <span className="text-xs text-muted-foreground">
+                {clusters.length} sujet{clusters.length > 1 ? 's' : ''} • Trié par pertinence
+              </span>
+            </div>
+
+            <TabsContent value="immanquables" className="mt-4 space-y-4">
 
           {/* États de chargement */}
           {isLoading ? (
