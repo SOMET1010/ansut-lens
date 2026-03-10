@@ -178,6 +178,18 @@ export default function SourcesPage() {
         </Button>
       </div>
 
+      <Tabs defaultValue="stats" className="w-full">
+        <TabsList>
+          <TabsTrigger value="stats">Statistiques</TabsTrigger>
+          <TabsTrigger value="gestion">Gestion</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="stats">
+          <SourceReliabilityDashboard />
+        </TabsContent>
+
+        <TabsContent value="gestion">
+
       {/* Stats */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         <Card className="glass">
