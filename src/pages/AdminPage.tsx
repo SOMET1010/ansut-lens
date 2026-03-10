@@ -154,6 +154,18 @@ export default function AdminPage() {
           </PermissionGate>
           <PermissionGate permission="manage_newsletters">
             <AdminNavCard
+              color="purple"
+              icon={<Newspaper size={24} />}
+              title="Matinale Com"
+              badge="Quotidien"
+              badgeVariant="info"
+              subtitle="Briefing matinal IA avec Flash Info, Réputation et Post LinkedIn prêt-à-poster."
+              to="/admin/matinale"
+              loading={isLoading}
+            />
+          </PermissionGate>
+          <PermissionGate permission="manage_newsletters">
+            <AdminNavCard
               color="blue"
               icon={<Mail size={24} />}
               title="Newsletters"
