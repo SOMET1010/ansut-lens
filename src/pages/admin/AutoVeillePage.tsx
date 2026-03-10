@@ -5,9 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Eye, Megaphone, BarChart3, Users, RefreshCw, Loader2,
-  TrendingUp, TrendingDown, Minus, ExternalLink, Linkedin, Twitter, Globe
+  TrendingUp, TrendingDown, Minus, ExternalLink, Linkedin, Twitter, Globe,
+  Building, Newspaper, MessageCircle, Layers
 } from 'lucide-react';
 import {
   usePublicationsInstitutionnelles,
@@ -18,6 +20,7 @@ import {
   useCollecteInstitutionnelle,
   useAnalyserEcho,
   useAutoVeilleStats,
+  useArchitectureStats,
 } from '@/hooks/useAutoVeille';
 import { formatDistanceToNow, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -42,6 +45,7 @@ export default function AutoVeillePage() {
   const { data: partDeVoix } = usePartDeVoix();
   const { data: vipComptes } = useVipComptes();
   const { data: vipAlertes } = useVipAlertes();
+  const { data: archStats, isLoading: archLoading } = useArchitectureStats();
   const collecte = useCollecteInstitutionnelle();
   const analyser = useAnalyserEcho();
 
@@ -133,11 +137,12 @@ export default function AutoVeillePage() {
 
       {/* Tabs */}
       <Tabs defaultValue="publications" className="space-y-4">
-        <TabsList className="grid grid-cols-4 w-full max-w-xl">
+        <TabsList className="grid grid-cols-5 w-full max-w-2xl">
           <TabsTrigger value="publications">Publications</TabsTrigger>
-          <TabsTrigger value="echo">Écho & Résonance</TabsTrigger>
+          <TabsTrigger value="echo">Écho</TabsTrigger>
           <TabsTrigger value="voix">Part de Voix</TabsTrigger>
-          <TabsTrigger value="vip">VIP Tracker</TabsTrigger>
+          <TabsTrigger value="architecture">Architecture</TabsTrigger>
+          <TabsTrigger value="vip">VIP</TabsTrigger>
         </TabsList>
 
         {/* Publications Tab */}
@@ -209,6 +214,14 @@ export default function AutoVeillePage() {
             <div className="grid gap-4">
               {(echoMetrics || []).map((echo: any) => {
                 const pub = echo.publications_institutionnelles;
+                // Parse recommandation_ia to separate sentiment and action
+                const recommandation = echo.recommandation_ia || '';
+                const sentimentMatch = recommandation.match(/(?:Sentiment|Citoyens?|Commentaires?)\s*:\s*([^|]+)/i);
+                const actionMatch = recommandation.match(/(?:Action\s*Com|Recommandation|Suggestion)\s*:\s*(.+)/i);
+                const sentimentText = sentimentMatch?.[1]?.trim() || (pub?.resume_commentaires);
+                const actionText = actionMatch?.[1]?.trim();
+                const generalRecommandation = (!sentimentMatch && !actionMatch) ? recommandation : null;
+
                 return (
                   <Card key={echo.id} className="glass">
                     <CardContent className="py-4">
@@ -235,12 +248,35 @@ export default function AutoVeillePage() {
                           <p className="text-xs text-muted-foreground">Portée estimée</p>
                         </div>
                       </div>
-                      <Progress value={Number(echo.score_resonance)} className="mb-2" />
-                      {echo.gap_media && (
-                        <p className="text-xs text-amber-600 dark:text-amber-400 mb-1">⚠️ {echo.gap_media}</p>
+                      <Progress value={Number(echo.score_resonance)} className="mb-3" />
+
+                      {/* Sentiment citoyens */}
+                      {sentimentText && (
+                        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-muted/50 mb-2">
+                          <MessageCircle className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-xs font-medium text-foreground mb-0.5">Sentiment citoyens</p>
+                            <p className="text-xs text-muted-foreground">{sentimentText}</p>
+                          </div>
+                        </div>
                       )}
-                      {echo.recommandation_ia && (
-                        <p className="text-xs text-muted-foreground">💡 {echo.recommandation_ia}</p>
+
+                      {/* Action Com */}
+                      {actionText && (
+                        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-primary/5 border border-primary/10 mb-2">
+                          <Megaphone className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-xs font-medium text-foreground mb-0.5">Action Com recommandée</p>
+                            <p className="text-xs text-muted-foreground">{actionText}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {echo.gap_media && (
+                        <p className="text-xs text-destructive mb-1">⚠️ {echo.gap_media}</p>
+                      )}
+                      {generalRecommandation && (
+                        <p className="text-xs text-muted-foreground">💡 {generalRecommandation}</p>
                       )}
                     </CardContent>
                   </Card>
@@ -314,7 +350,59 @@ export default function AutoVeillePage() {
           )}
         </TabsContent>
 
-        {/* VIP Tracker Tab */}
+        {/* Architecture Tab */}
+        <TabsContent value="architecture" className="space-y-4">
+          <Card className="glass">
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Layers className="h-4 w-4 text-primary" />
+                Architecture des Sources de Veille
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {archLoading ? (
+                <Skeleton className="h-48 w-full" />
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Type de Source</TableHead>
+                      <TableHead>Origine</TableHead>
+                      <TableHead>Ce mois</TableHead>
+                      <TableHead>Utilité pour la Com</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(archStats || []).map((row) => {
+                      const IconComp = row.icon === 'building' ? Building
+                        : row.icon === 'users' ? Users
+                        : row.icon === 'newspaper' ? Newspaper
+                        : MessageCircle;
+                      return (
+                        <TableRow key={row.type}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              <IconComp className="h-4 w-4 text-primary" />
+                              {row.type}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{row.origine}</TableCell>
+                          <TableCell>
+                            <Badge variant={row.count > 0 ? 'default' : 'secondary'}>
+                              {row.count}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{row.utilite}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="vip" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* VIP Comptes */}

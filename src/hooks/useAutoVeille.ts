@@ -150,6 +150,69 @@ export function useAddVipCompte() {
   });
 }
 
+// Architecture stats by source type
+export function useArchitectureStats() {
+  return useQuery({
+    queryKey: ['architecture-stats'],
+    queryFn: async () => {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+      const [interneRes, directeursRes, externeRes, citoyenneRes, vipRes] = await Promise.all([
+        supabase.from('publications_institutionnelles')
+          .select('*', { count: 'exact', head: true })
+          .eq('est_officiel', true)
+          .gte('created_at', startOfMonth),
+        supabase.from('publications_institutionnelles')
+          .select('*', { count: 'exact', head: true })
+          .eq('est_officiel', false)
+          .gte('created_at', startOfMonth),
+        supabase.from('actualites')
+          .select('*', { count: 'exact', head: true })
+          .neq('source_type', 'institutionnel')
+          .gte('created_at', startOfMonth),
+        supabase.from('mentions')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', startOfMonth),
+        supabase.from('vip_comptes')
+          .select('*', { count: 'exact', head: true })
+          .eq('actif', true),
+      ]);
+
+      return [
+        {
+          type: 'Interne',
+          origine: 'Pages LinkedIn/X ANSUT + Site Web',
+          utilite: 'Vérifier la cohérence et l\'archivage',
+          count: interneRes.count || 0,
+          icon: 'building',
+        },
+        {
+          type: 'Directeurs',
+          origine: `Comptes personnels (${vipRes.count || 0} VIP actifs)`,
+          utilite: 'Alerter la Com sur les prises de parole VIP',
+          count: directeursRes.count || 0,
+          icon: 'users',
+        },
+        {
+          type: 'Externe (Médias)',
+          origine: 'Ecofin, CIO Mag, presse tech…',
+          utilite: 'Mesurer l\'impact presse (Earned Media)',
+          count: externeRes.count || 0,
+          icon: 'newspaper',
+        },
+        {
+          type: 'Citoyenne',
+          origine: 'Mots-clés sans "ANSUT" (ex: panne internet CI)',
+          utilite: 'Détecter les crises avant qu\'elles n\'arrivent',
+          count: citoyenneRes.count || 0,
+          icon: 'message-circle',
+        },
+      ];
+    },
+  });
+}
+
 // Stats summary
 export function useAutoVeilleStats() {
   return useQuery({

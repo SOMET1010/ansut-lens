@@ -1,57 +1,97 @@
 
 
-## Analyse de l'existant
+## Radar Center Map with Draggable Quadrant Filters
 
-La majorité de l'infrastructure demandée **existe déjà** :
+Replace the existing `CompactRadar` (a flat text-based grid) with a visual, interactive radar map that displays signals as positioned dots across four quadrants, with draggable filter chips to toggle quadrants on/off.
 
-| Composant | Statut |
-|-----------|--------|
-| Table `publications_institutionnelles` | Existe |
-| Table `echo_metrics` + `part_de_voix` | Existe |
-| Table `vip_comptes` + `vip_alertes` | Existe |
-| Edge function `collecte-institutionnelle` (scraping Firecrawl + Gemini) | Existe |
-| Edge function `analyser-echo-resonance` (score, gap, recommandation IA) | Existe |
-| Page `AutoVeillePage` avec 4 onglets | Existe |
-| Widgets Radar (`EchoResonanceWidget`, `ShareOfVoiceWidget`) | Existe |
-| Comptes VIP ANSUT (LinkedIn, Facebook, X) | Configurés |
+### What it does
 
-## Ce qui manque
+- A circular SVG radar visualization with concentric rings (impact zones) and four labeled quadrants: Tech, Regulation, Market, Reputation
+- Signals are plotted as colored dots based on their quadrant position and severity level (critical = red, warning = amber, info = blue)
+- Four draggable filter chips sit above the radar -- users can drag them to reorder priority or click to toggle visibility of each quadrant
+- Clicking a signal dot shows a tooltip with signal details (title, impact score, trend)
+- Replaces the current `CompactRadar` on the Radar page; also updates the barrel export
 
-### 1. Injection dans la table `actualites`
-Les publications institutionnelles restent isolées dans leur propre table. Elles ne remontent pas dans le flux principal de veille (Actualités / RADAR). Il faut un pont : après collecte, injecter automatiquement chaque publication comme actualité avec `source_type = 'institutionnel'`.
+### Visual layout
 
-### 2. Architecture "4 Sources" (tableau de bord visuel)
-Le user demande un tableau synthétique montrant les 4 catégories de sources (Interne, Directeurs, Externe, Citoyenne) avec leurs stats respectives. Ce n'est pas présent dans l'UI actuelle.
+```text
++---------------------------------------------+
+|  Radar Strategique       [12 signaux actifs] |
++---------------------------------------------+
+|  [TECH] [REGUL.] [MARCHE] [REPUT.]  filters |
+|                                              |
+|              Regulation                      |
+|                 .  .                         |
+|           .         .                        |
+|   Tech  .    (center)   .  Market            |
+|           .         .                        |
+|                 .  .                         |
+|              Reputation                      |
+|                                              |
++---------------------------------------------+
+```
 
-### 3. RSS natif ansut.ci
-Actuellement le site est scrappé via Firecrawl. Pas de parsing RSS dédié.
+### Files to create/modify
 
----
+1. **New: `src/components/radar/RadarCenterMap.tsx`**
+   - SVG-based circular radar with 3 concentric rings and cross-hair axes dividing 4 quadrants
+   - Signals positioned using quadrant angle + impact score for radial distance (higher impact = closer to center)
+   - Each signal is a colored circle with tooltip (using shadcn Tooltip)
+   - Quadrant labels at the edges (TECH top-left, REGUL. top-right, MARCHE bottom-right, REPUT. bottom-left)
+   - Accepts `activeQuadrants` filter state to show/hide quadrants
+   - Loading skeleton state
 
-## Plan d'implémentation
+2. **New: `src/components/radar/QuadrantFilterBar.tsx`**
+   - Row of 4 filter chips using `@dnd-kit/sortable` (already installed) for drag-to-reorder
+   - Each chip is colored by quadrant and toggleable (click to enable/disable)
+   - Manages `activeQuadrants: Set<QuadrantType>` and `quadrantOrder: QuadrantType[]`
+   - Emits `onFilterChange(activeQuadrants)` and `onOrderChange(order)` callbacks
 
-### Tache 1 — Pont publications → actualites
-Dans `collecte-institutionnelle/index.ts`, après chaque insertion dans `publications_institutionnelles`, insérer aussi dans `actualites` avec :
-- `source_type = 'institutionnel'`
-- `source_nom = auteur` (ex: "ANSUT Officiel")
-- `titre` extrait du contenu (premiers 100 chars ou titre AI)
-- `source_url = url_original`
-- Déduplication par `source_url`
+3. **Modified: `src/components/radar/CompactRadar.tsx`**
+   - Refactor to compose `QuadrantFilterBar` + `RadarCenterMap` internally
+   - Same props interface (`signaux`, `isLoading`) so RadarPage needs no changes
+   - Filters signals by active quadrants before passing to the map
 
-### Tache 2 — Dashboard "Architecture des Sources"
-Ajouter un 5e onglet "Architecture" dans `AutoVeillePage` avec un tableau visuel des 4 types de sources :
-- **Interne** : count depuis `publications_institutionnelles` WHERE `est_officiel = true`
-- **Directeurs** : count depuis `vip_comptes` + leurs publications
-- **Externe** : count depuis `actualites` WHERE `source_type != 'institutionnel'`
-- **Citoyenne** : count depuis `social_insights` ou `mentions`
+4. **Modified: `src/components/radar/index.ts`**
+   - Add exports for `RadarCenterMap` and `QuadrantFilterBar`
 
-Chaque ligne affiche : type, origine, nb items ce mois, utilité Com.
+### Technical details
 
-### Tache 3 — Améliorer le résumé commentaires dans l'UI Echo
-Le champ `resume_commentaires` et `action_com` sont concaténés dans `recommandation_ia`. Les séparer dans l'affichage de l'onglet Echo pour plus de lisibilité (sentiment citoyens + action Com distincte).
+**Signal positioning algorithm** (inside RadarCenterMap):
+```typescript
+// Each quadrant occupies a 90-degree sector
+const quadrantAngles = { tech: -135, regulation: -45, market: 45, reputation: 135 };
 
-### Fichiers modifiés
-- `supabase/functions/collecte-institutionnelle/index.ts` — ajout insertion `actualites`
-- `src/pages/admin/AutoVeillePage.tsx` — ajout onglet Architecture + amélioration onglet Echo
-- `src/hooks/useAutoVeille.ts` — ajout hook stats par type de source
+function getSignalPosition(signal: Signal, index: number, total: number) {
+  const baseAngle = quadrantAngles[signal.quadrant];
+  // Spread signals within the 90-degree sector
+  const spread = (index / Math.max(total - 1, 1) - 0.5) * 70;
+  const angle = (baseAngle + spread) * (Math.PI / 180);
+  // Higher impact = closer to center (inverted radius)
+  const radius = 15 + (100 - signal.score_impact) * 0.3;
+  return {
+    x: 50 + radius * Math.cos(angle),
+    y: 50 + radius * Math.sin(angle),
+  };
+}
+```
 
+**Drag-and-drop** uses `@dnd-kit/core` + `@dnd-kit/sortable` (both already installed):
+- `DndContext` + `SortableContext` wrapping the 4 filter chips
+- `useSortable` hook on each chip
+- `onDragEnd` updates the order array
+
+**Color mapping** for quadrants:
+- Tech: blue (#3B82F6)
+- Regulation: amber (#F59E0B)
+- Market: green (#22C55E)
+- Reputation: purple (#A855F7)
+
+**Signal dot colors** by severity level (reusing existing theme tokens):
+- critical: `signal-critical` (red)
+- warning: `signal-warning` (amber)
+- info: `primary` (blue)
+
+**No database changes needed.** Uses existing `signaux` table data via `useRadarSignaux` hook.
+
+**No new dependencies.** Uses `@dnd-kit/*` (installed), shadcn Tooltip (installed), and native SVG.
