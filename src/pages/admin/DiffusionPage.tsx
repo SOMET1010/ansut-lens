@@ -29,7 +29,7 @@ const CANAL_CONFIG: Record<CanalDiffusion, CanalMeta> = {
   sms: { label: 'SMS', icon: Phone, color: 'text-blue-500', destLabel: 'Numéro', placeholder: '225XXXXXXXXXX' },
   telegram: { label: 'Telegram', icon: Send, color: 'text-sky-400', destLabel: 'Chat ID', placeholder: '2250505XXXXXX' },
   email: { label: 'Email', icon: Mail, color: 'text-emerald-500', destLabel: 'Email', placeholder: 'nom@domaine.com' },
-  whatsapp: { label: 'WhatsApp', icon: MessageCircle, color: 'text-green-500', destLabel: 'Numéro', placeholder: '' },
+  whatsapp: { label: 'WhatsApp', icon: MessageCircle, color: 'text-green-500', destLabel: 'Numéro', placeholder: '225XXXXXXXXXX' },
 };
 
 export default function DiffusionPage() {
