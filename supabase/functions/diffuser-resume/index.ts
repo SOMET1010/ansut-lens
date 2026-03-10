@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 interface DiffuserPayload {
-  canal: "sms" | "telegram" | "email";
+  canal: "sms" | "telegram" | "email" | "whatsapp";
   contenu_type?: "briefing" | "newsletter" | "alerte";
   message?: string;
 }
