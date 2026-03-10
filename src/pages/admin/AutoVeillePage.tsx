@@ -350,7 +350,59 @@ export default function AutoVeillePage() {
           )}
         </TabsContent>
 
-        {/* VIP Tracker Tab */}
+        {/* Architecture Tab */}
+        <TabsContent value="architecture" className="space-y-4">
+          <Card className="glass">
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Layers className="h-4 w-4 text-primary" />
+                Architecture des Sources de Veille
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {archLoading ? (
+                <Skeleton className="h-48 w-full" />
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Type de Source</TableHead>
+                      <TableHead>Origine</TableHead>
+                      <TableHead>Ce mois</TableHead>
+                      <TableHead>Utilité pour la Com</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(archStats || []).map((row) => {
+                      const IconComp = row.icon === 'building' ? Building
+                        : row.icon === 'users' ? Users
+                        : row.icon === 'newspaper' ? Newspaper
+                        : MessageCircle;
+                      return (
+                        <TableRow key={row.type}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              <IconComp className="h-4 w-4 text-primary" />
+                              {row.type}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{row.origine}</TableCell>
+                          <TableCell>
+                            <Badge variant={row.count > 0 ? 'default' : 'secondary'}>
+                              {row.count}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{row.utilite}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="vip" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* VIP Comptes */}
