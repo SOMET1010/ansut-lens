@@ -5,9 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Eye, Megaphone, BarChart3, Users, RefreshCw, Loader2,
-  TrendingUp, TrendingDown, Minus, ExternalLink, Linkedin, Twitter, Globe
+  TrendingUp, TrendingDown, Minus, ExternalLink, Linkedin, Twitter, Globe,
+  Building, Newspaper, MessageCircle, Layers
 } from 'lucide-react';
 import {
   usePublicationsInstitutionnelles,
@@ -18,6 +20,7 @@ import {
   useCollecteInstitutionnelle,
   useAnalyserEcho,
   useAutoVeilleStats,
+  useArchitectureStats,
 } from '@/hooks/useAutoVeille';
 import { formatDistanceToNow, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
