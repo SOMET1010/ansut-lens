@@ -116,6 +116,8 @@ Analyse :
                     score_resonance: { type: "number" },
                     gap_media: { type: "string" },
                     recommandation_ia: { type: "string" },
+                    resume_commentaires: { type: "string", description: "Résumé du sentiment et demandes des citoyens dans les commentaires" },
+                    action_com: { type: "string", description: "Action concrète suggérée pour la Com" },
                   },
                   required: ["nb_reprises_presse", "score_resonance", "recommandation_ia"],
                 },
@@ -140,8 +142,16 @@ Analyse :
               portee_estimee: analysis.portee_estimee || 0,
               score_resonance: Math.min(100, Math.max(0, analysis.score_resonance || 0)),
               gap_media: analysis.gap_media,
-              recommandation_ia: analysis.recommandation_ia,
+              recommandation_ia: `${analysis.recommandation_ia || ""}${analysis.resume_commentaires ? "\n\n💬 Commentaires : " + analysis.resume_commentaires : ""}${analysis.action_com ? "\n\n🎯 Action Com : " + analysis.action_com : ""}`,
             });
+
+            // Update publication with comment summary
+            if (analysis.resume_commentaires) {
+              await supabase
+                .from("publications_institutionnelles")
+                .update({ resume_commentaires: analysis.resume_commentaires })
+                .eq("id", pub.id);
+            }
 
             results.push({ publication_id: pub.id, score: analysis.score_resonance });
           }
