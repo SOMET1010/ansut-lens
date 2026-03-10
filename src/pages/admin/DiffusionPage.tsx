@@ -175,7 +175,7 @@ function ChannelCard({ config, meta, Icon, destCount, onToggle, onUpdateFrequenc
   };
 
   return (
-    <Card className={isWhatsapp ? 'opacity-60' : ''}>
+    <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
