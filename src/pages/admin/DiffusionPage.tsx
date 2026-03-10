@@ -138,7 +138,6 @@ interface ChannelCardProps {
   config: DiffusionProgrammation;
   meta: CanalMeta;
   Icon: LucideIcon;
-  isWhatsapp: boolean;
   destCount: number;
   onToggle: (actif: boolean) => void;
   onUpdateFrequence: (f: string) => void;
