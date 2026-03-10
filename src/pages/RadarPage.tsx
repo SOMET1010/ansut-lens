@@ -23,6 +23,8 @@ import {
   MediaImpactWidget,
   ShareOfVoiceWidget,
   EchoResonanceWidget,
+  InfluenceursMetierWidget,
+  RadarProximiteWidget,
 } from '@/components/radar';
 
 const periodLabels: Record<PeriodFilter, string> = {
