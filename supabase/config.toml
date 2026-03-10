@@ -80,3 +80,6 @@ verify_jwt = false
 
 [functions.generer-rapport-evenement]
 verify_jwt = false
+
+[functions.analyser-post-vip]
+verify_jwt = false

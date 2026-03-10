@@ -1,4 +1,4 @@
-import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode, Radio, Activity, Newspaper, CalendarDays } from 'lucide-react';
+import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode, Radio, Activity, Newspaper, CalendarDays, Eye, FileText } from 'lucide-react';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { SystemHealthWidget } from '@/components/admin/SystemHealthWidget';
 import { AdminNavCard } from '@/components/admin/AdminNavCard';

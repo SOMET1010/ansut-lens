@@ -167,6 +167,11 @@ const App = () => (
                             <Route path="/admin/evenements" element={<EvenementsPage />} />
                           </Route>
                           
+                          <Route element={<PermissionRoute permission="manage_newsletters" />}>
+                            <Route path="/admin/shadow-tracker" element={<ShadowTrackerPage />} />
+                            <Route path="/admin/coffre-contenu" element={<CoffreContenuPage />} />
+                          </Route>
+                          
                           <Route element={<PermissionRoute permission="manage_roles" />}>
                             <Route path="/admin/roles" element={<RolesPage />} />
                           </Route>
