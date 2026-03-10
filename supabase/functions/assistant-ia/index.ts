@@ -61,6 +61,7 @@ serve(async (req) => {
       });
     }
     // --- End Authentication ---
+    const userId = claimsData.claims.sub as string;
 
     const { messages, context, mode } = await req.json();
     
