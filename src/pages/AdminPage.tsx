@@ -166,6 +166,18 @@ export default function AdminPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <PermissionGate permission="manage_newsletters">
             <AdminNavCard
+              color="blue"
+              icon={<Megaphone size={24} />}
+              title="Auto-Veille Institutionnelle"
+              badge="Miroir"
+              badgeVariant="info"
+              subtitle="Mesurez la résonance de vos publications, part de voix et VIP tracker."
+              to="/admin/auto-veille"
+              loading={isLoading}
+            />
+          </PermissionGate>
+          <PermissionGate permission="manage_newsletters">
+            <AdminNavCard
               color="orange"
               icon={<Eye size={24} />}
               title="Shadow Tracker VIP"
