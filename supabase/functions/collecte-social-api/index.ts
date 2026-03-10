@@ -59,6 +59,9 @@ serve(async (req) => {
         } else if (platform === "linkedin") {
           const collected = await collectLinkedIn(supabase, config);
           results[platform] = { collected, errors: [] };
+        } else if (platform === "facebook") {
+          const collected = await collectFacebook(supabase, config);
+          results[platform] = { collected, errors: [] };
         }
       } catch (err) {
         console.error(`Error collecting ${platform}:`, err);
@@ -102,14 +105,23 @@ async function collectTwitter(
   config: any,
   query: string
 ): Promise<number> {
-  // Decode the bearer token (may contain URL-encoded chars)
   let bearerToken = Deno.env.get("TWITTER_BEARER_TOKEN") || "";
   bearerToken = decodeURIComponent(bearerToken);
-
   if (!bearerToken) throw new Error("TWITTER_BEARER_TOKEN not configured");
 
+  // Get ANSUT VIP accounts on Twitter to prioritize their tweets
+  const { data: vipAccounts } = await supabase
+    .from("vip_comptes")
+    .select("identifiant")
+    .eq("plateforme", "twitter")
+    .eq("actif", true);
+
+  // Build query: ANSUT accounts + general keywords
+  const fromClauses = (vipAccounts || []).map((v: any) => `from:${v.identifiant}`).join(" OR ");
+  const fullQuery = fromClauses ? `(${fromClauses}) OR (${query})` : query;
+
   const url = new URL("https://api.x.com/2/tweets/search/recent");
-  url.searchParams.set("query", query);
+  url.searchParams.set("query", fullQuery);
   url.searchParams.set("max_results", "20");
   url.searchParams.set(
     "tweet.fields",
@@ -259,10 +271,18 @@ async function collectLinkedIn(
     throw new Error("LinkedIn: no access token received");
   }
 
-  // Step 2: Get organization posts (limited by Client Credentials scope)
-  // With Client Credentials, we can access organization data if the app has permissions
-  // We'll try to get posts from organizations configured in the platform config
-  const orgIds: string[] = (config.config as any)?.organization_ids || [];
+  // Step 2: Get organization IDs from config AND vip_comptes
+  const configOrgIds: string[] = (config.config as any)?.organization_ids || [];
+  
+  // Also get LinkedIn VIP accounts (ANSUT etc.)
+  const { data: vipAccounts } = await supabase
+    .from("vip_comptes")
+    .select("identifiant")
+    .eq("plateforme", "linkedin")
+    .eq("actif", true);
+
+  const vipOrgIds = (vipAccounts || []).map((v: any) => v.identifiant);
+  const orgIds = [...new Set([...configOrgIds, ...vipOrgIds])];
 
   let totalInserted = 0;
 
@@ -337,4 +357,124 @@ async function collectLinkedIn(
     .eq("id", config.id);
 
   return totalInserted;
+}
+
+// ─── Facebook (via Firecrawl scraping) ──────────────────────────────────────
+
+async function collectFacebook(
+  supabase: any,
+  config: any
+): Promise<number> {
+  const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
+  if (!FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY not configured");
+
+  // Get ANSUT Facebook VIP accounts
+  const { data: vipAccounts } = await supabase
+    .from("vip_comptes")
+    .select("identifiant, url_profil, nom")
+    .eq("plateforme", "facebook")
+    .eq("actif", true);
+
+  if (!vipAccounts || vipAccounts.length === 0) {
+    console.log("No Facebook VIP accounts configured");
+    return 0;
+  }
+
+  let totalInserted = 0;
+
+  for (const account of vipAccounts) {
+    try {
+      const pageUrl = account.url_profil || `https://www.facebook.com/${account.identifiant}`;
+      console.log(`Scraping Facebook page: ${account.nom} (${pageUrl})`);
+
+      const scrapeResponse = await fetch("https://api.firecrawl.dev/v1/scrape", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          url: pageUrl,
+          formats: ["markdown"],
+          onlyMainContent: true,
+          waitFor: 5000,
+        }),
+      });
+
+      if (!scrapeResponse.ok) {
+        console.error(`Firecrawl error for ${account.nom}: ${scrapeResponse.status}`);
+        continue;
+      }
+
+      const scrapeData = await scrapeResponse.json();
+      const markdown = scrapeData.data?.markdown || "";
+
+      if (!markdown || markdown.length < 50) {
+        console.log(`No meaningful content from ${account.nom}`);
+        continue;
+      }
+
+      // Extract individual posts from the scraped content
+      const postBlocks = markdown.split(/\n{3,}/).filter((b: string) => b.trim().length > 30);
+
+      for (const block of postBlocks.slice(0, 10)) {
+        const text = block.trim().substring(0, 1000);
+
+        // Generate a deterministic ID to avoid duplicates
+        const postHash = await hashText(text.substring(0, 200));
+
+        const { data: existing } = await supabase
+          .from("social_insights")
+          .select("id")
+          .eq("platform_post_id", postHash)
+          .eq("plateforme", "facebook")
+          .maybeSingle();
+
+        if (existing) continue;
+
+        // Skip navigation/menu/login content
+        if (/log\s*in|sign\s*up|create.*account|forgot.*password|cookie/i.test(text)) continue;
+
+        const { error } = await supabase.from("social_insights").insert({
+          plateforme: "facebook",
+          type_contenu: "post",
+          contenu: text,
+          auteur: account.nom,
+          auteur_url: pageUrl,
+          url_original: pageUrl,
+          engagement_score: 0,
+          sentiment: 0,
+          est_critique: false,
+          is_official_api: false,
+          is_manual_entry: false,
+          platform_post_id: postHash,
+        });
+
+        if (!error) totalInserted++;
+      }
+    } catch (err) {
+      console.error(`Facebook scrape error for ${account.nom}:`, err);
+    }
+  }
+
+  // Update last_sync
+  await supabase
+    .from("social_api_config")
+    .update({
+      quota_used: (config.quota_used || 0) + totalInserted,
+      last_sync: new Date().toISOString(),
+    })
+    .eq("id", config.id);
+
+  return totalInserted;
+}
+
+async function hashText(text: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .substring(0, 32);
 }
