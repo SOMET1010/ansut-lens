@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 interface DiffuserPayload {
-  canal: "sms" | "telegram" | "email";
+  canal: "sms" | "telegram" | "email" | "whatsapp";
   contenu_type?: "briefing" | "newsletter" | "alerte";
   message?: string;
 }
@@ -70,8 +70,8 @@ Deno.serve(async (req) => {
     const payload: DiffuserPayload = await req.json();
     const { canal, contenu_type = "briefing" } = payload;
 
-    if (!canal || !["sms", "telegram", "email"].includes(canal)) {
-      throw new Error("Canal invalide. Utilisez: sms, telegram, email");
+    if (!canal || !["sms", "telegram", "email", "whatsapp"].includes(canal)) {
+      throw new Error("Canal invalide. Utilisez: sms, telegram, email, whatsapp");
     }
 
     // 1. Récupérer la config du canal
@@ -168,6 +168,19 @@ Deno.serve(async (req) => {
           if (response.ok) { succes_count++; details.push({ destinataire: email, statut: "sent" }); }
           else { const errorText = await response.text(); echec_count++; details.push({ destinataire: email, statut: "failed", erreur: errorText }); }
         } catch (err) { echec_count++; details.push({ destinataire: email, statut: "failed", erreur: String(err) }); }
+      }
+    } else if (canal === "whatsapp") {
+      for (const dest of destinataires) {
+        const numero = (dest.numero || dest).replace(/^\+/, "");
+        try {
+          const response = await fetch(unifiedUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ to: numero, from: smsFrom, content: message, username, password, channel: "WhatsApp" }),
+          });
+          if (response.ok) { succes_count++; details.push({ destinataire: numero, statut: "sent" }); }
+          else { const errorText = await response.text(); echec_count++; details.push({ destinataire: numero, statut: "failed", erreur: errorText }); }
+        } catch (err) { echec_count++; details.push({ destinataire: numero, statut: "failed", erreur: String(err) }); }
       }
     }
 

@@ -29,7 +29,7 @@ const CANAL_CONFIG: Record<CanalDiffusion, CanalMeta> = {
   sms: { label: 'SMS', icon: Phone, color: 'text-blue-500', destLabel: 'Numéro', placeholder: '225XXXXXXXXXX' },
   telegram: { label: 'Telegram', icon: Send, color: 'text-sky-400', destLabel: 'Chat ID', placeholder: '2250505XXXXXX' },
   email: { label: 'Email', icon: Mail, color: 'text-emerald-500', destLabel: 'Email', placeholder: 'nom@domaine.com' },
-  whatsapp: { label: 'WhatsApp', icon: MessageCircle, color: 'text-green-500', destLabel: 'Numéro', placeholder: '' },
+  whatsapp: { label: 'WhatsApp', icon: MessageCircle, color: 'text-green-500', destLabel: 'Numéro', placeholder: '225XXXXXXXXXX' },
 };
 
 export default function DiffusionPage() {
@@ -63,7 +63,6 @@ export default function DiffusionPage() {
             const meta = CANAL_CONFIG[canal];
             if (!meta) return null;
             const Icon = meta.icon;
-            const isWhatsapp = canal === 'whatsapp';
             const destCount = (config.destinataires || []).length;
 
             return (
@@ -72,7 +71,6 @@ export default function DiffusionPage() {
                 config={config}
                 meta={meta}
                 Icon={Icon}
-                isWhatsapp={isWhatsapp}
                 destCount={destCount}
                 onToggle={(actif) => updateConfig.mutate({ id: config.id, updates: { actif } })}
                 onUpdateFrequence={(frequence) => updateConfig.mutate({ id: config.id, updates: { frequence } })}
@@ -140,7 +138,6 @@ interface ChannelCardProps {
   config: DiffusionProgrammation;
   meta: CanalMeta;
   Icon: LucideIcon;
-  isWhatsapp: boolean;
   destCount: number;
   onToggle: (actif: boolean) => void;
   onUpdateFrequence: (f: string) => void;
@@ -150,7 +147,7 @@ interface ChannelCardProps {
   isSending: boolean;
 }
 
-function ChannelCard({ config, meta, Icon, isWhatsapp, destCount, onToggle, onUpdateFrequence, onUpdateHeure, onUpdateDestinataires, onSendNow, isSending }: ChannelCardProps) {
+function ChannelCard({ config, meta, Icon, destCount, onToggle, onUpdateFrequence, onUpdateHeure, onUpdateDestinataires, onSendNow, isSending }: ChannelCardProps) {
   const [destDialogOpen, setDestDialogOpen] = useState(false);
   const [newDest, setNewDest] = useState('');
   const [destName, setDestName] = useState('');
@@ -178,7 +175,7 @@ function ChannelCard({ config, meta, Icon, isWhatsapp, destCount, onToggle, onUp
   };
 
   return (
-    <Card className={isWhatsapp ? 'opacity-60' : ''}>
+    <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -186,23 +183,14 @@ function ChannelCard({ config, meta, Icon, isWhatsapp, destCount, onToggle, onUp
             <CardTitle className="text-lg">{meta.label}</CardTitle>
           </div>
           <div className="flex items-center gap-2">
-            {isWhatsapp ? (
-              <Badge variant="outline" className="text-xs">Bientôt</Badge>
-            ) : (
-              <>
-                <Badge variant={config.actif ? 'default' : 'secondary'} className="text-xs">
-                  {config.actif ? 'Actif' : 'Inactif'}
-                </Badge>
-                <Switch checked={config.actif} onCheckedChange={onToggle} />
-              </>
-            )}
+            <Badge variant={config.actif ? 'default' : 'secondary'} className="text-xs">
+              {config.actif ? 'Actif' : 'Inactif'}
+            </Badge>
+            <Switch checked={config.actif} onCheckedChange={onToggle} />
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {isWhatsapp ? (
-          <p className="text-sm text-muted-foreground">Ce canal sera disponible prochainement.</p>
-        ) : (
           <>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -263,7 +251,6 @@ function ChannelCard({ config, meta, Icon, isWhatsapp, destCount, onToggle, onUp
               </Button>
             </div>
           </>
-        )}
       </CardContent>
     </Card>
   );
