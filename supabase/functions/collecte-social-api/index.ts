@@ -271,10 +271,18 @@ async function collectLinkedIn(
     throw new Error("LinkedIn: no access token received");
   }
 
-  // Step 2: Get organization posts (limited by Client Credentials scope)
-  // With Client Credentials, we can access organization data if the app has permissions
-  // We'll try to get posts from organizations configured in the platform config
-  const orgIds: string[] = (config.config as any)?.organization_ids || [];
+  // Step 2: Get organization IDs from config AND vip_comptes
+  const configOrgIds: string[] = (config.config as any)?.organization_ids || [];
+  
+  // Also get LinkedIn VIP accounts (ANSUT etc.)
+  const { data: vipAccounts } = await supabase
+    .from("vip_comptes")
+    .select("identifiant")
+    .eq("plateforme", "linkedin")
+    .eq("actif", true);
+
+  const vipOrgIds = (vipAccounts || []).map((v: any) => v.identifiant);
+  const orgIds = [...new Set([...configOrgIds, ...vipOrgIds])];
 
   let totalInserted = 0;
 
