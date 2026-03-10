@@ -130,8 +130,8 @@ serve(async (req) => {
       source_url: a.source_url || null,
     }));
 
-    const actualitesList = verifiedActualites.slice(0, 7).map((a, i) => 
-      `[${i + 1}] ${a.titre}${a.resume ? ` : ${a.resume.substring(0, 120)}` : ''} (importance: ${a.importance || 50}/100, catégorie: ${a.categorie || 'non classé'}, source: ${a.source_nom || 'inconnue'}${a.source_url ? `, url: ${a.source_url}` : ', PAS DE LIEN SOURCE'})`
+    const actualitesList = uniqueActualites.map((a, i) => 
+      `[${i + 1}] ${a.titre}${a.resume ? ` : ${a.resume.substring(0, 120)}` : ''} (importance: ${a.importance || 50}/100, catégorie: ${a.categorie || 'non classé'}, source: ${a.source_nom || 'inconnue'}, url: ${a.source_url})`
     ).join('\n');
 
     const alertesCritiques = signaux.length;
