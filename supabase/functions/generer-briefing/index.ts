@@ -155,8 +155,8 @@ serve(async (req) => {
       personalization += `\nRaisons de rejets passés par cet utilisateur : ${[...new Set(rejectedReasons)].slice(0, 5).join('; ')}.`;
     }
 
-    const context = verifiedActualites.length > 0
-      ? `Actualités vérifiées du jour:\n${actualitesList}${alertesDetails}${personalization}`
+    const context = uniqueActualites.length > 0
+      ? `Actualités vérifiées du jour (sources avec URL accessible uniquement):\n${actualitesList}${alertesDetails}${personalization}`
       : `Aucune actualité récente disponible.${alertesDetails}${personalization}`;
 
     console.log('Generating briefing with context length:', context.length, 'for user:', userName);
