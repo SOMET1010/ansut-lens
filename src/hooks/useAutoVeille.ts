@@ -238,26 +238,3 @@ export function useAutoVeilleStats() {
     },
   });
 }
-  return useQuery({
-    queryKey: ['auto-veille-stats'],
-    queryFn: async () => {
-      const [pubRes, echoRes, voixRes, vipRes] = await Promise.all([
-        supabase.from('publications_institutionnelles').select('*', { count: 'exact', head: true }),
-        supabase.from('echo_metrics').select('score_resonance').order('created_at', { ascending: false }).limit(10),
-        supabase.from('part_de_voix').select('*').order('mois', { ascending: false }).limit(1),
-        supabase.from('vip_comptes').select('*', { count: 'exact', head: true }).eq('actif', true),
-      ]);
-
-      const avgResonance = echoRes.data?.length
-        ? echoRes.data.reduce((s: number, e: any) => s + (Number(e.score_resonance) || 0), 0) / echoRes.data.length
-        : 0;
-
-      return {
-        totalPublications: pubRes.count || 0,
-        avgResonance: Math.round(avgResonance),
-        latestVoix: voixRes.data?.[0] || null,
-        activeVip: vipRes.count || 0,
-      };
-    },
-  });
-}
