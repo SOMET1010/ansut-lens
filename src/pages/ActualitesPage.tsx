@@ -1,8 +1,9 @@
 import { useState, useCallback } from 'react';
-import { TrendingUp, Loader2, Newspaper } from 'lucide-react';
+import { TrendingUp, Loader2, Newspaper, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useActualites, useTriggerCollecte, useEnrichActualite, useYesterdayArticles, useBatchSentiment } from '@/hooks/useActualites';
 import { useArticleClusters } from '@/hooks/useArticleClusters';
 import { useSidebarAnalytics } from '@/hooks/useSidebarAnalytics';
@@ -10,6 +11,7 @@ import { ArticleCluster } from '@/components/actualites/ArticleCluster';
 import { SmartSidebar } from '@/components/actualites/SmartSidebar';
 import { WatchHeader } from '@/components/actualites/WatchHeader';
 import { BigSearchBar } from '@/components/actualites/BigSearchBar';
+import { PourVousFeed } from '@/components/actualites/PourVousFeed';
 import { toast } from 'sonner';
 
 // Map période vers maxAgeHours
@@ -137,16 +139,25 @@ export default function ActualitesPage() {
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
         {/* Colonne principale (70%) - Flux d'articles */}
         <main className="w-full lg:w-3/4 space-y-4">
-          {/* Label de section */}
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              Les immanquables
-            </h2>
-            <span className="text-xs text-muted-foreground">
-              {clusters.length} sujet{clusters.length > 1 ? 's' : ''} • Trié par pertinence
-            </span>
-          </div>
+          {/* Tabs: Immanquables vs Pour Vous */}
+          <Tabs defaultValue="immanquables" className="w-full">
+            <div className="flex items-center justify-between">
+              <TabsList>
+                <TabsTrigger value="immanquables" className="gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Les immanquables
+                </TabsTrigger>
+                <TabsTrigger value="pour-vous" className="gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Pour vous
+                </TabsTrigger>
+              </TabsList>
+              <span className="text-xs text-muted-foreground">
+                {clusters.length} sujet{clusters.length > 1 ? 's' : ''} • Trié par pertinence
+              </span>
+            </div>
+
+            <TabsContent value="immanquables" className="mt-4 space-y-4">
 
           {/* États de chargement */}
           {isLoading ? (
@@ -216,6 +227,12 @@ export default function ActualitesPage() {
               {clusters.length} sujet{clusters.length > 1 ? 's' : ''} affiché{clusters.length > 1 ? 's' : ''}
             </p>
           )}
+            </TabsContent>
+
+            <TabsContent value="pour-vous" className="mt-4">
+              <PourVousFeed />
+            </TabsContent>
+          </Tabs>
         </main>
 
         {/* Sidebar (30%) - Analytics */}

@@ -3,3 +3,5 @@ export { ArticleCluster } from './ArticleCluster';
 export { SmartSidebar } from './SmartSidebar';
 export { WatchHeader } from './WatchHeader';
 export { BigSearchBar } from './BigSearchBar';
+export { FeedbackButtons } from './FeedbackButtons';
+export { PourVousFeed } from './PourVousFeed';

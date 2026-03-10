@@ -61,6 +61,7 @@ serve(async (req) => {
       });
     }
     // --- End Authentication ---
+    const userId = claimsData.claims.sub as string;
 
     const { messages, context, mode } = await req.json();
     
@@ -105,6 +106,31 @@ MODE ANALYSE ACTIVÉ:
     // Add mode-specific instructions
     if (mode && modePrompts[mode]) {
       contextualPrompt += modePrompts[mode];
+    }
+
+    // Fetch user profile for personalization
+    const serviceClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    
+    const [profileRes, prefsRes, roleRes] = await Promise.all([
+      serviceClient.from('profiles').select('full_name, department').eq('id', userId).single(),
+      serviceClient.from('user_preferences_ia').select('sujets_favoris, portrait_ia').eq('user_id', userId).maybeSingle(),
+      serviceClient.from('user_roles').select('role').eq('user_id', userId).single(),
+    ]);
+
+    const userName = profileRes.data?.full_name || 'utilisateur';
+    const userDept = profileRes.data?.department;
+    const userPrefs = prefsRes.data;
+    const userRole = roleRes.data?.role || 'user';
+
+    contextualPrompt += `\n\nPERSONNALISATION :
+- Tu t'adresses à ${userName}${userDept ? ` du département ${userDept}` : ''} (rôle: ${userRole}).
+- Salue-le par son prénom de manière chaleureuse.`;
+
+    if (userPrefs?.sujets_favoris?.length) {
+      contextualPrompt += `\n- Ses sujets d'intérêt principaux : ${userPrefs.sujets_favoris.join(', ')}.`;
+    }
+    if (userPrefs?.portrait_ia) {
+      contextualPrompt += `\n- Son profil de veille : ${userPrefs.portrait_ia}`;
     }
     
     // Add context

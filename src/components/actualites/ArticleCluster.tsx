@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, ExternalLink, Share2, MessageSquare, Layers, User, Building, Sparkles, Loader2, ArrowRight, FileText, AlertCircle, Cpu, TrendingUp, Scale, Star } from 'lucide-react';
+import { FeedbackButtons } from './FeedbackButtons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -231,12 +232,10 @@ export function ArticleCluster({
       {/* Footer Actions - Hiérarchie corrigée */}
       <div className="bg-muted/30 px-5 py-2.5 border-t border-border/50 flex justify-between items-center">
         {/* Actions sociales (inchangées) */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <FeedbackButtons actualiteId={mainArticle.id} compact />
           <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground">
             <Share2 className="h-3.5 w-3.5 mr-1" /> Partager
-          </Button>
-          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground">
-            <MessageSquare className="h-3.5 w-3.5 mr-1" /> Commenter
           </Button>
         </div>
         

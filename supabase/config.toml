@@ -92,3 +92,6 @@ verify_jwt = false
 
 [functions.analyser-echo-resonance]
 verify_jwt = false
+
+[functions.profil-veille]
+verify_jwt = false
