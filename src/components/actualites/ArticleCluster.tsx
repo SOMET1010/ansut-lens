@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, ExternalLink, Share2, MessageSquare, Layers, User, Building, Sparkles, Loader2, ArrowRight, FileText, AlertCircle, Cpu, TrendingUp, Scale, Star } from 'lucide-react';
+import { FeedbackButtons } from './FeedbackButtons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
