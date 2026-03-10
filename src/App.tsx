@@ -32,6 +32,8 @@ import SourcesPage from "@/pages/admin/SourcesPage";
 import RolesPage from "@/pages/admin/RolesPage";
 import MatinalePage from "@/pages/admin/MatinalePage";
 import EvenementsPage from "@/pages/admin/EvenementsPage";
+import ShadowTrackerPage from "@/pages/admin/ShadowTrackerPage";
+import CoffreContenuPage from "@/pages/admin/CoffreContenuPage";
 import AlertesHistoryPage from "@/pages/AlertesHistoryPage";
 import PresentationPage from "@/pages/PresentationPage";
 import ProfilePage from "@/pages/ProfilePage";
