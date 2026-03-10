@@ -1,4 +1,4 @@
-import { ExternalLink, Bookmark, Share2, Globe, Clock, Zap } from 'lucide-react';
+import { ExternalLink, Bookmark, Share2, Globe, Clock, Zap, Target } from 'lucide-react';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { cn } from '@/lib/utils';
 import { Actualite } from '@/types';
@@ -119,6 +119,17 @@ export function IntelligenceCard({ actualite, onOpenSource, onSave, onShare }: I
           <p className="text-sm text-muted-foreground leading-relaxed mb-3 line-clamp-3 max-w-3xl">
             {summary}
           </p>
+        )}
+
+        {/* Impact ANSUT */}
+        {actualite.impact_ansut && (
+          <div className="flex items-start gap-2 mb-3 p-2.5 rounded-md bg-primary/5 border border-primary/20">
+            <Target size={14} className="text-primary mt-0.5 shrink-0" />
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Impact ANSUT</span>
+              <p className="text-xs text-foreground/80 leading-relaxed mt-0.5">{actualite.impact_ansut}</p>
+            </div>
+          </div>
         )}
 
         {/* Tags */}

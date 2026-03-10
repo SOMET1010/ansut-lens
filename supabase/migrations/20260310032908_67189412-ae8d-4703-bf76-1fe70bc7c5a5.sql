@@ -1,0 +1,1 @@
+ALTER TABLE public.actualites ADD COLUMN impact_ansut TEXT DEFAULT NULL;

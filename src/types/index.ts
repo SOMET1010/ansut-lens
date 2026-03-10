@@ -49,6 +49,7 @@ export interface Actualite {
   analyse_ia?: string;
   pourquoi_important?: string;
   sentiment?: SentimentValue;
+  impact_ansut?: string;
 }
 
 export interface Mention {

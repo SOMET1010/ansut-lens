@@ -19,6 +19,7 @@ import {
   SocialPulseWidget,
   RadarKpiTiles,
   RealtimeAlertFeed,
+  WeakSignalDetector,
 } from '@/components/radar';
 
 const periodLabels: Record<PeriodFilter, string> = {
@@ -93,6 +94,9 @@ export default function RadarPage() {
 
       {/* Daily Briefing */}
       <DailyBriefing />
+
+      {/* Weak Signal Detector */}
+      <WeakSignalDetector />
 
       {/* Critical Alert Banner */}
       <CriticalAlertBanner 
