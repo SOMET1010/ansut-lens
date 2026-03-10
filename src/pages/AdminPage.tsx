@@ -176,6 +176,7 @@ export default function AdminPage() {
               loading={isLoading}
             />
           </PermissionGate>
+          <PermissionGate permission="manage_newsletters">
             <AdminNavCard
               color="orange"
               icon={<Radio size={24} />}
