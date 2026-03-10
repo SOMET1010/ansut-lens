@@ -183,16 +183,10 @@ function ChannelCard({ config, meta, Icon, destCount, onToggle, onUpdateFrequenc
             <CardTitle className="text-lg">{meta.label}</CardTitle>
           </div>
           <div className="flex items-center gap-2">
-            {isWhatsapp ? (
-              <Badge variant="outline" className="text-xs">Bientôt</Badge>
-            ) : (
-              <>
-                <Badge variant={config.actif ? 'default' : 'secondary'} className="text-xs">
-                  {config.actif ? 'Actif' : 'Inactif'}
-                </Badge>
-                <Switch checked={config.actif} onCheckedChange={onToggle} />
-              </>
-            )}
+            <Badge variant={config.actif ? 'default' : 'secondary'} className="text-xs">
+              {config.actif ? 'Actif' : 'Inactif'}
+            </Badge>
+            <Switch checked={config.actif} onCheckedChange={onToggle} />
           </div>
         </div>
       </CardHeader>
