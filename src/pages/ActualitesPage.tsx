@@ -227,6 +227,12 @@ export default function ActualitesPage() {
               {clusters.length} sujet{clusters.length > 1 ? 's' : ''} affiché{clusters.length > 1 ? 's' : ''}
             </p>
           )}
+            </TabsContent>
+
+            <TabsContent value="pour-vous" className="mt-4">
+              <PourVousFeed />
+            </TabsContent>
+          </Tabs>
         </main>
 
         {/* Sidebar (30%) - Analytics */}
