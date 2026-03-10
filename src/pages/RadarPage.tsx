@@ -19,6 +19,7 @@ import {
   SocialPulseWidget,
   RadarKpiTiles,
   RealtimeAlertFeed,
+  WeakSignalDetector,
 } from '@/components/radar';
 
 const periodLabels: Record<PeriodFilter, string> = {
