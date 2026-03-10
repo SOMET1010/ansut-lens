@@ -32,7 +32,7 @@ interface CollectedActualite {
   source: string;
   url: string;
   date_publication: string;
-  source_type: 'perplexity' | 'grok_twitter';
+  source_type: 'perplexity' | 'grok_twitter' | 'google_news';
   url_verified: boolean;
 }
 
