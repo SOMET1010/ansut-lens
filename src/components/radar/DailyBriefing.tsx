@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { Briefcase, RefreshCw, ShieldAlert, AlertCircle, Flag, CheckCircle } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Briefcase, RefreshCw, ShieldAlert, AlertCircle, Flag, CheckCircle, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { RelativeTime } from '@/components/ui/relative-time';
-import { useDailyBriefing } from '@/hooks/useDailyBriefing';
+import { useDailyBriefing, type BriefingSource } from '@/hooks/useDailyBriefing';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -15,12 +16,71 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+
+/** Replace [1], [2] etc. in briefing text with interactive source badges */
+function BriefingText({ text, sources }: { text: string; sources: BriefingSource[] }) {
+  const sourcesMap = useMemo(() => {
+    const map = new Map<number, BriefingSource>();
+    sources.forEach(s => map.set(s.index, s));
+    return map;
+  }, [sources]);
+
+  // Split text on citation patterns like [1], [2], etc.
+  const parts = text.split(/(\[\d+\])/g);
+
+  return (
+    <span>
+      {parts.map((part, i) => {
+        const match = part.match(/^\[(\d+)\]$/);
+        if (match) {
+          const idx = parseInt(match[1], 10);
+          const source = sourcesMap.get(idx);
+          if (source) {
+            return (
+              <Tooltip key={i}>
+                <TooltipTrigger asChild>
+                  {source.source_url ? (
+                    <a
+                      href={source.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center"
+                    >
+                      <Badge variant="outline" className="mx-0.5 text-[10px] px-1.5 py-0 cursor-pointer hover:bg-primary/10 border-primary/30 text-primary">
+                        {idx}
+                      </Badge>
+                    </a>
+                  ) : (
+                    <Badge variant="outline" className="mx-0.5 text-[10px] px-1.5 py-0 border-muted-foreground/30 text-muted-foreground">
+                      {idx}
+                    </Badge>
+                  )}
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="font-medium text-xs">{source.titre}</p>
+                  <p className="text-[10px] text-muted-foreground">{source.source_nom}</p>
+                </TooltipContent>
+              </Tooltip>
+            );
+          }
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </span>
+  );
+}
 
 export function DailyBriefing() {
   const {
     briefing,
     generatedAt,
     alertsCount,
+    sources,
     isLoading,
     isGenerating,
     error,
@@ -38,7 +98,6 @@ export function DailyBriefing() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non connecté');
 
-      // Log the report as an audit entry
       await supabase.from('audit_consultations').insert({
         user_id: user.id,
         resource_type: 'briefing',
@@ -50,14 +109,13 @@ export function DailyBriefing() {
         },
       });
 
-      // Update user preferences to learn from this rejection
-      const { data: prefs } = await supabase
-        .from('user_preferences_ia')
-        .select('sujets_ignores')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
       if (reportReason) {
+        const { data: prefs } = await supabase
+          .from('user_preferences_ia')
+          .select('sujets_ignores')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
         const existing = prefs?.sujets_ignores || [];
         const updated = [...new Set([...existing, reportReason])].slice(0, 20);
         await supabase.from('user_preferences_ia').upsert({
@@ -73,7 +131,7 @@ export function DailyBriefing() {
       toast.success('Signalement enregistré. Le briefing sera amélioré.');
     } catch (err) {
       console.error('Report error:', err);
-      toast.error('Impossible d\'enregistrer le signalement');
+      toast.error("Impossible d'enregistrer le signalement");
     } finally {
       setIsReporting(false);
     }
@@ -120,7 +178,6 @@ export function DailyBriefing() {
                   </span>
                 )}
 
-                {/* Report error button */}
                 {briefing && !reported && (
                   <Button
                     variant="ghost"
@@ -157,12 +214,43 @@ export function DailyBriefing() {
               </div>
             </div>
             
+            {/* Briefing content with inline source citations */}
             <p className={cn(
               "text-foreground leading-relaxed",
               isGenerating && "opacity-50"
             )}>
-              {displayBriefing}
+              {sources.length > 0 ? (
+                <BriefingText text={displayBriefing} sources={sources} />
+              ) : (
+                displayBriefing
+              )}
             </p>
+            
+            {/* Sources list */}
+            {sources.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {sources.map((s) => (
+                  <span key={s.index} className="text-[10px] text-muted-foreground inline-flex items-center gap-1">
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                      {s.index}
+                    </Badge>
+                    {s.source_url ? (
+                      <a
+                        href={s.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-primary underline underline-offset-2 truncate max-w-[200px]"
+                      >
+                        {s.source_nom}
+                        <ExternalLink className="inline h-2.5 w-2.5 ml-0.5" />
+                      </a>
+                    ) : (
+                      <span className="truncate max-w-[200px]">{s.source_nom}</span>
+                    )}
+                  </span>
+                ))}
+              </div>
+            )}
             
             {alertsCount > 0 && (
               <p className="mt-3 text-signal-critical font-medium flex items-center gap-2">
@@ -181,7 +269,6 @@ export function DailyBriefing() {
         </div>
       </div>
 
-      {/* Report dialog */}
       <Dialog open={reportOpen} onOpenChange={setReportOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -208,7 +295,7 @@ export function DailyBriefing() {
               onClick={handleReport}
               disabled={isReporting || !reportReason.trim()}
             >
-              {isReporting ? 'Envoi…' : 'Signaler & éduquer l\'IA'}
+              {isReporting ? 'Envoi…' : "Signaler & éduquer l'IA"}
             </Button>
           </DialogFooter>
         </DialogContent>

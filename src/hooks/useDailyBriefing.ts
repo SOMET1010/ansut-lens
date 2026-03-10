@@ -3,13 +3,21 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const CACHE_KEY = 'daily-briefing-cache';
-const CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+const CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours
+
+export interface BriefingSource {
+  index: number;
+  titre: string;
+  source_nom: string;
+  source_url: string | null;
+}
 
 interface CachedBriefing {
   briefing: string;
   generated_at: string;
   sources_count: number;
   alerts_count: number;
+  sources: BriefingSource[];
   expires_at: number;
 }
 
@@ -18,13 +26,15 @@ interface BriefingResponse {
   generated_at: string;
   sources_count: number;
   alerts_count: number;
+  sources?: BriefingSource[];
 }
 
-interface UseDailyBriefingReturn {
+export interface UseDailyBriefingReturn {
   briefing: string | null;
   generatedAt: Date | null;
   sourcesCount: number;
   alertsCount: number;
+  sources: BriefingSource[];
   isLoading: boolean;
   isGenerating: boolean;
   error: string | null;
@@ -45,6 +55,7 @@ function setCachedBriefing(data: BriefingResponse): void {
   try {
     const cached: CachedBriefing = {
       ...data,
+      sources: data.sources || [],
       expires_at: Date.now() + CACHE_TTL,
     };
     localStorage.setItem(CACHE_KEY, JSON.stringify(cached));
@@ -62,26 +73,30 @@ export function useDailyBriefing(): UseDailyBriefingReturn {
   const [generatedAt, setGeneratedAt] = useState<Date | null>(null);
   const [sourcesCount, setSourcesCount] = useState<number>(0);
   const [alertsCount, setAlertsCount] = useState<number>(0);
+  const [sources, setSources] = useState<BriefingSource[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  const applyData = useCallback((data: { briefing: string; generated_at: string; sources_count: number; alerts_count: number; sources?: BriefingSource[] }) => {
+    setBriefing(data.briefing);
+    setGeneratedAt(new Date(data.generated_at));
+    setSourcesCount(data.sources_count);
+    setAlertsCount(data.alerts_count);
+    setSources(data.sources || []);
+  }, []);
+
   const generateBriefing = useCallback(async (forceRegenerate = false) => {
-    // Check cache first (unless forcing regeneration)
     if (!forceRegenerate) {
       const cached = getCachedBriefing();
       if (cached && !isExpired(cached)) {
-        setBriefing(cached.briefing);
-        setGeneratedAt(new Date(cached.generated_at));
-        setSourcesCount(cached.sources_count);
-        setAlertsCount(cached.alerts_count);
+        applyData(cached);
         setIsLoading(false);
         setError(null);
         return;
       }
     }
 
-    // Set appropriate loading state
     if (forceRegenerate) {
       setIsGenerating(true);
     } else {
@@ -100,14 +115,8 @@ export function useDailyBriefing(): UseDailyBriefingReturn {
         throw new Error('Réponse invalide du service');
       }
 
-      // Cache the result
       setCachedBriefing(data);
-
-      // Update state
-      setBriefing(data.briefing);
-      setGeneratedAt(new Date(data.generated_at));
-      setSourcesCount(data.sources_count);
-      setAlertsCount(data.alerts_count);
+      applyData(data);
       setError(null);
 
       if (forceRegenerate) {
@@ -118,13 +127,9 @@ export function useDailyBriefing(): UseDailyBriefingReturn {
       console.error('Failed to generate briefing:', errorMessage);
       setError(errorMessage);
 
-      // Try to use cached data as fallback
       const cached = getCachedBriefing();
       if (cached) {
-        setBriefing(cached.briefing);
-        setGeneratedAt(new Date(cached.generated_at));
-        setSourcesCount(cached.sources_count);
-        setAlertsCount(cached.alerts_count);
+        applyData(cached);
         toast.error('Impossible de régénérer le briefing. Affichage de la version précédente.');
       } else {
         toast.error('Impossible de générer le briefing');
@@ -133,9 +138,8 @@ export function useDailyBriefing(): UseDailyBriefingReturn {
       setIsLoading(false);
       setIsGenerating(false);
     }
-  }, []);
+  }, [applyData]);
 
-  // Generate briefing on mount
   useEffect(() => {
     generateBriefing(false);
   }, [generateBriefing]);
@@ -149,6 +153,7 @@ export function useDailyBriefing(): UseDailyBriefingReturn {
     generatedAt,
     sourcesCount,
     alertsCount,
+    sources,
     isLoading,
     isGenerating,
     error,

@@ -13,6 +13,7 @@ RÈGLES ABSOLUES — INTÉGRITÉ DES FAITS :
 2. Ne cite QUE les actualités fournies dans le contexte ci-dessous. Ne reformule JAMAIS une info en ajoutant des détails non présents.
 3. Si le contexte ne contient pas assez d'actualités pour un briefing complet, dis-le clairement : "Peu d'actualités disponibles ce matin."
 4. N'utilise JAMAIS de verbes affirmatifs ("a inauguré", "a annoncé") sauf si l'actualité source le dit explicitement.
+5. CHAQUE fait mentionné DOIT être suivi d'une référence [1], [2], etc. correspondant à l'index de l'actualité dans la liste fournie (commençant à 1).
 
 FILTRAGE PAR PERTINENCE DÉCIDEUR :
 - PRIORITÉ 1 (toujours inclure) : Projets Service Universel, Inclusion Numérique, Impact social, décisions gouvernementales CI.
@@ -23,7 +24,7 @@ FORMAT :
 - Commence par "Ce matin" ou "Aujourd'hui" selon l'heure.
 - 3-4 phrases maximum, 150 mots max.
 - Si des alertes critiques PERTINENTES sont présentes, mentionne-les avec ⚠️.
-- Texte brut uniquement, pas de liste à puces ni de markdown.
+- Texte brut uniquement, pas de liste à puces ni de markdown (sauf les références [1], [2]).
 - Ton professionnel, direct et stratégique.
 - Pas de formule de politesse.`;
 
@@ -111,9 +112,16 @@ serve(async (req) => {
       }
     });
 
-    // Build context
-    const actualitesList = verifiedActualites.slice(0, 7).map(a => 
-      `- ${a.titre}${a.resume ? ` : ${a.resume.substring(0, 120)}` : ''} (importance: ${a.importance || 50}/100, catégorie: ${a.categorie || 'non classé'}, source: ${a.source_nom || 'inconnue'}${a.source_url ? `, url: ${a.source_url}` : ', PAS DE LIEN SOURCE'})`
+    // Build context with numbered sources for citation
+    const sourcesMap = verifiedActualites.slice(0, 7).map((a, i) => ({
+      index: i + 1,
+      titre: a.titre,
+      source_nom: a.source_nom || 'Source inconnue',
+      source_url: a.source_url || null,
+    }));
+
+    const actualitesList = verifiedActualites.slice(0, 7).map((a, i) => 
+      `[${i + 1}] ${a.titre}${a.resume ? ` : ${a.resume.substring(0, 120)}` : ''} (importance: ${a.importance || 50}/100, catégorie: ${a.categorie || 'non classé'}, source: ${a.source_nom || 'inconnue'}${a.source_url ? `, url: ${a.source_url}` : ', PAS DE LIEN SOURCE'})`
     ).join('\n');
 
     const alertesCritiques = signaux.length;
@@ -204,6 +212,7 @@ serve(async (req) => {
         generated_at: new Date().toISOString(),
         sources_count: verifiedActualites.length,
         alerts_count: alertesCritiques,
+        sources: sourcesMap,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
