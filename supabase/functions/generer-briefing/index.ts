@@ -212,6 +212,7 @@ serve(async (req) => {
         generated_at: new Date().toISOString(),
         sources_count: verifiedActualites.length,
         alerts_count: alertesCritiques,
+        sources: sourcesMap,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
