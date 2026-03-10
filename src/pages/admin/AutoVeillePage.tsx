@@ -137,11 +137,12 @@ export default function AutoVeillePage() {
 
       {/* Tabs */}
       <Tabs defaultValue="publications" className="space-y-4">
-        <TabsList className="grid grid-cols-4 w-full max-w-xl">
+        <TabsList className="grid grid-cols-5 w-full max-w-2xl">
           <TabsTrigger value="publications">Publications</TabsTrigger>
-          <TabsTrigger value="echo">Écho & Résonance</TabsTrigger>
+          <TabsTrigger value="echo">Écho</TabsTrigger>
           <TabsTrigger value="voix">Part de Voix</TabsTrigger>
-          <TabsTrigger value="vip">VIP Tracker</TabsTrigger>
+          <TabsTrigger value="architecture">Architecture</TabsTrigger>
+          <TabsTrigger value="vip">VIP</TabsTrigger>
         </TabsList>
 
         {/* Publications Tab */}
