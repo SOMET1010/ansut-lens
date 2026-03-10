@@ -178,6 +178,10 @@ const App = () => (
                             <Route path="/admin/veille-semantique" element={<VeilleSemantiquePage />} />
                           </Route>
 
+                          <Route element={<PermissionRoute permission="manage_newsletters" />}>
+                            <Route path="/admin/auto-veille" element={<AutoVeillePage />} />
+                          </Route>
+
                           <Route element={<PermissionRoute permission="manage_roles" />}>
                             <Route path="/admin/roles" element={<RolesPage />} />
                           </Route>

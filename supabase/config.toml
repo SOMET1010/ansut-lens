@@ -86,3 +86,9 @@ verify_jwt = false
 
 [functions.veille-semantique]
 verify_jwt = false
+
+[functions.collecte-institutionnelle]
+verify_jwt = false
+
+[functions.analyser-echo-resonance]
+verify_jwt = false
