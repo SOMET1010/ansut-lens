@@ -7,12 +7,12 @@ export function useVipComptes() {
   return useQuery({
     queryKey: ["vip-comptes"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("vip_comptes")
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 }
@@ -28,7 +28,7 @@ export function useCreateVipCompte() {
       url_profil?: string;
       personnalite_id?: string;
     }) => {
-      const { data, error } = await supabase.from("vip_comptes").insert(compte).select().single();
+      const { data, error } = await (supabase as any).from("vip_comptes").insert(compte).select().single();
       if (error) throw error;
       return data;
     },
@@ -44,7 +44,7 @@ export function useDeleteVipCompte() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("vip_comptes").delete().eq("id", id);
+      const { error } = await (supabase as any).from("vip_comptes").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -59,13 +59,13 @@ export function useVipAlertes() {
   return useQuery({
     queryKey: ["vip-alertes"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("vip_alertes")
         .select("*, vip_comptes(nom, fonction, plateforme)")
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 }
@@ -74,7 +74,7 @@ export function useTraiterVipAlerte() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("vip_alertes").update({ traitee: true }).eq("id", id);
+      const { error } = await (supabase as any).from("vip_alertes").update({ traitee: true }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -127,13 +127,13 @@ export function useContenusValides() {
   return useQuery({
     queryKey: ["contenus-valides"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("contenus_valides")
         .select("*")
         .eq("actif", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 }
@@ -148,7 +148,7 @@ export function useCreateContenuValide() {
       categorie?: string;
       hashtags?: string[];
     }) => {
-      const { data, error } = await supabase.from("contenus_valides").insert(contenu).select().single();
+      const { data, error } = await (supabase as any).from("contenus_valides").insert(contenu).select().single();
       if (error) throw error;
       return data;
     },
@@ -164,7 +164,7 @@ export function useDeleteContenuValide() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("contenus_valides").update({ actif: false }).eq("id", id);
+      const { error } = await (supabase as any).from("contenus_valides").update({ actif: false }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

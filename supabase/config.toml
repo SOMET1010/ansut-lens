@@ -83,3 +83,6 @@ verify_jwt = false
 
 [functions.analyser-post-vip]
 verify_jwt = false
+
+[functions.veille-semantique]
+verify_jwt = false

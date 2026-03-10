@@ -34,6 +34,7 @@ import MatinalePage from "@/pages/admin/MatinalePage";
 import EvenementsPage from "@/pages/admin/EvenementsPage";
 import ShadowTrackerPage from "@/pages/admin/ShadowTrackerPage";
 import CoffreContenuPage from "@/pages/admin/CoffreContenuPage";
+import VeilleSemantiquePage from "@/pages/admin/VeilleSemantiquePage";
 import AlertesHistoryPage from "@/pages/AlertesHistoryPage";
 import PresentationPage from "@/pages/PresentationPage";
 import ProfilePage from "@/pages/ProfilePage";
@@ -172,6 +173,10 @@ const App = () => (
                             <Route path="/admin/coffre-contenu" element={<CoffreContenuPage />} />
                           </Route>
                           
+                          <Route element={<PermissionRoute permission="manage_keywords" />}>
+                            <Route path="/admin/veille-semantique" element={<VeilleSemantiquePage />} />
+                          </Route>
+
                           <Route element={<PermissionRoute permission="manage_roles" />}>
                             <Route path="/admin/roles" element={<RolesPage />} />
                           </Route>

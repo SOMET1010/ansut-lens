@@ -1,4 +1,4 @@
-import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode, Radio, Activity, Newspaper, CalendarDays, Eye, FileText } from 'lucide-react';
+import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode, Radio, Activity, Newspaper, CalendarDays, Eye, FileText, Radar } from 'lucide-react';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { SystemHealthWidget } from '@/components/admin/SystemHealthWidget';
 import { AdminNavCard } from '@/components/admin/AdminNavCard';
@@ -140,6 +140,18 @@ export default function AdminPage() {
               badgeVariant="warning"
               subtitle="Calendrier MWC, Gitex, etc. avec mode Boost de collecte."
               to="/admin/evenements"
+              loading={isLoading}
+            />
+          </PermissionGate>
+          <PermissionGate permission="manage_keywords">
+            <AdminNavCard
+              color="purple"
+              icon={<Radar size={24} />}
+              title="Veille Sémantique"
+              badge="IA Multimodale"
+              badgeVariant="info"
+              subtitle="Territoires d'expression, influenceurs, analyse visuelle et radar de proximité."
+              to="/admin/veille-semantique"
               loading={isLoading}
             />
           </PermissionGate>
