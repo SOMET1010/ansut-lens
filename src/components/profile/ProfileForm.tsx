@@ -39,23 +39,24 @@ interface ProfileFormProps {
   isSubmitting?: boolean;
 }
 
-export function ProfileForm({ email, fullName, onSubmit, isSubmitting }: ProfileFormProps) {
+export function ProfileForm({ email, fullName, phone, onSubmit, isSubmitting }: ProfileFormProps) {
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       full_name: fullName || '',
+      phone: phone || '',
     },
   });
 
   // Update form when profile data loads
   useEffect(() => {
     if (fullName !== undefined) {
-      form.reset({ full_name: fullName || '' });
+      form.reset({ full_name: fullName || '', phone: phone || '' });
     }
-  }, [fullName, form]);
+  }, [fullName, phone, form]);
 
   const handleSubmit = (data: ProfileFormValues) => {
-    onSubmit({ full_name: data.full_name });
+    onSubmit({ full_name: data.full_name, phone: data.phone || undefined });
   };
 
   return (
