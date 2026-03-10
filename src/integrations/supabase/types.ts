@@ -94,6 +94,41 @@ export type Database = {
           },
         ]
       }
+      actualites_feedback: {
+        Row: {
+          actualite_id: string
+          created_at: string | null
+          feedback: string
+          id: string
+          raison: string | null
+          user_id: string
+        }
+        Insert: {
+          actualite_id: string
+          created_at?: string | null
+          feedback: string
+          id?: string
+          raison?: string | null
+          user_id: string
+        }
+        Update: {
+          actualite_id?: string
+          created_at?: string | null
+          feedback?: string
+          id?: string
+          raison?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actualites_feedback_actualite_id_fkey"
+            columns: ["actualite_id"]
+            isOneToOne: false
+            referencedRelation: "actualites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_audit_logs: {
         Row: {
           action: string
@@ -1865,6 +1900,84 @@ export type Database = {
           pays_cibles?: string[] | null
           priorite?: number | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_interactions: {
+        Row: {
+          action: string
+          created_at: string | null
+          duration_seconds: number | null
+          id: string
+          metadata: Json | null
+          resource_id: string | null
+          resource_type: string
+          user_id: string
+        }
+        Insert: {
+          action?: string
+          created_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          metadata?: Json | null
+          resource_id?: string | null
+          resource_type?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          metadata?: Json | null
+          resource_id?: string | null
+          resource_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_preferences_ia: {
+        Row: {
+          categories_preferees: string[] | null
+          created_at: string | null
+          derniere_analyse: string | null
+          id: string
+          pays_interet: string[] | null
+          portrait_ia: string | null
+          quadrants_preferes: string[] | null
+          score_profil: Json | null
+          sujets_favoris: string[] | null
+          sujets_ignores: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          categories_preferees?: string[] | null
+          created_at?: string | null
+          derniere_analyse?: string | null
+          id?: string
+          pays_interet?: string[] | null
+          portrait_ia?: string | null
+          quadrants_preferes?: string[] | null
+          score_profil?: Json | null
+          sujets_favoris?: string[] | null
+          sujets_ignores?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          categories_preferees?: string[] | null
+          created_at?: string | null
+          derniere_analyse?: string | null
+          id?: string
+          pays_interet?: string[] | null
+          portrait_ia?: string | null
+          quadrants_preferes?: string[] | null
+          score_profil?: Json | null
+          sujets_favoris?: string[] | null
+          sujets_ignores?: string[] | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
