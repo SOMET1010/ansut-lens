@@ -62,7 +62,6 @@ Deno.serve(async (req) => {
     const username = Deno.env.get("AZURE_SMS_USERNAME")!;
     const password = Deno.env.get("AZURE_SMS_PASSWORD")!;
     const smsFrom = Deno.env.get("AZURE_SMS_FROM") || "ANSUT RADAR";
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
     if (!gatewayBaseUrl || !username || !password) {
       throw new Error("Configuration passerelle manquante");
