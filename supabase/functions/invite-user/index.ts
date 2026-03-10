@@ -1,23 +1,34 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "https://esm.sh/resend@4.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+async function sendViaGateway(to: string, subject: string, htmlContent: string) {
+  const baseUrl = Deno.env.get("AZURE_SMS_URL")!;
+  const username = Deno.env.get("AZURE_SMS_USERNAME")!;
+  const password = Deno.env.get("AZURE_SMS_PASSWORD")!;
+  const unifiedUrl = baseUrl.replace(/\/api\/SendSMS\/?$/i, "") + "/api/message/send";
+
+  const response = await fetch(unifiedUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ to, subject, content: htmlContent, ishtml: true, username, password, channel: "Email" }),
+  });
+  return response;
+}
 
 interface InviteUserRequest {
   email: string;
   fullName: string;
   role: "admin" | "user" | "council_user" | "guest";
   redirectUrl?: string;
-  userId?: string; // Pour le renvoi d'invitation
-  resend?: boolean; // Indique si c'est un renvoi
+  userId?: string;
+  resend?: boolean;
 }
 
-// Générer le HTML de l'email d'invitation en français
 function generateInvitationEmailHtml(inviteLink: string, userName: string, baseUrl: string): string {
   return `
 <!DOCTYPE html>
@@ -34,7 +45,6 @@ function generateInvitationEmailHtml(inviteLink: string, userName: string, baseU
         <table role="presentation" style="max-width: 560px; width: 100%; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);">
           <tr>
             <td style="padding: 40px 40px 24px;">
-              <!-- Logo ANSUT -->
               <table role="presentation" style="width: 100%;">
                 <tr>
                   <td align="center" style="padding-bottom: 24px;">
@@ -42,32 +52,22 @@ function generateInvitationEmailHtml(inviteLink: string, userName: string, baseU
                   </td>
                 </tr>
               </table>
-              
-              <!-- Séparateur -->
               <hr style="border: none; border-top: 1px solid #e6ebf1; margin: 0 0 24px;">
-              
-              <!-- Titre -->
               <h1 style="color: #1e40af; font-size: 24px; font-weight: 700; text-align: center; margin: 0 0 24px; padding: 0;">
                 Bienvenue sur ANSUT RADAR
               </h1>
-              
-              <!-- Corps du message -->
               <p style="color: #374151; font-size: 16px; line-height: 26px; margin: 0 0 16px;">
                 Bonjour ${userName},
               </p>
-              
               <p style="color: #374151; font-size: 16px; line-height: 26px; margin: 0 0 16px;">
                 Vous avez été invité(e) à rejoindre <strong>ANSUT RADAR</strong>, la plateforme 
                 de veille stratégique de l'Agence Nationale du Service Universel des 
                 Télécommunications de Côte d'Ivoire.
               </p>
-              
               <p style="color: #374151; font-size: 16px; line-height: 26px; margin: 0 0 24px;">
                 Cliquez sur le bouton ci-dessous pour créer votre compte et définir 
                 votre mot de passe :
               </p>
-              
-              <!-- Bouton d'action -->
               <table role="presentation" style="width: 100%;">
                 <tr>
                   <td align="center" style="padding: 16px 0 32px;">
@@ -77,27 +77,20 @@ function generateInvitationEmailHtml(inviteLink: string, userName: string, baseU
                   </td>
                 </tr>
               </table>
-              
               <p style="color: #6b7280; font-size: 14px; line-height: 22px; margin: 0 0 8px;">
                 Ce lien expire dans 24 heures. Si le bouton ne fonctionne pas, 
                 copiez et collez ce lien dans votre navigateur :
               </p>
-              
               <p style="margin: 0 0 24px; word-break: break-all;">
                 <a href="${inviteLink}" style="color: #1e40af; font-size: 14px; text-decoration: underline;">
                   ${inviteLink}
                 </a>
               </p>
-              
-              <!-- Séparateur -->
               <hr style="border: none; border-top: 1px solid #e6ebf1; margin: 0 0 24px;">
-              
-              <!-- Footer -->
               <p style="color: #6b7280; font-size: 13px; line-height: 20px; text-align: center; margin: 0 0 16px;">
                 Si vous n'attendiez pas cette invitation, vous pouvez ignorer cet email 
                 en toute sécurité.
               </p>
-              
               <p style="color: #9ca3af; font-size: 12px; line-height: 18px; text-align: center; margin: 0;">
                 © ${new Date().getFullYear()} ANSUT - Agence Nationale du Service Universel 
                 des Télécommunications<br>
@@ -115,13 +108,11 @@ function generateInvitationEmailHtml(inviteLink: string, userName: string, baseU
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Vérifier l'authentification
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -130,18 +121,14 @@ serve(async (req) => {
       );
     }
 
-    // Créer le client Supabase avec le token de l'utilisateur
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
-    // Client avec le token de l'utilisateur pour vérifier ses droits
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Vérifier que l'utilisateur est admin
     const { data: { user }, error: userError } = await userClient.auth.getUser();
     if (userError || !user) {
       return new Response(
@@ -150,12 +137,7 @@ serve(async (req) => {
       );
     }
 
-    // Vérifier le rôle admin via la fonction has_role
-    const { data: isAdmin } = await userClient.rpc("has_role", {
-      _user_id: user.id,
-      _role: "admin",
-    });
-
+    const { data: isAdmin } = await userClient.rpc("has_role", { _user_id: user.id, _role: "admin" });
     if (!isAdmin) {
       return new Response(
         JSON.stringify({ error: "Accès réservé aux administrateurs" }),
@@ -163,35 +145,26 @@ serve(async (req) => {
       );
     }
 
-    // Parser la requête
-    const { email, fullName, role, redirectUrl, userId, resend }: InviteUserRequest = await req.json();
+    const { email, fullName, role, redirectUrl, userId, resend: isResend }: InviteUserRequest = await req.json();
 
-    // Si c'est un renvoi, récupérer l'email de l'utilisateur existant
     let targetEmail = email;
     let targetFullName = fullName;
 
-    // Client admin pour les opérations
     const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    if (resend && userId) {
+    if (isResend && userId) {
       console.log("Resending invitation for user:", userId);
-      
-      // Récupérer l'email depuis auth.users
       const { data: authUser, error: authError } = await adminClient.auth.admin.getUserById(userId);
-      
       if (authError || !authUser?.user?.email) {
         return new Response(
           JSON.stringify({ error: "Utilisateur non trouvé" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      
       targetEmail = authUser.user.email;
       targetFullName = fullName || authUser.user.user_metadata?.full_name || "Utilisateur";
-      
-      console.log("Found user email:", targetEmail);
     }
 
     if (!targetEmail || !targetFullName || !role) {
@@ -201,138 +174,70 @@ serve(async (req) => {
       );
     }
 
-    // adminClient déjà créé plus haut
-
-    // Toujours utiliser l'URL de production pour garantir que les liens fonctionnent
     const PRODUCTION_URL = "https://ansut-lens.lovable.app";
     const isPreviewUrl = redirectUrl && (redirectUrl.includes('id-preview--') || redirectUrl.includes('lovableproject.com'));
     const finalRedirectUrl = (!redirectUrl || isPreviewUrl) ? `${PRODUCTION_URL}/auth/reset-password` : redirectUrl;
-
-    // Base URL pour les assets (logo) - toujours utiliser la production
     const baseUrl = PRODUCTION_URL;
-
-    console.log("Redirect URL for invitation:", finalRedirectUrl);
-    console.log("Base URL for assets:", baseUrl);
 
     let inviteData: any;
 
-    // Vérifier si Resend est configuré pour les emails personnalisés
-    if (resendApiKey) {
-      console.log("Using custom email template with Resend");
-      
-      // Déterminer le type de lien : 'recovery' pour renvoi, 'invite' pour nouvelle invitation
-      const isResend = resend as boolean;
-      const linkType = isResend ? 'recovery' : 'invite';
-      console.log(`Generating ${linkType} link for:`, targetEmail);
-      
-      // Générer le lien sans envoyer l'email par défaut
-      const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
-        type: linkType,
-        email: targetEmail,
-        options: {
-          redirectTo: finalRedirectUrl,
-          ...(linkType === 'invite' ? { data: { full_name: targetFullName } } : {}),
-        },
-      });
+    // Use gateway for custom email
+    const linkType = isResend ? 'recovery' : 'invite';
+    console.log(`Generating ${linkType} link for:`, targetEmail);
 
-      if (linkError) {
-        console.error("Generate link error:", linkError);
-        return new Response(
-          JSON.stringify({ error: linkError.message }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      inviteData = { user: linkData.user };
-      const hashedToken = linkData.properties.hashed_token;
-      const inviteLink = `${PRODUCTION_URL}/auth/reset-password?token_hash=${hashedToken}&type=${linkType}`;
-
-      console.log("Generated direct invite link (hashed_token):", inviteLink);
-
-      // Générer le HTML de l'email
-      const html = generateInvitationEmailHtml(inviteLink, targetFullName, baseUrl);
-
-      // Envoyer l'email via Resend
-      const resendClient = new Resend(resendApiKey);
-      const { error: emailError } = await resendClient.emails.send({
-        from: "ANSUT RADAR <no-reply@notifications.ansut.ci>",
-        to: [targetEmail],
-        subject: isResend ? "Rappel : Invitation à rejoindre ANSUT RADAR" : "Invitation à rejoindre ANSUT RADAR",
-        html,
-      });
-
-      if (emailError) {
-        console.error("Resend email error:", emailError);
-        // L'utilisateur est créé mais l'email n'a pas été envoyé
-        // On continue quand même pour créer le rôle et le profil
-      } else {
-        console.log("Custom invitation email sent successfully to:", targetEmail);
-      }
-    } else {
-      console.log("Using default Supabase email (RESEND_API_KEY not configured)");
-      
-      // Fallback: utiliser l'email par défaut de Supabase
-      const { data, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(targetEmail, {
-        data: { full_name: targetFullName },
+    const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+      type: linkType,
+      email: targetEmail,
+      options: {
         redirectTo: finalRedirectUrl,
-      });
+        ...(linkType === 'invite' ? { data: { full_name: targetFullName } } : {}),
+      },
+    });
 
-      if (inviteError) {
-        console.error("Invite error:", inviteError);
-        return new Response(
-          JSON.stringify({ error: inviteError.message }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      inviteData = data;
+    if (linkError) {
+      console.error("Generate link error:", linkError);
+      return new Response(
+        JSON.stringify({ error: linkError.message }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // Attribuer le rôle à l'utilisateur
+    inviteData = { user: linkData.user };
+    const hashedToken = linkData.properties.hashed_token;
+    const inviteLink = `${PRODUCTION_URL}/auth/reset-password?token_hash=${hashedToken}&type=${linkType}`;
+
+    const html = generateInvitationEmailHtml(inviteLink, targetFullName, baseUrl);
+    const subject = isResend ? "Rappel : Invitation à rejoindre ANSUT RADAR" : "Invitation à rejoindre ANSUT RADAR";
+
+    try {
+      const emailResponse = await sendViaGateway(targetEmail, subject, html);
+      if (!emailResponse.ok) {
+        const errText = await emailResponse.text();
+        console.error("Gateway email error:", errText);
+      } else {
+        await emailResponse.text();
+        console.log("Custom invitation email sent successfully to:", targetEmail);
+      }
+    } catch (err) {
+      console.error("Exception sending email:", err);
+    }
+
+    // Assign role and profile
     if (inviteData.user) {
-      const { error: roleError } = await adminClient
-        .from("user_roles")
-        .upsert({
-          user_id: inviteData.user.id,
-          role: role,
-        }, { onConflict: "user_id,role" });
-
-      if (roleError) {
-        console.error("Role assignment error:", roleError);
-        // L'utilisateur est créé mais le rôle n'a pas été attribué
-      }
-
-      // Créer le profil
-      const { error: profileError } = await adminClient
-        .from("profiles")
-        .upsert({
-          id: inviteData.user.id,
-          full_name: targetFullName,
-        }, { onConflict: "id" });
-
-      if (profileError) {
-        console.error("Profile creation error:", profileError);
-      }
-
-      // Log the invitation in audit
-      const { error: auditError } = await adminClient
-        .from("admin_audit_logs")
-        .insert({
-          admin_id: user.id,
-          target_user_id: inviteData.user.id,
-          action: resend ? "user_invitation_resent" : "user_invited",
-          details: { email: targetEmail, role, full_name: targetFullName },
-        });
-
-      if (auditError) {
-        console.error("Audit log error:", auditError);
-      }
+      await adminClient.from("user_roles").upsert({ user_id: inviteData.user.id, role }, { onConflict: "user_id,role" });
+      await adminClient.from("profiles").upsert({ id: inviteData.user.id, full_name: targetFullName }, { onConflict: "id" });
+      await adminClient.from("admin_audit_logs").insert({
+        admin_id: user.id,
+        target_user_id: inviteData.user.id,
+        action: isResend ? "user_invitation_resent" : "user_invited",
+        details: { email: targetEmail, role, full_name: targetFullName },
+      });
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Invitation ${resend ? 'renvoyée' : 'envoyée'} à ${targetEmail}`,
+        message: `Invitation ${isResend ? 'renvoyée' : 'envoyée'} à ${targetEmail}`,
         user: inviteData.user 
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

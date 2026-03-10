@@ -6,6 +6,31 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function getGatewayConfig() {
+  const baseUrl = Deno.env.get("AZURE_SMS_URL")!;
+  const username = Deno.env.get("AZURE_SMS_USERNAME")!;
+  const password = Deno.env.get("AZURE_SMS_PASSWORD")!;
+  const unifiedUrl = baseUrl.replace(/\/api\/SendSMS\/?$/i, "") + "/api/message/send";
+  return { unifiedUrl, username, password };
+}
+
+async function sendEmailViaGateway(to: string, subject: string, htmlContent: string, config: ReturnType<typeof getGatewayConfig>) {
+  const response = await fetch(config.unifiedUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      to,
+      subject,
+      content: htmlContent,
+      ishtml: true,
+      username: config.username,
+      password: config.password,
+      channel: "Email",
+    }),
+  });
+  return response;
+}
+
 interface SendRequest {
   newsletterId: string;
 }
@@ -26,7 +51,6 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const resendApiKey = Deno.env.get("RESEND_API_KEY")!;
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -41,7 +65,6 @@ serve(async (req) => {
       );
     }
 
-    // Fetch newsletter
     const { data: newsletter, error: fetchError } = await adminClient
       .from('newsletters')
       .select('*')
@@ -63,7 +86,6 @@ serve(async (req) => {
       );
     }
 
-    // Fetch destinataires based on cible
     const { data: destinataires, error: destError } = await adminClient
       .from('newsletter_destinataires')
       .select('email, nom')
@@ -84,48 +106,35 @@ serve(async (req) => {
 
     console.log(`Sending newsletter to ${destinataires.length} recipients`);
 
-    // Format date for subject
     const dateDebut = new Date(newsletter.date_debut);
     const mois = dateDebut.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
     const subject = `📰 Newsletter ANSUT RADAR #${newsletter.numero} - ${mois}`;
 
-    // Send emails via Resend
-    const emailPromises = destinataires.map(async (dest) => {
-      try {
-        const response = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${resendApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: "ANSUT RADAR <no-reply@notifications.ansut.ci>",
-            to: dest.email,
-            subject: subject,
-            html: newsletter.html_court,
-          }),
-        });
+    const gwConfig = getGatewayConfig();
 
+    const results = [];
+    for (const dest of destinataires) {
+      try {
+        const response = await sendEmailViaGateway(dest.email, subject, newsletter.html_court, gwConfig);
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`Failed to send to ${dest.email}:`, errorText);
-          return { email: dest.email, success: false, error: errorText };
+          results.push({ email: dest.email, success: false, error: errorText });
+        } else {
+          await response.text();
+          results.push({ email: dest.email, success: true });
         }
-
-        return { email: dest.email, success: true };
       } catch (error) {
         console.error(`Error sending to ${dest.email}:`, error);
-        return { email: dest.email, success: false, error: String(error) };
+        results.push({ email: dest.email, success: false, error: String(error) });
       }
-    });
+    }
 
-    const results = await Promise.all(emailPromises);
     const successCount = results.filter(r => r.success).length;
     const failCount = results.filter(r => !r.success).length;
 
     console.log(`Sent: ${successCount}, Failed: ${failCount}`);
 
-    // Update newsletter status
     const { error: updateError } = await adminClient
       .from('newsletters')
       .update({
@@ -138,18 +147,6 @@ serve(async (req) => {
 
     if (updateError) {
       console.error('Error updating newsletter status:', updateError);
-    }
-
-    // Update destinataires reception info
-    const successEmails = results.filter(r => r.success).map(r => r.email);
-    if (successEmails.length > 0) {
-      await adminClient
-        .from('newsletter_destinataires')
-        .update({
-          derniere_reception: new Date().toISOString(),
-          nb_receptions: adminClient.rpc('increment', { x: 1 }), // Note: This won't work as-is, simplified
-        })
-        .in('email', successEmails);
     }
 
     return new Response(
