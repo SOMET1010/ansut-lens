@@ -282,4 +282,4 @@ async function sendNotificationEmail(
   }
 }
 
-serve(handler);
+Deno.serve(handler);

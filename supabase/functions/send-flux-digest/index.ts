@@ -243,4 +243,4 @@ function generateDigestEmail(
 </body></html>`;
 }
 
-serve(handler);
+Deno.serve(handler);
