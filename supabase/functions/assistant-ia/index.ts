@@ -30,7 +30,7 @@ Exemple : "Selon [[ACTU:abc123|article sur la 5G]], le déploiement avance."
 
 Réponds toujours en français, de manière concise et professionnelle. Utilise des listes à puces quand approprié.`;
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
