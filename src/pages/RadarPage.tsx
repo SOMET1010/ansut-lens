@@ -88,6 +88,12 @@ export default function RadarPage() {
       {/* Media Impact Widget - for Com team */}
       <MediaImpactWidget />
 
+      {/* Share of Voice + Echo Resonance */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <ShareOfVoiceWidget />
+        <EchoResonanceWidget />
+      </div>
+
       {/* KPI Tiles */}
       <RadarKpiTiles
         mentions={kpis?.mentions ?? 0}
