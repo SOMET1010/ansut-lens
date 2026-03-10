@@ -63,7 +63,6 @@ export default function DiffusionPage() {
             const meta = CANAL_CONFIG[canal];
             if (!meta) return null;
             const Icon = meta.icon;
-            const isWhatsapp = canal === 'whatsapp';
             const destCount = (config.destinataires || []).length;
 
             return (
