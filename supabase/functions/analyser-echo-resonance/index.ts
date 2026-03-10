@@ -70,6 +70,7 @@ PUBLICATION ANSUT :
 - Date : ${pub.date_publication}
 - Contenu : ${pub.contenu?.substring(0, 1000)}
 - Likes : ${pub.likes_count}, Partages : ${pub.shares_count}, Commentaires : ${pub.comments_count}
+${pub.resume_commentaires ? `- Commentaires bruts : ${pub.resume_commentaires.substring(0, 500)}` : ""}
 
 ARTICLES DE PRESSE RÉCENTS (pour détecter les reprises) :
 ${(actualites || []).slice(0, 30).map((a: any) => `- ${a.titre} (${a.source_nom})`).join("\n")}
@@ -83,7 +84,9 @@ Analyse :
 3. Estime la portée totale (en nombre de personnes atteintes)
 4. Score de résonance sur 100
 5. Y a-t-il un gap entre l'effort de communication et la couverture obtenue ?
-6. Recommandation pour améliorer la résonance`;
+6. Recommandation pour améliorer la résonance
+7. Résume le sentiment des commentaires citoyens (positif, négatif, demandes fréquentes)
+8. Quelle action concrète devrait prendre la Com en réponse à cette publication ?`;
 
         const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
