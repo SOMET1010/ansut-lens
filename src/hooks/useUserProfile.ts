@@ -8,6 +8,7 @@ interface Profile {
   full_name: string | null;
   avatar_url: string | null;
   department: string | null;
+  phone: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -16,6 +17,7 @@ interface UpdateProfileData {
   full_name?: string;
   avatar_url?: string;
   department?: string;
+  phone?: string;
 }
 
 export function useUserProfile() {

@@ -20,6 +20,13 @@ const profileSchema = z.object({
     .trim()
     .min(1, 'Le nom est requis')
     .max(100, 'Le nom ne peut pas dépasser 100 caractères'),
+  phone: z
+    .string()
+    .trim()
+    .max(20, 'Le numéro ne peut pas dépasser 20 caractères')
+    .regex(/^(\+?\d{1,4}[\s-]?)?\d{6,15}$/, 'Format invalide (ex: +225 0701020304)')
+    .optional()
+    .or(z.literal('')),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -27,7 +34,8 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 interface ProfileFormProps {
   email?: string;
   fullName?: string | null;
-  onSubmit: (data: { full_name: string }) => void;
+  phone?: string | null;
+  onSubmit: (data: { full_name: string; phone?: string }) => void;
   isSubmitting?: boolean;
 }
 
