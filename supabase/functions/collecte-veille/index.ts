@@ -625,27 +625,116 @@ serve(async (req) => {
 
     console.log(`[collecte-veille] Total: ${allActualites.length} actualités collectées`);
 
-    // 4. Insérer les actualités dans la base
+    // 4. SEMANTIC FILTERING — Load Territoires d'Expression for concept-based matching
+    let territoires: { nom: string; concepts: string[]; mots_cles_associes: string[] }[] = [];
+    {
+      const { data: terr } = await supabase
+        .from('territoires_expression')
+        .select('nom, concepts, mots_cles_associes')
+        .eq('actif', true);
+      territoires = terr || [];
+    }
+
+    // 4b. If we have LOVABLE_API_KEY + territoires, do semantic relevance check on articles
+    // that DIDN'T match any keyword (would otherwise be missed)
+    const unmatchedArticles: CollectedActualite[] = [];
+    const matchedArticles: CollectedActualite[] = [];
+
+    for (const actu of allActualites) {
+      if (!actu.titre) continue;
+      const fullContent = `${actu.titre} ${actu.resume}`.toLowerCase();
+      const hasKeywordMatch = motsCles.some(m => {
+        const allTerms = [m.mot_cle, ...(m.variantes || [])];
+        return allTerms.some(t => fullContent.includes(t.toLowerCase()));
+      });
+      if (hasKeywordMatch) {
+        matchedArticles.push(actu);
+      } else {
+        unmatchedArticles.push(actu);
+      }
+    }
+
+    // Semantic filter on unmatched articles using Gemini
+    const semanticMatches: Map<number, { territoire: string; pertinence: number }> = new Map();
+    if (LOVABLE_API_KEY && unmatchedArticles.length > 0 && territoires.length > 0) {
+      const conceptList = territoires.map(t =>
+        `- ${t.nom}: ${(t.concepts || []).join(', ')}, ${(t.mots_cles_associes || []).join(', ')}`
+      ).join('\n');
+
+      const articleBatch = unmatchedArticles.slice(0, 30).map((a, i) =>
+        `[${i}] "${a.titre}" — ${a.resume?.substring(0, 120) || ''}`
+      ).join('\n');
+
+      try {
+        const semResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash-lite',
+            temperature: 0.1,
+            messages: [{
+              role: 'system',
+              content: `Tu es l'analyste de l'ANSUT (Agence Nationale du Service Universel des Télécommunications de Côte d'Ivoire). Ta mission est de repérer toute information traitant de la réduction de la fracture numérique, même si l'agence n'est pas nommée.
+
+Territoires d'Expression de l'ANSUT :
+${conceptList}
+
+Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Retourne UNIQUEMENT un JSON array d'objets pour les articles pertinents : [{"index": 0, "territoire": "nom_territoire", "pertinence": 85}]. Ignore les articles non pertinents.`
+            }, {
+              role: 'user',
+              content: articleBatch
+            }],
+          }),
+        });
+
+        if (semResp.ok) {
+          const semData = await semResp.json();
+          const text = semData.choices?.[0]?.message?.content || '';
+          const match = text.match(/\[[\s\S]*?\]/);
+          if (match) {
+            const parsed: { index: number; territoire: string; pertinence: number }[] = JSON.parse(match[0]);
+            for (const p of parsed) {
+              if (p.pertinence >= 50) {
+                semanticMatches.set(p.index, { territoire: p.territoire, pertinence: p.pertinence });
+              }
+            }
+          }
+          console.log(`[collecte-veille] 🧠 Filtrage sémantique: ${semanticMatches.size}/${unmatchedArticles.length} sujets connexes détectés`);
+        }
+      } catch (semErr) {
+        console.error('[collecte-veille] Erreur filtrage sémantique (non-bloquante):', semErr);
+      }
+    }
+
+    // Merge semantic matches back into processing
+    const articlesToProcess = [...matchedArticles];
+    for (const [idx, sem] of semanticMatches) {
+      const article = unmatchedArticles[idx];
+      if (article) {
+        article.resume = `[Sujet Connexe — ${sem.territoire}] ${article.resume}`;
+        articlesToProcess.push(article);
+      }
+    }
+
+    // 5. Insert articles into DB
     let insertedCount = 0;
     const alertes: string[] = [];
     const insertedArticles: InsertedArticle[] = [];
 
-    for (const actu of allActualites) {
+    for (const actu of articlesToProcess) {
       if (!actu.titre) continue;
 
-      // Vérifier si l'actualité existe déjà (éviter les doublons)
       const { data: existing } = await supabase
         .from('actualites')
         .select('id')
         .eq('titre', actu.titre)
         .maybeSingle();
 
-      if (existing) {
-        console.log(`[collecte-veille] Doublon ignoré: ${actu.titre.substring(0, 50)}...`);
-        continue;
-      }
+      if (existing) continue;
 
-      // Analyser le contenu pour enrichissement
       const fullContent = `${actu.titre} ${actu.resume}`.toLowerCase();
       const matchedKeywords: string[] = [];
       let totalScore = 0;
@@ -675,11 +764,12 @@ serve(async (req) => {
         }
       }
 
-      const importance = Math.min(100, Math.round(totalScore * 0.3));
+      // Check if this is a semantic match (no keyword match but concept match)
+      const isSemanticMatch = matchedKeywords.length === 0;
+      const importance = isSemanticMatch ? 65 : Math.min(100, Math.round(totalScore * 0.3));
       const dominantQuadrant = Object.entries(quadrantScores)
         .sort((a, b) => b[1] - a[1])[0]?.[0] || 'market';
 
-      // Only store URL if it's valid
       const sourceUrl = (actu.url && isValidUrl(actu.url)) ? actu.url : null;
 
       const { data: inserted, error: insertError } = await supabase
@@ -692,8 +782,8 @@ serve(async (req) => {
           source_url: sourceUrl,
           source_type: actu.source_type,
           date_publication: actu.date_publication || new Date().toISOString(),
-          tags: matchedKeywords,
-          categorie: dominantCategory || 'Actualités sectorielles',
+          tags: isSemanticMatch ? ['sujet-connexe', ...matchedKeywords] : matchedKeywords,
+          categorie: dominantCategory || (isSemanticMatch ? 'Sujet Connexe' : 'Actualités sectorielles'),
           importance,
           analyse_ia: JSON.stringify({
             mots_cles_detectes: matchedKeywords,
@@ -702,7 +792,8 @@ serve(async (req) => {
             collecte_type: type,
             source_collecte: actu.source_type,
             url_verified: actu.url_verified,
-            collecte_date: new Date().toISOString()
+            collecte_date: new Date().toISOString(),
+            semantic_match: isSemanticMatch,
           })
         })
         .select('id');
@@ -715,7 +806,6 @@ serve(async (req) => {
         if (newId) {
           insertedArticles.push({ id: newId, titre: actu.titre, resume: actu.resume });
         }
-        console.log(`[collecte-veille] [${actu.source_type}] Inséré: ${actu.titre.substring(0, 50)}... (URL ${actu.url_verified ? '✓' : '✗'})`);
       }
 
       if (hasAlertKeyword) {
