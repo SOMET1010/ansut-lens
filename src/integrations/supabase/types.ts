@@ -670,6 +670,54 @@ export type Database = {
         }
         Relationships: []
       }
+      influenceurs_metier: {
+        Row: {
+          actif: boolean | null
+          categorie: string | null
+          created_at: string | null
+          derniere_activite: string | null
+          fonction: string | null
+          id: string
+          identifiant: string
+          nom: string
+          organisation: string | null
+          pays: string | null
+          plateforme: string
+          score_pertinence: number | null
+          url_profil: string | null
+        }
+        Insert: {
+          actif?: boolean | null
+          categorie?: string | null
+          created_at?: string | null
+          derniere_activite?: string | null
+          fonction?: string | null
+          id?: string
+          identifiant: string
+          nom: string
+          organisation?: string | null
+          pays?: string | null
+          plateforme?: string
+          score_pertinence?: number | null
+          url_profil?: string | null
+        }
+        Update: {
+          actif?: boolean | null
+          categorie?: string | null
+          created_at?: string | null
+          derniere_activite?: string | null
+          fonction?: string | null
+          id?: string
+          identifiant?: string
+          nom?: string
+          organisation?: string | null
+          pays?: string | null
+          plateforme?: string
+          score_pertinence?: number | null
+          url_profil?: string | null
+        }
+        Relationships: []
+      }
       mentions: {
         Row: {
           auteur: string | null
@@ -1606,6 +1654,48 @@ export type Database = {
           platform_id?: string | null
           type?: string
           url?: string | null
+        }
+        Relationships: []
+      }
+      territoires_expression: {
+        Row: {
+          actif: boolean | null
+          concepts: string[] | null
+          created_at: string | null
+          description: string | null
+          hashtags: string[] | null
+          id: string
+          mots_cles_associes: string[] | null
+          nom: string
+          pays_cibles: string[] | null
+          priorite: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          actif?: boolean | null
+          concepts?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          hashtags?: string[] | null
+          id?: string
+          mots_cles_associes?: string[] | null
+          nom: string
+          pays_cibles?: string[] | null
+          priorite?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          actif?: boolean | null
+          concepts?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          hashtags?: string[] | null
+          id?: string
+          mots_cles_associes?: string[] | null
+          nom?: string
+          pays_cibles?: string[] | null
+          priorite?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
