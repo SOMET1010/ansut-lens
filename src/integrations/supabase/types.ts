@@ -298,6 +298,54 @@ export type Database = {
         }
         Relationships: []
       }
+      contenus_valides: {
+        Row: {
+          actif: boolean | null
+          categorie: string | null
+          contenu: string
+          created_at: string | null
+          expire_at: string | null
+          hashtags: string[] | null
+          id: string
+          image_url: string | null
+          titre: string
+          type: string | null
+          updated_at: string | null
+          utilise_count: number | null
+          valide_par: string | null
+        }
+        Insert: {
+          actif?: boolean | null
+          categorie?: string | null
+          contenu: string
+          created_at?: string | null
+          expire_at?: string | null
+          hashtags?: string[] | null
+          id?: string
+          image_url?: string | null
+          titre: string
+          type?: string | null
+          updated_at?: string | null
+          utilise_count?: number | null
+          valide_par?: string | null
+        }
+        Update: {
+          actif?: boolean | null
+          categorie?: string | null
+          contenu?: string
+          created_at?: string | null
+          expire_at?: string | null
+          hashtags?: string[] | null
+          id?: string
+          image_url?: string | null
+          titre?: string
+          type?: string | null
+          updated_at?: string | null
+          utilise_count?: number | null
+          valide_par?: string | null
+        }
+        Relationships: []
+      }
       conversations_ia: {
         Row: {
           created_at: string
@@ -1497,6 +1545,103 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vip_alertes: {
+        Row: {
+          analyse_conformite: Json | null
+          contenu: string | null
+          created_at: string | null
+          date_publication: string | null
+          id: string
+          niveau_risque: string | null
+          plateforme: string
+          traitee: boolean | null
+          url_post: string | null
+          vip_compte_id: string
+        }
+        Insert: {
+          analyse_conformite?: Json | null
+          contenu?: string | null
+          created_at?: string | null
+          date_publication?: string | null
+          id?: string
+          niveau_risque?: string | null
+          plateforme: string
+          traitee?: boolean | null
+          url_post?: string | null
+          vip_compte_id: string
+        }
+        Update: {
+          analyse_conformite?: Json | null
+          contenu?: string | null
+          created_at?: string | null
+          date_publication?: string | null
+          id?: string
+          niveau_risque?: string | null
+          plateforme?: string
+          traitee?: boolean | null
+          url_post?: string | null
+          vip_compte_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vip_alertes_vip_compte_id_fkey"
+            columns: ["vip_compte_id"]
+            isOneToOne: false
+            referencedRelation: "vip_comptes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vip_comptes: {
+        Row: {
+          actif: boolean | null
+          created_at: string | null
+          derniere_verification: string | null
+          fonction: string | null
+          id: string
+          identifiant: string
+          nom: string
+          personnalite_id: string | null
+          plateforme: string
+          updated_at: string | null
+          url_profil: string | null
+        }
+        Insert: {
+          actif?: boolean | null
+          created_at?: string | null
+          derniere_verification?: string | null
+          fonction?: string | null
+          id?: string
+          identifiant: string
+          nom: string
+          personnalite_id?: string | null
+          plateforme?: string
+          updated_at?: string | null
+          url_profil?: string | null
+        }
+        Update: {
+          actif?: boolean | null
+          created_at?: string | null
+          derniere_verification?: string | null
+          fonction?: string | null
+          id?: string
+          identifiant?: string
+          nom?: string
+          personnalite_id?: string | null
+          plateforme?: string
+          updated_at?: string | null
+          url_profil?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vip_comptes_personnalite_id_fkey"
+            columns: ["personnalite_id"]
+            isOneToOne: false
+            referencedRelation: "personnalites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       weekly_digest_config: {
         Row: {
