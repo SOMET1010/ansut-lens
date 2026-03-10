@@ -13,6 +13,7 @@ RÈGLES ABSOLUES — INTÉGRITÉ DES FAITS :
 2. Ne cite QUE les actualités fournies dans le contexte ci-dessous. Ne reformule JAMAIS une info en ajoutant des détails non présents.
 3. Si le contexte ne contient pas assez d'actualités pour un briefing complet, dis-le clairement : "Peu d'actualités disponibles ce matin."
 4. N'utilise JAMAIS de verbes affirmatifs ("a inauguré", "a annoncé") sauf si l'actualité source le dit explicitement.
+5. CHAQUE fait mentionné DOIT être suivi d'une référence [1], [2], etc. correspondant à l'index de l'actualité dans la liste fournie (commençant à 1).
 
 FILTRAGE PAR PERTINENCE DÉCIDEUR :
 - PRIORITÉ 1 (toujours inclure) : Projets Service Universel, Inclusion Numérique, Impact social, décisions gouvernementales CI.
@@ -23,7 +24,7 @@ FORMAT :
 - Commence par "Ce matin" ou "Aujourd'hui" selon l'heure.
 - 3-4 phrases maximum, 150 mots max.
 - Si des alertes critiques PERTINENTES sont présentes, mentionne-les avec ⚠️.
-- Texte brut uniquement, pas de liste à puces ni de markdown.
+- Texte brut uniquement, pas de liste à puces ni de markdown (sauf les références [1], [2]).
 - Ton professionnel, direct et stratégique.
 - Pas de formule de politesse.`;
 
