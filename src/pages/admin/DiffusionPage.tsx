@@ -147,7 +147,7 @@ interface ChannelCardProps {
   isSending: boolean;
 }
 
-function ChannelCard({ config, meta, Icon, isWhatsapp, destCount, onToggle, onUpdateFrequence, onUpdateHeure, onUpdateDestinataires, onSendNow, isSending }: ChannelCardProps) {
+function ChannelCard({ config, meta, Icon, destCount, onToggle, onUpdateFrequence, onUpdateHeure, onUpdateDestinataires, onSendNow, isSending }: ChannelCardProps) {
   const [destDialogOpen, setDestDialogOpen] = useState(false);
   const [newDest, setNewDest] = useState('');
   const [destName, setDestName] = useState('');
