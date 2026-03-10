@@ -220,7 +220,7 @@ serve(async (req) => {
       JSON.stringify({
         briefing: briefing.trim(),
         generated_at: new Date().toISOString(),
-        sources_count: verifiedActualites.length,
+        sources_count: uniqueActualites.length,
         alerts_count: alertesCritiques,
         sources: sourcesMap,
       }),
