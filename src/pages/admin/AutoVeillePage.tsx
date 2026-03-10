@@ -214,6 +214,14 @@ export default function AutoVeillePage() {
             <div className="grid gap-4">
               {(echoMetrics || []).map((echo: any) => {
                 const pub = echo.publications_institutionnelles;
+                // Parse recommandation_ia to separate sentiment and action
+                const recommandation = echo.recommandation_ia || '';
+                const sentimentMatch = recommandation.match(/(?:Sentiment|Citoyens?|Commentaires?)\s*:\s*([^|]+)/i);
+                const actionMatch = recommandation.match(/(?:Action\s*Com|Recommandation|Suggestion)\s*:\s*(.+)/i);
+                const sentimentText = sentimentMatch?.[1]?.trim() || (pub?.resume_commentaires);
+                const actionText = actionMatch?.[1]?.trim();
+                const generalRecommandation = (!sentimentMatch && !actionMatch) ? recommandation : null;
+
                 return (
                   <Card key={echo.id} className="glass">
                     <CardContent className="py-4">
@@ -240,12 +248,35 @@ export default function AutoVeillePage() {
                           <p className="text-xs text-muted-foreground">Portée estimée</p>
                         </div>
                       </div>
-                      <Progress value={Number(echo.score_resonance)} className="mb-2" />
-                      {echo.gap_media && (
-                        <p className="text-xs text-amber-600 dark:text-amber-400 mb-1">⚠️ {echo.gap_media}</p>
+                      <Progress value={Number(echo.score_resonance)} className="mb-3" />
+
+                      {/* Sentiment citoyens */}
+                      {sentimentText && (
+                        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-muted/50 mb-2">
+                          <MessageCircle className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-xs font-medium text-foreground mb-0.5">Sentiment citoyens</p>
+                            <p className="text-xs text-muted-foreground">{sentimentText}</p>
+                          </div>
+                        </div>
                       )}
-                      {echo.recommandation_ia && (
-                        <p className="text-xs text-muted-foreground">💡 {echo.recommandation_ia}</p>
+
+                      {/* Action Com */}
+                      {actionText && (
+                        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-primary/5 border border-primary/10 mb-2">
+                          <Megaphone className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-xs font-medium text-foreground mb-0.5">Action Com recommandée</p>
+                            <p className="text-xs text-muted-foreground">{actionText}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {echo.gap_media && (
+                        <p className="text-xs text-destructive mb-1">⚠️ {echo.gap_media}</p>
+                      )}
+                      {generalRecommandation && (
+                        <p className="text-xs text-muted-foreground">💡 {generalRecommandation}</p>
                       )}
                     </CardContent>
                   </Card>
