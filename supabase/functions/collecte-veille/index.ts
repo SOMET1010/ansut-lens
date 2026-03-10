@@ -560,6 +560,25 @@ serve(async (req) => {
     const topKeywords = motsCles.slice(0, 10).map((m) => m.mot_cle);
     const keywordsString = topKeywords.join(', ');
 
+    // 2b. Check for active boost events to add extra keywords
+    const today = new Date().toISOString().split('T')[0];
+    const { data: boostEvents } = await supabase
+      .from('evenements_strategiques')
+      .select('nom, mots_cles')
+      .eq('boost_actif', true)
+      .lte('date_debut', today)
+      .gte('date_fin', today);
+
+    const boostKeywords: string[] = (boostEvents || []).flatMap(e => e.mots_cles || []);
+    if (boostKeywords.length > 0) {
+      console.log(`[collecte-veille] 🔥 Mode Boost actif: ${boostKeywords.join(', ')}`);
+    }
+
+    // Combine regular + boost keywords for Perplexity/Grok
+    const enrichedKeywords = boostKeywords.length > 0
+      ? `${keywordsString}, ${boostKeywords.slice(0, 5).join(', ')}`
+      : keywordsString;
+
     // 3. Appels parallèles aux APIs disponibles
     const sourcesUtilisees: string[] = [];
     const collectePromises: Promise<{ actualites: CollectedActualite[], citations: string[] }>[] = [];
@@ -567,7 +586,7 @@ serve(async (req) => {
     if (PERPLEXITY_API_KEY) {
       sourcesUtilisees.push('perplexity');
       collectePromises.push(
-        collectePerplexity(keywordsString, PERPLEXITY_API_KEY)
+        collectePerplexity(enrichedKeywords, PERPLEXITY_API_KEY)
           .catch(err => {
             console.error('[collecte-veille] Erreur Perplexity (continue):', err.message);
             return { actualites: [], citations: [] };
@@ -578,9 +597,20 @@ serve(async (req) => {
     if (XAI_API_KEY) {
       sourcesUtilisees.push('grok_twitter');
       collectePromises.push(
-        collecteGrok(keywordsString, XAI_API_KEY)
+        collecteGrok(enrichedKeywords, XAI_API_KEY)
           .catch(err => {
             console.error('[collecte-veille] Erreur Grok (continue):', err.message);
+            return { actualites: [], citations: [] };
+          })
+      );
+    }
+
+    if (FIRECRAWL_API_KEY) {
+      sourcesUtilisees.push('google_news');
+      collectePromises.push(
+        collecteGoogleNews(enrichedKeywords, FIRECRAWL_API_KEY, boostKeywords)
+          .catch(err => {
+            console.error('[collecte-veille] Erreur Google News (continue):', err.message);
             return { actualites: [], citations: [] };
           })
       );
