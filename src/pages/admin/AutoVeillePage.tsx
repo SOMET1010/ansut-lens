@@ -45,6 +45,7 @@ export default function AutoVeillePage() {
   const { data: partDeVoix } = usePartDeVoix();
   const { data: vipComptes } = useVipComptes();
   const { data: vipAlertes } = useVipAlertes();
+  const { data: archStats, isLoading: archLoading } = useArchitectureStats();
   const collecte = useCollecteInstitutionnelle();
   const analyser = useAnalyserEcho();
 
