@@ -71,7 +71,6 @@ export default function DiffusionPage() {
                 config={config}
                 meta={meta}
                 Icon={Icon}
-                isWhatsapp={isWhatsapp}
                 destCount={destCount}
                 onToggle={(actif) => updateConfig.mutate({ id: config.id, updates: { actif } })}
                 onUpdateFrequence={(frequence) => updateConfig.mutate({ id: config.id, updates: { frequence } })}
