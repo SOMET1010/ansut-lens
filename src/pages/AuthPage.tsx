@@ -133,18 +133,18 @@ export default function AuthPage() {
   const onMagicLinkSubmit = async (data: MagicLinkFormData) => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: data.email,
-        options: {
-          emailRedirectTo: window.location.origin + '/radar',
-        },
+      const { data: result, error: fnError } = await supabase.functions.invoke('send-magic-link', {
+        body: { email: data.email },
       });
 
-      if (error) {
-        toast.error(error.message || "Erreur lors de l'envoi du lien magique");
+      if (fnError) {
+        console.error('Magic link error:', fnError);
+        toast.error("Erreur lors de l'envoi du lien magique");
+      } else if (result?.error) {
+        toast.error(result.error);
       } else {
         setMagicLinkSent(true);
-        toast.success('Lien magique envoyé ! Vérifiez votre boîte mail.');
+        toast.success(result?.message || 'Lien magique envoyé ! Vérifiez votre boîte mail.');
       }
     } catch {
       toast.error('Une erreur est survenue');
