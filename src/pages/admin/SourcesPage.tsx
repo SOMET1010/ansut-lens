@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import SourceReliabilityDashboard from '@/components/admin/SourceReliabilityDashboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -175,6 +177,18 @@ export default function SourcesPage() {
           Ajouter
         </Button>
       </div>
+
+      <Tabs defaultValue="stats" className="w-full">
+        <TabsList>
+          <TabsTrigger value="stats">Statistiques</TabsTrigger>
+          <TabsTrigger value="gestion">Gestion</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="stats">
+          <SourceReliabilityDashboard />
+        </TabsContent>
+
+        <TabsContent value="gestion">
 
       {/* Stats */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
@@ -364,6 +378,8 @@ export default function SourcesPage() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
