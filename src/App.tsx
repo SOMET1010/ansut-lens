@@ -173,6 +173,10 @@ const App = () => (
                             <Route path="/admin/coffre-contenu" element={<CoffreContenuPage />} />
                           </Route>
                           
+                          <Route element={<PermissionRoute permission="manage_keywords" />}>
+                            <Route path="/admin/veille-semantique" element={<VeilleSemantiquePage />} />
+                          </Route>
+
                           <Route element={<PermissionRoute permission="manage_roles" />}>
                             <Route path="/admin/roles" element={<RolesPage />} />
                           </Route>
