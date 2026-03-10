@@ -156,6 +156,10 @@ const App = () => (
                             <Route path="/admin/sources" element={<SourcesPage />} />
                           </Route>
                           
+                          <Route element={<PermissionRoute permission="manage_newsletters" />}>
+                            <Route path="/admin/matinale" element={<MatinalePage />} />
+                          </Route>
+                          
                           <Route element={<PermissionRoute permission="manage_roles" />}>
                             <Route path="/admin/roles" element={<RolesPage />} />
                           </Route>

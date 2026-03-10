@@ -74,3 +74,6 @@ verify_jwt = false
 
 [functions.analyser-spdi]
 verify_jwt = false
+
+[functions.generer-matinale]
+verify_jwt = false

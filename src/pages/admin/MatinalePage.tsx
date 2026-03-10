@@ -29,7 +29,7 @@ export default function MatinalePage() {
   };
 
   const handleSend = async () => {
-    await send.mutateAsync();
+    await send.mutateAsync(undefined);
   };
 
   return (
