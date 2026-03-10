@@ -1,4 +1,4 @@
-import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode, Radio, Activity } from 'lucide-react';
+import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode, Radio, Activity, Newspaper } from 'lucide-react';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { SystemHealthWidget } from '@/components/admin/SystemHealthWidget';
 import { AdminNavCard } from '@/components/admin/AdminNavCard';
@@ -149,6 +149,18 @@ export default function AdminPage() {
               badgeVariant="info"
               subtitle="Programmez l'envoi des résumés par SMS, Telegram et Email."
               to="/admin/diffusion"
+              loading={isLoading}
+            />
+          </PermissionGate>
+          <PermissionGate permission="manage_newsletters">
+            <AdminNavCard
+              color="purple"
+              icon={<Newspaper size={24} />}
+              title="Matinale Com"
+              badge="Quotidien"
+              badgeVariant="info"
+              subtitle="Briefing matinal IA avec Flash Info, Réputation et Post LinkedIn prêt-à-poster."
+              to="/admin/matinale"
               loading={isLoading}
             />
           </PermissionGate>
