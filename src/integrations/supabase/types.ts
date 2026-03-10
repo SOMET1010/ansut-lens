@@ -25,6 +25,7 @@ export type Database = {
           entites_entreprises: string[] | null
           entites_personnes: string[] | null
           id: string
+          impact_ansut: string | null
           importance: number | null
           pourquoi_important: string | null
           resume: string | null
@@ -47,6 +48,7 @@ export type Database = {
           entites_entreprises?: string[] | null
           entites_personnes?: string[] | null
           id?: string
+          impact_ansut?: string | null
           importance?: number | null
           pourquoi_important?: string | null
           resume?: string | null
@@ -69,6 +71,7 @@ export type Database = {
           entites_entreprises?: string[] | null
           entites_personnes?: string[] | null
           id?: string
+          impact_ansut?: string | null
           importance?: number | null
           pourquoi_important?: string | null
           resume?: string | null
