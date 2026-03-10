@@ -32,6 +32,8 @@ import SourcesPage from "@/pages/admin/SourcesPage";
 import RolesPage from "@/pages/admin/RolesPage";
 import MatinalePage from "@/pages/admin/MatinalePage";
 import EvenementsPage from "@/pages/admin/EvenementsPage";
+import ShadowTrackerPage from "@/pages/admin/ShadowTrackerPage";
+import CoffreContenuPage from "@/pages/admin/CoffreContenuPage";
 import AlertesHistoryPage from "@/pages/AlertesHistoryPage";
 import PresentationPage from "@/pages/PresentationPage";
 import ProfilePage from "@/pages/ProfilePage";
@@ -163,6 +165,11 @@ const App = () => (
                           
                           <Route element={<PermissionRoute permission="manage_keywords" />}>
                             <Route path="/admin/evenements" element={<EvenementsPage />} />
+                          </Route>
+                          
+                          <Route element={<PermissionRoute permission="manage_newsletters" />}>
+                            <Route path="/admin/shadow-tracker" element={<ShadowTrackerPage />} />
+                            <Route path="/admin/coffre-contenu" element={<CoffreContenuPage />} />
                           </Route>
                           
                           <Route element={<PermissionRoute permission="manage_roles" />}>
