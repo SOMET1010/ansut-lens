@@ -101,27 +101,37 @@ serve(async (req) => {
     // Filter out previously rejected articles
     const filteredActualites = actualites.filter(a => !rejectedIds.has((a as any).id));
 
-    // Only include articles with valid source URLs (anti-hallucination)
+    // Only include articles with valid, accessible source URLs (anti-hallucination)
+    // Also deduplicate by title similarity
+    const seenTitles = new Set<string>();
     const verifiedActualites = filteredActualites.filter(a => {
-      if (!a.source_url) return true; // Allow articles without URL but flag them
+      // Reject articles without source URL — unsourced = unverifiable
+      if (!a.source_url) return false;
       try {
         new URL(a.source_url);
-        return true;
       } catch {
         return false;
       }
+      // Deduplicate by normalized title (first 40 chars lowercase)
+      const titleKey = a.titre.toLowerCase().substring(0, 40).trim();
+      if (seenTitles.has(titleKey)) return false;
+      seenTitles.add(titleKey);
+      return true;
     });
 
-    // Build context with numbered sources for citation
-    const sourcesMap = verifiedActualites.slice(0, 7).map((a, i) => ({
+    // Also deduplicate sources in the output list
+    const seenSources = new Set<string>();
+    const uniqueActualites = verifiedActualites.slice(0, 7);
+
+    const sourcesMap = uniqueActualites.map((a, i) => ({
       index: i + 1,
       titre: a.titre,
       source_nom: a.source_nom || 'Source inconnue',
       source_url: a.source_url || null,
     }));
 
-    const actualitesList = verifiedActualites.slice(0, 7).map((a, i) => 
-      `[${i + 1}] ${a.titre}${a.resume ? ` : ${a.resume.substring(0, 120)}` : ''} (importance: ${a.importance || 50}/100, catégorie: ${a.categorie || 'non classé'}, source: ${a.source_nom || 'inconnue'}${a.source_url ? `, url: ${a.source_url}` : ', PAS DE LIEN SOURCE'})`
+    const actualitesList = uniqueActualites.map((a, i) => 
+      `[${i + 1}] ${a.titre}${a.resume ? ` : ${a.resume.substring(0, 120)}` : ''} (importance: ${a.importance || 50}/100, catégorie: ${a.categorie || 'non classé'}, source: ${a.source_nom || 'inconnue'}, url: ${a.source_url})`
     ).join('\n');
 
     const alertesCritiques = signaux.length;
@@ -145,8 +155,8 @@ serve(async (req) => {
       personalization += `\nRaisons de rejets passés par cet utilisateur : ${[...new Set(rejectedReasons)].slice(0, 5).join('; ')}.`;
     }
 
-    const context = verifiedActualites.length > 0
-      ? `Actualités vérifiées du jour:\n${actualitesList}${alertesDetails}${personalization}`
+    const context = uniqueActualites.length > 0
+      ? `Actualités vérifiées du jour (sources avec URL accessible uniquement):\n${actualitesList}${alertesDetails}${personalization}`
       : `Aucune actualité récente disponible.${alertesDetails}${personalization}`;
 
     console.log('Generating briefing with context length:', context.length, 'for user:', userName);
@@ -210,7 +220,7 @@ serve(async (req) => {
       JSON.stringify({
         briefing: briefing.trim(),
         generated_at: new Date().toISOString(),
-        sources_count: verifiedActualites.length,
+        sources_count: uniqueActualites.length,
         alerts_count: alertesCritiques,
         sources: sourcesMap,
       }),
