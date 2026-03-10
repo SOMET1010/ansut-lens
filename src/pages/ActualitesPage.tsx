@@ -1,8 +1,9 @@
 import { useState, useCallback } from 'react';
-import { TrendingUp, Loader2, Newspaper } from 'lucide-react';
+import { TrendingUp, Loader2, Newspaper, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useActualites, useTriggerCollecte, useEnrichActualite, useYesterdayArticles, useBatchSentiment } from '@/hooks/useActualites';
 import { useArticleClusters } from '@/hooks/useArticleClusters';
 import { useSidebarAnalytics } from '@/hooks/useSidebarAnalytics';
@@ -10,6 +11,7 @@ import { ArticleCluster } from '@/components/actualites/ArticleCluster';
 import { SmartSidebar } from '@/components/actualites/SmartSidebar';
 import { WatchHeader } from '@/components/actualites/WatchHeader';
 import { BigSearchBar } from '@/components/actualites/BigSearchBar';
+import { PourVousFeed } from '@/components/actualites/PourVousFeed';
 import { toast } from 'sonner';
 
 // Map période vers maxAgeHours
