@@ -36,6 +36,7 @@ import ShadowTrackerPage from "@/pages/admin/ShadowTrackerPage";
 import CoffreContenuPage from "@/pages/admin/CoffreContenuPage";
 import VeilleSemantiquePage from "@/pages/admin/VeilleSemantiquePage";
 import AutoVeillePage from "@/pages/admin/AutoVeillePage";
+import CredibilitePDFPage from "@/pages/admin/CredibilitePDFPage";
 import AlertesHistoryPage from "@/pages/AlertesHistoryPage";
 import PresentationPage from "@/pages/PresentationPage";
 import ProfilePage from "@/pages/ProfilePage";
