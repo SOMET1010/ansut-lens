@@ -253,7 +253,7 @@ Deno.serve(async (req) => {
   <div style="margin-bottom:16px;padding:12px;background-color:#f0f9ff;border-radius:8px;border-left:4px solid #2563eb;">
     <p style="margin:0 0 4px;font-weight:bold;color:#1e3a5f;font-size:14px;">${item.titre}</p>
     <p style="margin:0 0 4px;color:#374151;font-size:13px;">${item.resume}</p>
-    <p style="margin:0;color:#6b7280;font-size:11px;">Source : ${item.source}</p>
+    <p style="margin:0;color:#6b7280;font-size:11px;">Source : ${item.source}${item.source_url ? ` — <a href="${item.source_url}" style="color:#2563eb;text-decoration:underline;" target="_blank">Lire →</a>` : ''}</p>
   </div>`).join('')}
 </td></tr>
 <tr><td style="padding:0 24px 24px;">

@@ -7,6 +7,7 @@ interface MatinaleFlashItem {
   titre: string;
   resume: string;
   source: string;
+  source_url?: string;
 }
 
 interface MatinaleContent {
