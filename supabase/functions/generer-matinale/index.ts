@@ -169,9 +169,10 @@ Deno.serve(async (req) => {
                   type: 'object',
                   properties: {
                     linkedin: { type: 'string' },
+                    x_post: { type: 'string', description: 'Tweet max 280 characters with hashtags' },
                     angle: { type: 'string' },
                   },
-                  required: ['linkedin', 'angle'],
+                  required: ['linkedin', 'x_post', 'angle'],
                 },
               },
               required: ['flash_info', 'veille_reputation', 'pret_a_poster'],

@@ -26,7 +26,7 @@ const modeConfigs = {
   },
   communication: {
     label: 'Com',
-    icon: Search, // reuse, will override below
+    icon: Megaphone,
     description: 'Préparer des contenus de communication',
   },
 };
