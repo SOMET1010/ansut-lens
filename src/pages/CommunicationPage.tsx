@@ -401,6 +401,14 @@ function QuickToolsSection() {
 
 // --- Main Page ---
 export default function CommunicationPage() {
+  const sujetSetterRef = React.useRef<((text: string) => void) | null>(null);
+
+  const handleGeneratePost = useCallback((text: string) => {
+    sujetSetterRef.current?.(text);
+    // Scroll to kit section
+    document.getElementById('kit-communication')?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
       <div>
@@ -433,9 +441,26 @@ export default function CommunicationPage() {
       </div>
 
       <Separator />
+
+      {/* Analyseur de Réactions */}
+      <ReactionAnalyzerSection />
+
+      <Separator />
+
+      {/* Sujets à Valoriser */}
+      <SujetsValorisationSection onGeneratePost={handleGeneratePost} />
+
+      <Separator />
+
+      {/* Posts à Amplifier */}
+      <PostsAmplifierSection onPrepareResponse={handleGeneratePost} />
+
+      <Separator />
       <MatinaleBriefingSection />
       <Separator />
-      <ContentGeneratorSection />
+      <div id="kit-communication">
+        <ContentGeneratorSection sujetRef={sujetSetterRef} />
+      </div>
       <Separator />
       <QuickToolsSection />
     </div>
