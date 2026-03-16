@@ -51,7 +51,8 @@ Règles :
 - Le post LinkedIn doit valoriser l'ANSUT et le numérique en Côte d'Ivoire
 - Si aucune mention directe de l'ANSUT n'est trouvée, suggère un angle de rebond
 - CRITIQUE : Les "preuves" dans veille_reputation DOIVENT utiliser les URLs réelles fournies dans le contexte. NE JAMAIS inventer une URL. Si un article n'a pas d'URL, ne l'inclus pas dans les preuves.
-- Chaque preuve doit contenir un extrait EXACT ou fidèle de l'article source, pas une reformulation`;
+- Chaque preuve doit contenir un extrait EXACT ou fidèle de l'article source, pas une reformulation
+- CRITIQUE : Chaque item de flash_info DOIT inclure le champ "source_url" avec l'URL réelle de l'article depuis le contexte. NE JAMAIS inventer une URL. Si l'article n'a pas d'URL, mettre une chaîne vide.`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -160,8 +161,9 @@ Deno.serve(async (req) => {
                       titre: { type: 'string' },
                       resume: { type: 'string' },
                       source: { type: 'string' },
+                      source_url: { type: 'string', description: 'URL réelle de l\'article source, depuis le contexte fourni' },
                     },
-                    required: ['titre', 'resume', 'source'],
+                    required: ['titre', 'resume', 'source', 'source_url'],
                   },
                 },
                 veille_reputation: {
@@ -251,7 +253,7 @@ Deno.serve(async (req) => {
   <div style="margin-bottom:16px;padding:12px;background-color:#f0f9ff;border-radius:8px;border-left:4px solid #2563eb;">
     <p style="margin:0 0 4px;font-weight:bold;color:#1e3a5f;font-size:14px;">${item.titre}</p>
     <p style="margin:0 0 4px;color:#374151;font-size:13px;">${item.resume}</p>
-    <p style="margin:0;color:#6b7280;font-size:11px;">Source : ${item.source}</p>
+    <p style="margin:0;color:#6b7280;font-size:11px;">Source : ${item.source}${item.source_url ? ` — <a href="${item.source_url}" style="color:#2563eb;text-decoration:underline;" target="_blank">Lire →</a>` : ''}</p>
   </div>`).join('')}
 </td></tr>
 <tr><td style="padding:0 24px 24px;">

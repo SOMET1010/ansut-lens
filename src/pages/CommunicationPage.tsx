@@ -96,7 +96,20 @@ function MatinaleBriefingSection() {
                   <CardContent className="p-4">
                     <p className="font-medium text-sm mb-1">{item.titre}</p>
                     <p className="text-xs text-muted-foreground mb-2">{item.resume}</p>
-                    <span className="text-[10px] text-muted-foreground/70">Source : {item.source}</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground/70">Source : {item.source}</span>
+                      {item.source_url && (
+                        <a
+                          href={item.source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="shrink-0 p-1 rounded-md hover:bg-accent transition-colors"
+                          title="Voir la source"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5 text-primary" />
+                        </a>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
