@@ -74,7 +74,7 @@ function MatinaleBriefingSection() {
             {isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {isPending ? 'Génération…' : 'Générer le briefing'}
           </Button>
-          <Button onClick={() => sendMatinale()} disabled={isSending} variant="default" className="gap-2">
+          <Button onClick={() => sendMatinale(undefined)} disabled={isSending} variant="default" className="gap-2">
             {isSending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             {isSending ? 'Envoi…' : 'Envoyer la Matinale'}
           </Button>
