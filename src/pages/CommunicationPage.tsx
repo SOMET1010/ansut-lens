@@ -124,7 +124,7 @@ function MatinaleBriefingSection() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm flex items-center gap-1.5">
-                  🎯 Veille Réputation
+                  🎯 Veille Réputation ANSUT
                 </CardTitle>
                 <TonaliteBadge tonalite={data.matinale.veille_reputation.tonalite} />
               </div>
@@ -133,11 +133,11 @@ function MatinaleBriefingSection() {
               <p className="text-sm">{data.matinale.veille_reputation.resume}</p>
               
               {/* Preuves avec liens */}
-              {data.matinale.veille_reputation.preuves && data.matinale.veille_reputation.preuves.length > 0 && (
+              {data.matinale.veille_reputation.preuves && data.matinale.veille_reputation.preuves.length > 0 ? (
                 <div className="space-y-2">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
-                    Sources justificatives
+                    Preuves — Articles mentionnant l'ANSUT
                   </p>
                   {data.matinale.veille_reputation.preuves.map((preuve, i) => {
                     const sentColor = preuve.sentiment_article === 'positif' 
@@ -171,6 +171,13 @@ function MatinaleBriefingSection() {
                       </div>
                     );
                   })}
+                </div>
+              ) : (
+                <div className="p-3 rounded-lg bg-amber-500/5 border border-dashed border-amber-500/20">
+                  <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    Aucune mention directe de l'ANSUT détectée dans les médias sur les dernières 24h
+                  </p>
                 </div>
               )}
 

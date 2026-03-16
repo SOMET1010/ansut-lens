@@ -24,21 +24,22 @@ const MATINALE_PROMPT = `Tu es le rédacteur en chef de la communication de l'AN
 
 Génère un briefing matinal "Spécial Communication" structuré en 3 sections EXACTES au format JSON :
 
-1. "flash_info" : Un tableau de 3 objets, chaque objet contient :
+1. "flash_info" : Un tableau de 3 objets parmi les ACTUALITÉS GÉNÉRALES, chaque objet contient :
    - "titre" : Titre court (max 15 mots)
    - "resume" : Résumé percutant en 20 mots maximum
    - "source" : Nom de la source
 
-2. "veille_reputation" : Un objet contenant :
-   - "resume" : 2-3 phrases sur l'image de l'ANSUT/Service Universel aujourd'hui
+2. "veille_reputation" : Analyse EXCLUSIVEMENT basée sur les sections "MENTIONS DIRECTES ANSUT" et "MENTIONS SOCIALES ANSUT" du contexte. Un objet contenant :
+   - "resume" : 2-3 phrases analysant l'image ACTUELLE de l'ANSUT basée UNIQUEMENT sur les articles/mentions qui la citent nommément. Si aucune mention directe n'existe, indique-le clairement.
    - "tonalite" : "positif", "neutre" ou "negatif"
-   - "mentions_cles" : Tableau de strings des mentions importantes
-   - "preuves" : Un tableau de 2-4 objets, chaque preuve contient :
-     * "titre" : Titre de l'article source
-     * "source" : Nom du média
-     * "url" : URL de l'article (OBLIGATOIRE, prends-la depuis le contexte)
-     * "extrait" : Citation exacte ou phrase clé de l'article qui justifie la tonalité (20 mots max)
+   - "mentions_cles" : Tableau de strings des mentions directes de l'ANSUT trouvées
+   - "preuves" : Un tableau de preuves. CHAQUE PREUVE doit correspondre à un article/mention qui cite EXPLICITEMENT l'ANSUT ou le Service Universel. Chaque preuve contient :
+     * "titre" : Titre EXACT de l'article/mention tel que fourni dans le contexte
+     * "source" : Nom du média ou plateforme
+     * "url" : URL EXACTE telle que fournie dans le contexte (copier EXACTEMENT, NE JAMAIS inventer)
+     * "extrait" : Citation EXACTE de l'article où l'ANSUT est mentionnée (20 mots max)
      * "sentiment_article" : "positif", "neutre" ou "negatif"
+   IMPORTANT : Si aucun article ne mentionne directement l'ANSUT, mets un tableau vide pour "preuves" et indique-le dans le résumé. Ne fabrique JAMAIS de fausses preuves.
 
 3. "pret_a_poster" : Un objet contenant :
    - "linkedin" : Un post LinkedIn professionnel de 3-4 phrases valorisant l'action de l'ANSUT à partir de l'actu du jour (avec emojis professionnels)
@@ -48,11 +49,10 @@ Génère un briefing matinal "Spécial Communication" structuré en 3 sections E
 Règles :
 - Écris en français professionnel
 - Le contenu doit être directement utilisable sans modification
-- Le post LinkedIn doit valoriser l'ANSUT et le numérique en Côte d'Ivoire
-- Si aucune mention directe de l'ANSUT n'est trouvée, suggère un angle de rebond
-- CRITIQUE : Les "preuves" dans veille_reputation DOIVENT utiliser les URLs réelles fournies dans le contexte. NE JAMAIS inventer une URL. Si un article n'a pas d'URL, ne l'inclus pas dans les preuves.
-- Chaque preuve doit contenir un extrait EXACT ou fidèle de l'article source, pas une reformulation
-- CRITIQUE : Chaque item de flash_info DOIT inclure le champ "source_url" avec l'URL réelle de l'article depuis le contexte. NE JAMAIS inventer une URL. Si l'article n'a pas d'URL, mettre une chaîne vide.`;
+- CRITIQUE pour veille_reputation : N'utilise QUE les données des sections "MENTIONS DIRECTES ANSUT" et "MENTIONS SOCIALES ANSUT" pour construire les preuves. Les "ACTUALITÉS GÉNÉRALES" servent pour flash_info et prêt-à-poster.
+- CRITIQUE : Les URLs dans les preuves doivent être copiées EXACTEMENT depuis le contexte. NE JAMAIS inventer une URL.
+- Si aucune mention directe de l'ANSUT n'est trouvée, suggère un angle de rebond dans le résumé
+- CRITIQUE : Chaque item de flash_info DOIT inclure le champ "source_url" avec l'URL réelle de l'article depuis le contexte. NE JAMAIS inventer une URL.`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -103,14 +103,30 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch last 24h articles
+    // Fetch last 24h articles (general news)
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data: articles } = await supabase
       .from('actualites')
-      .select('titre, resume, source_nom, source_url, importance, sentiment, impact_ansut, categorie')
+      .select('titre, resume, source_nom, source_url, importance, sentiment, impact_ansut, categorie, contenu')
       .gte('created_at', yesterday)
       .order('importance', { ascending: false })
       .limit(20);
+
+    // Fetch ANSUT-specific mentions from mentions table
+    const { data: mentions } = await supabase
+      .from('mentions')
+      .select('contenu, source, source_url, auteur, sentiment, date_mention, est_critique')
+      .gte('created_at', yesterday)
+      .order('created_at', { ascending: false })
+      .limit(15);
+
+    // Fetch social insights mentioning ANSUT
+    const { data: socialInsights } = await supabase
+      .from('social_insights')
+      .select('contenu, plateforme, auteur, url_original, sentiment, engagement_score, est_critique')
+      .gte('created_at', yesterday)
+      .order('engagement_score', { ascending: false })
+      .limit(15);
 
     // Fetch critical alerts
     const { data: alertes } = await supabase
@@ -120,17 +136,53 @@ Deno.serve(async (req) => {
       .in('niveau', ['critical', 'warning'])
       .limit(5);
 
-    const articlesList = (articles || []).map((a, i) =>
+    // Also filter articles that specifically mention ANSUT
+    const ansutKeywords = ['ansut', 'service universel', 'télécommunications'];
+    const ansutArticles = (articles || []).filter(a => {
+      const text = `${a.titre} ${a.resume || ''} ${a.contenu || ''} ${a.impact_ansut || ''}`.toLowerCase();
+      return ansutKeywords.some(kw => text.includes(kw));
+    });
+
+    // Build structured context with clear separation
+    const generalArticlesList = (articles || []).map((a, i) =>
       `[${i+1}] ${a.titre} (source: ${a.source_nom || 'inconnue'}, url: ${a.source_url || 'N/A'}, importance: ${a.importance}/100, sentiment: ${a.sentiment ?? 'N/A'}${a.impact_ansut ? ', IMPACT ANSUT: ' + a.impact_ansut : ''})`
     ).join('\n');
+
+    const ansutArticlesList = ansutArticles.length > 0
+      ? ansutArticles.map((a, i) =>
+          `[A${i+1}] "${a.titre}" (source: ${a.source_nom || 'inconnue'}, url: ${a.source_url || 'N/A'}, sentiment: ${a.sentiment ?? 'N/A'}, résumé: ${a.resume || 'N/A'})`
+        ).join('\n')
+      : 'Aucun article ne mentionne directement l\'ANSUT dans les dernières 24h.';
+
+    const mentionsList = (mentions || []).length > 0
+      ? (mentions || []).map((m, i) =>
+          `[M${i+1}] "${m.contenu?.substring(0, 200)}" (source: ${m.source || 'inconnue'}, url: ${m.source_url || 'N/A'}, auteur: ${m.auteur || 'N/A'}, sentiment: ${m.sentiment ?? 'N/A'}, critique: ${m.est_critique ? 'OUI' : 'non'})`
+        ).join('\n')
+      : 'Aucune mention directe détectée.';
+
+    const socialList = (socialInsights || []).length > 0
+      ? (socialInsights || []).map((s, i) =>
+          `[S${i+1}] [${s.plateforme}] "${s.contenu?.substring(0, 200)}" (auteur: ${s.auteur || 'N/A'}, url: ${s.url_original || 'N/A'}, engagement: ${s.engagement_score}, sentiment: ${s.sentiment ?? 'N/A'}, critique: ${s.est_critique ? 'OUI' : 'non'})`
+        ).join('\n')
+      : 'Aucun insight social récent.';
 
     const alertesList = (alertes || []).length > 0
       ? `\n\nAlertes actives:\n${alertes!.map(a => `⚠️ ${a.titre}: ${a.message || ''}`).join('\n')}`
       : '';
 
-    const context = `Actualités des dernières 24h (${(articles || []).length} articles):\n${articlesList}${alertesList}`;
+    const context = `=== ACTUALITÉS GÉNÉRALES (${(articles || []).length} articles) ===
+${generalArticlesList}
 
-    console.log('[Matinale] Generating with', (articles || []).length, 'articles');
+=== MENTIONS DIRECTES ANSUT (articles citant l'ANSUT) ===
+${ansutArticlesList}
+
+=== MENTIONS MÉDIAS ANSUT (table mentions) ===
+${mentionsList}
+
+=== MENTIONS SOCIALES ANSUT (réseaux sociaux) ===
+${socialList}${alertesList}`;
+
+    console.log('[Matinale] Generating with', (articles || []).length, 'articles,', ansutArticles.length, 'ANSUT articles,', (mentions || []).length, 'mentions,', (socialInsights || []).length, 'social insights');
 
     // Call AI
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -161,7 +213,7 @@ Deno.serve(async (req) => {
                       titre: { type: 'string' },
                       resume: { type: 'string' },
                       source: { type: 'string' },
-                      source_url: { type: 'string', description: 'URL réelle de l\'article source, depuis le contexte fourni' },
+                      source_url: { type: 'string', description: "URL réelle de l'article source, depuis le contexte fourni" },
                     },
                     required: ['titre', 'resume', 'source', 'source_url'],
                   },
@@ -169,19 +221,19 @@ Deno.serve(async (req) => {
                 veille_reputation: {
                   type: 'object',
                   properties: {
-                    resume: { type: 'string' },
+                    resume: { type: 'string', description: "Analyse basée UNIQUEMENT sur les mentions directes de l'ANSUT" },
                     tonalite: { type: 'string', enum: ['positif', 'neutre', 'negatif'] },
                     mentions_cles: { type: 'array', items: { type: 'string' } },
                     preuves: {
                       type: 'array',
-                      description: 'Articles sources qui justifient la tonalité avec URL et extrait',
+                      description: "Articles/mentions qui citent EXPLICITEMENT l'ANSUT avec URL EXACTE du contexte et extrait mentionnant l'ANSUT",
                       items: {
                         type: 'object',
                         properties: {
-                          titre: { type: 'string' },
+                          titre: { type: 'string', description: "Titre EXACT de l'article/mention du contexte" },
                           source: { type: 'string' },
-                          url: { type: 'string', description: 'URL de l\'article source, obligatoire' },
-                          extrait: { type: 'string', description: 'Citation ou phrase clé justifiant la tonalité' },
+                          url: { type: 'string', description: "URL EXACTE copiée du contexte, NE JAMAIS inventer" },
+                          extrait: { type: 'string', description: "Citation EXACTE mentionnant l'ANSUT" },
                           sentiment_article: { type: 'string', enum: ['positif', 'neutre', 'negatif'] },
                         },
                         required: ['titre', 'source', 'url', 'extrait', 'sentiment_article'],
@@ -228,6 +280,21 @@ Deno.serve(async (req) => {
     const matinale = JSON.parse(toolCall.function.arguments);
     console.log('[Matinale] Generated successfully');
 
+    // Post-process: filter out preuves with invalid/invented URLs
+    if (matinale.veille_reputation?.preuves) {
+      const validUrls = new Set<string>();
+      // Collect all real URLs from context data
+      for (const a of (articles || [])) { if (a.source_url) validUrls.add(a.source_url); }
+      for (const m of (mentions || [])) { if (m.source_url) validUrls.add(m.source_url); }
+      for (const s of (socialInsights || [])) { if (s.url_original) validUrls.add(s.url_original); }
+
+      matinale.veille_reputation.preuves = matinale.veille_reputation.preuves.filter((p: any) => {
+        if (!p.url || p.url === 'N/A' || p.url === '') return false;
+        // Check URL exists in our data
+        return validUrls.has(p.url);
+      });
+    }
+
     // Generate HTML email
     const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -257,12 +324,12 @@ Deno.serve(async (req) => {
   </div>`).join('')}
 </td></tr>
 <tr><td style="padding:0 24px 24px;">
-  <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid ${tonaliteColor};padding-bottom:8px;">🎯 Veille Réputation ${tonaliteLabel}</h2>
+  <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid ${tonaliteColor};padding-bottom:8px;">🎯 Veille Réputation ANSUT ${tonaliteLabel}</h2>
   <div style="padding:16px;background-color:#fefce8;border-radius:8px;">
     <p style="margin:0 0 12px;color:#374151;font-size:14px;line-height:1.6;">${matinale.veille_reputation.resume}</p>
     ${(matinale.veille_reputation.preuves || []).length > 0 ? `
     <div style="margin:12px 0;border-top:1px solid #e5e7eb;padding-top:12px;">
-      <p style="margin:0 0 8px;font-size:12px;font-weight:bold;color:#1e3a5f;">📎 Sources justificatives :</p>
+      <p style="margin:0 0 8px;font-size:12px;font-weight:bold;color:#1e3a5f;">📎 Preuves — Articles mentionnant l'ANSUT :</p>
       ${(matinale.veille_reputation.preuves || []).map((p: any) => {
         const sColor = p.sentiment_article === 'positif' ? '#10b981' : p.sentiment_article === 'negatif' ? '#ef4444' : '#f59e0b';
         return `
@@ -271,11 +338,14 @@ Deno.serve(async (req) => {
         <p style="margin:0 0 4px;font-size:12px;color:#6b7280;font-style:italic;">« ${p.extrait} »</p>
         <p style="margin:0;font-size:11px;">
           <span style="color:#6b7280;">Source : ${p.source}</span>
-          ${p.url ? ` — <a href="${p.url}" style="color:#2563eb;text-decoration:underline;" target="_blank">Lire l'article →</a>` : ''}
+          ${p.url ? ` — <a href="${p.url}" style="color:#2563eb;text-decoration:underline;" target="_blank">Voir l'article →</a>` : ''}
         </p>
       </div>`;
       }).join('')}
-    </div>` : ''}
+    </div>` : `
+    <div style="margin:12px 0;padding:10px;background:#fff7ed;border-radius:6px;border:1px dashed #f59e0b;">
+      <p style="margin:0;font-size:12px;color:#92400e;">ℹ️ Aucune mention directe de l'ANSUT détectée dans les médias sur les dernières 24h.</p>
+    </div>`}
     ${matinale.veille_reputation.mentions_cles.length > 0 ? `
     <p style="margin:0;font-size:12px;color:#6b7280;">Mentions clés : ${matinale.veille_reputation.mentions_cles.map((m: string) => `<span style="display:inline-block;background:#e5e7eb;padding:2px 8px;border-radius:12px;margin:2px;font-size:11px;">${m}</span>`).join(' ')}</p>` : ''}
   </div>
@@ -296,7 +366,7 @@ Deno.serve(async (req) => {
 </td></tr>
 <tr><td style="background-color:#f8fafc;padding:20px;text-align:center;border-top:1px solid #e5e7eb;">
   <p style="margin:0;color:#9ca3af;font-size:11px;">ANSUT RADAR — Veille Stratégique & Communication</p>
-  <p style="margin:4px 0 0;color:#9ca3af;font-size:11px;">Généré automatiquement par IA à partir de ${(articles || []).length} articles</p>
+  <p style="margin:4px 0 0;color:#9ca3af;font-size:11px;">Généré à partir de ${(articles || []).length} articles, ${(mentions || []).length} mentions, ${(socialInsights || []).length} insights sociaux</p>
 </td></tr>
 </table>
 </td></tr>
