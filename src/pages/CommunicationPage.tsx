@@ -10,6 +10,7 @@ import {
   Megaphone, Lightbulb, Target, MessageSquare, ExternalLink, Globe
 } from 'lucide-react';
 import { ReactionAnalyzerSection } from '@/components/communication/ReactionAnalyzerSection';
+import { MatinaleHistoryWidget } from '@/components/communication/MatinaleHistoryWidget';
 import { SujetsValorisationSection } from '@/components/communication/SujetsValorisationSection';
 import { PostsAmplifierSection } from '@/components/communication/PostsAmplifierSection';
 import { NavLink } from 'react-router-dom';
