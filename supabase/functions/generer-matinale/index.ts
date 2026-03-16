@@ -36,6 +36,7 @@ Génère un briefing matinal "Spécial Communication" structuré en 3 sections E
 
 3. "pret_a_poster" : Un objet contenant :
    - "linkedin" : Un post LinkedIn professionnel de 3-4 phrases valorisant l'action de l'ANSUT à partir de l'actu du jour (avec emojis professionnels)
+   - "x_post" : Un tweet percutant de max 280 caractères avec 2-3 hashtags pertinents (#ANSUT #NumériqueCIV etc.)
    - "angle" : L'angle de communication suggéré en 1 phrase
 
 Règles :
