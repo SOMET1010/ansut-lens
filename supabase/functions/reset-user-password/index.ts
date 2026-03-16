@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
         </p>
         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
         <p style="color: #999; font-size: 12px; text-align: center;">
-          ANSUT RADAR - Autorité Nationale de la Sécurité des Transports<br>
+          ANSUT RADAR - Agence Nationale du Service Universel des Télécommunications<br>
           Cet email a été envoyé automatiquement, merci de ne pas y répondre.
         </p>
       </div>

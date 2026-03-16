@@ -20,7 +20,7 @@ export const TECH_DOC_CONTENT = `
 
 ## 1.1 Contexte
 
-**ANSUT RADAR** est une plateforme de veille stratégique développée pour l'Autorité Nationale de Surveillance des Télécommunications (ANSUT). Elle permet de collecter, analyser et diffuser l'information stratégique dans le secteur des télécommunications en Côte d'Ivoire.
+**ANSUT RADAR** est une plateforme de veille stratégique développée pour l'Agence Nationale du Service Universel des Télécommunications (ANSUT). Elle permet de collecter, analyser et diffuser l'information stratégique dans le secteur des télécommunications en Côte d'Ivoire.
 
 ## 1.2 Objectifs
 
@@ -351,7 +351,7 @@ Toutes les tables sont protégées par RLS avec les patterns suivants :
 
 *Document généré automatiquement par ANSUT RADAR v2.1.0*
 
-© 2026 ANSUT - Autorité Nationale de Surveillance des Télécommunications
+© 2026 ANSUT - Agence Nationale du Service Universel des Télécommunications
 
 **Document confidentiel • Usage interne uniquement**
 `;

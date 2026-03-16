@@ -51,7 +51,7 @@ export const GuidePDFLayout = forwardRef<HTMLDivElement, GuidePDFLayoutProps>(
 
         {/* Pied de page */}
         <footer className="border-t border-gray-200 pt-4 mt-6 text-center text-xs text-gray-500">
-          <p>© {new Date().getFullYear()} ANSUT - Autorité Nationale de Surveillance des Télécommunications</p>
+          <p>© {new Date().getFullYear()} ANSUT - Agence Nationale du Service Universel des Télécommunications</p>
           <p className="mt-1">Document confidentiel - Usage interne uniquement</p>
         </footer>
       </div>
