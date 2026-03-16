@@ -136,6 +136,35 @@ Deno.serve(async (req) => {
       .in('niveau', ['critical', 'warning'])
       .limit(5);
 
+    // Fetch VIP accounts and their recent publications
+    const { data: vipComptes } = await supabase
+      .from('vip_comptes')
+      .select('id, nom, plateforme, identifiant, url_profil')
+      .eq('actif', true);
+
+    const { data: recentPubs } = await supabase
+      .from('publications_institutionnelles')
+      .select('vip_compte_id, date_publication, contenu, plateforme, likes_count, shares_count, comments_count')
+      .gte('date_publication', yesterday)
+      .not('vip_compte_id', 'is', null)
+      .order('date_publication', { ascending: false });
+
+    // Build accounts activity summary
+    const accountsActivity = (vipComptes || []).map(compte => {
+      const pubs = (recentPubs || []).filter(p => p.vip_compte_id === compte.id);
+      return {
+        nom: compte.nom,
+        plateforme: compte.plateforme,
+        identifiant: compte.identifiant,
+        url_profil: compte.url_profil,
+        publications_24h: pubs.length,
+        total_engagement: pubs.reduce((s, p) => s + (p.likes_count || 0) + (p.shares_count || 0) + (p.comments_count || 0), 0),
+        derniere_pub: pubs[0] || null,
+      };
+    });
+
+    console.log('[Matinale] Accounts activity:', accountsActivity.length, 'comptes,', (recentPubs || []).length, 'pubs 24h');
+
     // Also filter articles that specifically mention ANSUT
     const ansutKeywords = ['ansut', 'service universel', 'télécommunications'];
     const ansutArticles = (articles || []).filter(a => {
