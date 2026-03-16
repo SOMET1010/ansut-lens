@@ -2,9 +2,15 @@ import { useState } from 'react';
 import { 
   Copy, Check, Linkedin, Twitter, Mail, FileText, Newspaper, 
   Send, Sparkles, ArrowRight, RefreshCw, Clock, AlertCircle,
-  Megaphone, Lightbulb, Target, MessageSquare, ExternalLink
+  Megaphone, Lightbulb, Target, MessageSquare, ExternalLink, Globe
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import {
+  MediaImpactWidget,
+  SocialPulseWidget,
+  ShareOfVoiceWidget,
+  EchoResonanceWidget,
+} from '@/components/radar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
