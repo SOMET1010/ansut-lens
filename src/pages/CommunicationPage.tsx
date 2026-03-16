@@ -497,6 +497,7 @@ export default function CommunicationPage() {
 
       <Separator />
       <MatinaleBriefingSection />
+      <MatinaleHistoryWidget />
       <Separator />
       <div id="kit-communication">
         <ContentGeneratorSection sujetRef={sujetSetterRef} />
