@@ -65,6 +65,13 @@ const menuItems = [
     permission: 'view_personnalites'
   },
   { 
+    title: 'Espace Com', 
+    url: '/communication', 
+    icon: Megaphone,
+    description: 'Bureau de la communication',
+    permission: 'use_assistant'
+  },
+  { 
     title: 'Studio Publication', 
     url: '/dossiers', 
     icon: FileText,

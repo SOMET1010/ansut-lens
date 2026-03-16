@@ -117,6 +117,7 @@ const App = () => (
                         
                         <Route element={<PermissionRoute permission="use_assistant" />}>
                           <Route path="/assistant" element={<AssistantPage />} />
+                          <Route path="/communication" element={<CommunicationPage />} />
                         </Route>
                         
                         <Route element={<PermissionRoute permission="receive_alerts" />}>
