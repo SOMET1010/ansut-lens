@@ -24,6 +24,11 @@ const modeConfigs = {
     icon: BarChart3,
     description: 'Analyser des tendances et données',
   },
+  communication: {
+    label: 'Com',
+    icon: Search, // reuse, will override below
+    description: 'Préparer des contenus de communication',
+  },
 };
 
 export function ModeSelector({ mode, onModeChange }: ModeSelectorProps) {
