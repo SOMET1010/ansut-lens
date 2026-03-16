@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { 
   Copy, Check, Linkedin, Twitter, Mail, FileText, Newspaper, 
   Send, Sparkles, ArrowRight, RefreshCw, Clock, AlertCircle,
   Megaphone, Lightbulb, Target, MessageSquare, ExternalLink, Globe
 } from 'lucide-react';
+import { ReactionAnalyzerSection } from '@/components/communication/ReactionAnalyzerSection';
+import { SujetsValorisationSection } from '@/components/communication/SujetsValorisationSection';
+import { PostsAmplifierSection } from '@/components/communication/PostsAmplifierSection';
 import { NavLink } from 'react-router-dom';
 import {
   MediaImpactWidget,
@@ -248,10 +251,13 @@ function MatinaleBriefingSection() {
 }
 
 // --- Section 2: Content Generator ---
-function ContentGeneratorSection() {
+function ContentGeneratorSection({ sujetRef }: { sujetRef?: React.MutableRefObject<((text: string) => void) | null> }) {
   const [sujet, setSujet] = useState('');
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Expose setSujet to parent
+  if (sujetRef) sujetRef.current = (text: string) => setSujet(text);
 
   const generateKit = async () => {
     if (!sujet.trim()) return;
@@ -395,6 +401,14 @@ function QuickToolsSection() {
 
 // --- Main Page ---
 export default function CommunicationPage() {
+  const sujetSetterRef = useRef<((text: string) => void) | null>(null);
+
+  const handleGeneratePost = useCallback((text: string) => {
+    sujetSetterRef.current?.(text);
+    // Scroll to kit section
+    document.getElementById('kit-communication')?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
       <div>
@@ -427,9 +441,26 @@ export default function CommunicationPage() {
       </div>
 
       <Separator />
+
+      {/* Analyseur de Réactions */}
+      <ReactionAnalyzerSection />
+
+      <Separator />
+
+      {/* Sujets à Valoriser */}
+      <SujetsValorisationSection onGeneratePost={handleGeneratePost} />
+
+      <Separator />
+
+      {/* Posts à Amplifier */}
+      <PostsAmplifierSection onPrepareResponse={handleGeneratePost} />
+
+      <Separator />
       <MatinaleBriefingSection />
       <Separator />
-      <ContentGeneratorSection />
+      <div id="kit-communication">
+        <ContentGeneratorSection sujetRef={sujetSetterRef} />
+      </div>
       <Separator />
       <QuickToolsSection />
     </div>
