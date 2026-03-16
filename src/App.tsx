@@ -17,6 +17,7 @@ import ActualitesPage from "@/pages/ActualitesPage";
 import ActeursInfluencePage from "@/pages/ActeursInfluencePage";
 import DossiersPage from "@/pages/DossiersPage";
 import AssistantPage from "@/pages/AssistantPage";
+import CommunicationPage from "@/pages/CommunicationPage";
 import AdminPage from "@/pages/AdminPage";
 import TechDocPage from "@/pages/admin/TechDocPage";
 import FormationPage from "@/pages/admin/FormationPage";
