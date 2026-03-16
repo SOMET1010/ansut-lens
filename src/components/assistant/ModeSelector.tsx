@@ -1,4 +1,4 @@
-import { Search, FileText, BarChart3 } from 'lucide-react';
+import { Search, FileText, BarChart3, Megaphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type AssistantMode = 'recherche' | 'redaction' | 'analyse' | 'communication';
