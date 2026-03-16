@@ -401,7 +401,7 @@ function QuickToolsSection() {
 
 // --- Main Page ---
 export default function CommunicationPage() {
-  const sujetSetterRef = React.useRef<((text: string) => void) | null>(null);
+  const sujetSetterRef = useRef<((text: string) => void) | null>(null);
 
   const handleGeneratePost = useCallback((text: string) => {
     sujetSetterRef.current?.(text);
