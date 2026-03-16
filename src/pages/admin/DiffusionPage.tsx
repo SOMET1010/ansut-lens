@@ -1,4 +1,4 @@
-import { ArrowLeft, Send, MessageSquare, Mail, Phone, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Send, MessageSquare, Mail, Phone, MessageCircle, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
