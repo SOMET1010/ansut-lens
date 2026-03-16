@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { 
   Copy, Check, Linkedin, Twitter, Mail, FileText, Newspaper, 
   Send, Sparkles, ArrowRight, RefreshCw, Clock, AlertCircle,
-  Megaphone, Lightbulb, Target, MessageSquare
+  Megaphone, Lightbulb, Target, MessageSquare, ExternalLink
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
