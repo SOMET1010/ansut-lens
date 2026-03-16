@@ -1,7 +1,7 @@
 import { Search, FileText, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type AssistantMode = 'recherche' | 'redaction' | 'analyse';
+export type AssistantMode = 'recherche' | 'redaction' | 'analyse' | 'communication';
 
 interface ModeSelectorProps {
   mode: AssistantMode;
