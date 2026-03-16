@@ -168,8 +168,23 @@ Deno.serve(async (req) => {
                     resume: { type: 'string' },
                     tonalite: { type: 'string', enum: ['positif', 'neutre', 'negatif'] },
                     mentions_cles: { type: 'array', items: { type: 'string' } },
+                    preuves: {
+                      type: 'array',
+                      description: 'Articles sources qui justifient la tonalité avec URL et extrait',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          titre: { type: 'string' },
+                          source: { type: 'string' },
+                          url: { type: 'string', description: 'URL de l\'article source, obligatoire' },
+                          extrait: { type: 'string', description: 'Citation ou phrase clé justifiant la tonalité' },
+                          sentiment_article: { type: 'string', enum: ['positif', 'neutre', 'negatif'] },
+                        },
+                        required: ['titre', 'source', 'url', 'extrait', 'sentiment_article'],
+                      },
+                    },
                   },
-                  required: ['resume', 'tonalite', 'mentions_cles'],
+                  required: ['resume', 'tonalite', 'mentions_cles', 'preuves'],
                 },
                 pret_a_poster: {
                   type: 'object',
