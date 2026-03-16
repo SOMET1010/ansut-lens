@@ -251,10 +251,15 @@ function MatinaleBriefingSection() {
 }
 
 // --- Section 2: Content Generator ---
-function ContentGeneratorSection() {
-  const [sujet, setSujet] = useState('');
+function ContentGeneratorSection({ initialSujet }: { initialSujet?: string }) {
+  const [sujet, setSujet] = useState(initialSujet || '');
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Allow external pre-fill
+  if (initialSujet && initialSujet !== sujet && !loading) {
+    setSujet(initialSujet);
+  }
 
   const generateKit = async () => {
     if (!sujet.trim()) return;
