@@ -35,10 +35,25 @@ const CANAL_CONFIG: Record<CanalDiffusion, CanalMeta> = {
 
 export default function DiffusionPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: configs, isLoading } = useDiffusionProgrammations();
   const { data: logs, isLoading: logsLoading } = useDiffusionLogs();
   const updateConfig = useUpdateDiffusionConfig();
   const diffuser = useDiffuserResume();
+
+  const handleAddMyEmail = () => {
+    if (!user?.email) return;
+    const emailConfig = configs?.find((c) => c.canal === 'email');
+    if (!emailConfig) return;
+    const existing = (emailConfig.destinataires || []) as Array<{ nom: string; email: string }>;
+    if (existing.some((d) => d.email === user.email)) {
+      toast('Votre email est déjà dans la liste');
+      return;
+    }
+    const updated = [...existing, { nom: user.email, email: user.email }];
+    updateConfig.mutate({ id: emailConfig.id, updates: { destinataires: updated } });
+    toast.success('Votre email a été ajouté aux destinataires');
+  };
 
   return (
     <div className="space-y-8 animate-fade-in">
