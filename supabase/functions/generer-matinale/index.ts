@@ -117,8 +117,8 @@ Deno.serve(async (req) => {
       .in('niveau', ['critical', 'warning'])
       .limit(5);
 
-    const articlesList = (articles || []).map(a =>
-      `- ${a.titre} (source: ${a.source_nom || 'inconnue'}, importance: ${a.importance}/100, sentiment: ${a.sentiment ?? 'N/A'}${a.impact_ansut ? ', IMPACT ANSUT: ' + a.impact_ansut : ''})`
+    const articlesList = (articles || []).map((a, i) =>
+      `[${i+1}] ${a.titre} (source: ${a.source_nom || 'inconnue'}, url: ${a.source_url || 'N/A'}, importance: ${a.importance}/100, sentiment: ${a.sentiment ?? 'N/A'}${a.impact_ansut ? ', IMPACT ANSUT: ' + a.impact_ansut : ''})`
     ).join('\n');
 
     const alertesList = (alertes || []).length > 0
