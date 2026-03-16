@@ -161,8 +161,9 @@ Deno.serve(async (req) => {
                       titre: { type: 'string' },
                       resume: { type: 'string' },
                       source: { type: 'string' },
+                      source_url: { type: 'string', description: 'URL réelle de l\'article source, depuis le contexte fourni' },
                     },
-                    required: ['titre', 'resume', 'source'],
+                    required: ['titre', 'resume', 'source', 'source_url'],
                   },
                 },
                 veille_reputation: {
