@@ -435,7 +435,7 @@ ${socialList}${alertesList}`;
 
     if (previewOnly) {
       return new Response(JSON.stringify({
-        matinale, html: htmlEmail, articles_count: (articles || []).length, generated_at: new Date().toISOString(),
+        matinale, html: htmlEmail, articles_count: (articles || []).length, accounts_activity: accountsActivity, generated_at: new Date().toISOString(),
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
