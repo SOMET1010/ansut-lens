@@ -1,11 +1,13 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import { AvatarUpload, ProfileForm, ChangePasswordForm } from '@/components/profile';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMatinaleSubscription } from '@/hooks/useMatinaleSubscription';
 
 export default function ProfilePage() {
   const { user } = useAuth();
