@@ -12,6 +12,7 @@ import { useMatinaleSubscription } from '@/hooks/useMatinaleSubscription';
 export default function ProfilePage() {
   const { user } = useAuth();
   const { profile, isLoading, updateProfile, isUpdating, uploadAvatar } = useUserProfile();
+  const { isSubscribed, isLoading: subLoading, toggleSubscription, isToggling } = useMatinaleSubscription();
 
   if (isLoading) {
     return (
