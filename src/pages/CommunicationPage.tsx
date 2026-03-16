@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
-import { useMatinalePreview } from '@/hooks/useMatinale';
+import { useMatinalePreview, useMatinaleSend } from '@/hooks/useMatinale';
 
 function CopyButton({ text, label }: { text: string; label: string }) {
   const [copied, setCopied] = useState(false);
