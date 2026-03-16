@@ -1,4 +1,9 @@
 import React, { useState, useCallback, useRef } from 'react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { 
   Copy, Check, Linkedin, Twitter, Mail, FileText, Newspaper, 
   Send, Sparkles, ArrowRight, RefreshCw, Clock, AlertCircle,
