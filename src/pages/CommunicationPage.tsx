@@ -447,6 +447,7 @@ export default function CommunicationPage() {
             Suivi quotidien de votre présence en ligne et couverture médiatique
           </p>
         </div>
+        <AnsutAccountsActivityWidget />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <MediaImpactWidget />
           <SocialPulseWidget />
