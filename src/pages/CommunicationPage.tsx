@@ -55,6 +55,7 @@ function TonaliteBadge({ tonalite }: { tonalite: string }) {
 // --- Section 1: Matinale Briefing ---
 function MatinaleBriefingSection() {
   const { mutate: generatePreview, data, isPending } = useMatinalePreview();
+  const { mutate: sendMatinale, isPending: isSending } = useMatinaleSend();
 
   return (
     <div className="space-y-4">
