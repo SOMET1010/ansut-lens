@@ -65,6 +65,11 @@ export default function DiffusionPage() {
           <h1 className="text-3xl font-bold">Diffusion Multicanale</h1>
           <p className="text-muted-foreground">Programmez l'envoi automatique des résumés par SMS, Telegram et Email.</p>
         </div>
+        <div className="ml-auto">
+          <Button variant="outline" size="sm" onClick={handleAddMyEmail} disabled={!user?.email}>
+            <Mail size={14} className="mr-1" /> Ajouter mon email
+          </Button>
+        </div>
       </div>
 
       {/* Channel Cards */}
