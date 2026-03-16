@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
-import { useMatinalePreview } from '@/hooks/useMatinale';
+import { useMatinalePreview, useMatinaleSend } from '@/hooks/useMatinale';
 
 function CopyButton({ text, label }: { text: string; label: string }) {
   const [copied, setCopied] = useState(false);
@@ -55,6 +55,7 @@ function TonaliteBadge({ tonalite }: { tonalite: string }) {
 // --- Section 1: Matinale Briefing ---
 function MatinaleBriefingSection() {
   const { mutate: generatePreview, data, isPending } = useMatinalePreview();
+  const { mutate: sendMatinale, isPending: isSending } = useMatinaleSend();
 
   return (
     <div className="space-y-4">
@@ -68,10 +69,16 @@ function MatinaleBriefingSection() {
             Flash info, e-réputation et posts prêts à publier
           </p>
         </div>
-        <Button onClick={() => generatePreview()} disabled={isPending} className="gap-2">
-          {isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {isPending ? 'Génération…' : 'Générer le briefing'}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => generatePreview()} disabled={isPending} className="gap-2">
+            {isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {isPending ? 'Génération…' : 'Générer le briefing'}
+          </Button>
+          <Button onClick={() => sendMatinale(undefined)} disabled={isSending} variant="default" className="gap-2">
+            {isSending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {isSending ? 'Envoi…' : 'Envoyer la Matinale'}
+          </Button>
+        </div>
       </div>
 
       {isPending && (
