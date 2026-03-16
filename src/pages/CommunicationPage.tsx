@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { 
   Copy, Check, Linkedin, Twitter, Mail, FileText, Newspaper, 
   Send, Sparkles, ArrowRight, RefreshCw, Clock, AlertCircle,
   Megaphone, Lightbulb, Target, MessageSquare, ExternalLink, Globe
 } from 'lucide-react';
+import { ReactionAnalyzerSection } from '@/components/communication/ReactionAnalyzerSection';
+import { SujetsValorisationSection } from '@/components/communication/SujetsValorisationSection';
+import { PostsAmplifierSection } from '@/components/communication/PostsAmplifierSection';
 import { NavLink } from 'react-router-dom';
 import {
   MediaImpactWidget,
