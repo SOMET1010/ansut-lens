@@ -1,4 +1,9 @@
 import React, { useState, useCallback, useRef } from 'react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { 
   Copy, Check, Linkedin, Twitter, Mail, FileText, Newspaper, 
   Send, Sparkles, ArrowRight, RefreshCw, Clock, AlertCircle,
@@ -75,10 +80,28 @@ function MatinaleBriefingSection() {
             {isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {isPending ? 'Génération…' : 'Générer le briefing'}
           </Button>
-          <Button onClick={() => sendMatinale(undefined)} disabled={isSending} variant="default" className="gap-2">
-            {isSending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            {isSending ? 'Envoi…' : 'Envoyer la Matinale'}
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button disabled={isSending} variant="default" className="gap-2">
+                {isSending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {isSending ? 'Envoi…' : 'Envoyer la Matinale'}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirmer l'envoi de la Matinale</AlertDialogTitle>
+                <AlertDialogDescription>
+                  La Matinale sera envoyée par email à tous les destinataires actifs. Cette action est irréversible.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={() => sendMatinale(undefined)}>
+                  Confirmer l'envoi
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
