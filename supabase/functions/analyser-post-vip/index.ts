@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
 
       const keywords = motsCles?.map(m => m.mot_cle).join(", ") || "";
 
-      const systemPrompt = `Tu es un analyste de communication institutionnelle pour l'ANSUT (Autorité Nationale du Service Universel des Télécommunications de Côte d'Ivoire).
+      const systemPrompt = `Tu es un analyste de communication institutionnelle pour l'ANSUT (Agence Nationale du Service Universel des Télécommunications de Côte d'Ivoire).
 
 Ton rôle est d'analyser les publications sur les réseaux sociaux des VIP internes (directeurs, DG) pour vérifier leur conformité avec la stratégie de communication.
 

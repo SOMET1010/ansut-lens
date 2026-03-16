@@ -351,7 +351,7 @@ Toutes les tables sont protégées par RLS avec les patterns suivants :
 
 *Document généré automatiquement par ANSUT RADAR v2.1.0*
 
-© 2026 ANSUT - Autorité Nationale de Surveillance des Télécommunications
+© 2026 ANSUT - Agence Nationale du Service Universel des Télécommunications
 
 **Document confidentiel • Usage interne uniquement**
 `;
