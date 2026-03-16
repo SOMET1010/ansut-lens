@@ -1,4 +1,4 @@
-import { ArrowLeft, Send, MessageSquare, Mail, Phone, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Send, MessageSquare, Mail, Phone, MessageCircle, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { useDiffusionProgrammations, useDiffusionLogs, useUpdateDiffusionConfig,
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import type { DiffusionProgrammation, Destinataire, CanalDiffusion } from '@/types/diffusion';
@@ -34,10 +35,25 @@ const CANAL_CONFIG: Record<CanalDiffusion, CanalMeta> = {
 
 export default function DiffusionPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: configs, isLoading } = useDiffusionProgrammations();
   const { data: logs, isLoading: logsLoading } = useDiffusionLogs();
   const updateConfig = useUpdateDiffusionConfig();
   const diffuser = useDiffuserResume();
+
+  const handleAddMyEmail = () => {
+    if (!user?.email) return;
+    const emailConfig = configs?.find((c) => c.canal === 'email');
+    if (!emailConfig) return;
+    const existing = (emailConfig.destinataires || []) as Array<{ nom: string; email: string }>;
+    if (existing.some((d) => d.email === user.email)) {
+      toast('Votre email est déjà dans la liste');
+      return;
+    }
+    const updated = [...existing, { nom: user.email, email: user.email }];
+    updateConfig.mutate({ id: emailConfig.id, updates: { destinataires: updated } });
+    toast.success('Votre email a été ajouté aux destinataires');
+  };
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -48,6 +64,11 @@ export default function DiffusionPage() {
         <div>
           <h1 className="text-3xl font-bold">Diffusion Multicanale</h1>
           <p className="text-muted-foreground">Programmez l'envoi automatique des résumés par SMS, Telegram et Email.</p>
+        </div>
+        <div className="ml-auto">
+          <Button variant="outline" size="sm" onClick={handleAddMyEmail} disabled={!user?.email}>
+            <Mail size={14} className="mr-1" /> Ajouter mon email
+          </Button>
         </div>
       </div>
 

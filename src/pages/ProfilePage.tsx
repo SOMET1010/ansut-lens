@@ -1,15 +1,18 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import { AvatarUpload, ProfileForm, ChangePasswordForm } from '@/components/profile';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMatinaleSubscription } from '@/hooks/useMatinaleSubscription';
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const { profile, isLoading, updateProfile, isUpdating, uploadAvatar } = useUserProfile();
+  const { isSubscribed, isLoading: subLoading, toggleSubscription, isToggling } = useMatinaleSubscription();
 
   if (isLoading) {
     return (
@@ -68,6 +71,33 @@ export default function ProfilePage() {
             onSubmit={updateProfile}
             isSubmitting={isUpdating}
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Notifications</CardTitle>
+          <CardDescription>
+            Gérez vos préférences de réception
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-4 rounded-lg border">
+            <div className="flex items-center gap-3">
+              <Mail className="h-5 w-5 text-primary" />
+              <div>
+                <p className="font-medium text-sm">Matinale quotidienne</p>
+                <p className="text-xs text-muted-foreground">
+                  Recevez chaque matin un résumé stratégique par email
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={isSubscribed}
+              onCheckedChange={(checked) => toggleSubscription(checked)}
+              disabled={subLoading || isToggling}
+            />
+          </div>
         </CardContent>
       </Card>
 
