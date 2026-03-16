@@ -36,6 +36,7 @@ Génère un briefing matinal "Spécial Communication" structuré en 3 sections E
 
 3. "pret_a_poster" : Un objet contenant :
    - "linkedin" : Un post LinkedIn professionnel de 3-4 phrases valorisant l'action de l'ANSUT à partir de l'actu du jour (avec emojis professionnels)
+   - "x_post" : Un tweet percutant de max 280 caractères avec 2-3 hashtags pertinents (#ANSUT #NumériqueCIV etc.)
    - "angle" : L'angle de communication suggéré en 1 phrase
 
 Règles :
@@ -168,9 +169,10 @@ Deno.serve(async (req) => {
                   type: 'object',
                   properties: {
                     linkedin: { type: 'string' },
+                    x_post: { type: 'string', description: 'Tweet max 280 characters with hashtags' },
                     angle: { type: 'string' },
                   },
-                  required: ['linkedin', 'angle'],
+                  required: ['linkedin', 'x_post', 'angle'],
                 },
               },
               required: ['flash_info', 'veille_reputation', 'pret_a_poster'],
@@ -242,6 +244,13 @@ Deno.serve(async (req) => {
   <div style="padding:16px;background-color:#f5f3ff;border-radius:8px;border:1px dashed #8b5cf6;">
     <p style="margin:0 0 12px;color:#374151;font-size:14px;line-height:1.6;white-space:pre-line;">${matinale.pret_a_poster.linkedin}</p>
     <p style="margin:0;font-size:12px;color:#7c3aed;font-style:italic;">💡 Angle : ${matinale.pret_a_poster.angle}</p>
+  </div>
+</td></tr>
+<tr><td style="padding:0 24px 24px;">
+  <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid #1d9bf0;padding-bottom:8px;">🐦 Prêt-à-Poster X (Twitter)</h2>
+  <div style="padding:16px;background-color:#f0f9ff;border-radius:8px;border:1px dashed #1d9bf0;">
+    <p style="margin:0 0 8px;color:#374151;font-size:14px;line-height:1.6;">${matinale.pret_a_poster.x_post || ''}</p>
+    <p style="margin:0;font-size:11px;color:#6b7280;">${(matinale.pret_a_poster.x_post || '').length}/280 caractères</p>
   </div>
 </td></tr>
 <tr><td style="background-color:#f8fafc;padding:20px;text-align:center;border-top:1px solid #e5e7eb;">

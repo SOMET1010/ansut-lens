@@ -19,6 +19,7 @@ interface MatinaleContent {
   pret_a_poster: {
     linkedin: string;
     angle: string;
+    x_post?: string;
   };
 }
 

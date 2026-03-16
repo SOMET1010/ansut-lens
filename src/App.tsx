@@ -17,6 +17,7 @@ import ActualitesPage from "@/pages/ActualitesPage";
 import ActeursInfluencePage from "@/pages/ActeursInfluencePage";
 import DossiersPage from "@/pages/DossiersPage";
 import AssistantPage from "@/pages/AssistantPage";
+import CommunicationPage from "@/pages/CommunicationPage";
 import AdminPage from "@/pages/AdminPage";
 import TechDocPage from "@/pages/admin/TechDocPage";
 import FormationPage from "@/pages/admin/FormationPage";
@@ -116,6 +117,7 @@ const App = () => (
                         
                         <Route element={<PermissionRoute permission="use_assistant" />}>
                           <Route path="/assistant" element={<AssistantPage />} />
+                          <Route path="/communication" element={<CommunicationPage />} />
                         </Route>
                         
                         <Route element={<PermissionRoute permission="receive_alerts" />}>

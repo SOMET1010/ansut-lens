@@ -8,6 +8,7 @@ import {
   LogOut,
   User,
   Rss,
+  Megaphone,
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -62,6 +63,13 @@ const menuItems = [
     icon: Users,
     description: 'Cartographie, SPDI & benchmark',
     permission: 'view_personnalites'
+  },
+  { 
+    title: 'Espace Com', 
+    url: '/communication', 
+    icon: Megaphone,
+    description: 'Bureau de la communication',
+    permission: 'use_assistant'
   },
   { 
     title: 'Studio Publication', 
