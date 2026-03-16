@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { 
   Copy, Check, Linkedin, Twitter, Mail, FileText, Newspaper, 
   Send, Sparkles, ArrowRight, RefreshCw, Clock, AlertCircle,
-  Megaphone, Lightbulb, Target, MessageSquare
+  Megaphone, Lightbulb, Target, MessageSquare, ExternalLink
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -107,8 +107,51 @@ function MatinaleBriefingSection() {
                 <TonaliteBadge tonalite={data.matinale.veille_reputation.tonalite} />
               </div>
             </CardHeader>
-            <CardContent className="pt-0">
-              <p className="text-sm mb-3">{data.matinale.veille_reputation.resume}</p>
+            <CardContent className="pt-0 space-y-4">
+              <p className="text-sm">{data.matinale.veille_reputation.resume}</p>
+              
+              {/* Preuves avec liens */}
+              {data.matinale.veille_reputation.preuves && data.matinale.veille_reputation.preuves.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    Sources justificatives
+                  </p>
+                  {data.matinale.veille_reputation.preuves.map((preuve, i) => {
+                    const sentColor = preuve.sentiment_article === 'positif' 
+                      ? 'border-l-emerald-500' 
+                      : preuve.sentiment_article === 'negatif' 
+                        ? 'border-l-destructive' 
+                        : 'border-l-amber-500';
+                    return (
+                      <div key={i} className={`p-3 rounded-lg bg-muted/50 border-l-4 ${sentColor}`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">{preuve.titre}</p>
+                            <p className="text-xs text-muted-foreground italic mt-0.5">« {preuve.extrait} »</p>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">{preuve.source}</Badge>
+                              <TonaliteBadge tonalite={preuve.sentiment_article} />
+                            </div>
+                          </div>
+                          {preuve.url && (
+                            <a
+                              href={preuve.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="shrink-0 p-1.5 rounded-md hover:bg-accent transition-colors"
+                              title="Voir l'article source"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5 text-primary" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               {data.matinale.veille_reputation.mentions_cles.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {data.matinale.veille_reputation.mentions_cles.map((m, i) => (

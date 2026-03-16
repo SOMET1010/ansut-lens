@@ -33,6 +33,12 @@ Génère un briefing matinal "Spécial Communication" structuré en 3 sections E
    - "resume" : 2-3 phrases sur l'image de l'ANSUT/Service Universel aujourd'hui
    - "tonalite" : "positif", "neutre" ou "negatif"
    - "mentions_cles" : Tableau de strings des mentions importantes
+   - "preuves" : Un tableau de 2-4 objets, chaque preuve contient :
+     * "titre" : Titre de l'article source
+     * "source" : Nom du média
+     * "url" : URL de l'article (OBLIGATOIRE, prends-la depuis le contexte)
+     * "extrait" : Citation exacte ou phrase clé de l'article qui justifie la tonalité (20 mots max)
+     * "sentiment_article" : "positif", "neutre" ou "negatif"
 
 3. "pret_a_poster" : Un objet contenant :
    - "linkedin" : Un post LinkedIn professionnel de 3-4 phrases valorisant l'action de l'ANSUT à partir de l'actu du jour (avec emojis professionnels)
@@ -43,7 +49,9 @@ Règles :
 - Écris en français professionnel
 - Le contenu doit être directement utilisable sans modification
 - Le post LinkedIn doit valoriser l'ANSUT et le numérique en Côte d'Ivoire
-- Si aucune mention directe de l'ANSUT n'est trouvée, suggère un angle de rebond`;
+- Si aucune mention directe de l'ANSUT n'est trouvée, suggère un angle de rebond
+- CRITIQUE : Les "preuves" dans veille_reputation DOIVENT utiliser les URLs réelles fournies dans le contexte. NE JAMAIS inventer une URL. Si un article n'a pas d'URL, ne l'inclus pas dans les preuves.
+- Chaque preuve doit contenir un extrait EXACT ou fidèle de l'article source, pas une reformulation`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -111,8 +119,8 @@ Deno.serve(async (req) => {
       .in('niveau', ['critical', 'warning'])
       .limit(5);
 
-    const articlesList = (articles || []).map(a =>
-      `- ${a.titre} (source: ${a.source_nom || 'inconnue'}, importance: ${a.importance}/100, sentiment: ${a.sentiment ?? 'N/A'}${a.impact_ansut ? ', IMPACT ANSUT: ' + a.impact_ansut : ''})`
+    const articlesList = (articles || []).map((a, i) =>
+      `[${i+1}] ${a.titre} (source: ${a.source_nom || 'inconnue'}, url: ${a.source_url || 'N/A'}, importance: ${a.importance}/100, sentiment: ${a.sentiment ?? 'N/A'}${a.impact_ansut ? ', IMPACT ANSUT: ' + a.impact_ansut : ''})`
     ).join('\n');
 
     const alertesList = (alertes || []).length > 0
@@ -162,8 +170,23 @@ Deno.serve(async (req) => {
                     resume: { type: 'string' },
                     tonalite: { type: 'string', enum: ['positif', 'neutre', 'negatif'] },
                     mentions_cles: { type: 'array', items: { type: 'string' } },
+                    preuves: {
+                      type: 'array',
+                      description: 'Articles sources qui justifient la tonalité avec URL et extrait',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          titre: { type: 'string' },
+                          source: { type: 'string' },
+                          url: { type: 'string', description: 'URL de l\'article source, obligatoire' },
+                          extrait: { type: 'string', description: 'Citation ou phrase clé justifiant la tonalité' },
+                          sentiment_article: { type: 'string', enum: ['positif', 'neutre', 'negatif'] },
+                        },
+                        required: ['titre', 'source', 'url', 'extrait', 'sentiment_article'],
+                      },
+                    },
                   },
-                  required: ['resume', 'tonalite', 'mentions_cles'],
+                  required: ['resume', 'tonalite', 'mentions_cles', 'preuves'],
                 },
                 pret_a_poster: {
                   type: 'object',
@@ -235,6 +258,22 @@ Deno.serve(async (req) => {
   <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid ${tonaliteColor};padding-bottom:8px;">🎯 Veille Réputation ${tonaliteLabel}</h2>
   <div style="padding:16px;background-color:#fefce8;border-radius:8px;">
     <p style="margin:0 0 12px;color:#374151;font-size:14px;line-height:1.6;">${matinale.veille_reputation.resume}</p>
+    ${(matinale.veille_reputation.preuves || []).length > 0 ? `
+    <div style="margin:12px 0;border-top:1px solid #e5e7eb;padding-top:12px;">
+      <p style="margin:0 0 8px;font-size:12px;font-weight:bold;color:#1e3a5f;">📎 Sources justificatives :</p>
+      ${(matinale.veille_reputation.preuves || []).map((p: any) => {
+        const sColor = p.sentiment_article === 'positif' ? '#10b981' : p.sentiment_article === 'negatif' ? '#ef4444' : '#f59e0b';
+        return `
+      <div style="margin-bottom:8px;padding:10px;background:#ffffff;border-radius:6px;border-left:3px solid ${sColor};">
+        <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#1e3a5f;">${p.titre}</p>
+        <p style="margin:0 0 4px;font-size:12px;color:#6b7280;font-style:italic;">« ${p.extrait} »</p>
+        <p style="margin:0;font-size:11px;">
+          <span style="color:#6b7280;">Source : ${p.source}</span>
+          ${p.url ? ` — <a href="${p.url}" style="color:#2563eb;text-decoration:underline;" target="_blank">Lire l'article →</a>` : ''}
+        </p>
+      </div>`;
+      }).join('')}
+    </div>` : ''}
     ${matinale.veille_reputation.mentions_cles.length > 0 ? `
     <p style="margin:0;font-size:12px;color:#6b7280;">Mentions clés : ${matinale.veille_reputation.mentions_cles.map((m: string) => `<span style="display:inline-block;background:#e5e7eb;padding:2px 8px;border-radius:12px;margin:2px;font-size:11px;">${m}</span>`).join(' ')}</p>` : ''}
   </div>
