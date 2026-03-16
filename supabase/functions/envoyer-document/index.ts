@@ -11,35 +11,38 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Auth check
+    // Auth: accept either user JWT (admin check) or service role key
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Non authentifié" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: "Non authentifié" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const token = authHeader?.replace("Bearer ", "") || "";
+    const isServiceRole = token === serviceRoleKey;
+
+    if (!isServiceRole) {
+      if (!authHeader?.startsWith("Bearer ")) {
+        return new Response(JSON.stringify({ error: "Non authentifié" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } },
       });
-    }
-    const userId = claimsData.claims.sub;
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    const { data: isAdmin } = await adminClient.rpc("has_role", { _user_id: userId, _role: "admin" });
-    if (!isAdmin) {
-      return new Response(JSON.stringify({ error: "Droits administrateur requis" }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+      if (claimsError || !claimsData?.claims) {
+        return new Response(JSON.stringify({ error: "Non authentifié" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const userId = claimsData.claims.sub;
+      const adminClient = createClient(supabaseUrl, serviceRoleKey);
+      const { data: isAdmin } = await adminClient.rpc("has_role", { _user_id: userId, _role: "admin" });
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: "Droits administrateur requis" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const { destinataires, sujet, contenu_html } = await req.json();
@@ -77,8 +80,8 @@ Deno.serve(async (req) => {
             channel: "Email",
           }),
         });
-        if (response.ok) { succes++; } else { echecs++; }
-      } catch { echecs++; }
+        if (response.ok) { succes++; } else { echecs++; console.error(`Échec pour ${email}:`, await response.text()); }
+      } catch (err) { echecs++; console.error(`Erreur pour ${email}:`, err); }
     }
 
     return new Response(
