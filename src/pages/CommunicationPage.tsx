@@ -394,6 +394,26 @@ export default function CommunicationPage() {
         </p>
       </div>
 
+      {/* E-Réputation & Médias Sociaux */}
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Globe className="h-5 w-5 text-primary" />
+            E-Réputation & Médias Sociaux
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Suivi quotidien de votre présence en ligne et couverture médiatique
+          </p>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <MediaImpactWidget />
+          <SocialPulseWidget />
+          <ShareOfVoiceWidget />
+          <EchoResonanceWidget />
+        </div>
+      </div>
+
+      <Separator />
       <MatinaleBriefingSection />
       <Separator />
       <ContentGeneratorSection />
