@@ -12,6 +12,7 @@ import { useDiffusionProgrammations, useDiffusionLogs, useUpdateDiffusionConfig,
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import type { DiffusionProgrammation, Destinataire, CanalDiffusion } from '@/types/diffusion';
