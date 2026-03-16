@@ -49,7 +49,9 @@ Règles :
 - Écris en français professionnel
 - Le contenu doit être directement utilisable sans modification
 - Le post LinkedIn doit valoriser l'ANSUT et le numérique en Côte d'Ivoire
-- Si aucune mention directe de l'ANSUT n'est trouvée, suggère un angle de rebond`;
+- Si aucune mention directe de l'ANSUT n'est trouvée, suggère un angle de rebond
+- CRITIQUE : Les "preuves" dans veille_reputation DOIVENT utiliser les URLs réelles fournies dans le contexte. NE JAMAIS inventer une URL. Si un article n'a pas d'URL, ne l'inclus pas dans les preuves.
+- Chaque preuve doit contenir un extrait EXACT ou fidèle de l'article source, pas une reformulation`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
