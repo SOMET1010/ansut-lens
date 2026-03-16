@@ -76,6 +76,33 @@ export default function ProfilePage() {
 
       <Card>
         <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Notifications</CardTitle>
+          <CardDescription>
+            Gérez vos préférences de réception
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-4 rounded-lg border">
+            <div className="flex items-center gap-3">
+              <Mail className="h-5 w-5 text-primary" />
+              <div>
+                <p className="font-medium text-sm">Matinale quotidienne</p>
+                <p className="text-xs text-muted-foreground">
+                  Recevez chaque matin un résumé stratégique par email
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={isSubscribed}
+              onCheckedChange={(checked) => toggleSubscription(checked)}
+              disabled={subLoading || isToggling}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="text-center">
           <CardTitle className="text-2xl">Sécurité</CardTitle>
           <CardDescription>
             Modifiez votre mot de passe
