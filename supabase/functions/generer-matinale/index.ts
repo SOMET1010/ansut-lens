@@ -258,6 +258,22 @@ Deno.serve(async (req) => {
   <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid ${tonaliteColor};padding-bottom:8px;">🎯 Veille Réputation ${tonaliteLabel}</h2>
   <div style="padding:16px;background-color:#fefce8;border-radius:8px;">
     <p style="margin:0 0 12px;color:#374151;font-size:14px;line-height:1.6;">${matinale.veille_reputation.resume}</p>
+    ${(matinale.veille_reputation.preuves || []).length > 0 ? `
+    <div style="margin:12px 0;border-top:1px solid #e5e7eb;padding-top:12px;">
+      <p style="margin:0 0 8px;font-size:12px;font-weight:bold;color:#1e3a5f;">📎 Sources justificatives :</p>
+      ${(matinale.veille_reputation.preuves || []).map((p: any) => {
+        const sColor = p.sentiment_article === 'positif' ? '#10b981' : p.sentiment_article === 'negatif' ? '#ef4444' : '#f59e0b';
+        return `
+      <div style="margin-bottom:8px;padding:10px;background:#ffffff;border-radius:6px;border-left:3px solid ${sColor};">
+        <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#1e3a5f;">${p.titre}</p>
+        <p style="margin:0 0 4px;font-size:12px;color:#6b7280;font-style:italic;">« ${p.extrait} »</p>
+        <p style="margin:0;font-size:11px;">
+          <span style="color:#6b7280;">Source : ${p.source}</span>
+          ${p.url ? ` — <a href="${p.url}" style="color:#2563eb;text-decoration:underline;" target="_blank">Lire l'article →</a>` : ''}
+        </p>
+      </div>`;
+      }).join('')}
+    </div>` : ''}
     ${matinale.veille_reputation.mentions_cles.length > 0 ? `
     <p style="margin:0;font-size:12px;color:#6b7280;">Mentions clés : ${matinale.veille_reputation.mentions_cles.map((m: string) => `<span style="display:inline-block;background:#e5e7eb;padding:2px 8px;border-radius:12px;margin:2px;font-size:11px;">${m}</span>`).join(' ')}</p>` : ''}
   </div>
