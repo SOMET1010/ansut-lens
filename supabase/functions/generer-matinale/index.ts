@@ -353,6 +353,36 @@ ${socialList}${alertesList}`;
   </div>`).join('')}
 </td></tr>
 <tr><td style="padding:0 24px 24px;">
+  <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid #6366f1;padding-bottom:8px;">📊 Activité des Comptes Sociaux (24h)</h2>
+  ${accountsActivity.length > 0 ? `
+  <p style="margin:0 0 12px;font-size:13px;color:#374151;">
+    <strong>${(recentPubs || []).length}</strong> publication${(recentPubs || []).length !== 1 ? 's' : ''} détectée${(recentPubs || []).length !== 1 ? 's' : ''} sur <strong>${accountsActivity.length}</strong> compte${accountsActivity.length !== 1 ? 's' : ''} suivis
+    ${accountsActivity.filter(a => a.publications_24h === 0).length > 0 ? ` — <span style="color:#ef4444;font-weight:bold;">⚠ ${accountsActivity.filter(a => a.publications_24h === 0).length} inactif${accountsActivity.filter(a => a.publications_24h === 0).length > 1 ? 's' : ''}</span>` : ''}
+  </p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+  ${accountsActivity.map(a => {
+    const platformIcon = a.plateforme === 'linkedin' ? '🔵' : a.plateforme === 'facebook' ? '📘' : a.plateforme === 'twitter' || a.plateforme === 'x' ? '🐦' : '🌐';
+    const statusColor = a.publications_24h > 0 ? '#10b981' : '#ef4444';
+    const statusLabel = a.publications_24h > 0 ? \`✅ \${a.publications_24h} pub\${a.publications_24h > 1 ? 's' : ''}\` : '❌ 0 publication';
+    return \`
+    <tr>
+      <td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;">
+        <span style="font-size:14px;">\${platformIcon}</span>
+        <span style="font-size:13px;font-weight:600;color:#1e3a5f;margin-left:6px;">\${a.nom}</span>
+        <span style="font-size:11px;color:#9ca3af;margin-left:4px;">@\${a.identifiant}</span>
+      </td>
+      <td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;text-align:right;">
+        <span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;color:\${statusColor};background-color:\${a.publications_24h > 0 ? '#ecfdf5' : '#fef2f2'};">\${statusLabel}</span>
+        \${a.total_engagement > 0 ? \`<span style="font-size:10px;color:#6b7280;margin-left:6px;">💬 \${a.total_engagement}</span>\` : ''}
+      </td>
+    </tr>\`;
+  }).join('')}
+  </table>` : `
+  <div style="padding:12px;background:#fff7ed;border-radius:6px;border:1px dashed #f59e0b;">
+    <p style="margin:0;font-size:12px;color:#92400e;">⚠️ Aucun compte VIP actif configuré.</p>
+  </div>`}
+</td></tr>
+<tr><td style="padding:0 24px 24px;">
   <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid ${tonaliteColor};padding-bottom:8px;">🎯 Veille Réputation ANSUT ${tonaliteLabel}</h2>
   <div style="padding:16px;background-color:#fefce8;border-radius:8px;">
     <p style="margin:0 0 12px;color:#374151;font-size:14px;line-height:1.6;">${matinale.veille_reputation.resume}</p>
