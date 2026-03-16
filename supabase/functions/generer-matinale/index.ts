@@ -33,6 +33,12 @@ Génère un briefing matinal "Spécial Communication" structuré en 3 sections E
    - "resume" : 2-3 phrases sur l'image de l'ANSUT/Service Universel aujourd'hui
    - "tonalite" : "positif", "neutre" ou "negatif"
    - "mentions_cles" : Tableau de strings des mentions importantes
+   - "preuves" : Un tableau de 2-4 objets, chaque preuve contient :
+     * "titre" : Titre de l'article source
+     * "source" : Nom du média
+     * "url" : URL de l'article (OBLIGATOIRE, prends-la depuis le contexte)
+     * "extrait" : Citation exacte ou phrase clé de l'article qui justifie la tonalité (20 mots max)
+     * "sentiment_article" : "positif", "neutre" ou "negatif"
 
 3. "pret_a_poster" : Un objet contenant :
    - "linkedin" : Un post LinkedIn professionnel de 3-4 phrases valorisant l'action de l'ANSUT à partir de l'actu du jour (avec emojis professionnels)
