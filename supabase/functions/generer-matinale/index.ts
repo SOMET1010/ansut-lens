@@ -363,19 +363,19 @@ ${socialList}${alertesList}`;
   ${accountsActivity.map(a => {
     const platformIcon = a.plateforme === 'linkedin' ? '🔵' : a.plateforme === 'facebook' ? '📘' : a.plateforme === 'twitter' || a.plateforme === 'x' ? '🐦' : '🌐';
     const statusColor = a.publications_24h > 0 ? '#10b981' : '#ef4444';
-    const statusLabel = a.publications_24h > 0 ? \`✅ \${a.publications_24h} pub\${a.publications_24h > 1 ? 's' : ''}\` : '❌ 0 publication';
-    return \`
+    const statusLabel = a.publications_24h > 0 ? `✅ ${a.publications_24h} pub${a.publications_24h > 1 ? 's' : ''}` : '❌ 0 publication';
+    return `
     <tr>
       <td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;">
-        <span style="font-size:14px;">\${platformIcon}</span>
-        <span style="font-size:13px;font-weight:600;color:#1e3a5f;margin-left:6px;">\${a.nom}</span>
-        <span style="font-size:11px;color:#9ca3af;margin-left:4px;">@\${a.identifiant}</span>
+        <span style="font-size:14px;">${platformIcon}</span>
+        <span style="font-size:13px;font-weight:600;color:#1e3a5f;margin-left:6px;">${a.nom}</span>
+        <span style="font-size:11px;color:#9ca3af;margin-left:4px;">@${a.identifiant}</span>
       </td>
       <td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;text-align:right;">
-        <span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;color:\${statusColor};background-color:\${a.publications_24h > 0 ? '#ecfdf5' : '#fef2f2'};">\${statusLabel}</span>
-        \${a.total_engagement > 0 ? \`<span style="font-size:10px;color:#6b7280;margin-left:6px;">💬 \${a.total_engagement}</span>\` : ''}
+        <span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;color:${statusColor};background-color:${a.publications_24h > 0 ? '#ecfdf5' : '#fef2f2'};">${statusLabel}</span>
+        ${a.total_engagement > 0 ? `<span style="font-size:10px;color:#6b7280;margin-left:6px;">💬 ${a.total_engagement}</span>` : ''}
       </td>
-    </tr>\`;
+    </tr>`;
   }).join('')}
   </table>` : `
   <div style="padding:12px;background:#fff7ed;border-radius:6px;border:1px dashed #f59e0b;">
