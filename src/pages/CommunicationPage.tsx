@@ -251,15 +251,13 @@ function MatinaleBriefingSection() {
 }
 
 // --- Section 2: Content Generator ---
-function ContentGeneratorSection({ initialSujet }: { initialSujet?: string }) {
-  const [sujet, setSujet] = useState(initialSujet || '');
+function ContentGeneratorSection({ sujetRef }: { sujetRef?: React.MutableRefObject<((text: string) => void) | null> }) {
+  const [sujet, setSujet] = useState('');
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Allow external pre-fill
-  if (initialSujet && initialSujet !== sujet && !loading) {
-    setSujet(initialSujet);
-  }
+  // Expose setSujet to parent
+  if (sujetRef) sujetRef.current = (text: string) => setSujet(text);
 
   const generateKit = async () => {
     if (!sujet.trim()) return;
