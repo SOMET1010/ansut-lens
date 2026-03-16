@@ -14,6 +14,7 @@ import {
   ShareOfVoiceWidget,
   EchoResonanceWidget,
 } from '@/components/radar';
+import { AnsutAccountsActivityWidget } from '@/components/communication/AnsutAccountsActivityWidget';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
