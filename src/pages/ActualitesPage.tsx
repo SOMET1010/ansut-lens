@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { TrendingUp, Loader2, Newspaper, Sparkles } from 'lucide-react';
+import { TitrologieWidget } from '@/components/actualites/TitrologieWidget';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
@@ -236,7 +237,8 @@ export default function ActualitesPage() {
         </main>
 
         {/* Sidebar (30%) - Analytics */}
-        <aside className="hidden lg:block w-full lg:w-1/4 lg:sticky lg:top-6 self-start">
+        <aside className="hidden lg:block w-full lg:w-1/4 lg:sticky lg:top-6 self-start space-y-6">
+          <TitrologieWidget />
           <SmartSidebar
             analytics={analytics}
             activeFilters={activeFilters}
