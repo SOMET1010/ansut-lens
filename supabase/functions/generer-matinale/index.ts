@@ -425,7 +425,8 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
 
     console.log('[Matinale] Generating with', (articles || []).length, 'DB articles,', perplexityNews.articles.length, 'Perplexity articles,', ansutArticles.length, 'ANSUT articles,', (mentions || []).length, 'mentions,', (socialInsights || []).length, 'social insights');
 
-    // Call AI
+    // Call AI — Using GPT-5 (OpenAI) via Lovable AI Gateway for structured generation
+    // GPT-5 follows instructions much more strictly than Gemini, reducing hallucinations
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -433,7 +434,7 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'openai/gpt-5',
         messages: [
           { role: 'system', content: MATINALE_PROMPT },
           { role: 'user', content: context },
@@ -498,7 +499,7 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
           },
         }],
         tool_choice: { type: 'function', function: { name: 'generate_matinale' } },
-        temperature: 0.3,
+        temperature: 0.2,  // Even lower temperature with GPT-5 for maximum factual accuracy
       }),
     });
 

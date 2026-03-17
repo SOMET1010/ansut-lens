@@ -177,7 +177,7 @@ Règles :
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'openai/gpt-5-mini',  // GPT-5 Mini for assistant: fast, accurate, follows instructions strictly
         messages: [
           { role: 'system', content: contextualPrompt },
           ...messages,
