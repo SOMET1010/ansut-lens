@@ -521,20 +521,68 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     const matinale = JSON.parse(toolCall.function.arguments);
     console.log('[Matinale] Generated successfully');
 
+    // Post-process: Build sets of valid data for verification
+    const validUrls = new Set<string>();
+    for (const a of (articles || [])) { if (a.source_url) validUrls.add(a.source_url); }
+    for (const m of (mentions || [])) { if (m.source_url) validUrls.add(m.source_url); }
+    for (const s of (socialInsights || [])) { if (s.url_original) validUrls.add(s.url_original); }
+    for (const p of perplexityNews.articles) { if (p.url) validUrls.add(p.url); }
+    for (const c of perplexityNews.citations) { validUrls.add(c); }
+
     // Post-process: filter out preuves with invalid/invented URLs
     if (matinale.veille_reputation?.preuves) {
-      const validUrls = new Set<string>();
-      for (const a of (articles || [])) { if (a.source_url) validUrls.add(a.source_url); }
-      for (const m of (mentions || [])) { if (m.source_url) validUrls.add(m.source_url); }
-      for (const s of (socialInsights || [])) { if (s.url_original) validUrls.add(s.url_original); }
-      for (const p of perplexityNews.articles) { if (p.url) validUrls.add(p.url); }
-      for (const c of perplexityNews.citations) { validUrls.add(c); }
-
       matinale.veille_reputation.preuves = matinale.veille_reputation.preuves.filter((p: any) => {
         if (!p.url || p.url === 'N/A' || p.url === '') return false;
         return validUrls.has(p.url);
       });
     }
+
+    // Post-process: ANTI-HALLUCINATION — scrub names/titles not in référentiel
+    const knownNames = new Set<string>();
+    const knownFullEntries: Array<{ prenom: string; nom: string; fonction: string }> = [];
+    for (const p of (personnalites || [])) {
+      const nom = (p.nom || '').trim().toLowerCase();
+      const prenom = (p.prenom || '').trim().toLowerCase();
+      if (nom) knownNames.add(nom);
+      if (prenom && nom) knownNames.add(`${prenom} ${nom}`);
+      knownFullEntries.push({ prenom: prenom, nom: nom, fonction: p.fonction || '' });
+    }
+
+    // Check generated text for "ministre" references not in référentiel
+    const sanitizeMinisterReferences = (text: string): string => {
+      // Match patterns like "ministre [Name]" or "[Name], ministre de..."
+      const ministerPattern = /(?:ministre\s+(?:de\s+(?:la\s+|l[''])?)?(?:\w+\s+)*?)(\b[A-ZÀ-Ü][a-zà-ü]+(?:\s+[A-ZÀ-Ü][a-zà-ü]+)*)/gi;
+      return text.replace(ministerPattern, (match) => {
+        // Extract capitalized words (potential names)
+        const nameWords = match.match(/\b[A-ZÀ-Ü][a-zà-ü]{2,}\b/g) || [];
+        const hasKnownName = nameWords.some(w => {
+          const lower = w.toLowerCase();
+          return knownNames.has(lower) || 
+            knownFullEntries.some(e => e.nom === lower || e.prenom === lower);
+        });
+        if (!hasKnownName && nameWords.length > 0) {
+          console.warn(`[Matinale/AntiHallucination] Scrubbed unknown minister reference: "${match}"`);
+          return 'le ministère de tutelle';
+        }
+        return match;
+      });
+    };
+
+    // Sanitize all text fields in the matinale output
+    const sanitizeObject = (obj: any): any => {
+      if (typeof obj === 'string') return sanitizeMinisterReferences(obj);
+      if (Array.isArray(obj)) return obj.map(sanitizeObject);
+      if (obj && typeof obj === 'object') {
+        const result: any = {};
+        for (const [k, v] of Object.entries(obj)) result[k] = sanitizeObject(v);
+        return result;
+      }
+      return obj;
+    };
+    
+    const sanitizedMatinale = sanitizeObject(matinale);
+    // Replace matinale fields with sanitized versions
+    Object.assign(matinale, sanitizedMatinale);
 
     // Generate HTML email
     const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
