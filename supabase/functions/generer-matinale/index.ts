@@ -499,7 +499,7 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
           },
         }],
         tool_choice: { type: 'function', function: { name: 'generate_matinale' } },
-        temperature: 0.2,  // Even lower temperature with GPT-5 for maximum factual accuracy
+        // Note: GPT-5 does not support custom temperature parameter
       }),
     });
 
