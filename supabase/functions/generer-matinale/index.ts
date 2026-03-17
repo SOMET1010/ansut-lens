@@ -303,7 +303,7 @@ RÈGLE ABSOLUE : Si tu mentionnes une personne (nom, titre, fonction), tu DOIS u
           },
         }],
         tool_choice: { type: 'function', function: { name: 'generate_matinale' } },
-        temperature: 0.7,
+        temperature: 0.3,
       }),
     });
 
