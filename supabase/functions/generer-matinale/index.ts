@@ -418,7 +418,10 @@ ${socialList}${alertesList}
 
 === RÉFÉRENTIEL PERSONNALITÉS VÉRIFIÉES (source de vérité) ===
 ${personnalitesRef}
-RÈGLE ABSOLUE : Si tu mentionnes une personne (nom, titre, fonction), tu DOIS utiliser UNIQUEMENT les informations de ce référentiel. Ne JAMAIS inventer ou deviner un nom ou une fonction qui ne figure pas dans cette liste.`;
+RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
+1. Si tu mentionnes une personne (nom, titre, fonction), tu DOIS utiliser UNIQUEMENT les informations de ce référentiel. Ne JAMAIS inventer ou deviner un nom ou une fonction qui ne figure pas dans cette liste.
+2. Les personnes marquées "Ancien(ne)" ou "⚠️ N'EST PLUS EN POSTE" ne doivent JAMAIS être présentées comme occupant encore leur fonction. Utilise le préfixe "Ancien" systématiquement.
+3. Ne JAMAIS attribuer un poste ministériel ou une fonction officielle à quelqu'un sans vérifier dans ce référentiel.`;
 
     console.log('[Matinale] Generating with', (articles || []).length, 'DB articles,', perplexityNews.articles.length, 'Perplexity articles,', ansutArticles.length, 'ANSUT articles,', (mentions || []).length, 'mentions,', (socialInsights || []).length, 'social insights');
 
