@@ -108,6 +108,88 @@ RÈGLES: Ne fournis QUE des articles réels avec des URLs vérifiables. Maximum 
   return { articles: unique, citations: allCitations };
 }
 
+// Fetch Ivorian press headlines (titrologie) via Perplexity
+async function fetchTitrologie(): Promise<Array<{ journal: string; titre: string; resume: string; url: string; type: string }>> {
+  const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
+  if (!PERPLEXITY_API_KEY) {
+    console.warn('[Matinale] PERPLEXITY_API_KEY not configured, skipping titrologie');
+    return [];
+  }
+
+  const titrologiePrompt = `Donne-moi les gros titres du jour (titrologie) des principaux journaux et médias en Côte d'Ivoire. 
+
+Journaux à couvrir en priorité :
+- PRESSE NATIONALE : Fraternité Matin, L'Intelligent d'Abidjan, Le Patriote, Notre Voie, Soir Info, Le Nouveau Réveil, Le Jour Plus, Le Matin d'Abidjan, L'Expression
+- PRESSE EN LIGNE : Abidjan.net, Koaci, Connectionivoirienne, AIP (Agence Ivoirienne de Presse), LInfodrome
+- PRESSE ÉCONOMIQUE/TECH : CIO Mag Afrique, Agence Ecofin, Financial Afrik, TechCabal
+
+Pour chaque journal trouvé, donne le ou les gros titres principaux du jour avec un résumé d'une phrase.
+
+IMPORTANT : Ne fournis que des titres RÉELS publiés aujourd'hui. Si tu ne trouves pas de titres pour un journal, ne l'inclus pas.`;
+
+  try {
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'sonar',
+        messages: [
+          {
+            role: 'system',
+            content: `Tu es un assistant de revue de presse ivoirienne. Réponds UNIQUEMENT en JSON valide:
+{
+  "titres": [
+    { "journal": "Nom du journal", "titre": "Gros titre exact", "resume": "Résumé en 1 phrase", "url": "URL de l'article si disponible", "type": "nationale|en_ligne|economique" }
+  ]
+}
+RÈGLES: Ne fournis QUE des titres réels publiés aujourd'hui. Maximum 15 titres.`
+          },
+          { role: 'user', content: titrologiePrompt }
+        ],
+        search_recency_filter: 'day',
+        return_citations: true,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(`[Matinale/Titrologie] Error ${response.status}`);
+      await response.text();
+      return [];
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || '';
+    const citations = data.citations || [];
+
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*"titres"[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (Array.isArray(parsed.titres)) {
+          const titres = parsed.titres.map((t: any, i: number) => ({
+            journal: t.journal || 'Inconnu',
+            titre: t.titre || '',
+            resume: t.resume || '',
+            url: t.url || citations[i] || '',
+            type: t.type || 'nationale',
+          }));
+          console.log(`[Matinale/Titrologie] ${titres.length} titres récupérés`);
+          return titres;
+        }
+      }
+    } catch (e) {
+      console.error('[Matinale/Titrologie] JSON parse error:', e);
+    }
+  } catch (e) {
+    console.error('[Matinale/Titrologie] Fetch error:', e);
+  }
+
+  return [];
+}
+
 const MATINALE_PROMPT = `Tu es le rédacteur en chef de la communication de l'ANSUT (Agence Nationale du Service Universel des Télécommunications de Côte d'Ivoire).
 
 Génère un briefing matinal "Spécial Communication" structuré en 3 sections EXACTES au format JSON :
@@ -192,8 +274,9 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch real-time news from Perplexity (runs in parallel with DB queries)
+    // Fetch real-time news + titrologie from Perplexity (runs in parallel with DB queries)
     const perplexityPromise = fetchPerplexityNews();
+    const titrologiePromise = fetchTitrologie();
 
     // Fetch last 24h articles (general news)
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -250,7 +333,7 @@ Deno.serve(async (req) => {
       .order('date_publication', { ascending: false });
 
     // Await Perplexity results
-    const perplexityNews = await perplexityPromise;
+    const [perplexityNews, titrologie] = await Promise.all([perplexityPromise, titrologiePromise]);
 
     // Build accounts activity summary
     const accountsActivity = (vipComptes || []).map(compte => {
@@ -266,7 +349,7 @@ Deno.serve(async (req) => {
       };
     });
 
-    console.log('[Matinale] Accounts activity:', accountsActivity.length, 'comptes,', (recentPubs || []).length, 'pubs 24h');
+    console.log('[Matinale] Accounts activity:', accountsActivity.length, 'comptes,', (recentPubs || []).length, 'pubs 24h,', titrologie.length, 'titres presse');
 
     // Also filter articles that specifically mention ANSUT
     const ansutKeywords = ['ansut', 'service universel', 'télécommunications'];
@@ -434,7 +517,6 @@ RÈGLE ABSOLUE : Si tu mentionnes une personne (nom, titre, fonction), tu DOIS u
     // Post-process: filter out preuves with invalid/invented URLs
     if (matinale.veille_reputation?.preuves) {
       const validUrls = new Set<string>();
-      // Collect all real URLs from context data (DB + Perplexity)
       for (const a of (articles || [])) { if (a.source_url) validUrls.add(a.source_url); }
       for (const m of (mentions || [])) { if (m.source_url) validUrls.add(m.source_url); }
       for (const s of (socialInsights || [])) { if (s.url_original) validUrls.add(s.url_original); }
@@ -455,6 +537,37 @@ RÈGLE ABSOLUE : Si tu mentionnes une personne (nom, titre, fonction), tu DOIS u
     const tonaliteLabel = matinale.veille_reputation.tonalite === 'positif' ? '✅ Positif'
       : matinale.veille_reputation.tonalite === 'negatif' ? '🔴 Négatif' : '🟡 Neutre';
 
+    // Group titrologie by type
+    const titroNationale = titrologie.filter(t => t.type === 'nationale');
+    const titroEnLigne = titrologie.filter(t => t.type === 'en_ligne');
+    const titroEco = titrologie.filter(t => t.type === 'economique');
+
+    const buildTitroSection = (titres: typeof titrologie, label: string, icon: string) => {
+      if (titres.length === 0) return '';
+      return `
+      <div style="margin-bottom:12px;">
+        <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#1e3a5f;">${icon} ${label}</p>
+        ${titres.map(t => `
+        <div style="margin-bottom:8px;padding:8px 10px;background:#ffffff;border-radius:6px;border-left:3px solid #6366f1;">
+          <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#6366f1;">${t.journal}</p>
+          <p style="margin:0 0 2px;font-size:13px;font-weight:600;color:#1e3a5f;">${t.titre}</p>
+          ${t.resume ? `<p style="margin:0 0 2px;font-size:12px;color:#6b7280;">${t.resume}</p>` : ''}
+          ${t.url ? `<p style="margin:0;font-size:11px;"><a href="${t.url}" style="color:#2563eb;text-decoration:underline;" target="_blank">Lire →</a></p>` : ''}
+        </div>`).join('')}
+      </div>`;
+    };
+
+    const titrologieHtml = titrologie.length > 0 ? `
+<tr><td style="padding:0 24px 24px;">
+  <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid #6366f1;padding-bottom:8px;">📰 Revue de Presse — Titrologie du jour</h2>
+  <div style="padding:16px;background-color:#f0f0ff;border-radius:8px;">
+    <p style="margin:0 0 12px;font-size:12px;color:#6b7280;">${titrologie.length} titre${titrologie.length > 1 ? 's' : ''} — ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+    ${buildTitroSection(titroNationale, 'Presse Nationale', '🗞️')}
+    ${buildTitroSection(titroEnLigne, 'Presse en Ligne', '🌐')}
+    ${buildTitroSection(titroEco, 'Presse Économique & Tech', '📊')}
+  </div>
+</td></tr>` : '';
+
     const htmlEmail = `<!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
@@ -466,6 +579,7 @@ RÈGLE ABSOLUE : Si tu mentionnes une personne (nom, titre, fonction), tu DOIS u
   <h1 style="color:#ffffff;margin:0;font-size:24px;">📰 La Matinale ANSUT</h1>
   <p style="color:#93c5fd;margin:8px 0 0;font-size:14px;">${dateStr}</p>
 </td></tr>
+${titrologieHtml}
 <tr><td style="padding:24px;">
   <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid #2563eb;padding-bottom:8px;">⚡ Flash Info</h2>
   ${matinale.flash_info.map((item: any) => `
@@ -548,7 +662,7 @@ RÈGLE ABSOLUE : Si tu mentionnes une personne (nom, titre, fonction), tu DOIS u
 </td></tr>
 <tr><td style="background-color:#f8fafc;padding:20px;text-align:center;border-top:1px solid #e5e7eb;">
   <p style="margin:0;color:#9ca3af;font-size:11px;">ANSUT RADAR — Veille Stratégique & Communication</p>
-  <p style="margin:4px 0 0;color:#9ca3af;font-size:11px;">Généré à partir de ${(articles || []).length} articles DB + ${perplexityNews.articles.length} articles temps réel, ${(mentions || []).length} mentions, ${(socialInsights || []).length} insights sociaux, ${accountsActivity.length} comptes suivis</p>
+  <p style="margin:4px 0 0;color:#9ca3af;font-size:11px;">Généré à partir de ${(articles || []).length} articles DB + ${perplexityNews.articles.length} articles temps réel + ${titrologie.length} titres presse, ${(mentions || []).length} mentions, ${(socialInsights || []).length} insights sociaux, ${accountsActivity.length} comptes suivis</p>
 </td></tr>
 </table>
 </td></tr>
@@ -558,7 +672,7 @@ RÈGLE ABSOLUE : Si tu mentionnes une personne (nom, titre, fonction), tu DOIS u
 
     if (previewOnly) {
       return new Response(JSON.stringify({
-        matinale, html: htmlEmail, articles_count: (articles || []).length, perplexity_articles_count: perplexityNews.articles.length, accounts_activity: accountsActivity, generated_at: new Date().toISOString(),
+        matinale, titrologie, html: htmlEmail, articles_count: (articles || []).length, perplexity_articles_count: perplexityNews.articles.length, accounts_activity: accountsActivity, generated_at: new Date().toISOString(),
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
@@ -573,7 +687,7 @@ RÈGLE ABSOLUE : Si tu mentionnes une personne (nom, titre, fonction), tu DOIS u
 
     if (recipients.length === 0) {
       return new Response(JSON.stringify({
-        matinale, html: htmlEmail, warning: 'Aucun destinataire configuré', articles_count: (articles || []).length,
+        matinale, titrologie, html: htmlEmail, warning: 'Aucun destinataire configuré', articles_count: (articles || []).length,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
@@ -607,7 +721,7 @@ RÈGLE ABSOLUE : Si tu mentionnes une personne (nom, titre, fonction), tu DOIS u
     console.log(`[Matinale] Sent: ${successCount}, Failed: ${failCount}`);
 
     return new Response(JSON.stringify({
-      matinale, sent: successCount, failed: failCount, articles_count: (articles || []).length, perplexity_articles_count: perplexityNews.articles.length, generated_at: new Date().toISOString(),
+      matinale, titrologie, sent: successCount, failed: failCount, articles_count: (articles || []).length, perplexity_articles_count: perplexityNews.articles.length, generated_at: new Date().toISOString(),
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error) {
