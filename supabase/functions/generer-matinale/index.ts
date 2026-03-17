@@ -20,11 +20,99 @@ async function sendViaGateway(to: string, subject: string, htmlContent: string) 
   return response;
 }
 
+// Fetch real-time news from Perplexity to ground the briefing in verified sources
+async function fetchPerplexityNews(): Promise<{ articles: Array<{ titre: string; resume: string; source: string; url: string }>; citations: string[] }> {
+  const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
+  if (!PERPLEXITY_API_KEY) {
+    console.warn('[Matinale] PERPLEXITY_API_KEY not configured, skipping real-time search');
+    return { articles: [], citations: [] };
+  }
+
+  const queries = [
+    "Actualités télécommunications numérique Côte d'Ivoire ANSUT ARTCI aujourd'hui",
+    "Opérateurs telecoms Orange MTN Moov Côte d'Ivoire Afrique de l'Ouest actualités",
+  ];
+
+  const allArticles: Array<{ titre: string; resume: string; source: string; url: string }> = [];
+  const allCitations: string[] = [];
+
+  for (const query of queries) {
+    try {
+      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'sonar',
+          messages: [
+            {
+              role: 'system',
+              content: `Tu es un assistant de veille. Réponds UNIQUEMENT en JSON valide:
+{
+  "articles": [
+    { "titre": "Titre exact de l'article", "resume": "Résumé en 1-2 phrases", "source": "Nom du média", "url": "URL exacte de l'article" }
+  ]
+}
+RÈGLES: Ne fournis QUE des articles réels avec des URLs vérifiables. Maximum 5 articles par requête.`
+            },
+            { role: 'user', content: query }
+          ],
+          search_recency_filter: 'day',
+          return_citations: true,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error(`[Matinale/Perplexity] Error ${response.status} for query: ${query}`);
+        await response.text();
+        continue;
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || '';
+      const citations = data.citations || [];
+      allCitations.push(...citations);
+
+      try {
+        const jsonMatch = content.match(/\{[\s\S]*"articles"[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (Array.isArray(parsed.articles)) {
+            const enriched = parsed.articles.map((a: any, i: number) => ({
+              titre: a.titre || 'Sans titre',
+              resume: a.resume || '',
+              source: a.source || 'Web',
+              url: a.url || citations[i] || '',
+            }));
+            allArticles.push(...enriched);
+          }
+        }
+      } catch (e) {
+        console.error('[Matinale/Perplexity] JSON parse error:', e);
+      }
+    } catch (e) {
+      console.error(`[Matinale/Perplexity] Fetch error for query "${query}":`, e);
+    }
+  }
+
+  const seen = new Set<string>();
+  const unique = allArticles.filter(a => {
+    if (!a.url || seen.has(a.url)) return false;
+    seen.add(a.url);
+    return true;
+  });
+
+  console.log(`[Matinale/Perplexity] Fetched ${unique.length} real-time articles with ${allCitations.length} citations`);
+  return { articles: unique, citations: allCitations };
+}
+
 const MATINALE_PROMPT = `Tu es le rédacteur en chef de la communication de l'ANSUT (Agence Nationale du Service Universel des Télécommunications de Côte d'Ivoire).
 
 Génère un briefing matinal "Spécial Communication" structuré en 3 sections EXACTES au format JSON :
 
-1. "flash_info" : Un tableau de 3 objets parmi les ACTUALITÉS GÉNÉRALES, chaque objet contient :
+1. "flash_info" : Un tableau de 3 objets parmi les ACTUALITÉS (générales + temps réel), chaque objet contient :
    - "titre" : Titre court (max 15 mots)
    - "resume" : Résumé percutant en 20 mots maximum
    - "source" : Nom de la source
@@ -49,7 +137,7 @@ Génère un briefing matinal "Spécial Communication" structuré en 3 sections E
 Règles :
 - Écris en français professionnel
 - Le contenu doit être directement utilisable sans modification
-- CRITIQUE pour veille_reputation : N'utilise QUE les données des sections "MENTIONS DIRECTES ANSUT" et "MENTIONS SOCIALES ANSUT" pour construire les preuves. Les "ACTUALITÉS GÉNÉRALES" servent pour flash_info et prêt-à-poster.
+- CRITIQUE pour veille_reputation : N'utilise QUE les données des sections "MENTIONS DIRECTES ANSUT" et "MENTIONS SOCIALES ANSUT" pour construire les preuves. Les "ACTUALITÉS GÉNÉRALES" et "ACTUALITÉS TEMPS RÉEL" servent pour flash_info et prêt-à-poster.
 - CRITIQUE : Les URLs dans les preuves doivent être copiées EXACTEMENT depuis le contexte. NE JAMAIS inventer une URL.
 - Si aucune mention directe de l'ANSUT n'est trouvée, suggère un angle de rebond dans le résumé
 - CRITIQUE : Chaque item de flash_info DOIT inclure le champ "source_url" avec l'URL réelle de l'article depuis le contexte. NE JAMAIS inventer une URL.
@@ -103,6 +191,9 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Fetch real-time news from Perplexity (runs in parallel with DB queries)
+    const perplexityPromise = fetchPerplexityNews();
 
     // Fetch last 24h articles (general news)
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -158,6 +249,9 @@ Deno.serve(async (req) => {
       .not('vip_compte_id', 'is', null)
       .order('date_publication', { ascending: false });
 
+    // Await Perplexity results
+    const perplexityNews = await perplexityPromise;
+
     // Build accounts activity summary
     const accountsActivity = (vipComptes || []).map(compte => {
       const pubs = (recentPubs || []).filter(p => p.vip_compte_id === compte.id);
@@ -186,6 +280,13 @@ Deno.serve(async (req) => {
       `[${i+1}] ${a.titre} (source: ${a.source_nom || 'inconnue'}, url: ${a.source_url || 'N/A'}, importance: ${a.importance}/100, sentiment: ${a.sentiment ?? 'N/A'}${a.impact_ansut ? ', IMPACT ANSUT: ' + a.impact_ansut : ''})`
     ).join('\n');
 
+    // Build Perplexity real-time articles section
+    const perplexityArticlesList = perplexityNews.articles.length > 0
+      ? perplexityNews.articles.map((a, i) =>
+          `[P${i+1}] "${a.titre}" (source: ${a.source}, url: ${a.url}, résumé: ${a.resume})`
+        ).join('\n')
+      : 'Aucune actualité temps réel disponible.';
+
     const ansutArticlesList = ansutArticles.length > 0
       ? ansutArticles.map((a, i) =>
           `[A${i+1}] "${a.titre}" (source: ${a.source_nom || 'inconnue'}, url: ${a.source_url || 'N/A'}, sentiment: ${a.sentiment ?? 'N/A'}, résumé: ${a.resume || 'N/A'})`
@@ -213,8 +314,11 @@ Deno.serve(async (req) => {
       ? (personnalites || []).map(p => `- ${p.prenom || ''} ${p.nom} : ${p.fonction || 'N/A'} @ ${p.organisation || 'N/A'} (cercle ${p.cercle})`).join('\n')
       : 'Aucune personnalité enregistrée.';
 
-    const context = `=== ACTUALITÉS GÉNÉRALES (${(articles || []).length} articles) ===
+    const context = `=== ACTUALITÉS GÉNÉRALES (${(articles || []).length} articles en base) ===
 ${generalArticlesList}
+
+=== ACTUALITÉS TEMPS RÉEL (${perplexityNews.articles.length} articles via recherche web vérifiée) ===
+${perplexityArticlesList}
 
 === MENTIONS DIRECTES ANSUT (articles citant l'ANSUT) ===
 ${ansutArticlesList}
@@ -229,7 +333,7 @@ ${socialList}${alertesList}
 ${personnalitesRef}
 RÈGLE ABSOLUE : Si tu mentionnes une personne (nom, titre, fonction), tu DOIS utiliser UNIQUEMENT les informations de ce référentiel. Ne JAMAIS inventer ou deviner un nom ou une fonction qui ne figure pas dans cette liste.`;
 
-    console.log('[Matinale] Generating with', (articles || []).length, 'articles,', ansutArticles.length, 'ANSUT articles,', (mentions || []).length, 'mentions,', (socialInsights || []).length, 'social insights');
+    console.log('[Matinale] Generating with', (articles || []).length, 'DB articles,', perplexityNews.articles.length, 'Perplexity articles,', ansutArticles.length, 'ANSUT articles,', (mentions || []).length, 'mentions,', (socialInsights || []).length, 'social insights');
 
     // Call AI
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -330,14 +434,15 @@ RÈGLE ABSOLUE : Si tu mentionnes une personne (nom, titre, fonction), tu DOIS u
     // Post-process: filter out preuves with invalid/invented URLs
     if (matinale.veille_reputation?.preuves) {
       const validUrls = new Set<string>();
-      // Collect all real URLs from context data
+      // Collect all real URLs from context data (DB + Perplexity)
       for (const a of (articles || [])) { if (a.source_url) validUrls.add(a.source_url); }
       for (const m of (mentions || [])) { if (m.source_url) validUrls.add(m.source_url); }
       for (const s of (socialInsights || [])) { if (s.url_original) validUrls.add(s.url_original); }
+      for (const p of perplexityNews.articles) { if (p.url) validUrls.add(p.url); }
+      for (const c of perplexityNews.citations) { validUrls.add(c); }
 
       matinale.veille_reputation.preuves = matinale.veille_reputation.preuves.filter((p: any) => {
         if (!p.url || p.url === 'N/A' || p.url === '') return false;
-        // Check URL exists in our data
         return validUrls.has(p.url);
       });
     }
@@ -443,7 +548,7 @@ RÈGLE ABSOLUE : Si tu mentionnes une personne (nom, titre, fonction), tu DOIS u
 </td></tr>
 <tr><td style="background-color:#f8fafc;padding:20px;text-align:center;border-top:1px solid #e5e7eb;">
   <p style="margin:0;color:#9ca3af;font-size:11px;">ANSUT RADAR — Veille Stratégique & Communication</p>
-  <p style="margin:4px 0 0;color:#9ca3af;font-size:11px;">Généré à partir de ${(articles || []).length} articles, ${(mentions || []).length} mentions, ${(socialInsights || []).length} insights sociaux, ${accountsActivity.length} comptes suivis</p>
+  <p style="margin:4px 0 0;color:#9ca3af;font-size:11px;">Généré à partir de ${(articles || []).length} articles DB + ${perplexityNews.articles.length} articles temps réel, ${(mentions || []).length} mentions, ${(socialInsights || []).length} insights sociaux, ${accountsActivity.length} comptes suivis</p>
 </td></tr>
 </table>
 </td></tr>
@@ -453,7 +558,7 @@ RÈGLE ABSOLUE : Si tu mentionnes une personne (nom, titre, fonction), tu DOIS u
 
     if (previewOnly) {
       return new Response(JSON.stringify({
-        matinale, html: htmlEmail, articles_count: (articles || []).length, accounts_activity: accountsActivity, generated_at: new Date().toISOString(),
+        matinale, html: htmlEmail, articles_count: (articles || []).length, perplexity_articles_count: perplexityNews.articles.length, accounts_activity: accountsActivity, generated_at: new Date().toISOString(),
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
@@ -502,7 +607,7 @@ RÈGLE ABSOLUE : Si tu mentionnes une personne (nom, titre, fonction), tu DOIS u
     console.log(`[Matinale] Sent: ${successCount}, Failed: ${failCount}`);
 
     return new Response(JSON.stringify({
-      matinale, sent: successCount, failed: failCount, articles_count: (articles || []).length, generated_at: new Date().toISOString(),
+      matinale, sent: successCount, failed: failCount, articles_count: (articles || []).length, perplexity_articles_count: perplexityNews.articles.length, generated_at: new Date().toISOString(),
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error) {
