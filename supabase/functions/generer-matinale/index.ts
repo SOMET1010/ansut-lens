@@ -136,6 +136,14 @@ Deno.serve(async (req) => {
       .in('niveau', ['critical', 'warning'])
       .limit(5);
 
+    // Fetch verified personnalites as ground truth for names/roles
+    const { data: personnalites } = await supabase
+      .from('personnalites')
+      .select('nom, prenom, fonction, organisation, cercle, categorie')
+      .eq('actif', true)
+      .order('cercle', { ascending: true })
+      .limit(100);
+
     // Fetch VIP accounts and their recent publications
     const { data: vipComptes } = await supabase
       .from('vip_comptes')
