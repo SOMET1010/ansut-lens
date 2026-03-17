@@ -394,7 +394,11 @@ Deno.serve(async (req) => {
 
     // Build personnalites reference list
     const personnalitesRef = (personnalites || []).length > 0
-      ? (personnalites || []).map(p => `- ${p.prenom || ''} ${p.nom} : ${p.fonction || 'N/A'} @ ${p.organisation || 'N/A'} (cercle ${p.cercle})`).join('\n')
+      ? (personnalites || []).map(p => {
+          const fonction = p.fonction || 'N/A';
+          const isAncien = fonction.toLowerCase().startsWith('ancien');
+          return `- ${p.prenom || ''} ${p.nom} : ${fonction} @ ${p.organisation || 'N/A'} (cercle ${p.cercle})${isAncien ? ' ⚠️ N\'EST PLUS EN POSTE' : ''}`;
+        }).join('\n')
       : 'Aucune personnalité enregistrée.';
 
     const context = `=== ACTUALITÉS GÉNÉRALES (${(articles || []).length} articles en base) ===
