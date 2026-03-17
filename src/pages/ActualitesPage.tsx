@@ -237,7 +237,8 @@ export default function ActualitesPage() {
         </main>
 
         {/* Sidebar (30%) - Analytics */}
-        <aside className="hidden lg:block w-full lg:w-1/4 lg:sticky lg:top-6 self-start">
+        <aside className="hidden lg:block w-full lg:w-1/4 lg:sticky lg:top-6 self-start space-y-6">
+          <TitrologieWidget />
           <SmartSidebar
             analytics={analytics}
             activeFilters={activeFilters}
