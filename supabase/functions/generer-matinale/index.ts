@@ -207,6 +207,11 @@ Deno.serve(async (req) => {
       ? `\n\nAlertes actives:\n${alertes!.map(a => `⚠️ ${a.titre}: ${a.message || ''}`).join('\n')}`
       : '';
 
+    // Build personnalites reference list
+    const personnalitesRef = (personnalites || []).length > 0
+      ? (personnalites || []).map(p => `- ${p.prenom || ''} ${p.nom} : ${p.fonction || 'N/A'} @ ${p.organisation || 'N/A'} (cercle ${p.cercle})`).join('\n')
+      : 'Aucune personnalité enregistrée.';
+
     const context = `=== ACTUALITÉS GÉNÉRALES (${(articles || []).length} articles) ===
 ${generalArticlesList}
 
@@ -217,7 +222,11 @@ ${ansutArticlesList}
 ${mentionsList}
 
 === MENTIONS SOCIALES ANSUT (réseaux sociaux) ===
-${socialList}${alertesList}`;
+${socialList}${alertesList}
+
+=== RÉFÉRENTIEL PERSONNALITÉS VÉRIFIÉES (source de vérité) ===
+${personnalitesRef}
+RÈGLE ABSOLUE : Si tu mentionnes une personne (nom, titre, fonction), tu DOIS utiliser UNIQUEMENT les informations de ce référentiel. Ne JAMAIS inventer ou deviner un nom ou une fonction qui ne figure pas dans cette liste.`;
 
     console.log('[Matinale] Generating with', (articles || []).length, 'articles,', ansutArticles.length, 'ANSUT articles,', (mentions || []).length, 'mentions,', (socialInsights || []).length, 'social insights');
 
