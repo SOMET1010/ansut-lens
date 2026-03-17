@@ -52,7 +52,8 @@ Règles :
 - CRITIQUE pour veille_reputation : N'utilise QUE les données des sections "MENTIONS DIRECTES ANSUT" et "MENTIONS SOCIALES ANSUT" pour construire les preuves. Les "ACTUALITÉS GÉNÉRALES" servent pour flash_info et prêt-à-poster.
 - CRITIQUE : Les URLs dans les preuves doivent être copiées EXACTEMENT depuis le contexte. NE JAMAIS inventer une URL.
 - Si aucune mention directe de l'ANSUT n'est trouvée, suggère un angle de rebond dans le résumé
-- CRITIQUE : Chaque item de flash_info DOIT inclure le champ "source_url" avec l'URL réelle de l'article depuis le contexte. NE JAMAIS inventer une URL.`;
+- CRITIQUE : Chaque item de flash_info DOIT inclure le champ "source_url" avec l'URL réelle de l'article depuis le contexte. NE JAMAIS inventer une URL.
+- ANTI-HALLUCINATION NOMS : Si tu mentionnes une personne par son nom ou sa fonction dans le briefing, tu DOIS utiliser UNIQUEMENT le "RÉFÉRENTIEL PERSONNALITÉS VÉRIFIÉES" fourni dans le contexte. NE JAMAIS inventer un nom, un titre ou une fonction. Si tu ne trouves pas la personne dans le référentiel, ne la mentionne pas nommément.`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -136,6 +137,14 @@ Deno.serve(async (req) => {
       .in('niveau', ['critical', 'warning'])
       .limit(5);
 
+    // Fetch verified personnalites as ground truth for names/roles
+    const { data: personnalites } = await supabase
+      .from('personnalites')
+      .select('nom, prenom, fonction, organisation, cercle, categorie')
+      .eq('actif', true)
+      .order('cercle', { ascending: true })
+      .limit(100);
+
     // Fetch VIP accounts and their recent publications
     const { data: vipComptes } = await supabase
       .from('vip_comptes')
@@ -199,6 +208,11 @@ Deno.serve(async (req) => {
       ? `\n\nAlertes actives:\n${alertes!.map(a => `⚠️ ${a.titre}: ${a.message || ''}`).join('\n')}`
       : '';
 
+    // Build personnalites reference list
+    const personnalitesRef = (personnalites || []).length > 0
+      ? (personnalites || []).map(p => `- ${p.prenom || ''} ${p.nom} : ${p.fonction || 'N/A'} @ ${p.organisation || 'N/A'} (cercle ${p.cercle})`).join('\n')
+      : 'Aucune personnalité enregistrée.';
+
     const context = `=== ACTUALITÉS GÉNÉRALES (${(articles || []).length} articles) ===
 ${generalArticlesList}
 
@@ -209,7 +223,11 @@ ${ansutArticlesList}
 ${mentionsList}
 
 === MENTIONS SOCIALES ANSUT (réseaux sociaux) ===
-${socialList}${alertesList}`;
+${socialList}${alertesList}
+
+=== RÉFÉRENTIEL PERSONNALITÉS VÉRIFIÉES (source de vérité) ===
+${personnalitesRef}
+RÈGLE ABSOLUE : Si tu mentionnes une personne (nom, titre, fonction), tu DOIS utiliser UNIQUEMENT les informations de ce référentiel. Ne JAMAIS inventer ou deviner un nom ou une fonction qui ne figure pas dans cette liste.`;
 
     console.log('[Matinale] Generating with', (articles || []).length, 'articles,', ansutArticles.length, 'ANSUT articles,', (mentions || []).length, 'mentions,', (socialInsights || []).length, 'social insights');
 
@@ -286,7 +304,7 @@ ${socialList}${alertesList}`;
           },
         }],
         tool_choice: { type: 'function', function: { name: 'generate_matinale' } },
-        temperature: 0.7,
+        temperature: 0.3,
       }),
     });
 
