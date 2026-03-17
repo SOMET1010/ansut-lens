@@ -52,7 +52,8 @@ Règles :
 - CRITIQUE pour veille_reputation : N'utilise QUE les données des sections "MENTIONS DIRECTES ANSUT" et "MENTIONS SOCIALES ANSUT" pour construire les preuves. Les "ACTUALITÉS GÉNÉRALES" servent pour flash_info et prêt-à-poster.
 - CRITIQUE : Les URLs dans les preuves doivent être copiées EXACTEMENT depuis le contexte. NE JAMAIS inventer une URL.
 - Si aucune mention directe de l'ANSUT n'est trouvée, suggère un angle de rebond dans le résumé
-- CRITIQUE : Chaque item de flash_info DOIT inclure le champ "source_url" avec l'URL réelle de l'article depuis le contexte. NE JAMAIS inventer une URL.`;
+- CRITIQUE : Chaque item de flash_info DOIT inclure le champ "source_url" avec l'URL réelle de l'article depuis le contexte. NE JAMAIS inventer une URL.
+- ANTI-HALLUCINATION NOMS : Si tu mentionnes une personne par son nom ou sa fonction dans le briefing, tu DOIS utiliser UNIQUEMENT le "RÉFÉRENTIEL PERSONNALITÉS VÉRIFIÉES" fourni dans le contexte. NE JAMAIS inventer un nom, un titre ou une fonction. Si tu ne trouves pas la personne dans le référentiel, ne la mentionne pas nommément.`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
