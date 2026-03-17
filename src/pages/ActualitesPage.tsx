@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { TrendingUp, Loader2, Newspaper, Sparkles } from 'lucide-react';
+import { TitrologieWidget } from '@/components/actualites/TitrologieWidget';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
