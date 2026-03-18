@@ -176,7 +176,7 @@ const handler = async (req: Request): Promise<Response> => {
       for (const newsletter of newslettersToSend) {
         console.log(`📤 Envoi automatique newsletter #${newsletter.numero}`);
         const sendResponse = await supabase.functions.invoke('envoyer-newsletter', {
-          body: { newsletter_id: newsletter.id },
+          body: { newsletterId: newsletter.id },
         });
         if (sendResponse.error) {
           actions.push(`Erreur envoi newsletter #${newsletter.numero}`);

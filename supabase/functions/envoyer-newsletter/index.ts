@@ -56,7 +56,8 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const { newsletterId }: SendRequest = await req.json();
+    const body = await req.json();
+    const newsletterId = body.newsletterId || body.newsletter_id;
 
     if (!newsletterId) {
       return new Response(
