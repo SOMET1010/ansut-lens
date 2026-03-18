@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
       .from('newsletter_destinataires')
       .select('email, nom')
       .eq('actif', true)
-      .or(`type.eq.${newsletter.cible},type.eq.externe`);
+      .or(`type.eq.${newsletter.cible},type.eq.externe,type.eq.general`);
 
     if (destError) {
       console.error('Error fetching destinataires:', destError);
