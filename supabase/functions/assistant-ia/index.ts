@@ -135,10 +135,13 @@ Règles :
     // Fetch user profile for personalization
     const serviceClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     
-    const [profileRes, prefsRes, roleRes] = await Promise.all([
+    const [profileRes, prefsRes, roleRes, actusRes, dossiersRes, personnalitesRes] = await Promise.all([
       serviceClient.from('profiles').select('full_name, department').eq('id', userId).single(),
       serviceClient.from('user_preferences_ia').select('sujets_favoris, portrait_ia').eq('user_id', userId).maybeSingle(),
       serviceClient.from('user_roles').select('role').eq('user_id', userId).single(),
+      serviceClient.from('actualites').select('id, titre, resume, source_nom, categorie, date_publication, importance, sentiment, impact_ansut').order('date_publication', { ascending: false }).limit(20),
+      serviceClient.from('dossiers').select('id, titre, resume, categorie, statut').eq('statut', 'publie').order('updated_at', { ascending: false }).limit(10),
+      serviceClient.from('personnalites').select('id, nom, prenom, fonction, organisation, categorie, cercle, score_influence').eq('actif', true).order('score_influence', { ascending: false }).limit(30),
     ]);
 
     const userName = profileRes.data?.full_name || 'utilisateur';
@@ -156,10 +159,41 @@ Règles :
     if (userPrefs?.portrait_ia) {
       contextualPrompt += `\n- Son profil de veille : ${userPrefs.portrait_ia}`;
     }
+
+    // Inject live actualites
+    if (actusRes.data?.length) {
+      contextualPrompt += `\n\nACTUALITÉS RÉCENTES (${actusRes.data.length} articles) :\n`;
+      for (const a of actusRes.data) {
+        contextualPrompt += `- [[ACTU:${a.id}|${a.titre}]] (${a.source_nom || 'source inconnue'}, importance: ${a.importance}/100${a.impact_ansut ? ', impact ANSUT: ' + a.impact_ansut : ''}) : ${a.resume || 'Pas de résumé'}\n`;
+      }
+    }
+
+    // Inject active dossiers
+    if (dossiersRes.data?.length) {
+      contextualPrompt += `\n\nDOSSIERS ACTIFS (${dossiersRes.data.length}) :\n`;
+      for (const d of dossiersRes.data) {
+        contextualPrompt += `- [[DOSSIER:${d.id}|${d.titre}]] (catégorie: ${d.categorie}) : ${d.resume || 'Pas de résumé'}\n`;
+      }
+    }
+
+    // Inject key personalities
+    if (personnalitesRes.data?.length) {
+      contextualPrompt += `\n\nPERSONNALITÉS CLÉS (${personnalitesRes.data.length}) :\n`;
+      for (const p of personnalitesRes.data) {
+        contextualPrompt += `- ${p.prenom || ''} ${p.nom} : ${p.fonction || 'N/A'} @ ${p.organisation || 'N/A'} (cercle C${p.cercle}, influence: ${p.score_influence}/100)\n`;
+      }
+    }
+
+    // Strict anti-hallucination instructions
+    contextualPrompt += `\n\nRÈGLES STRICTES :
+- Ne JAMAIS inventer de noms, titres, fonctions ou organisations. Utilise UNIQUEMENT les personnalités listées ci-dessus.
+- Si tu ne trouves pas une information dans le contexte, dis-le clairement : "Je n'ai pas cette information dans mes données actuelles."
+- Ne JAMAIS attribuer une citation ou un fait à une source sans preuve dans le contexte.
+- Quand tu cites une actualité ou un dossier, utilise OBLIGATOIREMENT le format [[ACTU:id|titre]] ou [[DOSSIER:id|titre]].`;
     
-    // Add context
+    // Add user-provided context
     if (context) {
-      contextualPrompt += `\n\n${context}\n\nUtilise ces informations contextuelles pour personnaliser et enrichir tes réponses. CITE OBLIGATOIREMENT les sources avec le format [[ACTU:id|titre]] ou [[DOSSIER:id|titre]] quand tu fais référence à une actualité ou un dossier du contexte.`;
+      contextualPrompt += `\n\nCONTEXTE ADDITIONNEL DE L'UTILISATEUR :\n${context}`;
     }
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
