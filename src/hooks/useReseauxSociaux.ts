@@ -52,7 +52,7 @@ export function useVipAccountStatuses() {
 
       // Get recent posts grouped by vip_compte_id
       const { data: recentPosts } = await supabase
-        .from('social_insights' as any)
+        .from('social_insights')
         .select('vip_compte_id, date_publication')
         .not('vip_compte_id', 'is', null)
         .gte('created_at', since72h);
@@ -60,7 +60,7 @@ export function useVipAccountStatuses() {
       const countMap: Record<string, number> = {};
       const latestMap: Record<string, string> = {};
 
-      for (const p of (recentPosts as any[]) || []) {
+      for (const p of (recentPosts || []) as any[]) {
         if (!p.vip_compte_id) continue;
         const pubDate = p.date_publication || '';
         if (pubDate >= since24h) {
@@ -116,14 +116,14 @@ export function useTopPosts(days = 7, limit = 10) {
     queryFn: async () => {
       const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
       const { data, error } = await supabase
-        .from('social_insights' as any)
+        .from('social_insights')
         .select('id, plateforme, contenu, auteur, url_original, date_publication, engagement_score, likes_count, shares_count, comments_count, vip_compte_id')
         .gte('created_at', since)
         .order('engagement_score', { ascending: false })
         .limit(limit);
 
       if (error) throw error;
-      return (data || []) as TopPost[];
+      return (data || []) as unknown as TopPost[];
     },
   });
 }
@@ -134,7 +134,7 @@ export function useSocialKpis() {
     queryFn: async () => {
       const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data, error } = await supabase
-        .from('social_insights' as any)
+        .from('social_insights')
         .select('engagement_score, est_critique, plateforme, vip_compte_id')
         .gte('created_at', since24h);
 
@@ -160,7 +160,7 @@ export function useEngagementTimeline(days = 7) {
     queryFn: async () => {
       const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
       const { data, error } = await supabase
-        .from('social_insights' as any)
+        .from('social_insights')
         .select('plateforme, engagement_score, created_at')
         .gte('created_at', since);
 
