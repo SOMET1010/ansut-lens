@@ -233,9 +233,10 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours).`;
   }
 
   // Map citation indices to real URLs
-  const validActualites: CollectedActualite[] = rawActualites
-    .filter(a => a && a.titre && typeof a.titre === 'string')
-    .map(a => {
+  const validActualites: CollectedActualite[] = [];
+  for (const a of rawActualites) {
+    if (!a || !a.titre || typeof a.titre !== 'string') continue;
+
       // Try to get the real URL from citations array
       let realUrl = '';
       let urlVerified = false;
@@ -285,7 +286,7 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours).`;
         }
       }
 
-      return {
+      validActualites.push({
         titre: a.titre,
         resume: a.resume || '',
         source: a.source || 'Perplexity',
@@ -293,8 +294,8 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours).`;
         date_publication: a.date_publication || new Date().toISOString().split('T')[0],
         source_type: 'perplexity' as const,
         url_verified: urlVerified,
-      };
-    });
+      });
+  }
 
   console.log(`[collecte-veille] Perplexity: ${validActualites.length} actualités (${validActualites.filter(a => a.url_verified).length} URLs vérifiées)`);
   return { actualites: validActualites, citations };
