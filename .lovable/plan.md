@@ -1,48 +1,78 @@
 
 
-## Plan : Eliminer les sources hallucinees du flux d'actualites
+## Plan : Veille Réseaux Sociaux Précise et Temps Réel
 
-### Probleme identifie
-La base contient des dizaines d'articles Perplexity sans URL verifiee (`source_url = null`, `url_verified = false`). Ces articles ont des titres plausibles mais probablement fabriques par l'IA (ex: "ARTCI sanctionne l'ANSUT", "Cyberattaque majeure paralyse Orange CI et MTN").
+### Vue d'ensemble
+Transformer la veille sociale en un système de suivi précis des comptes ANSUT avec alertes temps réel et tableau de bord dédié.
 
-La cause : Perplexity retourne des articles sans `citation_index`, et le code les insere quand meme en DB sans URL.
+---
 
-### Corrections
+### 1. Gestion précise des comptes ANSUT à suivre
 
-**1. `collecte-veille/index.ts` — Rejeter les articles sans URL verifiee**
+**Table `vip_comptes`** existe déjà avec les champs nécessaires (nom, plateforme, identifiant, url_profil, actif). Les comptes officiels ANSUT et des directeurs y sont configurés.
 
-Dans la section d'insertion (ligne ~727), ajouter une condition : ne PAS inserer un article Perplexity ou Grok si `url_verified === false` ET `source_url` est vide. Seuls les articles avec une citation reelle (URL provenant du tableau `citations[]` de Perplexity) seront conserves.
+**Amélioration** : Ajouter dans `collecte-social-api/index.ts` un mode de collecte **par compte individuel** (pas seulement en bulk). Chaque post collecté sera rattaché à son `vip_compte_id` pour un suivi granulaire.
 
-```
-// Avant insertion :
-if (!actu.url_verified && (!actu.url || actu.url === '')) {
-  console.warn(`[collecte-veille] Article rejeté (pas d'URL vérifiée): "${actu.titre}"`);
-  continue;
-}
-```
+- Modifier `collectTwitter()` pour stocker le `vip_compte_id` quand un tweet vient d'un compte VIP connu
+- Modifier `collectLinkedIn()` pour mapper chaque org_id à son vip_compte_id
+- Modifier `collectFacebook()` — déjà lié aux VIP comptes
 
-**2. Ajouter une verification HEAD sur les URLs Perplexity**
+---
 
-Actuellement, les URLs de citations Perplexity sont marquees `url_verified = true` sans verification reelle (seul Grok fait un `verifyUrlExists`). Ajouter la meme verification HEAD pour Perplexity.
+### 2. Alertes temps réel
 
-**3. Nettoyage de la base existante**
+**Fichier** : `supabase/functions/collecte-social-api/index.ts`
 
-Creer une migration SQL pour supprimer les articles sans URL verifiee deja en base :
-```sql
-DELETE FROM actualites 
-WHERE source_url IS NULL 
-  AND source_type = 'perplexity';
-```
+Après chaque insertion de post, évaluer des seuils d'alerte :
+- **Engagement élevé** : tweet > 50 likes ou > 20 RT → alerte "important"
+- **Mention ANSUT par un externe** : alerte "info"  
+- **Post VIP directeur** : alerte systématique "info" pour traçabilité
+- **Sentiment négatif détecté** : alerte "critique"
 
-**4. Renforcer le filtrage Firecrawl/Google News**
+Les alertes sont insérées dans la table `alertes` (déjà utilisée par `RealtimeAlertFeed` sur le Radar). Le realtime Supabase est déjà actif sur cette table.
 
-Les articles Google News (via Firecrawl) sont deja marques `url_verified: true` car ils viennent de resultats de recherche reels avec URL. Pas de changement necessaire ici.
+**Fichier** : `supabase/functions/collecte-social-api/index.ts` — renforcer la logique d'alerte existante (actuellement seul "engagement > 100" déclenche une alerte Twitter).
 
-### Resume des modifications
+---
 
-| Fichier / Action | Changement |
-|---|---|
-| `supabase/functions/collecte-veille/index.ts` | Rejeter articles sans URL verifiee avant insertion |
-| `supabase/functions/collecte-veille/index.ts` | Ajouter HEAD check sur URLs citations Perplexity |
-| Migration SQL | Purger les articles hallucines existants (source_url null + perplexity) |
+### 3. Tableau de bord Réseaux Sociaux dédié
+
+**Nouveau fichier** : `src/pages/ReseauxSociauxPage.tsx`
+
+Contenu du dashboard :
+- **KPI Cards** : Total posts 24h, Engagement moyen, Posts critiques, Comptes actifs
+- **Timeline par compte** : Derniers posts de chaque compte VIP avec métriques (likes, shares, comments)
+- **Graphique engagement** : Évolution sur 7 jours par plateforme (recharts)
+- **Top Posts** : Les 10 posts les plus engageants de la semaine
+- **Statut des comptes** : Vert (actif aujourd'hui), Orange (>24h sans post), Rouge (>72h)
+- **Bouton collecte manuelle** : Déclencher `collecte-social-api` à la demande
+
+**Nouveau hook** : `src/hooks/useReseauxSociaux.ts` — requêtes spécialisées sur `social_insights` groupées par compte VIP.
+
+**Route** : Ajouter `/reseaux-sociaux` dans `App.tsx` et dans le sidebar sous "Espace Communication".
+
+---
+
+### 4. Fréquence de collecte améliorée
+
+Le cron `collecte-social-api-frequent` tourne déjà toutes les 15 minutes. Pour améliorer :
+
+- **Twitter** : Passer de 20 à 50 tweets par collecte (`max_results: 50`)
+- **Ajouter un cron dédié VIP** toutes les 5 minutes qui ne collecte **que** les comptes VIP (moins de requêtes API, plus réactif)
+- **Quota intelligent** : Ne pas compter les collectes VIP dans le quota général
+
+**Migration SQL** : Créer un nouveau cron job `collecte-vip-rapide` toutes les 5 min ciblant uniquement les comptes VIP actifs.
+
+---
+
+### Résumé des fichiers
+
+| Fichier | Action |
+|---------|--------|
+| `supabase/functions/collecte-social-api/index.ts` | Rattacher posts aux VIP, alertes enrichies, mode VIP-only |
+| `src/pages/ReseauxSociauxPage.tsx` | Nouveau dashboard réseaux sociaux |
+| `src/hooks/useReseauxSociaux.ts` | Hook données sociales par compte |
+| `src/App.tsx` | Ajouter route `/reseaux-sociaux` |
+| `src/components/layout/AppSidebar.tsx` | Ajouter lien dans le menu |
+| Migration SQL | Cron job collecte VIP rapide (5 min) |
 
