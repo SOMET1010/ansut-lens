@@ -9,6 +9,7 @@ import {
   User,
   Rss,
   Megaphone,
+  Share2,
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -69,6 +70,13 @@ const menuItems = [
     url: '/communication', 
     icon: Megaphone,
     description: 'Bureau de la communication',
+    permission: 'use_assistant'
+  },
+  { 
+    title: 'Réseaux Sociaux', 
+    url: '/reseaux-sociaux', 
+    icon: Share2,
+    description: 'Suivi des comptes ANSUT',
     permission: 'use_assistant'
   },
   { 

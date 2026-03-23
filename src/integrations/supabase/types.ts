@@ -1764,6 +1764,7 @@ export type Database = {
           traite: boolean | null
           type_contenu: string
           url_original: string | null
+          vip_compte_id: string | null
         }
         Insert: {
           alerte_generee?: boolean | null
@@ -1789,6 +1790,7 @@ export type Database = {
           traite?: boolean | null
           type_contenu?: string
           url_original?: string | null
+          vip_compte_id?: string | null
         }
         Update: {
           alerte_generee?: boolean | null
@@ -1814,6 +1816,7 @@ export type Database = {
           traite?: boolean | null
           type_contenu?: string
           url_original?: string | null
+          vip_compte_id?: string | null
         }
         Relationships: [
           {
@@ -1821,6 +1824,13 @@ export type Database = {
             columns: ["source_id"]
             isOneToOne: false
             referencedRelation: "sources_media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_insights_vip_compte_id_fkey"
+            columns: ["vip_compte_id"]
+            isOneToOne: false
+            referencedRelation: "vip_comptes"
             referencedColumns: ["id"]
           },
         ]
