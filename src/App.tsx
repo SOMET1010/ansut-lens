@@ -45,6 +45,7 @@ import FluxPage from "@/pages/FluxPage";
 import FluxDetailPage from "@/pages/FluxDetailPage";
 import NotFound from "@/pages/NotFound";
 import AccessDeniedPage from "@/pages/AccessDeniedPage";
+import ReseauxSociauxPage from "@/pages/ReseauxSociauxPage";
 
 const queryClient = new QueryClient();
 
@@ -118,6 +119,7 @@ const App = () => (
                         <Route element={<PermissionRoute permission="use_assistant" />}>
                           <Route path="/assistant" element={<AssistantPage />} />
                           <Route path="/communication" element={<CommunicationPage />} />
+                          <Route path="/reseaux-sociaux" element={<ReseauxSociauxPage />} />
                         </Route>
                         
                         <Route element={<PermissionRoute permission="receive_alerts" />}>
