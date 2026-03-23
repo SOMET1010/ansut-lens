@@ -240,11 +240,19 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours).`;
       let realUrl = '';
       let urlVerified = false;
 
-      // Method 1: Use citation_index if provided
+      // Method 1: Use citation_index if provided — verify URL with HEAD check
       const citIdx = a.citation_index;
       if (typeof citIdx === 'number' && citIdx >= 1 && citIdx <= citations.length) {
-        realUrl = citations[citIdx - 1];
-        urlVerified = true;
+        const candidateUrl = citations[citIdx - 1];
+        const urlExists = await verifyUrlExists(candidateUrl);
+        if (urlExists) {
+          realUrl = candidateUrl;
+          urlVerified = true;
+        } else {
+          console.warn(`[collecte-veille] Citation Perplexity #${citIdx} invalide (HEAD failed): ${candidateUrl}`);
+          realUrl = candidateUrl;
+          urlVerified = false;
+        }
       }
 
       // Method 2: If AI provided a url field, check if it matches a citation
@@ -726,6 +734,12 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Retourne U
 
     for (const actu of articlesToProcess) {
       if (!actu.titre) continue;
+
+      // ANTI-HALLUCINATION: Reject articles without verified URL (Perplexity/Grok)
+      if (!actu.url_verified && (!actu.url || actu.url === '')) {
+        console.warn(`[collecte-veille] Article rejeté (pas d'URL vérifiée): "${actu.titre}"`);
+        continue;
+      }
 
       const { data: existing } = await supabase
         .from('actualites')
