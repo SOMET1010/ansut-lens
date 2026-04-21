@@ -26,6 +26,12 @@ const WELCOME_MESSAGE: ConversationMessage = {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/assistant-ia`;
 
+export interface CitationWarning {
+  invalid_actu_ids: string[];
+  invalid_dossier_ids: string[];
+  message: string;
+}
+
 async function streamChat({
   messages,
   context,
@@ -33,6 +39,7 @@ async function streamChat({
   onDelta,
   onDone,
   onError,
+  onCitationWarning,
 }: {
   messages: ConversationMessage[];
   context: string;
@@ -40,6 +47,7 @@ async function streamChat({
   onDelta: (deltaText: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
+  onCitationWarning?: (warning: CitationWarning) => void;
 }) {
   try {
     // Get user session token for authenticated request
