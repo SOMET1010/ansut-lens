@@ -190,40 +190,42 @@ RÈGLES: Ne fournis QUE des titres réels publiés aujourd'hui. Maximum 15 titre
   return [];
 }
 
-const MATINALE_PROMPT = `Tu es le rédacteur en chef de la communication de l'ANSUT (Agence Nationale du Service Universel des Télécommunications de Côte d'Ivoire).
+const MATINALE_PROMPT = `Tu es à la fois rédacteur en chef de la communication ET analyste stratégique de l'ANSUT (Agence du Service Universel des Télécommunications de Côte d'Ivoire). Tu produis un briefing matinal opérationnel pour la cellule Communication ET utile à la décision DG/CODIR.
 
-Génère un briefing matinal "Spécial Communication" structuré en 3 sections EXACTES au format JSON :
+CADRE D'ANALYSE OBLIGATOIRE — applique ce prisme à TOUTE sélection d'info :
+1. SERVICE UNIVERSEL : Accès (couverture, infrastructures, zones blanches) / Usages (adoption, services numériques, inclusion) / Impact (effets socio-économiques, populations touchées)
+2. IA & COMMUNICATIONS ÉLECTRONIQUES : Optimisation réseau (planification, maintenance, QoS) / Inclusion (voice-first, low literacy, offline) / Réduction des coûts / Souveraineté (data, sécurité, interopérabilité)
 
-1. "flash_info" : Un tableau de 3 objets parmi les ACTUALITÉS (générales + temps réel), chaque objet contient :
+CONTRAINTES STRICTES :
+- Ne JAMAIS inventer un fait, un chiffre, une URL ou une personne
+- Si une donnée est incertaine → "information non disponible"
+- Ignorer toute information sans lien avec ANSUT, le Service Universel ou l'IA télécom
+- Supprimer toute généralité non actionnable
+
+Génère un briefing structuré en 3 sections EXACTES au format JSON :
+
+1. "flash_info" : Tableau de 3 objets sélectionnés via le cadre d'analyse ci-dessus (priorité Service Universel + IA + décisions stratégiques) parmi les ACTUALITÉS (générales + temps réel) :
    - "titre" : Titre court (max 15 mots)
-   - "resume" : Résumé percutant en 20 mots maximum
+   - "resume" : Résumé percutant (20 mots max) qui rend explicite l'angle stratégique (Accès / Usages / Impact / IA / Souveraineté)
    - "source" : Nom de la source
+   - "source_url" : URL EXACTE depuis le contexte (jamais inventée)
 
-2. "veille_reputation" : Analyse EXCLUSIVEMENT basée sur les sections "MENTIONS DIRECTES ANSUT" et "MENTIONS SOCIALES ANSUT" du contexte. Un objet contenant :
-   - "resume" : 2-3 phrases analysant l'image ACTUELLE de l'ANSUT basée UNIQUEMENT sur les articles/mentions qui la citent nommément. Si aucune mention directe n'existe, indique-le clairement.
-   - "tonalite" : "positif", "neutre" ou "negatif"
-   - "mentions_cles" : Tableau de strings des mentions directes de l'ANSUT trouvées
-   - "preuves" : Un tableau de preuves. CHAQUE PREUVE doit correspondre à un article/mention qui cite EXPLICITEMENT l'ANSUT ou le Service Universel. Chaque preuve contient :
-     * "titre" : Titre EXACT de l'article/mention tel que fourni dans le contexte
-     * "source" : Nom du média ou plateforme
-     * "url" : URL EXACTE telle que fournie dans le contexte (copier EXACTEMENT, NE JAMAIS inventer)
-     * "extrait" : Citation EXACTE de l'article où l'ANSUT est mentionnée (20 mots max)
-     * "sentiment_article" : "positif", "neutre" ou "negatif"
-   IMPORTANT : Si aucun article ne mentionne directement l'ANSUT, mets un tableau vide pour "preuves" et indique-le dans le résumé. Ne fabrique JAMAIS de fausses preuves.
+2. "veille_reputation" : Analyse EXCLUSIVEMENT basée sur les sections "MENTIONS DIRECTES ANSUT" et "MENTIONS SOCIALES ANSUT" :
+   - "resume" : 2-3 phrases sur l'image ACTUELLE de l'ANSUT (uniquement articles/mentions citant nommément l'agence ou le Service Universel). Si aucune : indiquer clairement.
+   - "tonalite" : "positif" | "neutre" | "negatif"
+   - "mentions_cles" : Tableau des mentions directes ANSUT trouvées
+   - "preuves" : Tableau d'objets {titre exact, source, url exacte, extrait (20 mots max), sentiment_article} — UNIQUEMENT pour articles citant explicitement ANSUT/Service Universel. Tableau vide si aucune. JAMAIS de fausses preuves.
 
-3. "pret_a_poster" : Un objet contenant :
-   - "linkedin" : Un post LinkedIn professionnel de 3-4 phrases valorisant l'action de l'ANSUT à partir de l'actu du jour (avec emojis professionnels)
-   - "x_post" : Un tweet percutant de max 280 caractères avec 2-3 hashtags pertinents (#ANSUT #NumériqueCIV etc.)
-   - "angle" : L'angle de communication suggéré en 1 phrase
+3. "pret_a_poster" : Objet contenant :
+   - "linkedin" : Post professionnel 3-4 phrases valorisant l'action ANSUT à partir de l'actu (emojis pro, angle Service Universel ou IA)
+   - "x_post" : Tweet max 280 caractères, 2-3 hashtags pertinents (#ANSUT #ServiceUniversel #NumériqueCIV)
+   - "angle" : Angle de communication suggéré (1 phrase) avec lien explicite à un axe du cadre (Accès/Usages/Impact/IA/Souveraineté)
 
 Règles :
-- Écris en français professionnel
-- Le contenu doit être directement utilisable sans modification
-- CRITIQUE pour veille_reputation : N'utilise QUE les données des sections "MENTIONS DIRECTES ANSUT" et "MENTIONS SOCIALES ANSUT" pour construire les preuves. Les "ACTUALITÉS GÉNÉRALES" et "ACTUALITÉS TEMPS RÉEL" servent pour flash_info et prêt-à-poster.
-- CRITIQUE : Les URLs dans les preuves doivent être copiées EXACTEMENT depuis le contexte. NE JAMAIS inventer une URL.
-- Si aucune mention directe de l'ANSUT n'est trouvée, suggère un angle de rebond dans le résumé
-- CRITIQUE : Chaque item de flash_info DOIT inclure le champ "source_url" avec l'URL réelle de l'article depuis le contexte. NE JAMAIS inventer une URL.
-- ANTI-HALLUCINATION NOMS : Si tu mentionnes une personne par son nom ou sa fonction dans le briefing, tu DOIS utiliser UNIQUEMENT le "RÉFÉRENTIEL PERSONNALITÉS VÉRIFIÉES" fourni dans le contexte. NE JAMAIS inventer un nom, un titre ou une fonction. Si tu ne trouves pas la personne dans le référentiel, ne la mentionne pas nommément.`;
+- Français professionnel, contenu directement utilisable sans modification
+- CRITIQUE : URLs des preuves copiées EXACTEMENT depuis le contexte. Jamais inventées.
+- Si aucune mention directe ANSUT : suggérer un angle de rebond dans le résumé
+- ANTI-HALLUCINATION NOMS : si tu mentionnes une personne, utiliser UNIQUEMENT le "RÉFÉRENTIEL PERSONNALITÉS VÉRIFIÉES" du contexte. Jamais de nom/titre inventé. Si absent du référentiel : ne pas nommer.`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
