@@ -365,17 +365,35 @@ Deno.serve(async (req) => {
       return ansutKeywords.some(kw => text.includes(kw));
     });
 
-    // Build structured context with clear separation
-    const generalArticlesList = (articles || []).map((a, i) =>
-      `[${i+1}] ${a.titre} (source: ${a.source_nom || 'inconnue'}, url: ${a.source_url || 'N/A'}, importance: ${a.importance}/100, sentiment: ${a.sentiment ?? 'N/A'}${a.impact_ansut ? ', IMPACT ANSUT: ' + a.impact_ansut : ''})`
-    ).join('\n');
+    // ============= MODE FUSIONNER INTELLIGEMMENT =============
+    // Unifie articles DB + Perplexity + mentions ANSUT et déduplique transversalement.
+    const allItems: ActuLike[] = [
+      ...(articles || []).map(a => ({
+        titre: a.titre,
+        resume: a.resume,
+        source_nom: a.source_nom,
+        source_url: a.source_url,
+        importance: a.importance,
+        sentiment: a.sentiment,
+        impact_ansut: a.impact_ansut,
+        origin: 'db' as const,
+      })),
+      ...perplexityNews.articles.map(a => ({
+        titre: a.titre,
+        resume: a.resume,
+        source_nom: a.source,
+        source_url: a.url,
+        importance: 60,
+        origin: 'perplexity' as const,
+      })),
+    ];
+    const consolidated = consolidateActualites(allItems);
+    const dupGroups = consolidated.filter(g => g.members.length > 1).length;
+    const consolidatedList = consolidated.length > 0
+      ? formatConsolidatedForPrompt(consolidated)
+      : 'Aucune actualité disponible.';
 
-    // Build Perplexity real-time articles section
-    const perplexityArticlesList = perplexityNews.articles.length > 0
-      ? perplexityNews.articles.map((a, i) =>
-          `[P${i+1}] "${a.titre}" (source: ${a.source}, url: ${a.url}, résumé: ${a.resume})`
-        ).join('\n')
-      : 'Aucune actualité temps réel disponible.';
+    console.log('[Matinale] Fusion intelligente:', allItems.length, 'items →', consolidated.length, 'faits uniques (', dupGroups, 'doublons fusionnés)');
 
     const ansutArticlesList = ansutArticles.length > 0
       ? ansutArticles.map((a, i) =>
