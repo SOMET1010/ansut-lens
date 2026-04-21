@@ -167,7 +167,7 @@ Règles :
       serviceClient.from('profiles').select('full_name, department').eq('id', userId).single(),
       serviceClient.from('user_preferences_ia').select('sujets_favoris, portrait_ia').eq('user_id', userId).maybeSingle(),
       serviceClient.from('user_roles').select('role').eq('user_id', userId).single(),
-      serviceClient.from('actualites').select('id, titre, resume, source_nom, categorie, date_publication, importance, sentiment, impact_ansut').order('date_publication', { ascending: false }).limit(20),
+      serviceClient.from('actualites').select('id, titre, resume, source_nom, source_url, categorie, date_publication, importance, sentiment, impact_ansut').order('date_publication', { ascending: false }).limit(20),
       serviceClient.from('dossiers').select('id, titre, resume, categorie, statut').eq('statut', 'publie').order('updated_at', { ascending: false }).limit(10),
       serviceClient.from('personnalites').select('id, nom, prenom, fonction, organisation, categorie, cercle, score_influence').eq('actif', true).order('score_influence', { ascending: false }).limit(30),
     ]);
