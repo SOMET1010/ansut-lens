@@ -115,11 +115,98 @@ export function AppHeader() {
         <SpotlightSearch open={spotlightOpen} onOpenChange={setSpotlightOpen} />
 
         <div className="flex items-center gap-2 ml-auto">
-          {/* Sync Status */}
-          <Badge variant="outline" className="gap-1.5 text-xs">
-            <span className="h-2 w-2 rounded-full bg-signal-positive animate-pulse" />
-            Sync OK
-          </Badge>
+          {/* Sync Status (détail tables Supabase) */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/80 px-2.5 py-1 text-xs hover:bg-muted transition-colors"
+                title="Détail de la synchronisation des données temps réel"
+              >
+                <span className={cn('h-2 w-2 rounded-full', AGGREGATE_DOT[aggregate.level])} />
+                <span className="font-medium">{aggregate.label}</span>
+                {lastGlobalUpdate && (
+                  <span className="text-muted-foreground hidden md:inline">
+                    · <RelativeTime date={lastGlobalUpdate} />
+                  </span>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-[360px] p-0">
+              <div className="p-3 border-b border-border flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Database className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-semibold">Synchronisation données</h3>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => refetchSync()}
+                  disabled={syncFetching}
+                  title="Rafraîchir"
+                >
+                  <RefreshCw className={cn('h-3.5 w-3.5', syncFetching && 'animate-spin')} />
+                </Button>
+              </div>
+              <ScrollArea className="max-h-[340px]">
+                <div className="p-2">
+                  {!syncRows ? (
+                    <div className="space-y-2 p-2">
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <Skeleton key={i} className="h-10 w-full" />
+                      ))}
+                    </div>
+                  ) : (
+                    <ul className="space-y-1">
+                      {syncRows.map((row) => {
+                        const Icon = STATUS_ICON[row.status];
+                        return (
+                          <li
+                            key={row.table}
+                            className="flex items-center justify-between gap-3 px-2 py-1.5 rounded-md hover:bg-muted/50"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className={cn('h-2 w-2 rounded-full shrink-0', STATUS_DOT[row.status])} />
+                              <div className="min-w-0">
+                                <div className="text-xs font-medium truncate">{row.label}</div>
+                                <div className="text-[10px] text-muted-foreground font-mono truncate">
+                                  {row.table}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Badge variant="secondary" className="text-[10px] h-5">
+                                {row.count24h} / 24h
+                              </Badge>
+                              <div className="text-right">
+                                <Icon
+                                  className={cn(
+                                    'h-3.5 w-3.5 inline-block mr-1',
+                                    row.status === 'fresh' && 'text-signal-positive',
+                                    row.status === 'stale' && 'text-signal-warning',
+                                    row.status === 'cold' && 'text-muted-foreground',
+                                    row.status === 'error' && 'text-destructive'
+                                  )}
+                                />
+                                <span className="text-[10px] text-muted-foreground">
+                                  {row.lastUpdate ? <RelativeTime date={row.lastUpdate} /> : 'Aucune donnée'}
+                                </span>
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              </ScrollArea>
+              <div className="px-3 py-2 border-t border-border bg-muted/30">
+                <p className="text-[10px] text-muted-foreground text-center">
+                  Vérification automatique toutes les 60 secondes · max(created_at) par table
+                </p>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {/* Briefing DG */}
           <Popover>
