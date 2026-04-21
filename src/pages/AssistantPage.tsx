@@ -137,6 +137,13 @@ async function streamChat({
         if (jsonStr === '[DONE]') continue;
         try {
           const parsed = JSON.parse(jsonStr);
+          if (parsed?.type === 'citation_validation') {
+            onCitationWarning({
+              message: parsed.message ?? 'Citations invalides détectées.',
+              invalid_citations: Array.isArray(parsed.invalid_citations) ? parsed.invalid_citations : [],
+            });
+            continue;
+          }
           const content = parsed.choices?.[0]?.delta?.content as string | undefined;
           if (content) onDelta(content);
         } catch { /* ignore */ }
