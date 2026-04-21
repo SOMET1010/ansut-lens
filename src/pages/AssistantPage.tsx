@@ -16,6 +16,7 @@ import { ConversationHistory } from '@/components/assistant/ConversationHistory'
 import { ChatMessage } from '@/components/assistant/ChatMessage';
 import { ModeSelector, type AssistantMode } from '@/components/assistant/ModeSelector';
 import { DocumentWorkspace, detectDocument, type GeneratedDocument } from '@/components/assistant/DocumentWorkspace';
+import { FrameworkPanel } from '@/components/assistant/FrameworkPanel';
 import { useAuth } from '@/contexts/AuthContext';
 
 const WELCOME_MESSAGE: ConversationMessage = { 
@@ -547,14 +548,26 @@ export default function AssistantPage() {
           </div>
         </div>
         
-        {/* DOCUMENT WORKSPACE (40%) - Desktop only */}
-        <div className="hidden lg:block">
-          <DocumentWorkspace
-            document={generatedDocument}
-            isGenerating={isLoading && mode === 'redaction'}
-            onClose={() => setGeneratedDocument(null)}
-            onSuggestionClick={handleSuggestionClick}
-          />
+        {/* RIGHT COLUMN (40%) - Desktop only : Workspace + Framework Panel */}
+        <div className="hidden lg:flex lg:flex-col gap-4 w-[400px]">
+          <div className="flex-1 min-h-0">
+            <DocumentWorkspace
+              document={generatedDocument}
+              isGenerating={isLoading && mode === 'redaction'}
+              onClose={() => setGeneratedDocument(null)}
+              onSuggestionClick={handleSuggestionClick}
+            />
+          </div>
+          <div className="h-[340px] shrink-0">
+            <FrameworkPanel
+              query={[...messages].reverse().find(m => m.role === 'user')?.content ?? ''}
+              response={[...messages].reverse().find(m => m.role === 'assistant' && m.content !== WELCOME_MESSAGE.content)?.content ?? ''}
+              contextActuIds={Array.from(selectedActualites)}
+              contextDossierIds={Array.from(selectedDossiers)}
+              contextActuTitles={Object.fromEntries(availableActualites.map(a => [a.id, a.titre]))}
+              contextDossierTitles={Object.fromEntries(availableDossiers.map(d => [d.id, d.titre]))}
+            />
+          </div>
         </div>
       </div>
     </TooltipProvider>
