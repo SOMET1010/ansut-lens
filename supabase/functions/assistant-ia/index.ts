@@ -329,30 +329,59 @@ Règles :
           }
 
           // After stream end: validate citations in full text
-          const invalidActus: string[] = [];
-          const invalidDossiers: string[] = [];
+          type InvalidCitation = {
+            type: 'ACTU' | 'DOSSIER';
+            id: string;
+            title?: string;
+            expected_source_url?: string | null;
+          };
+          const invalid: InvalidCitation[] = [];
 
-          const actuRegex = /\[\[ACTU:([a-f0-9-]+)\|[^\]]+\]\]/gi;
-          const dossierRegex = /\[\[DOSSIER:([a-f0-9-]+)\|[^\]]+\]\]/gi;
+          const actuRegex = /\[\[ACTU:([a-f0-9-]+)(?:\|([^\]]+))?\]\]/gi;
+          const dossierRegex = /\[\[DOSSIER:([a-f0-9-]+)(?:\|([^\]]+))?\]\]/gi;
 
           let m;
           while ((m = actuRegex.exec(fullText)) !== null) {
-            if (!validActuIds.has(m[1])) invalidActus.push(m[1]);
+            if (!validActuIds.has(m[1])) {
+              invalid.push({ type: 'ACTU', id: m[1], title: m[2]?.trim() });
+            }
           }
           while ((m = dossierRegex.exec(fullText)) !== null) {
-            if (!validDossierIds.has(m[1])) invalidDossiers.push(m[1]);
+            if (!validDossierIds.has(m[1])) {
+              invalid.push({ type: 'DOSSIER', id: m[1], title: m[2]?.trim() });
+            }
           }
 
-          if (invalidActus.length || invalidDossiers.length) {
-            console.warn('[Assistant-IA] Citations invalides détectées:', {
-              actus: invalidActus,
-              dossiers: invalidDossiers,
-            });
-            // Send validation warning as a custom SSE event
+          // For each invalid citation, try to recover an "expected" source URL
+          // by best-effort title matching against the injected context.
+          if (invalid.length) {
+            const actusList = (actusRes.data || []) as Array<{ id: string; titre: string; source_url?: string | null }>;
+            const dossiersList = (dossiersRes.data || []) as Array<{ id: string; titre: string }>;
+            const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+            for (const inv of invalid) {
+              if (!inv.title) continue;
+              const target = norm(inv.title);
+              if (!target) continue;
+              const pool = inv.type === 'ACTU' ? actusList : dossiersList;
+              const match = pool.find((p: any) => {
+                const t = norm(p.titre || '');
+                return t && (t.includes(target) || target.includes(t));
+              });
+              if (match) {
+                inv.expected_source_url = (match as any).source_url ?? null;
+                // Surface the canonical title we found, for the UI.
+                (inv as any).suggested_title = match.titre;
+                (inv as any).suggested_id = match.id;
+              }
+            }
+
+            console.warn('[Assistant-IA] Citations invalides détectées:', invalid);
             const warning = {
               type: 'citation_validation',
-              invalid_actu_ids: invalidActus,
-              invalid_dossier_ids: invalidDossiers,
+              invalid_citations: invalid,
+              // Backward-compatible flat lists
+              invalid_actu_ids: invalid.filter(i => i.type === 'ACTU').map(i => i.id),
+              invalid_dossier_ids: invalid.filter(i => i.type === 'DOSSIER').map(i => i.id),
               message: 'Certaines citations ne correspondent à aucun élément du contexte et ont été signalées.',
             };
             controller.enqueue(encoder.encode(`data: ${JSON.stringify(warning)}\n\n`));
