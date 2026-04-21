@@ -62,6 +62,13 @@ export function AppHeader() {
     error,
     regenerate,
   } = useDailyBriefing();
+  const { data: syncRows, refetch: refetchSync, isFetching: syncFetching } = useSyncStatus();
+  const aggregate = aggregateSyncStatus(syncRows);
+  const lastGlobalUpdate = syncRows?.reduce<string | null>((acc, r) => {
+    if (!r.lastUpdate) return acc;
+    if (!acc) return r.lastUpdate;
+    return r.lastUpdate > acc ? r.lastUpdate : acc;
+  }, null) ?? null;
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
