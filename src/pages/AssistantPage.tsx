@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Send, Bot, Loader2, RefreshCw, Settings2, History, Sparkles, Paperclip, AlertTriangle, X } from 'lucide-react';
+import { Send, Bot, Loader2, RefreshCw, Settings2, History, Sparkles, Paperclip, AlertTriangle, X, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -26,11 +26,19 @@ const WELCOME_MESSAGE: ConversationMessage = {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/assistant-ia`;
 
-export interface CitationWarning {
-  invalid_actu_ids: string[];
-  invalid_dossier_ids: string[];
+export type InvalidCitation = {
+  type: 'ACTU' | 'DOSSIER';
+  id: string;
+  title?: string;
+  expected_source_url?: string | null;
+  suggested_title?: string;
+  suggested_id?: string;
+};
+
+export type CitationWarning = {
   message: string;
-}
+  invalid_citations: InvalidCitation[];
+};
 
 async function streamChat({
   messages,
@@ -47,7 +55,7 @@ async function streamChat({
   onDelta: (deltaText: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
-  onCitationWarning?: (warning: CitationWarning) => void;
+  onCitationWarning: (warning: CitationWarning) => void;
 }) {
   try {
     // Get user session token for authenticated request
@@ -110,11 +118,10 @@ async function streamChat({
 
         try {
           const parsed = JSON.parse(jsonStr);
-          if (parsed.type === 'citation_validation' && onCitationWarning) {
+          if (parsed?.type === 'citation_validation') {
             onCitationWarning({
-              invalid_actu_ids: parsed.invalid_actu_ids ?? [],
-              invalid_dossier_ids: parsed.invalid_dossier_ids ?? [],
               message: parsed.message ?? 'Citations invalides détectées.',
+              invalid_citations: Array.isArray(parsed.invalid_citations) ? parsed.invalid_citations : [],
             });
             continue;
           }
@@ -137,11 +144,10 @@ async function streamChat({
         if (jsonStr === '[DONE]') continue;
         try {
           const parsed = JSON.parse(jsonStr);
-          if (parsed.type === 'citation_validation' && onCitationWarning) {
+          if (parsed?.type === 'citation_validation') {
             onCitationWarning({
-              invalid_actu_ids: parsed.invalid_actu_ids ?? [],
-              invalid_dossier_ids: parsed.invalid_dossier_ids ?? [],
               message: parsed.message ?? 'Citations invalides détectées.',
+              invalid_citations: Array.isArray(parsed.invalid_citations) ? parsed.invalid_citations : [],
             });
             continue;
           }
@@ -313,7 +319,7 @@ export default function AssistantPage() {
     setInput('');
     setIsLoading(true);
     setGeneratedDocument(null); // Clear previous document
-    setCitationWarning(null);   // Clear previous citation warning
+    setCitationWarning(null);
 
     let assistantContent = '';
 
@@ -341,11 +347,11 @@ export default function AssistantPage() {
       context,
       mode,
       onDelta: updateAssistant,
-      onCitationWarning: (warning) => {
-        setCitationWarning(warning);
-        toast.warning('Citations invalides détectées', {
-          description: warning.message,
-        });
+      onCitationWarning: (w) => {
+        setCitationWarning(w);
+        if (w.invalid_citations.length) {
+          toast.warning(`${w.invalid_citations.length} citation(s) invalide(s) détectée(s)`);
+        }
       },
       onDone: () => {
         setIsLoading(false);
@@ -515,45 +521,40 @@ export default function AssistantPage() {
             </div>
           </div>
           
-          {/* Citation Validation Warning Banner */}
-          {citationWarning && (
-            (citationWarning.invalid_actu_ids.length > 0 || citationWarning.invalid_dossier_ids.length > 0) && (
-              <div
-                role="alert"
-                className="mx-4 mt-3 lg:mx-6 rounded-lg border border-signal-warning/40 bg-signal-warning/10 p-3 flex items-start gap-3"
-              >
-                <AlertTriangle className="h-4 w-4 text-signal-warning shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0 space-y-1.5">
-                  <p className="text-sm font-medium text-foreground">
-                    Validation des citations — Avertissement
+          {citationWarning && citationWarning.invalid_citations.length > 0 && (
+            <div className="mx-4 lg:mx-6 mt-3 rounded-lg border border-warning/40 bg-warning/10">
+              <div className="flex items-start gap-2 px-3 py-2">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-warning" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-foreground">
+                    {citationWarning.invalid_citations.length} citation(s) invalide(s)
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {citationWarning.message}
-                  </p>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {citationWarning.invalid_actu_ids.length > 0 && (
-                      <Badge variant="outline" className="border-signal-warning/40 text-[11px]">
-                        {citationWarning.invalid_actu_ids.length} actualité(s) introuvable(s)
-                      </Badge>
-                    )}
-                    {citationWarning.invalid_dossier_ids.length > 0 && (
-                      <Badge variant="outline" className="border-signal-warning/40 text-[11px]">
-                        {citationWarning.invalid_dossier_ids.length} dossier(s) introuvable(s)
-                      </Badge>
-                    )}
-                  </div>
+                  <p className="text-[11px] text-muted-foreground">{citationWarning.message}</p>
+                  <ul className="mt-2 space-y-1">
+                    {citationWarning.invalid_citations.map((c, i) => (
+                      <li key={i} className="text-[11px] flex flex-wrap items-center gap-1.5">
+                        <Badge variant="outline" className="h-4 px-1 text-[10px] font-mono">{c.type}</Badge>
+                        <code className="text-[10px] bg-muted/50 px-1 rounded font-mono truncate max-w-[180px]" title={c.id}>{c.id}</code>
+                        {c.title && <span className="text-muted-foreground truncate max-w-[200px]" title={c.title}>« {c.title} »</span>}
+                        {c.suggested_title && (
+                          <span className="text-[10px] text-muted-foreground">→ suggéré : <span className="font-medium text-foreground">{c.suggested_title}</span></span>
+                        )}
+                        {c.expected_source_url ? (
+                          <a href={c.expected_source_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 text-primary hover:underline text-[10px]">
+                            source <ExternalLink className="h-2.5 w-2.5" />
+                          </a>
+                        ) : (
+                          <span className="text-[10px] italic text-muted-foreground">(aucune source connue)</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 shrink-0 -mt-1 -mr-1"
-                  onClick={() => setCitationWarning(null)}
-                  aria-label="Fermer l'avertissement"
-                >
+                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setCitationWarning(null)} aria-label="Fermer">
                   <X className="h-3.5 w-3.5" />
                 </Button>
               </div>
-            )
+            </div>
           )}
 
           {/* Messages Area */}
