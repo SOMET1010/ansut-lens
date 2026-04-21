@@ -515,6 +515,47 @@ export default function AssistantPage() {
             </div>
           </div>
           
+          {/* Citation Validation Warning Banner */}
+          {citationWarning && (
+            (citationWarning.invalid_actu_ids.length > 0 || citationWarning.invalid_dossier_ids.length > 0) && (
+              <div
+                role="alert"
+                className="mx-4 mt-3 lg:mx-6 rounded-lg border border-signal-warning/40 bg-signal-warning/10 p-3 flex items-start gap-3"
+              >
+                <AlertTriangle className="h-4 w-4 text-signal-warning shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <p className="text-sm font-medium text-foreground">
+                    Validation des citations — Avertissement
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {citationWarning.message}
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {citationWarning.invalid_actu_ids.length > 0 && (
+                      <Badge variant="outline" className="border-signal-warning/40 text-[11px]">
+                        {citationWarning.invalid_actu_ids.length} actualité(s) introuvable(s)
+                      </Badge>
+                    )}
+                    {citationWarning.invalid_dossier_ids.length > 0 && (
+                      <Badge variant="outline" className="border-signal-warning/40 text-[11px]">
+                        {citationWarning.invalid_dossier_ids.length} dossier(s) introuvable(s)
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0 -mt-1 -mr-1"
+                  onClick={() => setCitationWarning(null)}
+                  aria-label="Fermer l'avertissement"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )
+          )}
+
           {/* Messages Area */}
           <ScrollArea className="flex-1 p-4 lg:p-6" ref={scrollRef}>
             <div className="space-y-2">
