@@ -1,5 +1,6 @@
 // Using native Deno.serve - no import needed
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { consolidateActualites } from "../_shared/dedup-actualites.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
