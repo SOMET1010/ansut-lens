@@ -173,6 +173,7 @@ export default function AssistantPage() {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [generatedDocument, setGeneratedDocument] = useState<GeneratedDocument | null>(null);
+  const [citationWarning, setCitationWarning] = useState<CitationWarning | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { 
