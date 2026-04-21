@@ -1,5 +1,10 @@
 // Using native Deno.serve
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import {
+  consolidateActualites,
+  formatConsolidatedForPrompt,
+  buildSourcesMap,
+} from "../_shared/dedup-actualites.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -118,40 +123,25 @@ Deno.serve(async (req) => {
     const filteredActualites = actualites.filter(a => !rejectedIds.has((a as any).id));
 
     // Only include articles with valid, accessible source URLs (anti-hallucination)
-    // Also deduplicate by title similarity
-    const seenTitles = new Set<string>();
     const verifiedActualites = filteredActualites.filter(a => {
-      // Reject articles without source URL — unsourced = unverifiable
       if (!a.source_url) return false;
-      try {
-        new URL(a.source_url);
-      } catch {
-        return false;
-      }
-      // Deduplicate by normalized title (first 40 chars lowercase)
-      const titleKey = a.titre.toLowerCase().substring(0, 40).trim();
-      if (seenTitles.has(titleKey)) return false;
-      seenTitles.add(titleKey);
+      try { new URL(a.source_url); } catch { return false; }
       return true;
     });
 
-    // Also deduplicate sources in the output list
-    const seenSources = new Set<string>();
-    const uniqueActualites = verifiedActualites.slice(0, 7);
+    // ============= MODE FUSIONNER INTELLIGEMMENT =============
+    // Détecte les doublons (même URL canonique, similarité titre, entités communes)
+    // et consolide chaque groupe de faits en une seule référence [N].
+    const consolidated = consolidateActualites(
+      verifiedActualites.map(a => ({ ...a, origin: 'db' as const }))
+    ).slice(0, 7);
 
-    const sourcesMap = uniqueActualites.map((a, i) => ({
-      index: i + 1,
-      titre: a.titre,
-      source_nom: a.source_nom || 'Source inconnue',
-      source_url: a.source_url || null,
-    }));
-
-    const actualitesList = uniqueActualites.map((a, i) => 
-      `[${i + 1}] ${a.titre}${a.resume ? ` : ${a.resume.substring(0, 120)}` : ''} (importance: ${a.importance || 50}/100, catégorie: ${a.categorie || 'non classé'}, source: ${a.source_nom || 'inconnue'}, url: ${a.source_url})`
-    ).join('\n');
+    const sourcesMap = buildSourcesMap(consolidated);
+    const actualitesList = formatConsolidatedForPrompt(consolidated);
+    const dupGroups = consolidated.filter(g => g.members.length > 1).length;
 
     const alertesCritiques = signaux.length;
-    const alertesDetails = alertesCritiques > 0 
+    const alertesDetails = alertesCritiques > 0
       ? `\n\nAlertes critiques actives (${alertesCritiques}):\n${signaux.map(s => `- ${s.titre}: ${s.description || 'Pas de détails'}`).join('\n')}`
       : '\n\nAucune alerte critique en cours.';
 
