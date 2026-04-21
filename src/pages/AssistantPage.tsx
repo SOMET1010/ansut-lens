@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Send, Bot, Loader2, RefreshCw, Settings2, History, Sparkles, Paperclip } from 'lucide-react';
+import { Send, Bot, Loader2, RefreshCw, Settings2, History, Sparkles, Paperclip, AlertTriangle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
