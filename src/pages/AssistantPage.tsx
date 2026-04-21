@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Send, Bot, Loader2, RefreshCw, Settings2, History, Sparkles, Paperclip } from 'lucide-react';
+import { Send, Bot, Loader2, RefreshCw, Settings2, History, Sparkles, Paperclip, AlertTriangle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +26,12 @@ const WELCOME_MESSAGE: ConversationMessage = {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/assistant-ia`;
 
+export interface CitationWarning {
+  invalid_actu_ids: string[];
+  invalid_dossier_ids: string[];
+  message: string;
+}
+
 async function streamChat({
   messages,
   context,
@@ -33,6 +39,7 @@ async function streamChat({
   onDelta,
   onDone,
   onError,
+  onCitationWarning,
 }: {
   messages: ConversationMessage[];
   context: string;
@@ -40,6 +47,7 @@ async function streamChat({
   onDelta: (deltaText: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
+  onCitationWarning?: (warning: CitationWarning) => void;
 }) {
   try {
     // Get user session token for authenticated request
@@ -102,6 +110,14 @@ async function streamChat({
 
         try {
           const parsed = JSON.parse(jsonStr);
+          if (parsed.type === 'citation_validation' && onCitationWarning) {
+            onCitationWarning({
+              invalid_actu_ids: parsed.invalid_actu_ids ?? [],
+              invalid_dossier_ids: parsed.invalid_dossier_ids ?? [],
+              message: parsed.message ?? 'Citations invalides détectées.',
+            });
+            continue;
+          }
           const content = parsed.choices?.[0]?.delta?.content as string | undefined;
           if (content) onDelta(content);
         } catch {
@@ -121,6 +137,14 @@ async function streamChat({
         if (jsonStr === '[DONE]') continue;
         try {
           const parsed = JSON.parse(jsonStr);
+          if (parsed.type === 'citation_validation' && onCitationWarning) {
+            onCitationWarning({
+              invalid_actu_ids: parsed.invalid_actu_ids ?? [],
+              invalid_dossier_ids: parsed.invalid_dossier_ids ?? [],
+              message: parsed.message ?? 'Citations invalides détectées.',
+            });
+            continue;
+          }
           const content = parsed.choices?.[0]?.delta?.content as string | undefined;
           if (content) onDelta(content);
         } catch { /* ignore */ }
@@ -143,6 +167,7 @@ export default function AssistantPage() {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [generatedDocument, setGeneratedDocument] = useState<GeneratedDocument | null>(null);
+  const [citationWarning, setCitationWarning] = useState<CitationWarning | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { 
@@ -288,6 +313,7 @@ export default function AssistantPage() {
     setInput('');
     setIsLoading(true);
     setGeneratedDocument(null); // Clear previous document
+    setCitationWarning(null);   // Clear previous citation warning
 
     let assistantContent = '';
 
@@ -315,6 +341,12 @@ export default function AssistantPage() {
       context,
       mode,
       onDelta: updateAssistant,
+      onCitationWarning: (warning) => {
+        setCitationWarning(warning);
+        toast.warning('Citations invalides détectées', {
+          description: warning.message,
+        });
+      },
       onDone: () => {
         setIsLoading(false);
         const finalMessages = [...newMessages, { role: 'assistant' as const, content: assistantContent }];
@@ -483,6 +515,47 @@ export default function AssistantPage() {
             </div>
           </div>
           
+          {/* Citation Validation Warning Banner */}
+          {citationWarning && (
+            (citationWarning.invalid_actu_ids.length > 0 || citationWarning.invalid_dossier_ids.length > 0) && (
+              <div
+                role="alert"
+                className="mx-4 mt-3 lg:mx-6 rounded-lg border border-signal-warning/40 bg-signal-warning/10 p-3 flex items-start gap-3"
+              >
+                <AlertTriangle className="h-4 w-4 text-signal-warning shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <p className="text-sm font-medium text-foreground">
+                    Validation des citations — Avertissement
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {citationWarning.message}
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {citationWarning.invalid_actu_ids.length > 0 && (
+                      <Badge variant="outline" className="border-signal-warning/40 text-[11px]">
+                        {citationWarning.invalid_actu_ids.length} actualité(s) introuvable(s)
+                      </Badge>
+                    )}
+                    {citationWarning.invalid_dossier_ids.length > 0 && (
+                      <Badge variant="outline" className="border-signal-warning/40 text-[11px]">
+                        {citationWarning.invalid_dossier_ids.length} dossier(s) introuvable(s)
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0 -mt-1 -mr-1"
+                  onClick={() => setCitationWarning(null)}
+                  aria-label="Fermer l'avertissement"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )
+          )}
+
           {/* Messages Area */}
           <ScrollArea className="flex-1 p-4 lg:p-6" ref={scrollRef}>
             <div className="space-y-2">
