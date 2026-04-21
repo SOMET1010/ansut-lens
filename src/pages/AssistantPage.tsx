@@ -341,6 +341,12 @@ export default function AssistantPage() {
       context,
       mode,
       onDelta: updateAssistant,
+      onCitationWarning: (warning) => {
+        setCitationWarning(warning);
+        toast.warning('Citations invalides détectées', {
+          description: warning.message,
+        });
+      },
       onDone: () => {
         setIsLoading(false);
         const finalMessages = [...newMessages, { role: 'assistant' as const, content: assistantContent }];
