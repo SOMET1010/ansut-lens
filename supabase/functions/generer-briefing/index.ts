@@ -220,7 +220,7 @@ Deno.serve(async (req) => {
     }
 
     const aiData = await aiResponse.json();
-    const briefing = aiData.choices?.[0]?.message?.content;
+    let briefing = aiData.choices?.[0]?.message?.content;
 
     if (!briefing) {
       console.error('No briefing content in AI response:', aiData);
@@ -230,15 +230,61 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ============= VALIDATION CITATIONS & URLs =============
+    // 1. Vérifie que chaque [N] référence un index réel de sourcesMap
+    // 2. Vérifie que chaque URL citée existe dans sourcesMap.source_url
+    const validIndexes = new Set(sourcesMap.map(s => s.index));
+    const validUrls = new Set(
+      sourcesMap.map(s => s.source_url).filter((u): u is string => !!u)
+    );
+
+    const invalidCitations: string[] = [];
+    const invalidUrls: string[] = [];
+
+    // Detect [N] citations
+    briefing = briefing.replace(/\[(\d+)\]/g, (match: string, num: string) => {
+      const idx = parseInt(num, 10);
+      if (!validIndexes.has(idx)) {
+        invalidCitations.push(match);
+        return ''; // remove hallucinated reference
+      }
+      return match;
+    });
+
+    // Detect URLs
+    const urlRegex = /https?:\/\/[^\s\)\]]+/g;
+    briefing = briefing.replace(urlRegex, (url: string) => {
+      // Strip trailing punctuation
+      const cleaned = url.replace(/[.,;:!?]+$/, '');
+      if (!validUrls.has(cleaned)) {
+        invalidUrls.push(cleaned);
+        return ''; // remove hallucinated URL
+      }
+      return url;
+    });
+
+    if (invalidCitations.length || invalidUrls.length) {
+      console.warn('[Briefing] Citations invalides retirées:', {
+        citations: invalidCitations,
+        urls: invalidUrls,
+      });
+    }
+
+    briefing = briefing.replace(/\s{2,}/g, ' ').trim();
+
     console.log('Briefing generated successfully for', userName);
 
     return new Response(
       JSON.stringify({
-        briefing: briefing.trim(),
+        briefing,
         generated_at: new Date().toISOString(),
         sources_count: uniqueActualites.length,
         alerts_count: alertesCritiques,
         sources: sourcesMap,
+        validation: {
+          invalid_citations_removed: invalidCitations.length,
+          invalid_urls_removed: invalidUrls.length,
+        },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

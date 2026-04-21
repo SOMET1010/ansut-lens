@@ -238,7 +238,7 @@ Règles :
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'openai/gpt-5-mini',  // GPT-5 Mini for assistant: fast, accurate, follows instructions strictly
+        model: 'openai/gpt-5-mini',
         messages: [
           { role: 'system', content: contextualPrompt },
           ...messages,
@@ -250,37 +250,115 @@ Règles :
     if (!response.ok) {
       const errorText = await response.text();
       console.error('AI Gateway error:', response.status, errorText);
-      
+
       if (response.status === 429) {
-        return new Response(JSON.stringify({ 
-          error: 'Limite de requêtes atteinte. Veuillez réessayer dans quelques instants.' 
+        return new Response(JSON.stringify({
+          error: 'Limite de requêtes atteinte. Veuillez réessayer dans quelques instants.'
         }), {
           status: 429,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      
+
       if (response.status === 402) {
-        return new Response(JSON.stringify({ 
-          error: 'Crédits épuisés. Veuillez recharger votre compte.' 
+        return new Response(JSON.stringify({
+          error: 'Crédits épuisés. Veuillez recharger votre compte.'
         }), {
           status: 402,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      
+
       return new Response(JSON.stringify({ error: 'Erreur du service IA' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('Streaming response from AI Gateway');
+    // ============= STREAMING + VALIDATION CITATIONS =============
+    // Build whitelist from injected context
+    const validActuIds = new Set((actusRes.data || []).map((a: any) => a.id));
+    const validDossierIds = new Set((dossiersRes.data || []).map((d: any) => d.id));
 
-    // Stream the response directly
-    return new Response(response.body, {
-      headers: { 
-        ...corsHeaders, 
+    let buffer = '';
+    let fullText = '';
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+
+    const transformedStream = new ReadableStream({
+      async start(controller) {
+        const reader = response.body!.getReader();
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            // Process SSE lines
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) {
+                controller.enqueue(encoder.encode(line + '\n'));
+                continue;
+              }
+              const data = line.slice(6).trim();
+              if (data === '[DONE]') {
+                controller.enqueue(encoder.encode(line + '\n'));
+                continue;
+              }
+              try {
+                const json = JSON.parse(data);
+                const delta = json.choices?.[0]?.delta?.content;
+                if (typeof delta === 'string') fullText += delta;
+              } catch { /* ignore non-JSON */ }
+              controller.enqueue(encoder.encode(line + '\n'));
+            }
+          }
+
+          // After stream end: validate citations in full text
+          const invalidActus: string[] = [];
+          const invalidDossiers: string[] = [];
+
+          const actuRegex = /\[\[ACTU:([a-f0-9-]+)\|[^\]]+\]\]/gi;
+          const dossierRegex = /\[\[DOSSIER:([a-f0-9-]+)\|[^\]]+\]\]/gi;
+
+          let m;
+          while ((m = actuRegex.exec(fullText)) !== null) {
+            if (!validActuIds.has(m[1])) invalidActus.push(m[1]);
+          }
+          while ((m = dossierRegex.exec(fullText)) !== null) {
+            if (!validDossierIds.has(m[1])) invalidDossiers.push(m[1]);
+          }
+
+          if (invalidActus.length || invalidDossiers.length) {
+            console.warn('[Assistant-IA] Citations invalides détectées:', {
+              actus: invalidActus,
+              dossiers: invalidDossiers,
+            });
+            // Send validation warning as a custom SSE event
+            const warning = {
+              type: 'citation_validation',
+              invalid_actu_ids: invalidActus,
+              invalid_dossier_ids: invalidDossiers,
+              message: 'Certaines citations ne correspondent à aucun élément du contexte et ont été signalées.',
+            };
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(warning)}\n\n`));
+          }
+        } catch (err) {
+          console.error('Stream processing error:', err);
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    console.log('Streaming response with citation validation');
+
+    return new Response(transformedStream, {
+      headers: {
+        ...corsHeaders,
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
