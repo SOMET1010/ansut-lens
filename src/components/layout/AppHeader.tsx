@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Moon, Sun, Briefcase, RefreshCw, ShieldAlert, AlertCircle } from 'lucide-react';
+import { Search, Moon, Sun, Briefcase, RefreshCw, ShieldAlert, AlertCircle, Database, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -10,10 +10,32 @@ import { RelativeTime } from '@/components/ui/relative-time';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { useTheme } from 'next-themes';
 import { useDailyBriefing } from '@/hooks/useDailyBriefing';
+import { useSyncStatus, aggregateSyncStatus, type SyncTableStatus } from '@/hooks/useSyncStatus';
 import { NotificationCenter } from '@/components/notifications';
 import { SpotlightSearch } from './SpotlightSearch';
 import { cn } from '@/lib/utils';
 import type { ViewMode } from '@/types';
+
+const STATUS_DOT: Record<SyncTableStatus['status'], string> = {
+  fresh: 'bg-signal-positive',
+  stale: 'bg-signal-warning',
+  cold: 'bg-muted-foreground',
+  error: 'bg-destructive',
+};
+
+const STATUS_ICON: Record<SyncTableStatus['status'], typeof CheckCircle2> = {
+  fresh: CheckCircle2,
+  stale: AlertTriangle,
+  cold: AlertCircle,
+  error: XCircle,
+};
+
+const AGGREGATE_DOT = {
+  fresh: 'bg-signal-positive animate-pulse',
+  stale: 'bg-signal-warning',
+  cold: 'bg-muted-foreground',
+  error: 'bg-destructive animate-pulse',
+};
 
 const modeLabels: Record<ViewMode, string> = {
   dg: 'DG',
