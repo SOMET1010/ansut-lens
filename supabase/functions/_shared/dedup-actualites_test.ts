@@ -43,30 +43,33 @@ Deno.test("dedup: titres distincts → groupes séparés", () => {
   assertEquals(groups.length, 2);
 });
 
-Deno.test("dedup: entités communes + sim modérée → fusion", () => {
+Deno.test("dedup: entités communes + sim modérée → fusion (règle 3)", () => {
+  // Titres avec assez de tokens partagés (>0.35 Jaccard) ET 2+ entités communes
   const items = [
     make({
-      titre: "Déclaration importante autour télécoms ivoiriens",
+      titre: "Patrick M'Bengue rencontre dirigeants opérateurs télécoms",
       entites_personnes: ["Patrick M'Bengue"],
-      entites_entreprises: ["ANSUT", "Orange CI"],
+      entites_entreprises: ["ANSUT", "Orange"],
       source_url: "https://a.com/1",
     }),
     make({
-      titre: "Annonce officielle concernant télécoms en Côte d'Ivoire",
+      titre: "Patrick M'Bengue échange avec dirigeants opérateurs",
       entites_personnes: ["Patrick M'Bengue"],
-      entites_entreprises: ["ANSUT", "Orange CI"],
+      entites_entreprises: ["ANSUT", "Orange"],
       source_url: "https://b.com/2",
     }),
   ];
   const groups = consolidateActualites(items);
-  assertEquals(groups.length, 1, "Entités communes ANSUT+Orange+Patrick → fusion");
+  assertEquals(groups.length, 1, "Tokens partagés + entités communes → fusion");
+  assertEquals(groups[0].sources.length, 2);
 });
 
 Deno.test("dedup: primary = item le plus riche", () => {
+  // Tokens >=4 chars communs : "ansut","fibre","optique","bouake","deploie","zones","rurales"
   const items = [
-    make({ titre: "ANSUT fibre optique Bouaké", importance: 30, source_url: "https://a.com/1" }),
+    make({ titre: "ANSUT déploie fibre optique Bouaké zones rurales", importance: 30, source_url: "https://a.com/1" }),
     make({
-      titre: "ANSUT déploie fibre optique à Bouaké",
+      titre: "ANSUT déploie fibre optique Bouaké zones rurales nouvelles",
       importance: 90,
       resume: "Couverture étendue",
       impact_ansut: "Fort impact Service Universel",
