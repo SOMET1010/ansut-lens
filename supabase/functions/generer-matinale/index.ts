@@ -426,11 +426,9 @@ Deno.serve(async (req) => {
         }).join('\n')
       : 'Aucune personnalité enregistrée.';
 
-    const context = `=== ACTUALITÉS GÉNÉRALES (${(articles || []).length} articles en base) ===
-${generalArticlesList}
-
-=== ACTUALITÉS TEMPS RÉEL (${perplexityNews.articles.length} articles via recherche web vérifiée) ===
-${perplexityArticlesList}
+    const context = `=== ACTUALITÉS CONSOLIDÉES (${consolidated.length} faits uniques, ${dupGroups} doublon(s) fusionné(s) entre base + Perplexity) ===
+Une seule référence [N] par fait, toutes les sources listées par groupe.
+${consolidatedList}
 
 === MENTIONS DIRECTES ANSUT (articles citant l'ANSUT) ===
 ${ansutArticlesList}
