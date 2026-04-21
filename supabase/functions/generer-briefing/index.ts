@@ -161,7 +161,7 @@ Deno.serve(async (req) => {
       personalization += `\nRaisons de rejets passés par cet utilisateur : ${[...new Set(rejectedReasons)].slice(0, 5).join('; ')}.`;
     }
 
-    const context = uniqueActualites.length > 0
+    const context = consolidated.length > 0
       ? `Actualités vérifiées du jour (sources avec URL accessible uniquement):\n${actualitesList}${alertesDetails}${personalization}`
       : `Aucune actualité récente disponible.${alertesDetails}${personalization}`;
 
@@ -268,7 +268,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         briefing,
         generated_at: new Date().toISOString(),
-        sources_count: uniqueActualites.length,
+        sources_count: consolidated.length,
         alerts_count: alertesCritiques,
         sources: sourcesMap,
         validation: {
