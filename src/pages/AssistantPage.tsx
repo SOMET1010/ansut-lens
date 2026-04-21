@@ -319,6 +319,7 @@ export default function AssistantPage() {
     setInput('');
     setIsLoading(true);
     setGeneratedDocument(null); // Clear previous document
+    setCitationWarning(null);
 
     let assistantContent = '';
 
