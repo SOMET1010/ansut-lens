@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
     }
 
     const context = consolidated.length > 0
-      ? `Actualités vérifiées du jour (sources avec URL accessible uniquement):\n${actualitesList}${alertesDetails}${personalization}`
+      ? `Actualités vérifiées et FUSIONNÉES du jour (${dupGroups} doublon(s) consolidé(s), une seule référence [N] par fait) :\n${actualitesList}${alertesDetails}${personalization}`
       : `Aucune actualité récente disponible.${alertesDetails}${personalization}`;
 
     console.log('Generating briefing with context length:', context.length, 'for user:', userName);
@@ -274,6 +274,7 @@ Deno.serve(async (req) => {
         validation: {
           invalid_citations_removed: invalidCitations.length,
           invalid_urls_removed: invalidUrls.length,
+          duplicates_merged: dupGroups,
         },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
