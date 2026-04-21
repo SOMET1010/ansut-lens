@@ -188,11 +188,18 @@ Règles :
       contextualPrompt += `\n- Son profil de veille : ${userPrefs.portrait_ia}`;
     }
 
-    // Inject live actualites
+    // Inject live actualites — consolidées (mode "Fusionner intelligemment")
+    let consolidatedActus: ReturnType<typeof consolidateActualites> = [];
     if (actusRes.data?.length) {
-      contextualPrompt += `\n\nACTUALITÉS RÉCENTES (${actusRes.data.length} articles) :\n`;
-      for (const a of actusRes.data) {
-        contextualPrompt += `- [[ACTU:${a.id}|${a.titre}]] (${a.source_nom || 'source inconnue'}, importance: ${a.importance}/100${a.impact_ansut ? ', impact ANSUT: ' + a.impact_ansut : ''}) : ${a.resume || 'Pas de résumé'}\n`;
+      consolidatedActus = consolidateActualites(
+        actusRes.data.map((a: any) => ({ ...a, origin: 'db' as const }))
+      );
+      const dupCount = consolidatedActus.filter(g => g.members.length > 1).length;
+      contextualPrompt += `\n\nACTUALITÉS RÉCENTES (${consolidatedActus.length} faits consolidés, ${dupCount} doublon(s) fusionné(s)) :\n`;
+      for (const g of consolidatedActus) {
+        const a = g.primary;
+        const merged = g.members.length > 1 ? ` [×${g.members.length} sources]` : '';
+        contextualPrompt += `- [[ACTU:${a.id}|${a.titre}]]${merged} (${a.source_nom || 'source inconnue'}, importance: ${a.importance}/100${a.impact_ansut ? ', impact ANSUT: ' + a.impact_ansut : ''}) : ${a.resume || 'Pas de résumé'}\n`;
       }
     }
 
