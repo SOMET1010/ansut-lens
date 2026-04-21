@@ -406,11 +406,11 @@ export default function AssistantPage() {
 
   return (
     <TooltipProvider>
-      <div className="w-full h-[calc(100vh-6rem)] flex gap-6 p-2 lg:p-6 animate-fade-in">
+      <div className="w-full h-[calc(100vh-6rem)] flex gap-6 p-6 animate-fade-in">
         
         {/* History Sidebar - Desktop */}
-        <div className="w-64 bg-card rounded-2xl border shadow-sm hidden xl:flex xl:flex-col overflow-hidden">
-          <div className="px-4 py-3 border-b bg-muted/30">
+        <div className="w-96 bg-card rounded-2xl border shadow-sm hidden xl:flex xl:flex-col overflow-hidden">
+          <div className="px-5 py-4 border-b bg-muted/30">
             <h3 className="text-sm font-bold flex items-center gap-2">
               <History className="h-4 w-4" />
               Historique

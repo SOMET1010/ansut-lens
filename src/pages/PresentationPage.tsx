@@ -83,7 +83,7 @@ export default function PresentationPage() {
       </div>
 
       {/* Slide Preview */}
-      <div className="relative aspect-video w-full max-w-4xl mx-auto rounded-xl overflow-hidden shadow-2xl border border-border">
+      <div className="relative aspect-video w-full rounded-xl overflow-hidden shadow-2xl border border-border">
         <div ref={targetRef}>
           <SlideLayout slideNumber={currentSlide + 1} totalSlides={slides.length}>
             <CurrentSlideComponent />
@@ -108,7 +108,7 @@ export default function PresentationPage() {
       </div>
 
       {/* Thumbnails */}
-      <div className="flex gap-2 overflow-x-auto pb-2 max-w-4xl mx-auto">
+      <div className="flex gap-2 overflow-x-auto pb-2 w-full">
         {slides.map((slide, index) => (
           <button
             key={index}

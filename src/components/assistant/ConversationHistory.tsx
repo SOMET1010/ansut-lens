@@ -48,19 +48,19 @@ export function ConversationHistory({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-3 border-b">
-        <Button 
-          onClick={onNewConversation} 
-          className="w-full gap-2"
+      <div className="p-4 border-b">
+        <Button
+          onClick={onNewConversation}
+          className="w-full gap-2 h-10"
           size="sm"
         >
           <Plus className="h-4 w-4" />
           Nouvelle conversation
         </Button>
       </div>
-      
+
       <ScrollArea className="flex-1">
-        <div className="p-2 space-y-1">
+        <div className="p-3 space-y-2">
           {conversations.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground text-sm">
               <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -77,13 +77,13 @@ export function ConversationHistory({
                 )}
                 onClick={() => onSelectConversation(conv)}
               >
-                <div className="flex items-start gap-2 pr-8">
+                <div className="flex items-start gap-3 pr-10">
                   <MessageSquare className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
+                    <p className="text-sm font-medium leading-snug">
                       {conv.titre || 'Conversation sans titre'}
                     </p>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1.5">
                       <Clock className="h-3 w-3" />
                       <span>
                         {formatDistanceToNow(new Date(conv.updated_at), { 
