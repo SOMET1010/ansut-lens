@@ -449,7 +449,7 @@ export default function CommunicationPage() {
   }, []);
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto">
+    <div className="w-full space-y-8">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Megaphone className="h-6 w-6 text-primary" />

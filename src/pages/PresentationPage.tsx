@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Download, Maximize2, Minimize2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Maximize2, Minimize2, ArrowLeft } from 'lucide-react';
 import { usePDF } from 'react-to-pdf';
 import { SlideLayout } from '@/components/presentation/SlideLayout';
 import { CoverSlide } from '@/components/presentation/slides/CoverSlide';
@@ -60,11 +61,14 @@ export default function PresentationPage() {
   const CurrentSlideComponent = slides[currentSlide].component;
 
   return (
-    <div className="space-y-6 animate-fade-in" ref={containerRef}>
+    <div className="w-full space-y-6 animate-fade-in" ref={containerRef}>
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Présentation</h1>
+        <div className="flex items-center gap-3">
+          <Link to="/admin"><Button variant="ghost" size="icon"><ArrowLeft size={20} /></Button></Link>
+          <div>
+            <h1 className="text-3xl font-bold">Présentation</h1>
           <p className="text-muted-foreground">Générez et téléchargez la présentation PDF</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={toggleFullscreen}>

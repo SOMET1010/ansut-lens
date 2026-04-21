@@ -56,7 +56,7 @@ export default function DiffusionPage() {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="w-full space-y-8 animate-fade-in">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
           <ArrowLeft size={20} />

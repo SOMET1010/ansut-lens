@@ -36,7 +36,7 @@ export default function SpdiStatusPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="w-full space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">

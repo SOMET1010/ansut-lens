@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Loader2, Download, RefreshCw, AlertTriangle, CheckCircle2, Users, Copy, Database, UserPlus, Search } from 'lucide-react';
+import { Loader2, Download, RefreshCw, AlertTriangle, CheckCircle2, Users, Copy, Database, UserPlus, Search, ArrowLeft } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDeduplicationActeurs } from '@/hooks/useDeduplicationActeurs';
@@ -255,13 +256,16 @@ export default function ImportActeursPage() {
   const selectedCount = acteursAvecDoublons.filter(a => a.selected && !a.doublon).length;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="w-full space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Import Acteurs (Perplexity)</h1>
+        <div className="flex items-center gap-3">
+          <Link to="/admin"><Button variant="ghost" size="icon"><ArrowLeft size={20} /></Button></Link>
+          <div>
+            <h1 className="text-3xl font-bold">Import Acteurs (Perplexity)</h1>
           <p className="text-muted-foreground">
             Génération et import d'acteurs clés avec sources vérifiées
           </p>
+          </div>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Database className="h-4 w-4" />

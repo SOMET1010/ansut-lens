@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
   Eye, Megaphone, BarChart3, Users, RefreshCw, Loader2,
   TrendingUp, TrendingDown, Minus, ExternalLink, Linkedin, Twitter, Globe,
-  Building, Newspaper, MessageCircle, Layers
+  Building, Newspaper, MessageCircle, Layers, ArrowLeft
 } from 'lucide-react';
 import {
   usePublicationsInstitutionnelles,
@@ -64,17 +65,20 @@ export default function AutoVeillePage() {
   ] : [];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="w-full space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-3">
-            <Eye className="h-7 w-7 text-primary" />
-            Auto-Veille Institutionnelle
-          </h1>
+        <div className="flex items-center gap-3">
+          <Link to="/admin"><Button variant="ghost" size="icon"><ArrowLeft size={20} /></Button></Link>
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-3">
+              <Eye className="h-7 w-7 text-primary" />
+              Auto-Veille Institutionnelle
+            </h1>
           <p className="text-muted-foreground mt-1">
             Miroir de performance : mesurez la résonance de vos propres publications
           </p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button

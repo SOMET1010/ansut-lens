@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Shield, Info, ExternalLink } from 'lucide-react';
+import { Shield, Info, ExternalLink, ArrowLeft } from 'lucide-react';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { RoleAccreditationCard } from '@/components/admin/RoleAccreditationCard';
 import { RolePermissionsDialog } from '@/components/admin/RolePermissionsDialog';
@@ -58,7 +59,7 @@ export default function RolesPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-8 animate-fade-in">
+      <div className="w-full space-y-8 animate-fade-in">
         <div>
           <Skeleton className="h-8 w-64 mb-2" />
           <Skeleton className="h-4 w-96" />
@@ -73,16 +74,19 @@ export default function RolesPage() {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="w-full space-y-8 animate-fade-in">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <Shield className="h-8 w-8 text-primary" />
-          Rôles & Accréditations
-        </h1>
+      <div className="flex items-center gap-3">
+        <Link to="/admin"><Button variant="ghost" size="icon"><ArrowLeft size={20} /></Button></Link>
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <Shield className="h-8 w-8 text-primary" />
+            Rôles & Accréditations
+          </h1>
         <p className="text-muted-foreground mt-1">
           Définissez les niveaux d'accès aux données sensibles de la plateforme
         </p>
+        </div>
       </div>
 
       {/* RBAC Info note */}

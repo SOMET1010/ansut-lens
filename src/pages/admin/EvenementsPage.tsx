@@ -80,7 +80,7 @@ export default function EvenementsPage() {
   const pastEvents = events?.filter(e => getEventStatus(e) === 'passe') || [];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="w-full space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ import {
   Filter,
   Bell,
   Zap,
+  ArrowLeft,
 } from 'lucide-react';
 import {
   useCategoriesVeille,
@@ -148,13 +150,16 @@ export default function MotsClesPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="w-full space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Mots-Clés de Veille</h1>
+        <div className="flex items-center gap-3">
+          <Link to="/admin"><Button variant="ghost" size="icon"><ArrowLeft size={20} /></Button></Link>
+          <div>
+            <h1 className="text-3xl font-bold">Mots-Clés de Veille</h1>
           <p className="text-muted-foreground">
             Gérer les {totalMotsCles} mots-clés de surveillance ANSUT RADAR
           </p>
+          </div>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>

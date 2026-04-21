@@ -116,7 +116,7 @@ export default function PersonnalitesPage() {
   }, [activeTab, personnalites, parCercle]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="w-full space-y-6 animate-fade-in">
       {/* Header compact avec stats intégrées */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>

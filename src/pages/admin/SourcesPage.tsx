@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import SourceReliabilityDashboard from '@/components/admin/SourceReliabilityDashboard';
@@ -40,7 +41,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Pencil, Trash2, Search, Globe, Rss, Code, Share2, Database, Zap } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Globe, Rss, Code, Share2, Database, Zap, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
@@ -163,14 +164,17 @@ export default function SourcesPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="w-full space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Sources Média</h1>
+        <div className="flex items-center gap-3">
+          <Link to="/admin"><Button variant="ghost" size="icon"><ArrowLeft size={20} /></Button></Link>
+          <div>
+            <h1 className="text-3xl font-bold">Sources Média</h1>
           <p className="text-muted-foreground">
             Gérer les {stats.total} sources de veille ANSUT RADAR
           </p>
+          </div>
         </div>
         <Button onClick={openCreateDialog}>
           <Plus className="h-4 w-4 mr-2" />

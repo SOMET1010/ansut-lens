@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +10,7 @@ import {
 } from '@/components/ui/table';
 import {
   Newspaper, Send, Eye, Loader2, Zap, Target, MessageSquare,
-  CheckCircle2, XCircle, Clock,
+  CheckCircle2, XCircle, Clock, ArrowLeft,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -33,17 +34,20 @@ export default function MatinalePage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="w-full space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Newspaper className="h-8 w-8 text-primary" />
-            La Matinale Com
-          </h1>
+        <div className="flex items-center gap-3">
+          <Link to="/admin"><Button variant="ghost" size="icon"><ArrowLeft size={20} /></Button></Link>
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Newspaper className="h-8 w-8 text-primary" />
+              La Matinale Com
+            </h1>
           <p className="text-muted-foreground">
             Briefing quotidien automatique pour l'équipe Communication
           </p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button

@@ -114,7 +114,7 @@ export default function ActualitesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/20 animate-fade-in">
+    <div className="w-full min-h-screen bg-muted/20 animate-fade-in">
       {/* En-tête */}
       <WatchHeader
         newArticlesCount={actualites?.length ?? 0}

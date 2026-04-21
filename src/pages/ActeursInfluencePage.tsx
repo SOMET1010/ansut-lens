@@ -33,7 +33,7 @@ export default function ActeursInfluencePage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="w-full space-y-6 animate-fade-in">
       <Tabs value={currentTab} onValueChange={handleTabChange}>
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 mr-auto">

@@ -63,7 +63,7 @@ export default function FluxDetailPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="w-full space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>

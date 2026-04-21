@@ -44,7 +44,7 @@ export default function RadarPage() {
   const isConnected = !kpisLoading && kpis !== undefined;
 
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="w-full space-y-5 animate-fade-in">
       {/* Header with date and status */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

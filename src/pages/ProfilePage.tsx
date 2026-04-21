@@ -16,7 +16,7 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="container max-w-2xl py-8">
+      <div className="w-full py-8">
         <div className="mb-6">
           <Skeleton className="h-8 w-48" />
         </div>
@@ -39,7 +39,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="container max-w-2xl py-8">
+    <div className="w-full py-8">
       <div className="mb-6">
         <Button variant="ghost" asChild className="gap-2 -ml-2">
           <Link to="/radar">

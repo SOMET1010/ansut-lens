@@ -526,7 +526,7 @@ export default function UsersPage() {
   }, [users, usersStatus, statusFilter, roleFilter, searchQuery]);
 
   return (
-    <div className="container max-w-6xl py-8">
+    <div className="w-full py-8">
       {/* Header avec titre et bouton d'invitation */}
       <div className="mb-6">
         <Button variant="ghost" asChild className="gap-2 -ml-2 mb-2">

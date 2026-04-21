@@ -113,7 +113,7 @@ export default function DossiersPage() {
   const ModeIcon = currentConfig.icon;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="w-full space-y-6 animate-fade-in">
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

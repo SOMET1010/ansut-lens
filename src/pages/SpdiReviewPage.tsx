@@ -49,7 +49,7 @@ export default function SpdiReviewPage() {
   });
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="w-full space-y-6 p-6">
       <div>
         <h1 className="text-2xl font-bold">Revue de Stabilité SPDI</h1>
         <p className="text-sm text-muted-foreground">Vue panoramique des tendances et risques de présence digitale</p>

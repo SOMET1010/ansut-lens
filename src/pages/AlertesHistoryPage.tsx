@@ -54,7 +54,7 @@ export default function AlertesHistoryPage() {
     useAlertesHistory({ niveau, periode, etat, search, page });
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="w-full py-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
