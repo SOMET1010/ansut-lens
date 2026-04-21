@@ -287,6 +287,9 @@ Règles :
     // Build whitelist from injected context
     const validActuIds = new Set((actusRes.data || []).map((a: any) => a.id));
     const validDossierIds = new Set((dossiersRes.data || []).map((d: any) => d.id));
+    // Build lookup maps to enrich invalid citations with the closest known
+    // alternative (we cannot know the real source for an hallucinated ID,
+    // but we can surface the title the model used inside [[TYPE:id|title]]).
 
     let buffer = '';
     let fullText = '';
