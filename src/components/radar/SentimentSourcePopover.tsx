@@ -5,7 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown, Sparkles } from 'lucide-react';
+import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown, Sparkles, Filter, RotateCcw } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -52,6 +54,7 @@ interface SentimentArticle {
   titre: string;
   source_nom: string | null;
   source_url: string | null;
+  source_type: string | null;
   sentiment: number;
   importance: number;
   hasWeight: boolean;
@@ -75,7 +78,7 @@ async function fetchSentimentSources(sinceISO?: string, limit = 10): Promise<{
 }> {
   let q = supabase
     .from('actualites')
-    .select('id, titre, source_nom, source_url, sentiment, importance, date_publication, created_at')
+    .select('id, titre, source_nom, source_url, source_type, sentiment, importance, date_publication, created_at')
     .not('sentiment', 'is', null)
     .order('importance', { ascending: false, nullsFirst: false })
     .limit(limit);
@@ -93,6 +96,7 @@ async function fetchSentimentSources(sinceISO?: string, limit = 10): Promise<{
       titre: a.titre,
       source_nom: a.source_nom,
       source_url: a.source_url,
+      source_type: a.source_type ?? null,
       sentiment: Number(a.sentiment ?? 0),
       importance: hasWeight ? Number(rawImp) : 0,
       hasWeight,
@@ -126,6 +130,8 @@ export function SentimentSourcePopover({
   const [period, setPeriod] = useState<PeriodKey>(defaultPeriod);
   const [filter, setFilter] = useState<SentimentFilter>('all');
   const [sort, setSort] = useState<SortKey>('weight_desc');
+  const [sourceType, setSourceType] = useState<string>('all');
+  const [minImportance, setMinImportance] = useState<number>(0);
   const sinceISO = new Date(Date.now() - PERIOD_HOURS[period] * 3600 * 1000).toISOString();
 
   return (
@@ -144,6 +150,10 @@ export function SentimentSourcePopover({
           onFilterChange={setFilter}
           sort={sort}
           onSortChange={setSort}
+          sourceType={sourceType}
+          onSourceTypeChange={setSourceType}
+          minImportance={minImportance}
+          onMinImportanceChange={setMinImportance}
         />
       </PopoverContent>
     </Popover>
@@ -160,6 +170,10 @@ function SentimentContent({
   onFilterChange,
   sort,
   onSortChange,
+  sourceType,
+  onSourceTypeChange,
+  minImportance,
+  onMinImportanceChange,
 }: {
   sinceISO: string;
   limit: number;
@@ -170,6 +184,10 @@ function SentimentContent({
   onFilterChange: (f: SentimentFilter) => void;
   sort: SortKey;
   onSortChange: (s: SortKey) => void;
+  sourceType: string;
+  onSourceTypeChange: (v: string) => void;
+  minImportance: number;
+  onMinImportanceChange: (v: number) => void;
 }) {
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['sentiment-sources', sinceISO, limit],
@@ -180,9 +198,29 @@ function SentimentContent({
   // Recalcul en cours = nouvelle période non encore mise en cache OU premier chargement
   const isRecomputing = isLoading || (isFetching && !data);
 
-  const filteredArticles = (data?.articles.filter((a) =>
-    filter === 'all' ? true : classifySentiment(a.sentiment) === filter
-  ) ?? []).slice().sort((a, b) => {
+  // Liste des types de source disponibles dans le jeu de données
+  const availableSourceTypes = Array.from(
+    new Set((data?.articles ?? []).map((a) => a.source_type).filter((t): t is string => Boolean(t)))
+  ).sort();
+
+  // Sous-ensemble filtré par l'utilisateur (sentiment + source type + seuil importance)
+  const subset = (data?.articles ?? []).filter((a) => {
+    if (filter !== 'all' && classifySentiment(a.sentiment) !== filter) return false;
+    if (sourceType !== 'all' && a.source_type !== sourceType) return false;
+    if (minImportance > 0 && (!a.hasWeight || a.importance < minImportance)) return false;
+    return true;
+  });
+
+  // Recalcul des stats pondérées sur le sous-ensemble
+  const subsetWeighted = subset.filter((a) => a.hasWeight);
+  const subsetSumWeight = subsetWeighted.reduce((s, a) => s + a.importance, 0);
+  const subsetSumWeightedSentiment = subsetWeighted.reduce((s, a) => s + a.sentiment * a.importance, 0);
+  const subsetAvg = subsetSumWeight > 0
+    ? Math.round((subsetSumWeightedSentiment / subsetSumWeight) * 100) / 100
+    : 0;
+  const subsetUnweighted = subset.length - subsetWeighted.length;
+
+  const filteredArticles = subset.slice().sort((a, b) => {
     switch (sort) {
       case 'weight_desc': return b.importance - a.importance;
       case 'weight_asc': return a.importance - b.importance;
@@ -196,7 +234,9 @@ function SentimentContent({
     }
   });
 
-  // Counts par catégorie pour les badges
+  const isFiltered = filter !== 'all' || sourceType !== 'all' || minImportance > 0;
+
+  // Counts par catégorie pour les badges (sur l'ensemble brut)
   const counts = {
     all: data?.articles.length ?? 0,
     positive: data?.articles.filter((a) => classifySentiment(a.sentiment) === 'positive').length ?? 0,
@@ -258,21 +298,33 @@ function SentimentContent({
         ) : data && (
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">
-              Calculé sur <span className="font-semibold text-foreground">{data.totalWeighted}</span> article{data.totalWeighted > 1 ? 's' : ''} pondéré{data.totalWeighted > 1 ? 's' : ''}
-              {' · '}Moyenne : <span className="font-semibold text-foreground">{data.avgSentiment.toFixed(2)}</span>
+              {isFiltered ? (
+                <>
+                  Sous-ensemble filtré : <span className="font-semibold text-foreground">{subsetWeighted.length}</span> / {data.totalWeighted} article{subsetWeighted.length > 1 ? 's' : ''} pondéré{subsetWeighted.length > 1 ? 's' : ''}
+                  {' · '}Moyenne : <span className="font-semibold text-foreground">{subsetAvg.toFixed(2)}</span>
+                  <Badge variant="outline" className="ml-1.5 text-[9px] px-1 py-0 h-4 border-primary/40 text-primary">
+                    filtré
+                  </Badge>
+                </>
+              ) : (
+                <>
+                  Calculé sur <span className="font-semibold text-foreground">{data.totalWeighted}</span> article{data.totalWeighted > 1 ? 's' : ''} pondéré{data.totalWeighted > 1 ? 's' : ''}
+                  {' · '}Moyenne : <span className="font-semibold text-foreground">{data.avgSentiment.toFixed(2)}</span>
+                </>
+              )}
             </p>
             <p className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded inline-block">
               Σ(sentiment × importance) ÷ Σ(importance)
             </p>
             <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
-              <span className="bg-muted/50 px-1.5 py-0.5 rounded" title="Somme des poids (importance) des articles inclus">
-                Σ(importance) = <span className="font-semibold text-foreground">{data.sumWeight.toFixed(0)}</span>
+              <span className="bg-muted/50 px-1.5 py-0.5 rounded" title="Somme des poids (importance) des articles inclus dans le sous-ensemble courant">
+                Σ(importance) = <span className="font-semibold text-foreground">{(isFiltered ? subsetSumWeight : data.sumWeight).toFixed(0)}</span>
               </span>
-              <span className="bg-muted/50 px-1.5 py-0.5 rounded" title="Somme des contributions (sentiment × importance)">
-                Σ(sentiment × importance) = <span className="font-semibold text-foreground">{data.sumWeightedSentiment.toFixed(2)}</span>
+              <span className="bg-muted/50 px-1.5 py-0.5 rounded" title="Somme des contributions (sentiment × importance) sur le sous-ensemble courant">
+                Σ(sentiment × importance) = <span className="font-semibold text-foreground">{(isFiltered ? subsetSumWeightedSentiment : data.sumWeightedSentiment).toFixed(2)}</span>
               </span>
               <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded" title="Vérification : Σ pondérée ÷ Σ poids">
-                = {data.avgSentiment.toFixed(2)}
+                = {(isFiltered ? subsetAvg : data.avgSentiment).toFixed(2)}
               </span>
             </div>
             <details className="text-[10px] text-muted-foreground">
@@ -287,6 +339,9 @@ function SentimentContent({
                   <span className="font-semibold text-foreground">Sentiment :</span> score IA borné entre <span className="font-mono">−1</span> (très négatif) et <span className="font-mono">+1</span> (très positif). Le seuil de classification est ±0,2 (zone neutre entre les deux).
                 </p>
                 <p>
+                  <span className="font-semibold text-foreground">Filtres :</span> appliquer un type de source ou un seuil d'importance recalcule la moyenne pondérée sur le sous-ensemble visible uniquement.
+                </p>
+                <p>
                   <span className="font-semibold text-foreground">Signe du sentiment pondéré :</span>
                 </p>
                 <ul className="list-disc list-inside space-y-0.5 pl-1">
@@ -296,12 +351,17 @@ function SentimentContent({
                 </ul>
               </div>
             </details>
-            {data.totalUnweighted > 0 && (
+            {(isFiltered ? subsetUnweighted : data.totalUnweighted) > 0 && (
               <p className="text-[10px] text-amber-600 dark:text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded px-1.5 py-1 flex items-start gap-1">
                 <span className="font-semibold">⚠</span>
                 <span>
-                  {data.totalUnweighted} article{data.totalUnweighted > 1 ? 's' : ''} sans importance défini{data.totalUnweighted > 1 ? 's' : 'e'} — exclu{data.totalUnweighted > 1 ? 's' : ''} du calcul pondéré.
+                  {(isFiltered ? subsetUnweighted : data.totalUnweighted)} article{(isFiltered ? subsetUnweighted : data.totalUnweighted) > 1 ? 's' : ''} sans importance défini{(isFiltered ? subsetUnweighted : data.totalUnweighted) > 1 ? 's' : 'e'} — exclu{(isFiltered ? subsetUnweighted : data.totalUnweighted) > 1 ? 's' : ''} du calcul pondéré.
                 </span>
+              </p>
+            )}
+            {isFiltered && subsetWeighted.length === 0 && (
+              <p className="text-[10px] text-amber-600 dark:text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded px-1.5 py-1">
+                Aucun article pondéré ne correspond aux filtres : la moyenne ne peut pas être calculée.
               </p>
             )}
           </div>
@@ -343,6 +403,86 @@ function SentimentContent({
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Filtres avancés : type de source + seuil d'importance */}
+        <div className="space-y-1.5 pt-1 border-t border-dashed">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <Filter className="h-3 w-3" />
+              <span className="font-semibold">Filtres avancés</span>
+              {isFiltered && (
+                <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-primary/40 text-primary">
+                  actif
+                </Badge>
+              )}
+            </div>
+            {isFiltered && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-[10px] px-2 gap-1"
+                onClick={() => {
+                  onFilterChange('all');
+                  onSourceTypeChange('all');
+                  onMinImportanceChange(0);
+                }}
+                title="Réinitialiser tous les filtres"
+              >
+                <RotateCcw className="h-3 w-3" />
+                Réinitialiser
+              </Button>
+            )}
+          </div>
+
+          {/* Type de source */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground shrink-0 w-16">Source</span>
+            <Select value={sourceType} onValueChange={onSourceTypeChange}>
+              <SelectTrigger className="h-7 text-[10px] flex-1">
+                <SelectValue placeholder="Type de source…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">
+                  Tous les types ({data?.articles.length ?? 0})
+                </SelectItem>
+                {availableSourceTypes.map((t) => {
+                  const n = (data?.articles ?? []).filter((a) => a.source_type === t).length;
+                  return (
+                    <SelectItem key={t} value={t} className="text-xs">
+                      {t} ({n})
+                    </SelectItem>
+                  );
+                })}
+                {availableSourceTypes.length === 0 && (
+                  <SelectItem value="__none" disabled className="text-xs">
+                    Aucun type renseigné
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Seuil d'importance */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground shrink-0 w-16">
+              Poids ≥ <span className="font-mono font-semibold text-foreground">{minImportance}</span>
+            </span>
+            <Slider
+              value={[minImportance]}
+              onValueChange={(v) => onMinImportanceChange(v[0])}
+              min={0}
+              max={100}
+              step={5}
+              className="flex-1"
+              aria-label="Seuil minimal d'importance"
+            />
+          </div>
+          {isFiltered && (
+            <p className="text-[10px] text-muted-foreground italic">
+              {subset.length} article{subset.length > 1 ? 's' : ''} dans le sous-ensemble · moyenne recalculée en direct.
+            </p>
+          )}
         </div>
       </div>
 
