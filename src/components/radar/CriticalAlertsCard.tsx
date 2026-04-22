@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { RelativeTime } from '@/components/ui/relative-time';
+import { SectionEmptyState } from './SectionEmptyState';
 
 interface CriticalAlert {
   id: string;
@@ -21,13 +22,14 @@ function useCriticalAlerts() {
   return useQuery({
     queryKey: ['critical-alerts-home'],
     queryFn: async (): Promise<CriticalAlert[]> => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('alertes')
         .select('id, titre, message, type, reference_type, reference_id, created_at')
         .eq('niveau', 'critical')
         .eq('traitee', false)
         .order('created_at', { ascending: false })
         .limit(5);
+      if (error) throw error;
       return data ?? [];
     },
     refetchInterval: 60_000,
@@ -46,7 +48,7 @@ function resolveTarget(alert: CriticalAlert): string {
 }
 
 export default function CriticalAlertsCard() {
-  const { data, isLoading } = useCriticalAlerts();
+  const { data, isLoading, isError, refetch } = useCriticalAlerts();
   const navigate = useNavigate();
 
   return (
@@ -66,11 +68,21 @@ export default function CriticalAlertsCard() {
             <Skeleton className="h-14 w-full" />
             <Skeleton className="h-14 w-full" />
           </div>
+        ) : isError ? (
+          <SectionEmptyState
+            variant="error"
+            title="Alertes indisponibles"
+            description="Le service de notifications n'a pas pu être joint."
+            onRetry={() => refetch()}
+            compact
+          />
         ) : !data || data.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-6 text-center">
-            <BellOff className="h-6 w-6 text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground">Aucune alerte critique en attente</p>
-          </div>
+          <SectionEmptyState
+            icon={<BellOff className="h-6 w-6" />}
+            title="Aucune alerte critique"
+            description="Tout est sous contrôle. Les nouvelles alertes apparaîtront ici en temps réel."
+            compact
+          />
         ) : (
           <ul className="space-y-2">
             {data.map((alert) => {
