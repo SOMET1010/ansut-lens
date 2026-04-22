@@ -129,10 +129,13 @@ function SentimentContent({ sinceISO, limit, title }: { sinceISO?: string; limit
             return (
               <div key={article.id} className="rounded-md border bg-muted/30 p-2 space-y-1.5">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
                     <s.Icon className={`h-3 w-3 ${s.color}`} />
                     <Badge variant="outline" className={`text-[10px] ${s.color}`}>
                       {s.label} {article.sentiment > 0 ? '+' : ''}{article.sentiment.toFixed(2)}
+                    </Badge>
+                    <Badge variant="secondary" className="text-[10px] font-mono" title="Poids dans la moyenne pondérée">
+                      Poids {article.importance}
                     </Badge>
                   </div>
                   {article.source_url && (
@@ -155,7 +158,7 @@ function SentimentContent({ sinceISO, limit, title }: { sinceISO?: string; limit
                 <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                   <span className="truncate">
                     {article.source_nom ?? 'Source inconnue'}
-                    {' · '}Importance {article.importance}
+                    {' · '}Contribution : <span className="font-mono">{(article.sentiment * article.importance).toFixed(1)}</span>
                   </span>
                   {article.date && (
                     <span className="shrink-0 ml-2">
