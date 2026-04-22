@@ -524,7 +524,7 @@ function SentimentContent({
           </TabsList>
         </Tabs>
 
-        {/* Sélecteur de tri */}
+        {/* Sélecteur de tri + taille de page */}
         <div className="flex items-center gap-2">
           <ArrowUpDown className="h-3 w-3 text-muted-foreground shrink-0" />
           <Select value={sort} onValueChange={(v) => onSortChange(v as SortKey)}>
@@ -535,6 +535,24 @@ function SentimentContent({
               {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
                 <SelectItem key={k} value={k} className="text-xs">
                   {SORT_LABELS[k]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={String(pageSize)}
+            onValueChange={(v) => onPageSizeChange(Number(v) as PageSize)}
+          >
+            <SelectTrigger
+              className="h-7 text-[10px] w-[88px] shrink-0"
+              title="Nombre d'articles affichés par défaut"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map((n) => (
+                <SelectItem key={n} value={String(n)} className="text-xs">
+                  {n} / page
                 </SelectItem>
               ))}
             </SelectContent>
