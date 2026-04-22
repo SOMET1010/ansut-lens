@@ -375,6 +375,8 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
     </div>
   );
 }
+
+function EmptyState({ cercle, onAddManually }: { cercle?: CercleStrategique; onAddManually?: () => void }) {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
 
