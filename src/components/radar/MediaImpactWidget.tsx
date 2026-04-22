@@ -5,6 +5,7 @@ import { TrendingUp, TrendingDown, Minus, Target, MessageSquare, Newspaper, Aler
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { EvidencePopover } from './EvidencePopover';
+import { SentimentSourcePopover } from './SentimentSourcePopover';
 import { SectionEmptyState } from './SectionEmptyState';
 
 interface MediaImpactData {
@@ -181,10 +182,10 @@ export default function MediaImpactWidget() {
             </div>
           </EvidencePopover>
 
-          <EvidencePopover
-            title="Sentiment moyen"
-            description="Articles ayant déterminé le sentiment global"
-            source={{ kind: 'actualites', sinceISO: new Date(Date.now() - 24 * 3600 * 1000).toISOString(), limit: 5 }}
+          <SentimentSourcePopover
+            sinceISO={new Date(Date.now() - 24 * 3600 * 1000).toISOString()}
+            limit={10}
+            title="Sentiment moyen — sources détaillées (24h)"
           >
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
@@ -193,7 +194,7 @@ export default function MediaImpactWidget() {
               </div>
               <p className="text-xs text-muted-foreground">Sentiment</p>
             </div>
-          </EvidencePopover>
+          </SentimentSourcePopover>
 
           <EvidencePopover
             title="Alertes critiques (24h)"
