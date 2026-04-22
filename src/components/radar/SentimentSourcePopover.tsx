@@ -210,12 +210,20 @@ function SentimentContent({
         {data && (
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">
-              Calculé sur {data.totalAnalyzed} article{data.totalAnalyzed > 1 ? 's' : ''} analysé{data.totalAnalyzed > 1 ? 's' : ''}
-              {' · '}Moyenne pondérée : <span className="font-semibold text-foreground">{data.avgSentiment.toFixed(2)}</span>
+              Calculé sur <span className="font-semibold text-foreground">{data.totalWeighted}</span> article{data.totalWeighted > 1 ? 's' : ''} pondéré{data.totalWeighted > 1 ? 's' : ''}
+              {' · '}Moyenne : <span className="font-semibold text-foreground">{data.avgSentiment.toFixed(2)}</span>
             </p>
             <p className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded inline-block">
               Σ(sentiment × importance) ÷ Σ(importance)
             </p>
+            {data.totalUnweighted > 0 && (
+              <p className="text-[10px] text-amber-600 dark:text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded px-1.5 py-1 flex items-start gap-1">
+                <span className="font-semibold">⚠</span>
+                <span>
+                  {data.totalUnweighted} article{data.totalUnweighted > 1 ? 's' : ''} sans importance défini{data.totalUnweighted > 1 ? 's' : 'e'} — exclu{data.totalUnweighted > 1 ? 's' : ''} du calcul pondéré.
+                </span>
+              </p>
+            )}
           </div>
         )}
 
