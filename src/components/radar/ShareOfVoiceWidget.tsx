@@ -176,7 +176,7 @@ export default function ShareOfVoiceWidget() {
             )}
             <div>
               <p className={`text-sm font-medium ${gapColor}`}>
-                Ratio Earned/Owned : {data.ratio}
+                Ratio Écho médiatique / Communication : {data.ratio}
               </p>
               {data.gap && (
                 <p className="text-xs text-muted-foreground mt-1">{data.gap}</p>
