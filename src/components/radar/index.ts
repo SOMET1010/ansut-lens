@@ -16,3 +16,4 @@ export { default as EchoResonanceWidget } from './EchoResonanceWidget';
 export { default as InfluenceursMetierWidget } from './InfluenceursMetierWidget';
 export { default as RadarProximiteWidget } from './RadarProximiteWidget';
 export { default as CriticalAlertsCard } from './CriticalAlertsCard';
+export { SectionEmptyState } from './SectionEmptyState';

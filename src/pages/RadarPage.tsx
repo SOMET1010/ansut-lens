@@ -33,9 +33,9 @@ const periodLabels: Record<PeriodFilter, string> = {
 export default function RadarPage() {
   const [period, setPeriod] = useState<PeriodFilter>('24h');
   
-  const { data: kpis, isLoading: kpisLoading, isFetching: kpisFetching } = useRadarKPIs(period);
-  const { data: signaux, isLoading: signauxLoading } = useRadarSignaux();
-  const { data: actualites, isLoading: actualitesLoading } = useIntelligenceFeed(50);
+  const { data: kpis, isLoading: kpisLoading, isFetching: kpisFetching, isError: kpisError, refetch: refetchKpis } = useRadarKPIs(period);
+  const { data: signaux, isLoading: signauxLoading, isError: signauxError, refetch: refetchSignaux } = useRadarSignaux();
+  const { data: actualites, isLoading: actualitesLoading, isError: actualitesError, refetch: refetchActualites } = useIntelligenceFeed(50);
   const { data: lastCollecte } = useLastCollecteTime();
 
   const isConnected = !kpisLoading && kpis !== undefined;
@@ -104,6 +104,8 @@ export default function RadarPage() {
         scoreInfluence={kpis?.scoreInfluence ?? 0}
         periodLabel={periodLabels[period]}
         isLoading={kpisLoading}
+        isError={kpisError}
+        onRetry={() => refetchKpis()}
       />
 
       {/* Daily Briefing */}
@@ -119,6 +121,8 @@ export default function RadarPage() {
       <IntelligenceFeed 
         actualites={actualites || []}
         isLoading={actualitesLoading}
+        isError={actualitesError}
+        onRetry={() => refetchActualites()}
         lastUpdate={lastCollecte}
       />
 
@@ -126,6 +130,8 @@ export default function RadarPage() {
       <CompactRadar 
         signaux={signaux || []}
         isLoading={signauxLoading}
+        isError={signauxError}
+        onRetry={() => refetchSignaux()}
       />
     </div>
   );

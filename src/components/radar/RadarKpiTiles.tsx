@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { EvidencePopover, EvidenceSource } from './EvidencePopover';
+import { SectionEmptyState } from './SectionEmptyState';
 
 interface RadarKpiTilesProps {
   mentions: number;
@@ -11,6 +12,8 @@ interface RadarKpiTilesProps {
   scoreInfluence: number;
   periodLabel: string;
   isLoading?: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
 }
 
 interface KpiCardProps {
@@ -65,7 +68,30 @@ export function RadarKpiTiles({
   scoreInfluence,
   periodLabel,
   isLoading = false,
+  isError = false,
+  onRetry,
 }: RadarKpiTilesProps) {
+  if (isError) {
+    return (
+      <SectionEmptyState
+        variant="error"
+        title="Indicateurs indisponibles"
+        description="Impossible de charger les KPI du radar. Vérifiez votre connexion ou réessayez."
+        onRetry={onRetry}
+      />
+    );
+  }
+
+  const totalSignals = mentions + articles + alertesActives + scoreInfluence;
+  if (!isLoading && totalSignals === 0) {
+    return (
+      <SectionEmptyState
+        title="Aucun signal sur la période"
+        description={`Aucune donnée enregistrée sur ${periodLabel.toLowerCase()}. Élargissez la période ou lancez une collecte.`}
+      />
+    );
+  }
+
   // Approximate "since" — last 7 days as a reasonable evidence window
   const sinceISO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
