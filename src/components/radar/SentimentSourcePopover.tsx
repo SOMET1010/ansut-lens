@@ -212,6 +212,8 @@ function SentimentContent({
 
   // Recalcul en cours = nouvelle période non encore mise en cache OU premier chargement
   const isRecomputing = isLoading || (isFetching && !data);
+  // Rafraîchissement discret en arrière-plan (données déjà affichées)
+  const isBackgroundRefreshing = isFetching && !!data && !isLoading;
 
   const filteredArticles = (data?.articles.filter((a) =>
     filter === 'all' ? true : classifySentiment(a.sentiment) === filter
