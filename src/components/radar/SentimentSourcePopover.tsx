@@ -763,13 +763,32 @@ function SentimentContent({
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
                       {isTop && (
-                        <Badge
-                          className="text-[9px] px-1.5 py-0 h-4 bg-primary text-primary-foreground border border-primary hover:bg-primary/90 gap-0.5 font-semibold"
-                          title={`Classé n°${topRank} par poids sur la liste filtrée`}
-                        >
-                          <Sparkles className="h-2.5 w-2.5" />
-                          Top {topRank}
-                        </Badge>
+                        <Tooltip delayDuration={150}>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              className="text-[9px] px-1.5 py-0 h-4 bg-primary text-primary-foreground border border-primary hover:bg-primary/90 gap-0.5 font-semibold cursor-help"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Sparkles className="h-2.5 w-2.5" />
+                              Top {topRank}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[260px] text-[11px] leading-snug">
+                            <p className="font-semibold mb-1">Top {topRank} contribution</p>
+                            <p className="text-muted-foreground">
+                              Contribution = <span className="font-mono">sentiment × importance</span>
+                            </p>
+                            <p className="font-mono mt-1">
+                              {article.sentiment.toFixed(2)} × {article.importance} ={' '}
+                              <span className="font-semibold">
+                                {(article.sentiment * article.importance).toFixed(2)}
+                              </span>
+                            </p>
+                            <p className="text-muted-foreground mt-1">
+                              Classement par poids (importance) parmi la liste filtrée.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
                       )}
                       <s.Icon className={`h-3 w-3 ${s.color}`} />
                       <Badge variant="outline" className={`text-[10px] ${s.color}`}>
