@@ -202,15 +202,39 @@ function SentimentContent({
     <div className="space-y-2">
       <div className="border-b px-3 py-2 space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="h-3.5 w-3.5 text-primary" />
-            <p className="text-sm font-semibold">{title}</p>
+          <div className="flex items-center gap-2 min-w-0">
+            <MessageSquare className="h-3.5 w-3.5 text-primary shrink-0" />
+            <p className="text-sm font-semibold truncate">
+              {title}
+              <Badge
+                variant="secondary"
+                className="ml-1.5 text-[10px] font-mono bg-primary/10 text-primary border border-primary/20"
+                title={`Période active : ${PERIOD_LABELS[period]}`}
+              >
+                {period}
+              </Badge>
+            </p>
           </div>
           <Tabs value={period} onValueChange={(v) => onPeriodChange(v as PeriodKey)}>
             <TabsList className="h-7">
-              <TabsTrigger value="24h" className="text-[10px] px-2 py-0.5 h-6">24h</TabsTrigger>
-              <TabsTrigger value="7j" className="text-[10px] px-2 py-0.5 h-6">7j</TabsTrigger>
-              <TabsTrigger value="30j" className="text-[10px] px-2 py-0.5 h-6">30j</TabsTrigger>
+              <TabsTrigger
+                value="24h"
+                className="text-[10px] px-2 py-0.5 h-6 data-[state=active]:font-bold data-[state=active]:underline data-[state=active]:underline-offset-4 data-[state=active]:decoration-2 data-[state=active]:decoration-primary"
+              >
+                24h
+              </TabsTrigger>
+              <TabsTrigger
+                value="7j"
+                className="text-[10px] px-2 py-0.5 h-6 data-[state=active]:font-bold data-[state=active]:underline data-[state=active]:underline-offset-4 data-[state=active]:decoration-2 data-[state=active]:decoration-primary"
+              >
+                7j
+              </TabsTrigger>
+              <TabsTrigger
+                value="30j"
+                className="text-[10px] px-2 py-0.5 h-6 data-[state=active]:font-bold data-[state=active]:underline data-[state=active]:underline-offset-4 data-[state=active]:decoration-2 data-[state=active]:decoration-primary"
+              >
+                30j
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
