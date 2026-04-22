@@ -130,6 +130,8 @@ export function SentimentSourcePopover({
   const [period, setPeriod] = useState<PeriodKey>(defaultPeriod);
   const [filter, setFilter] = useState<SentimentFilter>('all');
   const [sort, setSort] = useState<SortKey>('weight_desc');
+  const [sourceType, setSourceType] = useState<string>('all');
+  const [minImportance, setMinImportance] = useState<number>(0);
   const sinceISO = new Date(Date.now() - PERIOD_HOURS[period] * 3600 * 1000).toISOString();
 
   return (
@@ -148,6 +150,10 @@ export function SentimentSourcePopover({
           onFilterChange={setFilter}
           sort={sort}
           onSortChange={setSort}
+          sourceType={sourceType}
+          onSourceTypeChange={setSourceType}
+          minImportance={minImportance}
+          onMinImportanceChange={setMinImportance}
         />
       </PopoverContent>
     </Popover>
