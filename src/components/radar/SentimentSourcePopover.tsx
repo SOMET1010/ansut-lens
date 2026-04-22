@@ -571,6 +571,25 @@ function SentimentContent({
               ))}
             </SelectContent>
           </Select>
+          <Button
+            type="button"
+            variant={onlyTop ? 'default' : 'outline'}
+            size="sm"
+            disabled={topIds.size === 0}
+            onClick={() => setOnlyTop((v) => !v)}
+            className="h-7 px-2 text-[10px] shrink-0 gap-1"
+            title={
+              topIds.size === 0
+                ? 'Aucune contribution majeure à afficher'
+                : onlyTop
+                  ? 'Afficher tous les articles'
+                  : `Afficher uniquement le${topIds.size > 1 ? 's' : ''} ${topIds.size} contributeur${topIds.size > 1 ? 's' : ''} majeur${topIds.size > 1 ? 's' : ''}`
+            }
+            aria-pressed={onlyTop}
+          >
+            <Sparkles className="h-3 w-3" />
+            Top {topIds.size > 0 && `(${topIds.size})`}
+          </Button>
         </div>
       </div>
 
