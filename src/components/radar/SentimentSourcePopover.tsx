@@ -408,6 +408,16 @@ function SentimentContent({
     negative: articlesAfterSearch.filter((a) => classifySentiment(a.sentiment) === 'negative').length,
   };
 
+  // Top 3 contributions par poids (importance) — lifté pour partager avec l'en-tête
+  const rankedTop = filteredArticles
+    .filter((a) => a.hasWeight)
+    .slice()
+    .sort((a, b) => b.importance - a.importance);
+  const topCount = Math.min(3, rankedTop.length);
+  const topRankById = new Map<string, number>();
+  for (let i = 0; i < topCount; i++) topRankById.set(rankedTop[i].id, i + 1);
+  // Seuil = poids minimum requis pour entrer dans le Top
+  const topThresholdWeight = topCount > 0 ? rankedTop[topCount - 1].importance : null;
   // Recalcul de la moyenne pondérée restreinte au filtre de sentiment courant
   // (sur l'univers déjà restreint par la recherche)
   const scopedArticles = articlesAfterSearch.filter((a) =>
