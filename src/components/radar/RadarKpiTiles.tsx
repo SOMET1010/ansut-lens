@@ -66,40 +66,87 @@ export function RadarKpiTiles({
   periodLabel,
   isLoading = false,
 }: RadarKpiTilesProps) {
+  // Approximate "since" — last 7 days as a reasonable evidence window
+  const sinceISO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const tiles: Array<{
+    icon: React.ReactNode;
+    value: number;
+    label: string;
+    subtext: string;
+    colorClass: string;
+    evidence: { title: string; description: string; source: EvidenceSource };
+  }> = [
+    {
+      icon: <MessageSquare className="h-5 w-5 text-primary" />,
+      value: mentions,
+      label: 'Mentions',
+      subtext: periodLabel,
+      colorClass: 'bg-primary/10',
+      evidence: {
+        title: 'Mentions détectées',
+        description: 'Dernières mentions enregistrées',
+        source: { kind: 'mentions', limit: 5 },
+      },
+    },
+    {
+      icon: <Newspaper className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />,
+      value: articles,
+      label: 'Articles collectés',
+      subtext: periodLabel,
+      colorClass: 'bg-emerald-500/10',
+      evidence: {
+        title: 'Articles collectés',
+        description: 'Articles à plus fort impact (7 derniers jours)',
+        source: { kind: 'actualites', sinceISO, limit: 5 },
+      },
+    },
+    {
+      icon: <ShieldAlert className="h-5 w-5 text-destructive" />,
+      value: alertesActives,
+      label: 'Alertes actives',
+      subtext: alertesActives > 0 ? 'Non traitées' : 'Aucune alerte',
+      colorClass: 'bg-destructive/10',
+      evidence: {
+        title: 'Alertes actives',
+        description: 'Alertes déclenchées récemment',
+        source: { kind: 'alertes', sinceISO, limit: 5 },
+      },
+    },
+    {
+      icon: <TrendingUp className="h-5 w-5 text-amber-600 dark:text-amber-400" />,
+      value: scoreInfluence,
+      label: "Score d'influence",
+      subtext: 'Moyenne des mentions',
+      colorClass: 'bg-amber-500/10',
+      evidence: {
+        title: "Score d'influence",
+        description: 'Mentions ayant le plus contribué au score',
+        source: { kind: 'mentions', limit: 5 },
+      },
+    },
+  ];
+
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <KpiCard
-        icon={<MessageSquare className="h-5 w-5 text-primary" />}
-        value={mentions}
-        label="Mentions"
-        subtext={periodLabel}
-        colorClass="bg-primary/10"
-        isLoading={isLoading}
-      />
-      <KpiCard
-        icon={<Newspaper className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
-        value={articles}
-        label="Articles collectés"
-        subtext={periodLabel}
-        colorClass="bg-emerald-500/10"
-        isLoading={isLoading}
-      />
-      <KpiCard
-        icon={<ShieldAlert className="h-5 w-5 text-destructive" />}
-        value={alertesActives}
-        label="Alertes actives"
-        subtext={alertesActives > 0 ? 'Non traitées' : 'Aucune alerte'}
-        colorClass="bg-destructive/10"
-        isLoading={isLoading}
-      />
-      <KpiCard
-        icon={<TrendingUp className="h-5 w-5 text-amber-600 dark:text-amber-400" />}
-        value={scoreInfluence}
-        label="Score d'influence"
-        subtext="Moyenne des mentions"
-        colorClass="bg-amber-500/10"
-        isLoading={isLoading}
-      />
+      {tiles.map((t, i) => (
+        <EvidencePopover
+          key={i}
+          title={t.evidence.title}
+          description={t.evidence.description}
+          source={t.evidence.source}
+          enabled={!isLoading}
+        >
+          <KpiCard
+            icon={t.icon}
+            value={t.value}
+            label={t.label}
+            subtext={t.subtext}
+            colorClass={t.colorClass}
+            isLoading={isLoading}
+          />
+        </EvidencePopover>
+      ))}
     </div>
   );
 }
