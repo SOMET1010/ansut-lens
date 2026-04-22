@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown, Sparkles, Filter, RotateCcw } from 'lucide-react';
+import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown, Sparkles, Filter, RotateCcw, ChevronDown, ChevronRight } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -59,6 +59,7 @@ interface SentimentArticle {
   importance: number;
   hasWeight: boolean;
   date: string | null;
+  excerpt: string | null;
 }
 
 function sentimentLabel(value: number): { label: string; color: string; Icon: typeof TrendingUp } {
@@ -78,7 +79,7 @@ async function fetchSentimentSources(sinceISO?: string, limit = 10): Promise<{
 }> {
   let q = supabase
     .from('actualites')
-    .select('id, titre, source_nom, source_url, source_type, sentiment, importance, date_publication, created_at')
+    .select('id, titre, source_nom, source_url, source_type, sentiment, importance, date_publication, created_at, resume, contenu')
     .not('sentiment', 'is', null)
     .order('importance', { ascending: false, nullsFirst: false })
     .limit(limit);
@@ -91,6 +92,7 @@ async function fetchSentimentSources(sinceISO?: string, limit = 10): Promise<{
   const articles: SentimentArticle[] = items.map((a) => {
     const rawImp = a.importance;
     const hasWeight = rawImp != null && Number(rawImp) > 0;
+    const rawExcerpt = (a.resume ?? a.contenu ?? '').toString().trim();
     return {
       id: a.id,
       titre: a.titre,
@@ -101,6 +103,7 @@ async function fetchSentimentSources(sinceISO?: string, limit = 10): Promise<{
       importance: hasWeight ? Number(rawImp) : 0,
       hasWeight,
       date: a.date_publication ?? a.created_at,
+      excerpt: rawExcerpt.length > 0 ? rawExcerpt : null,
     };
   });
 
@@ -189,6 +192,16 @@ function SentimentContent({
   minImportance: number;
   onMinImportanceChange: (v: number) => void;
 }) {
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['sentiment-sources', sinceISO, limit],
     queryFn: () => fetchSentimentSources(sinceISO, limit),
@@ -520,6 +533,8 @@ function SentimentContent({
               const sentimentPct = Math.round(((article.sentiment + 1) / 2) * 100);
               const hasSource = Boolean(article.source_url) && Boolean(article.source_nom);
               const isTop = topIds.has(article.id);
+              const isExpanded = expandedIds.has(article.id);
+              const hasExtra = Boolean(article.excerpt) || Boolean(article.source_url);
               return (
                 <div
                   key={article.id}
@@ -564,6 +579,7 @@ function SentimentContent({
                       rel="noopener noreferrer"
                       className="text-primary hover:text-primary/80 shrink-0"
                       onClick={(e) => e.stopPropagation()}
+                      title="Ouvrir la source dans un nouvel onglet"
                     >
                       <ExternalLink className="h-3 w-3" />
                     </a>
@@ -578,9 +594,49 @@ function SentimentContent({
                   )}
                 </div>
 
-                <p className="text-xs font-medium line-clamp-2 leading-snug">{article.titre}</p>
+                <button
+                  type="button"
+                  onClick={() => hasExtra && toggleExpanded(article.id)}
+                  className={`w-full text-left flex items-start gap-1 ${hasExtra ? 'cursor-pointer hover:text-primary' : 'cursor-default'} transition-colors`}
+                  aria-expanded={isExpanded}
+                  aria-label={isExpanded ? 'Réduire le contributeur' : 'Étendre le contributeur'}
+                  disabled={!hasExtra}
+                >
+                  {hasExtra && (
+                    isExpanded
+                      ? <ChevronDown className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
+                      : <ChevronRight className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
+                  )}
+                  <p className={`text-xs font-medium leading-snug ${isExpanded ? '' : 'line-clamp-2'}`}>
+                    {article.titre}
+                  </p>
+                </button>
 
                 <Progress value={sentimentPct} className="h-1" />
+
+                {isExpanded && hasExtra && (
+                  <div className="space-y-1.5 pt-1 border-t border-dashed">
+                    {article.excerpt ? (
+                      <p className="text-[11px] text-muted-foreground leading-snug line-clamp-6 italic">
+                        « {article.excerpt} »
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground italic">Aucun extrait disponible.</p>
+                    )}
+                    {article.source_url && (
+                      <a
+                        href={article.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline break-all"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+                        <span className="truncate max-w-[360px]">{article.source_url}</span>
+                      </a>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                   <span className="truncate">
