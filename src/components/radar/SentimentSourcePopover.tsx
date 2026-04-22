@@ -221,6 +221,33 @@ function SentimentContent({
     negative: data?.articles.filter((a) => classifySentiment(a.sentiment) === 'negative').length ?? 0,
   };
 
+  // Recalcul de la moyenne pondérée restreinte au filtre de sentiment courant
+  const scopedArticles = (data?.articles ?? []).filter((a) =>
+    filter === 'all' ? true : classifySentiment(a.sentiment) === filter
+  );
+  const scopedWeighted = scopedArticles.filter((a) => a.hasWeight);
+  const scopedSumWeight = scopedWeighted.reduce((s, a) => s + a.importance, 0);
+  const scopedSumWeightedSentiment = scopedWeighted.reduce((s, a) => s + a.sentiment * a.importance, 0);
+  const scopedAvg = scopedSumWeight > 0
+    ? Math.round((scopedSumWeightedSentiment / scopedSumWeight) * 100) / 100
+    : 0;
+  const scopedUnweighted = scopedArticles.length - scopedWeighted.length;
+  const isScoped = filter !== 'all';
+
+  // Valeurs affichées (scopées si un filtre est actif, sinon globales)
+  const dispWeightedCount = isScoped ? scopedWeighted.length : (data?.totalWeighted ?? 0);
+  const dispAvg = isScoped ? scopedAvg : (data?.avgSentiment ?? 0);
+  const dispSumWeight = isScoped ? scopedSumWeight : (data?.sumWeight ?? 0);
+  const dispSumWeightedSentiment = isScoped ? scopedSumWeightedSentiment : (data?.sumWeightedSentiment ?? 0);
+  const dispUnweighted = isScoped ? scopedUnweighted : (data?.totalUnweighted ?? 0);
+
+  const FILTER_LABEL: Record<SentimentFilter, string> = {
+    all: 'tous',
+    positive: 'positifs',
+    neutral: 'neutres',
+    negative: 'négatifs',
+  };
+
   return (
     <div className="space-y-2">
       <div className="border-b px-3 py-2 space-y-2">
@@ -275,21 +302,34 @@ function SentimentContent({
         ) : data && (
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">
-              Calculé sur <span className="font-semibold text-foreground">{data.totalWeighted}</span> article{data.totalWeighted > 1 ? 's' : ''} pondéré{data.totalWeighted > 1 ? 's' : ''}
-              {' · '}Moyenne : <span className="font-semibold text-foreground">{data.avgSentiment.toFixed(2)}</span>
+              Calculé sur <span className="font-semibold text-foreground">{dispWeightedCount}</span> article{dispWeightedCount > 1 ? 's' : ''} pondéré{dispWeightedCount > 1 ? 's' : ''}
+              {isScoped && (
+                <> (filtre <span className="font-semibold text-foreground">{FILTER_LABEL[filter]}</span>)</>
+              )}
+              {' · '}Moyenne : <span className="font-semibold text-foreground">{dispAvg.toFixed(2)}</span>
+              {isScoped && (
+                <Badge
+                  variant="outline"
+                  className="ml-1.5 text-[9px] px-1 py-0 h-4 border-primary/40 text-primary"
+                  title={`Moyenne pondérée recalculée sur les articles ${FILTER_LABEL[filter]} uniquement`}
+                >
+                  filtré : {FILTER_LABEL[filter]}
+                </Badge>
+              )}
             </p>
             <p className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded inline-block">
               Σ(sentiment × importance) ÷ Σ(importance)
+              {isScoped && <span className="ml-1 text-primary">· articles {FILTER_LABEL[filter]} uniquement</span>}
             </p>
             <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
-              <span className="bg-muted/50 px-1.5 py-0.5 rounded" title="Somme des poids (importance) des articles inclus">
-                Σ(importance) = <span className="font-semibold text-foreground">{data.sumWeight.toFixed(0)}</span>
+              <span className="bg-muted/50 px-1.5 py-0.5 rounded" title={isScoped ? `Σ poids — articles ${FILTER_LABEL[filter]} uniquement` : 'Somme des poids (importance) des articles inclus'}>
+                Σ(importance) = <span className="font-semibold text-foreground">{dispSumWeight.toFixed(0)}</span>
               </span>
-              <span className="bg-muted/50 px-1.5 py-0.5 rounded" title="Somme des contributions (sentiment × importance)">
-                Σ(sentiment × importance) = <span className="font-semibold text-foreground">{data.sumWeightedSentiment.toFixed(2)}</span>
+              <span className="bg-muted/50 px-1.5 py-0.5 rounded" title={isScoped ? `Σ contributions — articles ${FILTER_LABEL[filter]} uniquement` : 'Somme des contributions (sentiment × importance)'}>
+                Σ(sentiment × importance) = <span className="font-semibold text-foreground">{dispSumWeightedSentiment.toFixed(2)}</span>
               </span>
               <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded" title="Vérification : Σ pondérée ÷ Σ poids">
-                = {data.avgSentiment.toFixed(2)}
+                = {dispAvg.toFixed(2)}
               </span>
             </div>
             <details className="text-[10px] text-muted-foreground">
@@ -304,6 +344,9 @@ function SentimentContent({
                   <span className="font-semibold text-foreground">Sentiment :</span> score IA borné entre <span className="font-mono">−1</span> (très négatif) et <span className="font-mono">+1</span> (très positif). Le seuil de classification est ±0,2 (zone neutre entre les deux).
                 </p>
                 <p>
+                  <span className="font-semibold text-foreground">Filtre actif :</span> sélectionner un onglet (Positif/Neutre/Négatif) restreint la moyenne pondérée aux seuls articles de cette catégorie.
+                </p>
+                <p>
                   <span className="font-semibold text-foreground">Signe du sentiment pondéré :</span>
                 </p>
                 <ul className="list-disc list-inside space-y-0.5 pl-1">
@@ -313,12 +356,17 @@ function SentimentContent({
                 </ul>
               </div>
             </details>
-            {data.totalUnweighted > 0 && (
+            {dispUnweighted > 0 && (
               <p className="text-[10px] text-amber-600 dark:text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded px-1.5 py-1 flex items-start gap-1">
                 <span className="font-semibold">⚠</span>
                 <span>
-                  {data.totalUnweighted} article{data.totalUnweighted > 1 ? 's' : ''} sans importance défini{data.totalUnweighted > 1 ? 's' : 'e'} — exclu{data.totalUnweighted > 1 ? 's' : ''} du calcul pondéré.
+                  {dispUnweighted} article{dispUnweighted > 1 ? 's' : ''} sans importance défini{dispUnweighted > 1 ? 's' : 'e'}{isScoped ? ` (parmi les ${FILTER_LABEL[filter]})` : ''} — exclu{dispUnweighted > 1 ? 's' : ''} du calcul pondéré.
                 </span>
+              </p>
+            )}
+            {isScoped && scopedWeighted.length === 0 && (
+              <p className="text-[10px] text-amber-600 dark:text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded px-1.5 py-1">
+                Aucun article {FILTER_LABEL[filter]} pondéré sur cette période — la moyenne ne peut pas être calculée.
               </p>
             )}
           </div>
