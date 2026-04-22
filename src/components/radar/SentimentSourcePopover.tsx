@@ -223,6 +223,23 @@ function SentimentContent({
             </TabsTrigger>
           </TabsList>
         </Tabs>
+
+        {/* Sélecteur de tri */}
+        <div className="flex items-center gap-2">
+          <ArrowUpDown className="h-3 w-3 text-muted-foreground shrink-0" />
+          <Select value={sort} onValueChange={(v) => onSortChange(v as SortKey)}>
+            <SelectTrigger className="h-7 text-[10px] flex-1">
+              <SelectValue placeholder="Trier par…" />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
+                <SelectItem key={k} value={k} className="text-xs">
+                  {SORT_LABELS[k]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="px-3 pb-3 space-y-2 max-h-80 overflow-y-auto">
