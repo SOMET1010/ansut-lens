@@ -13,17 +13,13 @@ import {
 } from '@/hooks/useRadarData';
 import {
   DailyBriefing,
-  CriticalAlertBanner,
   IntelligenceFeed,
   CompactRadar,
   SocialPulseWidget,
   RadarKpiTiles,
-  RealtimeAlertFeed,
   WeakSignalDetector,
   MediaImpactWidget,
   ShareOfVoiceWidget,
-  EchoResonanceWidget,
-  InfluenceursMetierWidget,
   RadarProximiteWidget,
 } from '@/components/radar';
 
