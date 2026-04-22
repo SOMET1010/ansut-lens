@@ -57,9 +57,9 @@ async function fetchSentimentSources(sinceISO?: string, limit = 10): Promise<{
     date: a.date_publication ?? a.created_at,
   }));
 
-  const avg = articles.length > 0
-    ? articles.reduce((s, a) => s + a.sentiment, 0) / articles.length
-    : 0;
+  const totalWeight = articles.reduce((s, a) => s + a.importance, 0);
+  const weightedSum = articles.reduce((s, a) => s + a.sentiment * a.importance, 0);
+  const avg = totalWeight > 0 ? weightedSum / totalWeight : 0;
 
   return { articles, avgSentiment: Math.round(avg * 100) / 100, totalAnalyzed: articles.length };
 }
@@ -97,10 +97,15 @@ function SentimentContent({ sinceISO, limit, title }: { sinceISO?: string; limit
           <p className="text-sm font-semibold">{title}</p>
         </div>
         {data && (
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Calculé sur {data.totalAnalyzed} article{data.totalAnalyzed > 1 ? 's' : ''} analysé{data.totalAnalyzed > 1 ? 's' : ''}
-            {' · '}Moyenne pondérée : <span className="font-medium">{data.avgSentiment.toFixed(2)}</span>
-          </p>
+          <div className="mt-1 space-y-0.5">
+            <p className="text-xs text-muted-foreground">
+              Calculé sur {data.totalAnalyzed} article{data.totalAnalyzed > 1 ? 's' : ''} analysé{data.totalAnalyzed > 1 ? 's' : ''}
+              {' · '}Moyenne pondérée : <span className="font-semibold text-foreground">{data.avgSentiment.toFixed(2)}</span>
+            </p>
+            <p className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded inline-block">
+              Σ(sentiment × importance) ÷ Σ(importance)
+            </p>
+          </div>
         )}
       </div>
 
@@ -124,10 +129,13 @@ function SentimentContent({ sinceISO, limit, title }: { sinceISO?: string; limit
             return (
               <div key={article.id} className="rounded-md border bg-muted/30 p-2 space-y-1.5">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
                     <s.Icon className={`h-3 w-3 ${s.color}`} />
                     <Badge variant="outline" className={`text-[10px] ${s.color}`}>
                       {s.label} {article.sentiment > 0 ? '+' : ''}{article.sentiment.toFixed(2)}
+                    </Badge>
+                    <Badge variant="secondary" className="text-[10px] font-mono" title="Poids dans la moyenne pondérée">
+                      Poids {article.importance}
                     </Badge>
                   </div>
                   {article.source_url && (
@@ -150,7 +158,7 @@ function SentimentContent({ sinceISO, limit, title }: { sinceISO?: string; limit
                 <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                   <span className="truncate">
                     {article.source_nom ?? 'Source inconnue'}
-                    {' · '}Importance {article.importance}
+                    {' · '}Contribution : <span className="font-mono">{(article.sentiment * article.importance).toFixed(1)}</span>
                   </span>
                   {article.date && (
                     <span className="shrink-0 ml-2">
