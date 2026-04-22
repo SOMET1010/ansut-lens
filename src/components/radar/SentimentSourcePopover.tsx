@@ -546,6 +546,37 @@ function SentimentContent({
           </div>
         )}
 
+        {/* Recherche par mot-clé (titre + source) — appliquée AVANT sentiment & tri */}
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+          <Input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher par titre ou source…"
+            className="h-7 pl-7 pr-7 text-[11px]"
+            aria-label="Filtrer les articles par mot-clé"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+              aria-label="Effacer la recherche"
+              title="Effacer la recherche"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+        {normalizedSearch && (
+          <p className="text-[10px] text-muted-foreground -mt-1">
+            {articlesAfterSearch.length} résultat{articlesAfterSearch.length > 1 ? 's' : ''} pour
+            <span className="font-mono mx-1 text-foreground">"{search.trim()}"</span>
+            avant filtre sentiment.
+          </p>
+        )}
+
         {/* Filtre par sentiment */}
         <Tabs value={filter} onValueChange={(v) => onFilterChange(v as SentimentFilter)}>
           <TabsList className="h-7 w-full grid grid-cols-4">
