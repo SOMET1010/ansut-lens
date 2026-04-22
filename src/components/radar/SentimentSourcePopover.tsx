@@ -59,6 +59,7 @@ interface SentimentArticle {
   importance: number;
   hasWeight: boolean;
   date: string | null;
+  excerpt: string | null;
 }
 
 function sentimentLabel(value: number): { label: string; color: string; Icon: typeof TrendingUp } {
