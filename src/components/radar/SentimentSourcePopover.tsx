@@ -15,6 +15,9 @@ type PeriodKey = '24h' | '7j' | '30j';
 type SentimentFilter = 'all' | 'positive' | 'neutral' | 'negative';
 type SortKey = 'impact_then_date' | 'weight_desc' | 'weight_asc' | 'sentiment_desc' | 'sentiment_asc' | 'date_desc';
 
+const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
+type PageSize = typeof PAGE_SIZE_OPTIONS[number];
+
 const SORT_LABELS: Record<SortKey, string> = {
   impact_then_date: 'Impact (poids ↓) puis date ↓',
   weight_desc: 'Poids ↓ (contributions majeures)',
@@ -143,13 +146,18 @@ export function SentimentSourcePopover({
   limit = 10,
   title = 'Détail du sentiment moyen',
 }: SentimentSourcePopoverProps) {
+  // Taille de page initiale = la plus proche dans les options autorisées
+  const initialPageSize: PageSize = (PAGE_SIZE_OPTIONS as readonly number[]).includes(limit)
+    ? (limit as PageSize)
+    : 10;
+  const [pageSize, setPageSize] = useState<PageSize>(initialPageSize);
   const [period, setPeriod] = useState<PeriodKey>(defaultPeriod);
   const [filter, setFilter] = useState<SentimentFilter>('all');
   const [sort, setSort] = useState<SortKey>('impact_then_date');
-  const [displayedLimit, setDisplayedLimit] = useState<number>(limit);
+  const [displayedLimit, setDisplayedLimit] = useState<number>(initialPageSize);
   // Versions debouncées qui pilotent réellement la requête réseau
   const [debouncedPeriod, setDebouncedPeriod] = useState<PeriodKey>(defaultPeriod);
-  const [debouncedLimit, setDebouncedLimit] = useState<number>(limit);
+  const [debouncedLimit, setDebouncedLimit] = useState<number>(initialPageSize);
   const [isFilterPending, setIsFilterPending] = useState(false);
   const [isPeriodPending, setIsPeriodPending] = useState(false);
   const filterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -181,10 +189,23 @@ export function SentimentSourcePopover({
   const handlePeriodChange = (p: PeriodKey) => {
     if (p === period) return;
     setPeriod(p);
-    setDisplayedLimit(limit);
+    setDisplayedLimit(pageSize);
     setIsPeriodPending(true);
     if (periodTimer.current) clearTimeout(periodTimer.current);
     periodTimer.current = setTimeout(() => setIsPeriodPending(false), 350);
+  };
+
+  // Changement de taille de page : invalide les anciennes entrées de cache devenues
+  // sous-dimensionnées et reset la pagination locale sur la nouvelle taille.
+  const handlePageSizeChange = (newSize: PageSize) => {
+    if (newSize === pageSize) return;
+    setPageSize(newSize);
+    setDisplayedLimit(newSize);
+    setIsPeriodPending(true);
+    if (periodTimer.current) clearTimeout(periodTimer.current);
+    periodTimer.current = setTimeout(() => setIsPeriodPending(false), 250);
+    // Invalide explicitement le cache des autres tailles pour la même fenêtre
+    queryClient.invalidateQueries({ queryKey: ['sentiment-sources', sinceISO], exact: false });
   };
 
   // Skeleton bref lors du changement de filtre sentiment (purement client-side)
@@ -229,7 +250,7 @@ export function SentimentSourcePopover({
         <SentimentContent
           sinceISO={sinceISO}
           limit={displayedLimit}
-          baseLimit={limit}
+          baseLimit={pageSize}
           title={title}
           period={period}
           onPeriodChange={handlePeriodChange}
@@ -240,6 +261,8 @@ export function SentimentSourcePopover({
           onLoadMore={() => setDisplayedLimit((n) => n + 10)}
           isFilterPending={isFilterPending}
           isPeriodPending={isPeriodPending}
+          pageSize={pageSize}
+          onPageSizeChange={handlePageSizeChange}
         />
       </PopoverContent>
     </Popover>
@@ -260,6 +283,8 @@ function SentimentContent({
   onLoadMore,
   isFilterPending,
   isPeriodPending,
+  pageSize,
+  onPageSizeChange,
 }: {
   sinceISO: string;
   limit: number;
@@ -274,6 +299,8 @@ function SentimentContent({
   onLoadMore: () => void;
   isFilterPending: boolean;
   isPeriodPending: boolean;
+  pageSize: PageSize;
+  onPageSizeChange: (n: PageSize) => void;
 }) {
   const [selectedArticle, setSelectedArticle] = useState<SentimentArticle | null>(null);
   const { data, isLoading, isFetching } = useQuery({
@@ -497,7 +524,7 @@ function SentimentContent({
           </TabsList>
         </Tabs>
 
-        {/* Sélecteur de tri */}
+        {/* Sélecteur de tri + taille de page */}
         <div className="flex items-center gap-2">
           <ArrowUpDown className="h-3 w-3 text-muted-foreground shrink-0" />
           <Select value={sort} onValueChange={(v) => onSortChange(v as SortKey)}>
@@ -508,6 +535,24 @@ function SentimentContent({
               {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
                 <SelectItem key={k} value={k} className="text-xs">
                   {SORT_LABELS[k]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={String(pageSize)}
+            onValueChange={(v) => onPageSizeChange(Number(v) as PageSize)}
+          >
+            <SelectTrigger
+              className="h-7 text-[10px] w-[88px] shrink-0"
+              title="Nombre d'articles affichés par défaut"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map((n) => (
+                <SelectItem key={n} value={String(n)} className="text-xs">
+                  {n} / page
                 </SelectItem>
               ))}
             </SelectContent>
