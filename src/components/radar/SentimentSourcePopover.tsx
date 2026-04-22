@@ -404,6 +404,86 @@ function SentimentContent({
             </SelectContent>
           </Select>
         </div>
+
+        {/* Filtres avancés : type de source + seuil d'importance */}
+        <div className="space-y-1.5 pt-1 border-t border-dashed">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <Filter className="h-3 w-3" />
+              <span className="font-semibold">Filtres avancés</span>
+              {isFiltered && (
+                <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-primary/40 text-primary">
+                  actif
+                </Badge>
+              )}
+            </div>
+            {isFiltered && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-[10px] px-2 gap-1"
+                onClick={() => {
+                  onFilterChange('all');
+                  onSourceTypeChange('all');
+                  onMinImportanceChange(0);
+                }}
+                title="Réinitialiser tous les filtres"
+              >
+                <RotateCcw className="h-3 w-3" />
+                Réinitialiser
+              </Button>
+            )}
+          </div>
+
+          {/* Type de source */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground shrink-0 w-16">Source</span>
+            <Select value={sourceType} onValueChange={onSourceTypeChange}>
+              <SelectTrigger className="h-7 text-[10px] flex-1">
+                <SelectValue placeholder="Type de source…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">
+                  Tous les types ({data?.articles.length ?? 0})
+                </SelectItem>
+                {availableSourceTypes.map((t) => {
+                  const n = (data?.articles ?? []).filter((a) => a.source_type === t).length;
+                  return (
+                    <SelectItem key={t} value={t} className="text-xs">
+                      {t} ({n})
+                    </SelectItem>
+                  );
+                })}
+                {availableSourceTypes.length === 0 && (
+                  <SelectItem value="__none" disabled className="text-xs">
+                    Aucun type renseigné
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Seuil d'importance */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground shrink-0 w-16">
+              Poids ≥ <span className="font-mono font-semibold text-foreground">{minImportance}</span>
+            </span>
+            <Slider
+              value={[minImportance]}
+              onValueChange={(v) => onMinImportanceChange(v[0])}
+              min={0}
+              max={100}
+              step={5}
+              className="flex-1"
+              aria-label="Seuil minimal d'importance"
+            />
+          </div>
+          {isFiltered && (
+            <p className="text-[10px] text-muted-foreground italic">
+              {subset.length} article{subset.length > 1 ? 's' : ''} dans le sous-ensemble · moyenne recalculée en direct.
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="px-3 pb-3 space-y-2 max-h-80 overflow-y-auto">
