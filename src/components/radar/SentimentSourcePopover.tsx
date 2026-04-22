@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown } from 'lucide-react';
+import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown, Sparkles } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -258,24 +258,45 @@ function SentimentContent({
             Aucun article {filter === 'positive' ? 'positif' : filter === 'negative' ? 'négatif' : 'neutre'} sur cette période.
           </p>
         ) : (
-          filteredArticles.map((article) => {
-            const s = sentimentLabel(article.sentiment);
-            // Score normalisé sur barre 0-100 (sentiment va de -1 à +1)
-            const sentimentPct = Math.round(((article.sentiment + 1) / 2) * 100);
+          (() => {
+            // Top 1-2 contributions par valeur absolue (sentiment × importance)
+            const ranked = filteredArticles
+              .map((a) => ({ id: a.id, contrib: Math.abs(a.sentiment * a.importance) }))
+              .filter((x) => x.contrib > 0)
+              .sort((a, b) => b.contrib - a.contrib);
+            const topThreshold = ranked.length >= 5 ? 2 : ranked.length >= 2 ? 1 : ranked.length;
+            const topIds = new Set(ranked.slice(0, topThreshold).map((x) => x.id));
 
-            const hasSource = Boolean(article.source_url) && Boolean(article.source_nom);
-            return (
-              <div key={article.id} className="rounded-md border bg-muted/30 p-2 space-y-1.5">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-                    <s.Icon className={`h-3 w-3 ${s.color}`} />
-                    <Badge variant="outline" className={`text-[10px] ${s.color}`}>
-                      {s.label} {article.sentiment > 0 ? '+' : ''}{article.sentiment.toFixed(2)}
-                    </Badge>
-                    <Badge variant="secondary" className="text-[10px] font-mono" title="Poids dans la moyenne pondérée">
-                      Poids {article.importance}
-                    </Badge>
-                  </div>
+            return filteredArticles.map((article) => {
+              const s = sentimentLabel(article.sentiment);
+              const sentimentPct = Math.round(((article.sentiment + 1) / 2) * 100);
+              const hasSource = Boolean(article.source_url) && Boolean(article.source_nom);
+              const isTop = topIds.has(article.id);
+              return (
+                <div
+                  key={article.id}
+                  className={`rounded-md border p-2 space-y-1.5 transition-colors ${
+                    isTop
+                      ? 'bg-primary/5 border-primary/40 ring-1 ring-primary/20'
+                      : 'bg-muted/30'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                      {isTop && (
+                        <Badge className="text-[9px] px-1.5 py-0 h-4 bg-primary/15 text-primary border border-primary/30 hover:bg-primary/20 gap-0.5">
+                          <Sparkles className="h-2.5 w-2.5" />
+                          Top contribution
+                        </Badge>
+                      )}
+                      <s.Icon className={`h-3 w-3 ${s.color}`} />
+                      <Badge variant="outline" className={`text-[10px] ${s.color}`}>
+                        {s.label} {article.sentiment > 0 ? '+' : ''}{article.sentiment.toFixed(2)}
+                      </Badge>
+                      <Badge variant="secondary" className="text-[10px] font-mono" title="Poids dans la moyenne pondérée">
+                        Poids {article.importance}
+                      </Badge>
+                    </div>
                   {hasSource ? (
                     <a
                       href={article.source_url!}
@@ -317,8 +338,9 @@ function SentimentContent({
                   )}
                 </div>
               </div>
-            );
-          })
+              );
+            });
+          })()
         )}
 
         {data && data.articles.length > 0 && (
