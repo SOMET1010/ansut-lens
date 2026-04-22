@@ -193,10 +193,12 @@ export function SentimentSourcePopover({
           period={period}
           onPeriodChange={handlePeriodChange}
           filter={filter}
-          onFilterChange={setFilter}
+          onFilterChange={handleFilterChange}
           sort={sort}
           onSortChange={setSort}
           onLoadMore={() => setDisplayedLimit((n) => n + 10)}
+          isFilterPending={isFilterPending}
+          isPeriodPending={isPeriodPending}
         />
       </PopoverContent>
     </Popover>
