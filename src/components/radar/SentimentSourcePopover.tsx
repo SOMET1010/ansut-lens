@@ -48,6 +48,7 @@ interface SentimentArticle {
   source_url: string | null;
   sentiment: number;
   importance: number;
+  hasWeight: boolean;
   date: string | null;
 }
 
@@ -61,12 +62,14 @@ async function fetchSentimentSources(sinceISO?: string, limit = 10): Promise<{
   articles: SentimentArticle[];
   avgSentiment: number;
   totalAnalyzed: number;
+  totalWeighted: number;
+  totalUnweighted: number;
 }> {
   let q = supabase
     .from('actualites')
     .select('id, titre, source_nom, source_url, sentiment, importance, date_publication, created_at')
     .not('sentiment', 'is', null)
-    .order('importance', { ascending: false })
+    .order('importance', { ascending: false, nullsFirst: false })
     .limit(limit);
 
   if (sinceISO) q = q.gte('created_at', sinceISO);
@@ -74,21 +77,34 @@ async function fetchSentimentSources(sinceISO?: string, limit = 10): Promise<{
   const { data } = await q;
   const items = data ?? [];
 
-  const articles: SentimentArticle[] = items.map((a) => ({
-    id: a.id,
-    titre: a.titre,
-    source_nom: a.source_nom,
-    source_url: a.source_url,
-    sentiment: Number(a.sentiment ?? 0),
-    importance: a.importance ?? 50,
-    date: a.date_publication ?? a.created_at,
-  }));
+  const articles: SentimentArticle[] = items.map((a) => {
+    const rawImp = a.importance;
+    const hasWeight = rawImp != null && Number(rawImp) > 0;
+    return {
+      id: a.id,
+      titre: a.titre,
+      source_nom: a.source_nom,
+      source_url: a.source_url,
+      sentiment: Number(a.sentiment ?? 0),
+      importance: hasWeight ? Number(rawImp) : 0,
+      hasWeight,
+      date: a.date_publication ?? a.created_at,
+    };
+  });
 
-  const totalWeight = articles.reduce((s, a) => s + a.importance, 0);
-  const weightedSum = articles.reduce((s, a) => s + a.sentiment * a.importance, 0);
+  // Calcul pondéré uniquement sur les articles avec importance valide
+  const weighted = articles.filter((a) => a.hasWeight);
+  const totalWeight = weighted.reduce((s, a) => s + a.importance, 0);
+  const weightedSum = weighted.reduce((s, a) => s + a.sentiment * a.importance, 0);
   const avg = totalWeight > 0 ? weightedSum / totalWeight : 0;
 
-  return { articles, avgSentiment: Math.round(avg * 100) / 100, totalAnalyzed: articles.length };
+  return {
+    articles,
+    avgSentiment: Math.round(avg * 100) / 100,
+    totalAnalyzed: articles.length,
+    totalWeighted: weighted.length,
+    totalUnweighted: articles.length - weighted.length,
+  };
 }
 
 export function SentimentSourcePopover({
@@ -194,12 +210,20 @@ function SentimentContent({
         {data && (
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">
-              Calculé sur {data.totalAnalyzed} article{data.totalAnalyzed > 1 ? 's' : ''} analysé{data.totalAnalyzed > 1 ? 's' : ''}
-              {' · '}Moyenne pondérée : <span className="font-semibold text-foreground">{data.avgSentiment.toFixed(2)}</span>
+              Calculé sur <span className="font-semibold text-foreground">{data.totalWeighted}</span> article{data.totalWeighted > 1 ? 's' : ''} pondéré{data.totalWeighted > 1 ? 's' : ''}
+              {' · '}Moyenne : <span className="font-semibold text-foreground">{data.avgSentiment.toFixed(2)}</span>
             </p>
             <p className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded inline-block">
               Σ(sentiment × importance) ÷ Σ(importance)
             </p>
+            {data.totalUnweighted > 0 && (
+              <p className="text-[10px] text-amber-600 dark:text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded px-1.5 py-1 flex items-start gap-1">
+                <span className="font-semibold">⚠</span>
+                <span>
+                  {data.totalUnweighted} article{data.totalUnweighted > 1 ? 's' : ''} sans importance défini{data.totalUnweighted > 1 ? 's' : 'e'} — exclu{data.totalUnweighted > 1 ? 's' : ''} du calcul pondéré.
+                </span>
+              </p>
+            )}
           </div>
         )}
 
@@ -261,6 +285,7 @@ function SentimentContent({
           (() => {
             // Top 1-2 contributions par valeur absolue (sentiment × importance)
             const ranked = filteredArticles
+              .filter((a) => a.hasWeight)
               .map((a) => ({ id: a.id, contrib: Math.abs(a.sentiment * a.importance) }))
               .filter((x) => x.contrib > 0)
               .sort((a, b) => b.contrib - a.contrib);
@@ -278,7 +303,9 @@ function SentimentContent({
                   className={`rounded-md border p-2 space-y-1.5 transition-colors ${
                     isTop
                       ? 'bg-primary/5 border-primary/40 ring-1 ring-primary/20'
-                      : 'bg-muted/30'
+                      : article.hasWeight
+                        ? 'bg-muted/30'
+                        : 'bg-muted/20 opacity-75'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -293,9 +320,19 @@ function SentimentContent({
                       <Badge variant="outline" className={`text-[10px] ${s.color}`}>
                         {s.label} {article.sentiment > 0 ? '+' : ''}{article.sentiment.toFixed(2)}
                       </Badge>
-                      <Badge variant="secondary" className="text-[10px] font-mono" title="Poids dans la moyenne pondérée">
-                        Poids {article.importance}
-                      </Badge>
+                      {article.hasWeight ? (
+                        <Badge variant="secondary" className="text-[10px] font-mono" title="Poids dans la moyenne pondérée">
+                          Poids {article.importance}
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] font-mono border-dashed text-amber-600 dark:text-amber-500 border-amber-500/40"
+                          title="Importance manquante — exclu du calcul pondéré"
+                        >
+                          Poids — (exclu)
+                        </Badge>
+                      )}
                     </div>
                   {hasSource ? (
                     <a
@@ -329,7 +366,7 @@ function SentimentContent({
                     ) : (
                       <span className="italic text-muted-foreground/70">Source inconnue</span>
                     )}
-                    {' · '}Contribution : <span className="font-mono">{(article.sentiment * article.importance).toFixed(1)}</span>
+                    {' · '}Contribution : <span className="font-mono">{article.hasWeight ? (article.sentiment * article.importance).toFixed(1) : 'n/a'}</span>
                   </span>
                   {article.date && (
                     <span className="shrink-0 ml-2">
