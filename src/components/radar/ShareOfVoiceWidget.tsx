@@ -97,6 +97,9 @@ export default function ShareOfVoiceWidget() {
   const earnedPct = total > 0 ? Math.round((data.articlesPresse / total) * 100) : 0;
   const socialPct = total > 0 ? Math.round((data.mentionsSocial / total) * 100) : 0;
 
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
   const gapLevel = data.ratio < 0.3 ? 'critical' : data.ratio < 0.7 ? 'warning' : 'good';
   const gapColor = gapLevel === 'critical' ? 'text-destructive' : gapLevel === 'warning' ? 'text-amber-500' : 'text-emerald-500';
   const gapBg = gapLevel === 'critical' ? 'bg-destructive/10' : gapLevel === 'warning' ? 'bg-amber-500/10' : 'bg-emerald-500/10';
@@ -106,38 +109,61 @@ export default function ShareOfVoiceWidget() {
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <Megaphone className="h-4 w-4 text-primary" />
-          Part de Voix — Ce mois
+          Visibilité Globale — Ce mois
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Visual bar comparison */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-primary" />
-              <span className="text-sm font-medium">Owned (ANSUT)</span>
+          <EvidencePopover
+            title="Owned — Publications ANSUT"
+            description="Publications institutionnelles diffusées ce mois"
+            source={{ kind: 'publications', sinceISO: startOfMonth, limit: 5 }}
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-primary" />
+                  <span className="text-sm font-medium">Owned (ANSUT)</span>
+                </div>
+                <span className="text-sm font-bold">{data.pubAnsut}</span>
+              </div>
+              <Progress value={ownedPct} className="h-2 mt-2" />
             </div>
-            <span className="text-sm font-bold">{data.pubAnsut}</span>
-          </div>
-          <Progress value={ownedPct} className="h-2" />
+          </EvidencePopover>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-emerald-500" />
-              <span className="text-sm font-medium">Earned (Presse)</span>
+          <EvidencePopover
+            title="Earned — Articles presse mentionnant ANSUT"
+            description="Couverture média obtenue ce mois"
+            source={{ kind: 'actualites', sinceISO: startOfMonth, filter: 'ansut', limit: 5 }}
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                  <span className="text-sm font-medium">Écho Médiatique (Presse)</span>
+                </div>
+                <span className="text-sm font-bold">{data.articlesPresse}</span>
+              </div>
+              <Progress value={earnedPct} className="h-2 mt-2 [&>div]:bg-emerald-500" />
             </div>
-            <span className="text-sm font-bold">{data.articlesPresse}</span>
-          </div>
-          <Progress value={earnedPct} className="h-2 [&>div]:bg-emerald-500" />
+          </EvidencePopover>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-blue-500" />
-              <span className="text-sm font-medium">Social (Mentions)</span>
+          <EvidencePopover
+            title="Social — Mentions sur les réseaux"
+            description="Posts et conversations détectés ce mois"
+            source={{ kind: 'social', sinceISO: startOfMonth, limit: 5 }}
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-500" />
+                  <span className="text-sm font-medium">Social (Mentions)</span>
+                </div>
+                <span className="text-sm font-bold">{data.mentionsSocial}</span>
+              </div>
+              <Progress value={socialPct} className="h-2 mt-2 [&>div]:bg-blue-500" />
             </div>
-            <span className="text-sm font-bold">{data.mentionsSocial}</span>
-          </div>
-          <Progress value={socialPct} className="h-2 [&>div]:bg-blue-500" />
+          </EvidencePopover>
         </div>
 
         {/* Gap indicator */}
