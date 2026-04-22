@@ -221,6 +221,33 @@ function SentimentContent({
     negative: data?.articles.filter((a) => classifySentiment(a.sentiment) === 'negative').length ?? 0,
   };
 
+  // Recalcul de la moyenne pondérée restreinte au filtre de sentiment courant
+  const scopedArticles = (data?.articles ?? []).filter((a) =>
+    filter === 'all' ? true : classifySentiment(a.sentiment) === filter
+  );
+  const scopedWeighted = scopedArticles.filter((a) => a.hasWeight);
+  const scopedSumWeight = scopedWeighted.reduce((s, a) => s + a.importance, 0);
+  const scopedSumWeightedSentiment = scopedWeighted.reduce((s, a) => s + a.sentiment * a.importance, 0);
+  const scopedAvg = scopedSumWeight > 0
+    ? Math.round((scopedSumWeightedSentiment / scopedSumWeight) * 100) / 100
+    : 0;
+  const scopedUnweighted = scopedArticles.length - scopedWeighted.length;
+  const isScoped = filter !== 'all';
+
+  // Valeurs affichées (scopées si un filtre est actif, sinon globales)
+  const dispWeightedCount = isScoped ? scopedWeighted.length : (data?.totalWeighted ?? 0);
+  const dispAvg = isScoped ? scopedAvg : (data?.avgSentiment ?? 0);
+  const dispSumWeight = isScoped ? scopedSumWeight : (data?.sumWeight ?? 0);
+  const dispSumWeightedSentiment = isScoped ? scopedSumWeightedSentiment : (data?.sumWeightedSentiment ?? 0);
+  const dispUnweighted = isScoped ? scopedUnweighted : (data?.totalUnweighted ?? 0);
+
+  const FILTER_LABEL: Record<SentimentFilter, string> = {
+    all: 'tous',
+    positive: 'positifs',
+    neutral: 'neutres',
+    negative: 'négatifs',
+  };
+
   return (
     <div className="space-y-2">
       <div className="border-b px-3 py-2 space-y-2">
