@@ -129,12 +129,35 @@ export function SentimentSourcePopover({
   const [filter, setFilter] = useState<SentimentFilter>('all');
   const [sort, setSort] = useState<SortKey>('impact_then_date');
   const [displayedLimit, setDisplayedLimit] = useState<number>(limit);
+  // Versions debouncées qui pilotent réellement la requête réseau
+  const [debouncedPeriod, setDebouncedPeriod] = useState<PeriodKey>(defaultPeriod);
+  const [debouncedLimit, setDebouncedLimit] = useState<number>(limit);
   const [isFilterPending, setIsFilterPending] = useState(false);
   const [isPeriodPending, setIsPeriodPending] = useState(false);
   const filterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const periodTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sinceISO = new Date(Date.now() - PERIOD_HOURS[period] * 3600 * 1000).toISOString();
+  const periodDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const limitDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sinceISO = new Date(Date.now() - PERIOD_HOURS[debouncedPeriod] * 3600 * 1000).toISOString();
   const queryClient = useQueryClient();
+
+  // Debounce période : 250 ms après le dernier clic avant de lancer la requête
+  useEffect(() => {
+    if (periodDebounceTimer.current) clearTimeout(periodDebounceTimer.current);
+    periodDebounceTimer.current = setTimeout(() => setDebouncedPeriod(period), 250);
+    return () => {
+      if (periodDebounceTimer.current) clearTimeout(periodDebounceTimer.current);
+    };
+  }, [period]);
+
+  // Debounce limit (Voir plus) : 200 ms pour absorber les double-clics
+  useEffect(() => {
+    if (limitDebounceTimer.current) clearTimeout(limitDebounceTimer.current);
+    limitDebounceTimer.current = setTimeout(() => setDebouncedLimit(displayedLimit), 200);
+    return () => {
+      if (limitDebounceTimer.current) clearTimeout(limitDebounceTimer.current);
+    };
+  }, [displayedLimit]);
 
   // Reset pagination quand la période change + skeleton bref dédié
   const handlePeriodChange = (p: PeriodKey) => {
@@ -164,10 +187,10 @@ export function SentimentSourcePopover({
 
   // Précharge les données du popover dès que l'utilisateur survole / focus le trigger
   const prefetch = () => {
-    const prefetchSinceISO = new Date(Date.now() - PERIOD_HOURS[period] * 3600 * 1000).toISOString();
+    const prefetchSinceISO = new Date(Date.now() - PERIOD_HOURS[debouncedPeriod] * 3600 * 1000).toISOString();
     queryClient.prefetchQuery({
-      queryKey: ['sentiment-sources', prefetchSinceISO, displayedLimit],
-      queryFn: () => fetchSentimentSources(prefetchSinceISO, displayedLimit),
+      queryKey: ['sentiment-sources', prefetchSinceISO, debouncedLimit],
+      queryFn: () => fetchSentimentSources(prefetchSinceISO, debouncedLimit),
       staleTime: 60_000,
     });
   };
