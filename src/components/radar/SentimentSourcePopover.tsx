@@ -165,11 +165,14 @@ function SentimentContent({
   sort: SortKey;
   onSortChange: (s: SortKey) => void;
 }) {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching } = useQuery({
     queryKey: ['sentiment-sources', sinceISO, limit],
     queryFn: () => fetchSentimentSources(sinceISO, limit),
     staleTime: 60_000,
   });
+
+  // Recalcul en cours = nouvelle période non encore mise en cache OU premier chargement
+  const isRecomputing = isLoading || (isFetching && !data);
 
   const filteredArticles = (data?.articles.filter((a) =>
     filter === 'all' ? true : classifySentiment(a.sentiment) === filter
@@ -211,7 +214,18 @@ function SentimentContent({
             </TabsList>
           </Tabs>
         </div>
-        {data && (
+        {isRecomputing ? (
+          <div className="space-y-1.5" aria-busy="true" aria-label={`Recalcul du sentiment pour ${period}`}>
+            <Skeleton className="h-3 w-2/3" />
+            <Skeleton className="h-4 w-full" />
+            <div className="flex gap-1.5">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-12" />
+            </div>
+            <p className="text-[10px] text-muted-foreground italic">Recalcul en cours pour la période {period}…</p>
+          </div>
+        ) : data && (
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">
               Calculé sur <span className="font-semibold text-foreground">{data.totalWeighted}</span> article{data.totalWeighted > 1 ? 's' : ''} pondéré{data.totalWeighted > 1 ? 's' : ''}
@@ -303,12 +317,15 @@ function SentimentContent({
       </div>
 
       <div className="px-3 pb-3 space-y-2 max-h-80 overflow-y-auto">
-        {isLoading ? (
-          <>
+        {isRecomputing ? (
+          <div aria-busy="true" aria-label={`Chargement des contributeurs (${period})`} className="space-y-2">
+            <p className="text-[10px] text-muted-foreground italic text-center">
+              Chargement des contributeurs sur la période <span className="font-semibold">{period}</span>…
+            </p>
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
-          </>
+          </div>
         ) : !data || data.articles.length === 0 ? (
           <p className="text-xs text-muted-foreground text-center py-4">
             Aucun article avec sentiment analysé sur cette période.
