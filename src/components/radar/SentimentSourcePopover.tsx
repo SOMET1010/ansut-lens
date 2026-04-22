@@ -97,10 +97,15 @@ function SentimentContent({ sinceISO, limit, title }: { sinceISO?: string; limit
           <p className="text-sm font-semibold">{title}</p>
         </div>
         {data && (
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Calculé sur {data.totalAnalyzed} article{data.totalAnalyzed > 1 ? 's' : ''} analysé{data.totalAnalyzed > 1 ? 's' : ''}
-            {' · '}Moyenne pondérée : <span className="font-medium">{data.avgSentiment.toFixed(2)}</span>
-          </p>
+          <div className="mt-1 space-y-0.5">
+            <p className="text-xs text-muted-foreground">
+              Calculé sur {data.totalAnalyzed} article{data.totalAnalyzed > 1 ? 's' : ''} analysé{data.totalAnalyzed > 1 ? 's' : ''}
+              {' · '}Moyenne pondérée : <span className="font-semibold text-foreground">{data.avgSentiment.toFixed(2)}</span>
+            </p>
+            <p className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded inline-block">
+              Σ(sentiment × importance) ÷ Σ(importance)
+            </p>
+          </div>
         )}
       </div>
 
