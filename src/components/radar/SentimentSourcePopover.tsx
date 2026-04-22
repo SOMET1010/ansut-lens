@@ -207,8 +207,12 @@ function SentimentContent({
           <p className="text-xs text-muted-foreground text-center py-4">
             Aucun article avec sentiment analysé sur cette période.
           </p>
+        ) : filteredArticles.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-4">
+            Aucun article {filter === 'positive' ? 'positif' : filter === 'negative' ? 'négatif' : 'neutre'} sur cette période.
+          </p>
         ) : (
-          data.articles.map((article) => {
+          filteredArticles.map((article) => {
             const s = sentimentLabel(article.sentiment);
             // Score normalisé sur barre 0-100 (sentiment va de -1 à +1)
             const sentimentPct = Math.round(((article.sentiment + 1) / 2) * 100);
