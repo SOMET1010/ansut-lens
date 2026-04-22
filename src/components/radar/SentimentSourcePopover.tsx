@@ -576,24 +576,17 @@ function SentimentContent({
                         </Badge>
                       )}
                     </div>
-                  {hasSource ? (
+                  {hasSource && (
                     <a
                       href={article.source_url!}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary hover:text-primary/80 shrink-0"
                       onClick={(e) => e.stopPropagation()}
+                      title="Ouvrir la source"
                     >
                       <ExternalLink className="h-3 w-3" />
                     </a>
-                  ) : (
-                    <Badge
-                      variant="outline"
-                      className="text-[9px] px-1 py-0 h-4 border-dashed text-muted-foreground shrink-0"
-                      title="Aucun lien source disponible pour cet article"
-                    >
-                      Source indisponible
-                    </Badge>
                   )}
                 </div>
 
