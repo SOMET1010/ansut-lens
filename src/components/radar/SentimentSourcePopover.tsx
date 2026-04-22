@@ -165,11 +165,14 @@ function SentimentContent({
   sort: SortKey;
   onSortChange: (s: SortKey) => void;
 }) {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching } = useQuery({
     queryKey: ['sentiment-sources', sinceISO, limit],
     queryFn: () => fetchSentimentSources(sinceISO, limit),
     staleTime: 60_000,
   });
+
+  // Recalcul en cours = nouvelle période non encore mise en cache OU premier chargement
+  const isRecomputing = isLoading || (isFetching && !data);
 
   const filteredArticles = (data?.articles.filter((a) =>
     filter === 'all' ? true : classifySentiment(a.sentiment) === filter
