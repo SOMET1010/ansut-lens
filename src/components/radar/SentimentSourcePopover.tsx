@@ -595,13 +595,19 @@ function SentimentContent({
                 <Progress value={sentimentPct} className="h-1" />
 
                 <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                  <span className="truncate">
+                  <span className="truncate flex items-center gap-1">
                     {article.source_nom ? (
                       article.source_nom
                     ) : (
-                      <span className="italic text-muted-foreground/70">Source inconnue</span>
+                      <Badge
+                        variant="outline"
+                        className="text-[9px] px-1 py-0 h-4 border-dashed text-muted-foreground italic"
+                        title="Aucun nom de source associé à cet article"
+                      >
+                        Source non renseignée
+                      </Badge>
                     )}
-                    {' · '}Contribution : <span className="font-mono">{article.hasWeight ? (article.sentiment * article.importance).toFixed(1) : 'n/a'}</span>
+                    <span>{' · '}Contribution : <span className="font-mono">{article.hasWeight ? (article.sentiment * article.importance).toFixed(1) : 'n/a'}</span></span>
                   </span>
                   {article.date && (
                     <span className="shrink-0 ml-2">
