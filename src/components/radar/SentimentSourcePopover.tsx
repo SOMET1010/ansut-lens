@@ -129,14 +129,38 @@ export function SentimentSourcePopover({
   const [filter, setFilter] = useState<SentimentFilter>('all');
   const [sort, setSort] = useState<SortKey>('impact_then_date');
   const [displayedLimit, setDisplayedLimit] = useState<number>(limit);
+  const [isFilterPending, setIsFilterPending] = useState(false);
+  const [isPeriodPending, setIsPeriodPending] = useState(false);
+  const filterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const periodTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sinceISO = new Date(Date.now() - PERIOD_HOURS[period] * 3600 * 1000).toISOString();
   const queryClient = useQueryClient();
 
-  // Reset pagination quand la période change
+  // Reset pagination quand la période change + skeleton bref dédié
   const handlePeriodChange = (p: PeriodKey) => {
+    if (p === period) return;
     setPeriod(p);
     setDisplayedLimit(limit);
+    setIsPeriodPending(true);
+    if (periodTimer.current) clearTimeout(periodTimer.current);
+    periodTimer.current = setTimeout(() => setIsPeriodPending(false), 350);
   };
+
+  // Skeleton bref lors du changement de filtre sentiment (purement client-side)
+  const handleFilterChange = (f: SentimentFilter) => {
+    if (f === filter) return;
+    setFilter(f);
+    setIsFilterPending(true);
+    if (filterTimer.current) clearTimeout(filterTimer.current);
+    filterTimer.current = setTimeout(() => setIsFilterPending(false), 200);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (filterTimer.current) clearTimeout(filterTimer.current);
+      if (periodTimer.current) clearTimeout(periodTimer.current);
+    };
+  }, []);
 
   // Précharge les données du popover dès que l'utilisateur survole / focus le trigger
   const prefetch = () => {
