@@ -250,7 +250,7 @@ export function SentimentSourcePopover({
         <SentimentContent
           sinceISO={sinceISO}
           limit={displayedLimit}
-          baseLimit={limit}
+          baseLimit={pageSize}
           title={title}
           period={period}
           onPeriodChange={handlePeriodChange}
@@ -261,6 +261,8 @@ export function SentimentSourcePopover({
           onLoadMore={() => setDisplayedLimit((n) => n + 10)}
           isFilterPending={isFilterPending}
           isPeriodPending={isPeriodPending}
+          pageSize={pageSize}
+          onPageSizeChange={handlePageSizeChange}
         />
       </PopoverContent>
     </Popover>
@@ -281,6 +283,8 @@ function SentimentContent({
   onLoadMore,
   isFilterPending,
   isPeriodPending,
+  pageSize,
+  onPageSizeChange,
 }: {
   sinceISO: string;
   limit: number;
@@ -295,6 +299,8 @@ function SentimentContent({
   onLoadMore: () => void;
   isFilterPending: boolean;
   isPeriodPending: boolean;
+  pageSize: PageSize;
+  onPageSizeChange: (n: PageSize) => void;
 }) {
   const [selectedArticle, setSelectedArticle] = useState<SentimentArticle | null>(null);
   const { data, isLoading, isFetching } = useQuery({
