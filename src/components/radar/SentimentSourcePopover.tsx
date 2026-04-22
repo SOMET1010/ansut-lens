@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown, Sparkles, Loader2, Eye, Search, X } from 'lucide-react';
+import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown, Sparkles, Loader2, Eye, Search, X, Download } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -44,6 +44,31 @@ function classifySentiment(value: number): Exclude<SentimentFilter, 'all'> {
   if (value > 0.2) return 'positive';
   if (value < -0.2) return 'negative';
   return 'neutral';
+}
+
+/** Échappe une cellule CSV (RFC 4180) : guillemets doublés + entourage si besoin */
+function csvCell(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  const str = String(value);
+  if (/[",\n;]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+/** Déclenche le téléchargement d'un fichier CSV côté navigateur */
+function downloadCSV(filename: string, rows: string[][]) {
+  // BOM UTF-8 pour qu'Excel ouvre le CSV avec les bons accents
+  const csv = '\uFEFF' + rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 interface SentimentSourcePopoverProps {
@@ -598,7 +623,7 @@ function SentimentContent({
           </TabsList>
         </Tabs>
 
-        {/* Sélecteur de tri + taille de page */}
+        {/* Sélecteur de tri + taille de page + export CSV */}
         <div className="flex items-center gap-2">
           <ArrowUpDown className="h-3 w-3 text-muted-foreground shrink-0" />
           <Select value={sort} onValueChange={(v) => onSortChange(v as SortKey)}>
@@ -631,6 +656,38 @@ function SentimentContent({
               ))}
             </SelectContent>
           </Select>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-[10px] shrink-0 gap-1"
+            disabled={filteredArticles.length === 0}
+            onClick={() => {
+              const header = ['Titre', 'Source', 'URL', 'Date', 'Sentiment', 'Poids (importance)', 'Contribution (sentiment × poids)'];
+              const rows = filteredArticles.map((a) => [
+                a.titre,
+                a.source_nom ?? '',
+                a.source_url ?? '',
+                a.date ? new Date(a.date).toISOString() : '',
+                a.sentiment.toFixed(2),
+                a.hasWeight ? String(a.importance) : '',
+                a.hasWeight ? (a.sentiment * a.importance).toFixed(2) : '',
+              ]);
+              const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+              const filterTag = filter !== 'all' ? `_${filter}` : '';
+              const searchTag = normalizedSearch ? '_recherche' : '';
+              downloadCSV(`sentiment_${period}${filterTag}${searchTag}_${stamp}.csv`, [header, ...rows]);
+            }}
+            title={
+              filteredArticles.length === 0
+                ? 'Aucun article à exporter'
+                : `Exporter ${filteredArticles.length} article${filteredArticles.length > 1 ? 's' : ''} (CSV)`
+            }
+            aria-label="Exporter la liste affichée en CSV"
+          >
+            <Download className="h-3 w-3" />
+            CSV
+          </Button>
         </div>
       </div>
 
