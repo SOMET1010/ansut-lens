@@ -48,6 +48,7 @@ interface SentimentArticle {
   source_url: string | null;
   sentiment: number;
   importance: number;
+  hasWeight: boolean;
   date: string | null;
 }
 
