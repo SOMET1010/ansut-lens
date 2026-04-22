@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown, Sparkles } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 type PeriodKey = '24h' | '7j' | '30j';
@@ -130,6 +130,7 @@ export function SentimentSourcePopover({
   const [sort, setSort] = useState<SortKey>('impact_then_date');
   const [displayedLimit, setDisplayedLimit] = useState<number>(limit);
   const sinceISO = new Date(Date.now() - PERIOD_HOURS[period] * 3600 * 1000).toISOString();
+  const queryClient = useQueryClient();
 
   // Reset pagination quand la période change
   const handlePeriodChange = (p: PeriodKey) => {
@@ -137,10 +138,27 @@ export function SentimentSourcePopover({
     setDisplayedLimit(limit);
   };
 
+  // Précharge les données du popover dès que l'utilisateur survole / focus le trigger
+  const prefetch = () => {
+    const prefetchSinceISO = new Date(Date.now() - PERIOD_HOURS[period] * 3600 * 1000).toISOString();
+    queryClient.prefetchQuery({
+      queryKey: ['sentiment-sources', prefetchSinceISO, displayedLimit],
+      queryFn: () => fetchSentimentSources(prefetchSinceISO, displayedLimit),
+      staleTime: 60_000,
+    });
+  };
+
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <div className="cursor-pointer">{children}</div>
+        <div
+          className="cursor-pointer"
+          onMouseEnter={prefetch}
+          onFocus={prefetch}
+          onTouchStart={prefetch}
+        >
+          {children}
+        </div>
       </PopoverTrigger>
       <PopoverContent className="w-[440px] p-0" side="top" align="start">
         <SentimentContent
