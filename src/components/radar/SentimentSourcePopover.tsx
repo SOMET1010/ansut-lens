@@ -408,16 +408,33 @@ function SentimentContent({
     negative: articlesAfterSearch.filter((a) => classifySentiment(a.sentiment) === 'negative').length,
   };
 
-  // Top 3 contributions par poids (importance) — lifté pour partager avec l'en-tête
-  const rankedTop = filteredArticles
-    .filter((a) => a.hasWeight)
-    .slice()
-    .sort((a, b) => b.importance - a.importance);
-  const topCount = Math.min(3, rankedTop.length);
+  // Top 3 contributions — toujours synchronisé avec la liste affichée (recherche + filtre sentiment + tri courants).
+  // Le rang Top suit l'ordre visuel : Top 1 = premier article surligné rencontré dans `filteredArticles`.
+  // La sélection privilégie le poids (importance) ; en cas d'égalité, on respecte l'ordre courant du tri.
+  const topEligible = filteredArticles.filter((a) => a.hasWeight);
+  const maxImportanceSet = new Set(
+    topEligible
+      .slice()
+      .sort((a, b) => b.importance - a.importance)
+      .slice(0, 3)
+      .map((a) => a.id)
+  );
+  // Re-parcours dans l'ordre d'affichage pour assigner Top 1/2/3 selon la position visible
   const topRankById = new Map<string, number>();
-  for (let i = 0; i < topCount; i++) topRankById.set(rankedTop[i].id, i + 1);
-  // Seuil = poids minimum requis pour entrer dans le Top
-  const topThresholdWeight = topCount > 0 ? rankedTop[topCount - 1].importance : null;
+  let rank = 0;
+  for (const a of filteredArticles) {
+    if (maxImportanceSet.has(a.id)) {
+      rank += 1;
+      topRankById.set(a.id, rank);
+      if (rank >= 3) break;
+    }
+  }
+  const topCount = topRankById.size;
+  // Seuil = poids minimum requis pour entrer dans le Top (basé sur la sélection par importance)
+  const topThresholdWeight =
+    topCount > 0
+      ? Math.min(...Array.from(topRankById.keys()).map((id) => filteredArticles.find((a) => a.id === id)!.importance))
+      : null;
   // Recalcul de la moyenne pondérée restreinte au filtre de sentiment courant
   // (sur l'univers déjà restreint par la recherche)
   const scopedArticles = articlesAfterSearch.filter((a) =>
