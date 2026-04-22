@@ -285,6 +285,7 @@ function SentimentContent({
           (() => {
             // Top 1-2 contributions par valeur absolue (sentiment × importance)
             const ranked = filteredArticles
+              .filter((a) => a.hasWeight)
               .map((a) => ({ id: a.id, contrib: Math.abs(a.sentiment * a.importance) }))
               .filter((x) => x.contrib > 0)
               .sort((a, b) => b.contrib - a.contrib);
@@ -302,7 +303,9 @@ function SentimentContent({
                   className={`rounded-md border p-2 space-y-1.5 transition-colors ${
                     isTop
                       ? 'bg-primary/5 border-primary/40 ring-1 ring-primary/20'
-                      : 'bg-muted/30'
+                      : article.hasWeight
+                        ? 'bg-muted/30'
+                        : 'bg-muted/20 opacity-75'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -317,9 +320,19 @@ function SentimentContent({
                       <Badge variant="outline" className={`text-[10px] ${s.color}`}>
                         {s.label} {article.sentiment > 0 ? '+' : ''}{article.sentiment.toFixed(2)}
                       </Badge>
-                      <Badge variant="secondary" className="text-[10px] font-mono" title="Poids dans la moyenne pondérée">
-                        Poids {article.importance}
-                      </Badge>
+                      {article.hasWeight ? (
+                        <Badge variant="secondary" className="text-[10px] font-mono" title="Poids dans la moyenne pondérée">
+                          Poids {article.importance}
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] font-mono border-dashed text-amber-600 dark:text-amber-500 border-amber-500/40"
+                          title="Importance manquante — exclu du calcul pondéré"
+                        >
+                          Poids — (exclu)
+                        </Badge>
+                      )}
                     </div>
                   {hasSource ? (
                     <a
