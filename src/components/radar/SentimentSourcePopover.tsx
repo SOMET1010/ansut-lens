@@ -99,6 +99,7 @@ export function SentimentSourcePopover({
 }: SentimentSourcePopoverProps) {
   const [period, setPeriod] = useState<PeriodKey>(defaultPeriod);
   const [filter, setFilter] = useState<SentimentFilter>('all');
+  const [sort, setSort] = useState<SortKey>('weight_desc');
   const sinceISO = new Date(Date.now() - PERIOD_HOURS[period] * 3600 * 1000).toISOString();
 
   return (
@@ -115,6 +116,8 @@ export function SentimentSourcePopover({
           onPeriodChange={setPeriod}
           filter={filter}
           onFilterChange={setFilter}
+          sort={sort}
+          onSortChange={setSort}
         />
       </PopoverContent>
     </Popover>
@@ -129,6 +132,8 @@ function SentimentContent({
   onPeriodChange,
   filter,
   onFilterChange,
+  sort,
+  onSortChange,
 }: {
   sinceISO: string;
   limit: number;
@@ -137,6 +142,8 @@ function SentimentContent({
   onPeriodChange: (p: PeriodKey) => void;
   filter: SentimentFilter;
   onFilterChange: (f: SentimentFilter) => void;
+  sort: SortKey;
+  onSortChange: (s: SortKey) => void;
 }) {
   const { data, isLoading } = useQuery({
     queryKey: ['sentiment-sources', sinceISO, limit],
@@ -144,9 +151,21 @@ function SentimentContent({
     staleTime: 60_000,
   });
 
-  const filteredArticles = data?.articles.filter((a) =>
+  const filteredArticles = (data?.articles.filter((a) =>
     filter === 'all' ? true : classifySentiment(a.sentiment) === filter
-  ) ?? [];
+  ) ?? []).slice().sort((a, b) => {
+    switch (sort) {
+      case 'weight_desc': return b.importance - a.importance;
+      case 'weight_asc': return a.importance - b.importance;
+      case 'sentiment_desc': return b.sentiment - a.sentiment;
+      case 'sentiment_asc': return a.sentiment - b.sentiment;
+      case 'date_desc': {
+        const da = a.date ? new Date(a.date).getTime() : 0;
+        const db = b.date ? new Date(b.date).getTime() : 0;
+        return db - da;
+      }
+    }
+  });
 
   // Counts par catégorie pour les badges
   const counts = {
