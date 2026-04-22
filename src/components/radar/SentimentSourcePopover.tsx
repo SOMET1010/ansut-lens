@@ -81,6 +81,7 @@ export function SentimentSourcePopover({
   title = 'Détail du sentiment moyen',
 }: SentimentSourcePopoverProps) {
   const [period, setPeriod] = useState<PeriodKey>(defaultPeriod);
+  const [filter, setFilter] = useState<SentimentFilter>('all');
   const sinceISO = new Date(Date.now() - PERIOD_HOURS[period] * 3600 * 1000).toISOString();
 
   return (
@@ -95,6 +96,8 @@ export function SentimentSourcePopover({
           title={title}
           period={period}
           onPeriodChange={setPeriod}
+          filter={filter}
+          onFilterChange={setFilter}
         />
       </PopoverContent>
     </Popover>
