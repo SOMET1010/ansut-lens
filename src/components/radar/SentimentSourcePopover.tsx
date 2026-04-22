@@ -298,21 +298,33 @@ function SentimentContent({
         ) : data && (
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">
-              Calculé sur <span className="font-semibold text-foreground">{data.totalWeighted}</span> article{data.totalWeighted > 1 ? 's' : ''} pondéré{data.totalWeighted > 1 ? 's' : ''}
-              {' · '}Moyenne : <span className="font-semibold text-foreground">{data.avgSentiment.toFixed(2)}</span>
+              {isFiltered ? (
+                <>
+                  Sous-ensemble filtré : <span className="font-semibold text-foreground">{subsetWeighted.length}</span> / {data.totalWeighted} article{subsetWeighted.length > 1 ? 's' : ''} pondéré{subsetWeighted.length > 1 ? 's' : ''}
+                  {' · '}Moyenne : <span className="font-semibold text-foreground">{subsetAvg.toFixed(2)}</span>
+                  <Badge variant="outline" className="ml-1.5 text-[9px] px-1 py-0 h-4 border-primary/40 text-primary">
+                    filtré
+                  </Badge>
+                </>
+              ) : (
+                <>
+                  Calculé sur <span className="font-semibold text-foreground">{data.totalWeighted}</span> article{data.totalWeighted > 1 ? 's' : ''} pondéré{data.totalWeighted > 1 ? 's' : ''}
+                  {' · '}Moyenne : <span className="font-semibold text-foreground">{data.avgSentiment.toFixed(2)}</span>
+                </>
+              )}
             </p>
             <p className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded inline-block">
               Σ(sentiment × importance) ÷ Σ(importance)
             </p>
             <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
-              <span className="bg-muted/50 px-1.5 py-0.5 rounded" title="Somme des poids (importance) des articles inclus">
-                Σ(importance) = <span className="font-semibold text-foreground">{data.sumWeight.toFixed(0)}</span>
+              <span className="bg-muted/50 px-1.5 py-0.5 rounded" title="Somme des poids (importance) des articles inclus dans le sous-ensemble courant">
+                Σ(importance) = <span className="font-semibold text-foreground">{(isFiltered ? subsetSumWeight : data.sumWeight).toFixed(0)}</span>
               </span>
-              <span className="bg-muted/50 px-1.5 py-0.5 rounded" title="Somme des contributions (sentiment × importance)">
-                Σ(sentiment × importance) = <span className="font-semibold text-foreground">{data.sumWeightedSentiment.toFixed(2)}</span>
+              <span className="bg-muted/50 px-1.5 py-0.5 rounded" title="Somme des contributions (sentiment × importance) sur le sous-ensemble courant">
+                Σ(sentiment × importance) = <span className="font-semibold text-foreground">{(isFiltered ? subsetSumWeightedSentiment : data.sumWeightedSentiment).toFixed(2)}</span>
               </span>
               <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded" title="Vérification : Σ pondérée ÷ Σ poids">
-                = {data.avgSentiment.toFixed(2)}
+                = {(isFiltered ? subsetAvg : data.avgSentiment).toFixed(2)}
               </span>
             </div>
             <details className="text-[10px] text-muted-foreground">
@@ -327,6 +339,9 @@ function SentimentContent({
                   <span className="font-semibold text-foreground">Sentiment :</span> score IA borné entre <span className="font-mono">−1</span> (très négatif) et <span className="font-mono">+1</span> (très positif). Le seuil de classification est ±0,2 (zone neutre entre les deux).
                 </p>
                 <p>
+                  <span className="font-semibold text-foreground">Filtres :</span> appliquer un type de source ou un seuil d'importance recalcule la moyenne pondérée sur le sous-ensemble visible uniquement.
+                </p>
+                <p>
                   <span className="font-semibold text-foreground">Signe du sentiment pondéré :</span>
                 </p>
                 <ul className="list-disc list-inside space-y-0.5 pl-1">
@@ -336,12 +351,17 @@ function SentimentContent({
                 </ul>
               </div>
             </details>
-            {data.totalUnweighted > 0 && (
+            {(isFiltered ? subsetUnweighted : data.totalUnweighted) > 0 && (
               <p className="text-[10px] text-amber-600 dark:text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded px-1.5 py-1 flex items-start gap-1">
                 <span className="font-semibold">⚠</span>
                 <span>
-                  {data.totalUnweighted} article{data.totalUnweighted > 1 ? 's' : ''} sans importance défini{data.totalUnweighted > 1 ? 's' : 'e'} — exclu{data.totalUnweighted > 1 ? 's' : ''} du calcul pondéré.
+                  {(isFiltered ? subsetUnweighted : data.totalUnweighted)} article{(isFiltered ? subsetUnweighted : data.totalUnweighted) > 1 ? 's' : ''} sans importance défini{(isFiltered ? subsetUnweighted : data.totalUnweighted) > 1 ? 's' : 'e'} — exclu{(isFiltered ? subsetUnweighted : data.totalUnweighted) > 1 ? 's' : ''} du calcul pondéré.
                 </span>
+              </p>
+            )}
+            {isFiltered && subsetWeighted.length === 0 && (
+              <p className="text-[10px] text-amber-600 dark:text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded px-1.5 py-1">
+                Aucun article pondéré ne correspond aux filtres : la moyenne ne peut pas être calculée.
               </p>
             )}
           </div>
