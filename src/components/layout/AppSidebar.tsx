@@ -38,10 +38,10 @@ import logoAnsut from '@/assets/logo-ansut.jpg';
 // Menu avec permissions associées
 const menuItems = [
   { 
-    title: 'Centre de Veille', 
+    title: 'Accueil', 
     url: '/radar', 
     icon: Radar,
-    description: 'Flux d\'intelligence',
+    description: 'Tableau de bord',
     permission: 'view_radar'
   },
   { 
