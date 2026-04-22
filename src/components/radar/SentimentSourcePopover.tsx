@@ -4,12 +4,22 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 type PeriodKey = '24h' | '7j' | '30j';
 type SentimentFilter = 'all' | 'positive' | 'neutral' | 'negative';
+type SortKey = 'weight_desc' | 'weight_asc' | 'sentiment_desc' | 'sentiment_asc' | 'date_desc';
+
+const SORT_LABELS: Record<SortKey, string> = {
+  weight_desc: 'Poids ↓ (contributions majeures)',
+  weight_asc: 'Poids ↑',
+  sentiment_desc: 'Sentiment ↓ (positif d\'abord)',
+  sentiment_asc: 'Sentiment ↑ (négatif d\'abord)',
+  date_desc: 'Date (plus récent)',
+};
 
 const PERIOD_HOURS: Record<PeriodKey, number> = {
   '24h': 24,
@@ -89,6 +99,7 @@ export function SentimentSourcePopover({
 }: SentimentSourcePopoverProps) {
   const [period, setPeriod] = useState<PeriodKey>(defaultPeriod);
   const [filter, setFilter] = useState<SentimentFilter>('all');
+  const [sort, setSort] = useState<SortKey>('weight_desc');
   const sinceISO = new Date(Date.now() - PERIOD_HOURS[period] * 3600 * 1000).toISOString();
 
   return (
@@ -105,6 +116,8 @@ export function SentimentSourcePopover({
           onPeriodChange={setPeriod}
           filter={filter}
           onFilterChange={setFilter}
+          sort={sort}
+          onSortChange={setSort}
         />
       </PopoverContent>
     </Popover>
@@ -119,6 +132,8 @@ function SentimentContent({
   onPeriodChange,
   filter,
   onFilterChange,
+  sort,
+  onSortChange,
 }: {
   sinceISO: string;
   limit: number;
@@ -127,6 +142,8 @@ function SentimentContent({
   onPeriodChange: (p: PeriodKey) => void;
   filter: SentimentFilter;
   onFilterChange: (f: SentimentFilter) => void;
+  sort: SortKey;
+  onSortChange: (s: SortKey) => void;
 }) {
   const { data, isLoading } = useQuery({
     queryKey: ['sentiment-sources', sinceISO, limit],
@@ -134,9 +151,21 @@ function SentimentContent({
     staleTime: 60_000,
   });
 
-  const filteredArticles = data?.articles.filter((a) =>
+  const filteredArticles = (data?.articles.filter((a) =>
     filter === 'all' ? true : classifySentiment(a.sentiment) === filter
-  ) ?? [];
+  ) ?? []).slice().sort((a, b) => {
+    switch (sort) {
+      case 'weight_desc': return b.importance - a.importance;
+      case 'weight_asc': return a.importance - b.importance;
+      case 'sentiment_desc': return b.sentiment - a.sentiment;
+      case 'sentiment_asc': return a.sentiment - b.sentiment;
+      case 'date_desc': {
+        const da = a.date ? new Date(a.date).getTime() : 0;
+        const db = b.date ? new Date(b.date).getTime() : 0;
+        return db - da;
+      }
+    }
+  });
 
   // Counts par catégorie pour les badges
   const counts = {
@@ -194,6 +223,23 @@ function SentimentContent({
             </TabsTrigger>
           </TabsList>
         </Tabs>
+
+        {/* Sélecteur de tri */}
+        <div className="flex items-center gap-2">
+          <ArrowUpDown className="h-3 w-3 text-muted-foreground shrink-0" />
+          <Select value={sort} onValueChange={(v) => onSortChange(v as SortKey)}>
+            <SelectTrigger className="h-7 text-[10px] flex-1">
+              <SelectValue placeholder="Trier par…" />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
+                <SelectItem key={k} value={k} className="text-xs">
+                  {SORT_LABELS[k]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="px-3 pb-3 space-y-2 max-h-80 overflow-y-auto">
