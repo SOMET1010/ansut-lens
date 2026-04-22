@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Users, Sparkles, UserPlus, Plus, List, Target, Swords } from 'lucide-react';
+import { Users, Sparkles, UserPlus, Plus, List, Target, Swords, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePersonnalites, usePersonnalitesStats, useUpdatePersonnalite, useDeletePersonnalite, CERCLE_LABELS, type PersonnalitesFilters } from '@/hooks/usePersonnalites';
@@ -42,7 +42,7 @@ export default function PersonnalitesPage() {
   const [benchmarkPreselected, setBenchmarkPreselected] = useState<Personnalite | null>(null);
   const { isAdmin } = useAuth();
 
-  const { data: personnalites, isLoading } = usePersonnalites(filters);
+  const { data: personnalites, isLoading, isError, refetch } = usePersonnalites(filters);
   const { data: stats } = usePersonnalitesStats();
   const updatePersonnalite = useUpdatePersonnalite();
   const deletePersonnalite = useDeletePersonnalite();
@@ -181,7 +181,9 @@ export default function PersonnalitesPage() {
       {/* Vue Radar */}
       {viewMode === 'radar' && (
         <div className="py-8">
-          {isLoading ? (
+          {isError ? (
+            <ErrorState onRetry={() => refetch()} />
+          ) : isLoading ? (
             <div className="flex items-center justify-center h-96">
               <Skeleton className="w-96 h-96 rounded-full" />
             </div>
@@ -199,7 +201,9 @@ export default function PersonnalitesPage() {
       {/* Vue Liste */}
       {viewMode === 'list' && (
         <div className="space-y-8">
-          {isLoading ? (
+          {isError ? (
+            <ErrorState onRetry={() => refetch()} />
+          ) : isLoading ? (
             <LoadingSkeleton />
           ) : personnalites?.length === 0 ? (
             <EmptyState onAddManually={openCreateDialog} />
