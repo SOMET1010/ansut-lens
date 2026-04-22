@@ -217,6 +217,7 @@ function SentimentContent({
             // Score normalisé sur barre 0-100 (sentiment va de -1 à +1)
             const sentimentPct = Math.round(((article.sentiment + 1) / 2) * 100);
 
+            const hasSource = Boolean(article.source_url) && Boolean(article.source_nom);
             return (
               <div key={article.id} className="rounded-md border bg-muted/30 p-2 space-y-1.5">
                 <div className="flex items-start justify-between gap-2">
@@ -229,9 +230,9 @@ function SentimentContent({
                       Poids {article.importance}
                     </Badge>
                   </div>
-                  {article.source_url && (
+                  {hasSource ? (
                     <a
-                      href={article.source_url}
+                      href={article.source_url!}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary hover:text-primary/80 shrink-0"
@@ -239,6 +240,14 @@ function SentimentContent({
                     >
                       <ExternalLink className="h-3 w-3" />
                     </a>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="text-[9px] px-1 py-0 h-4 border-dashed text-muted-foreground shrink-0"
+                      title="Aucun lien source disponible pour cet article"
+                    >
+                      Source indisponible
+                    </Badge>
                   )}
                 </div>
 
@@ -248,7 +257,11 @@ function SentimentContent({
 
                 <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                   <span className="truncate">
-                    {article.source_nom ?? 'Source inconnue'}
+                    {article.source_nom ? (
+                      article.source_nom
+                    ) : (
+                      <span className="italic text-muted-foreground/70">Source inconnue</span>
+                    )}
                     {' · '}Contribution : <span className="font-mono">{(article.sentiment * article.importance).toFixed(1)}</span>
                   </span>
                   {article.date && (
