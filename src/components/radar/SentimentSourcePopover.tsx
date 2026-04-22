@@ -57,9 +57,9 @@ async function fetchSentimentSources(sinceISO?: string, limit = 10): Promise<{
     date: a.date_publication ?? a.created_at,
   }));
 
-  const avg = articles.length > 0
-    ? articles.reduce((s, a) => s + a.sentiment, 0) / articles.length
-    : 0;
+  const totalWeight = articles.reduce((s, a) => s + a.importance, 0);
+  const weightedSum = articles.reduce((s, a) => s + a.sentiment * a.importance, 0);
+  const avg = totalWeight > 0 ? weightedSum / totalWeight : 0;
 
   return { articles, avgSentiment: Math.round(avg * 100) / 100, totalAnalyzed: articles.length };
 }
