@@ -54,6 +54,7 @@ interface SentimentArticle {
   titre: string;
   source_nom: string | null;
   source_url: string | null;
+  source_type: string | null;
   sentiment: number;
   importance: number;
   hasWeight: boolean;
