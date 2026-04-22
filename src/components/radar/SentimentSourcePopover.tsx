@@ -12,9 +12,10 @@ import { supabase } from '@/integrations/supabase/client';
 
 type PeriodKey = '24h' | '7j' | '30j';
 type SentimentFilter = 'all' | 'positive' | 'neutral' | 'negative';
-type SortKey = 'weight_desc' | 'weight_asc' | 'sentiment_desc' | 'sentiment_asc' | 'date_desc';
+type SortKey = 'impact_then_date' | 'weight_desc' | 'weight_asc' | 'sentiment_desc' | 'sentiment_asc' | 'date_desc';
 
 const SORT_LABELS: Record<SortKey, string> = {
+  impact_then_date: 'Impact (poids ↓) puis date ↓',
   weight_desc: 'Poids ↓ (contributions majeures)',
   weight_asc: 'Poids ↑',
   sentiment_desc: 'Sentiment ↓ (positif d\'abord)',
