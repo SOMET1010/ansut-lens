@@ -815,9 +815,11 @@ function SentimentContent({
                             <Badge
                               className="text-[9px] px-1.5 py-0 h-4 bg-primary text-primary-foreground border border-primary hover:bg-primary/90 gap-0.5 font-semibold cursor-help"
                               onClick={(e) => e.stopPropagation()}
+                              aria-label={`Top ${topRank} contribution sur ${topCount}`}
                             >
-                              <Sparkles className="h-2.5 w-2.5" />
-                              Top {topRank}
+                              <Sparkles className="h-2.5 w-2.5" aria-hidden="true" />
+                              <span aria-hidden="true">Top {topRank}</span>
+                              <span className="sr-only">Top {topRank} contribution</span>
                             </Badge>
                           </TooltipTrigger>
                           <TooltipContent side="top" className="max-w-[260px] text-[11px] leading-snug">
