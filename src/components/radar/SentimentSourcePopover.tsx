@@ -75,6 +75,8 @@ async function fetchSentimentSources(sinceISO?: string, limit = 10): Promise<{
   sumWeight: number;
   sumWeightedSentiment: number;
 }> {
+  // Préchargement explicite : on demande source_nom + source_url dès la requête
+  // pour éviter tout champ manquant au rendu et limiter les requêtes secondaires.
   let q = supabase
     .from('actualites')
     .select('id, titre, source_nom, source_url, sentiment, importance, date_publication, created_at')
@@ -87,14 +89,29 @@ async function fetchSentimentSources(sinceISO?: string, limit = 10): Promise<{
   const { data } = await q;
   const items = data ?? [];
 
+  // Normalisation : si source_nom est vide mais que source_url existe, on dérive
+  // un nom lisible depuis le hostname pour garantir un affichage cohérent.
+  const deriveSourceNom = (url: string | null): string | null => {
+    if (!url) return null;
+    try {
+      return new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+      return null;
+    }
+  };
+
   const articles: SentimentArticle[] = items.map((a) => {
     const rawImp = a.importance;
     const hasWeight = rawImp != null && Number(rawImp) > 0;
+    const sourceUrl = a.source_url ?? null;
+    const sourceNom = (a.source_nom && a.source_nom.trim().length > 0)
+      ? a.source_nom
+      : deriveSourceNom(sourceUrl);
     return {
       id: a.id,
       titre: a.titre,
-      source_nom: a.source_nom,
-      source_url: a.source_url,
+      source_nom: sourceNom,
+      source_url: sourceUrl,
       sentiment: Number(a.sentiment ?? 0),
       importance: hasWeight ? Number(rawImp) : 0,
       hasWeight,
