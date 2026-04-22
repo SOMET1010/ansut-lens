@@ -680,5 +680,121 @@ function SentimentContent({
         )}
       </div>
     </div>
+
+    {/* Vue détaillée d'un article — accessible même sans source_url */}
+    <Dialog open={!!selectedArticle} onOpenChange={(open) => !open && setSelectedArticle(null)}>
+      <DialogContent className="max-w-lg">
+        {selectedArticle && (() => {
+          const s = sentimentLabel(selectedArticle.sentiment);
+          const sentimentPct = Math.round(((selectedArticle.sentiment + 1) / 2) * 100);
+          const hasUrl = Boolean(selectedArticle.source_url);
+          return (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-base leading-snug pr-6">
+                  {selectedArticle.titre}
+                </DialogTitle>
+                <DialogDescription className="flex items-center gap-2 flex-wrap pt-1">
+                  <s.Icon className={`h-3.5 w-3.5 ${s.color}`} />
+                  <Badge variant="outline" className={`text-[10px] ${s.color}`}>
+                    {s.label} {selectedArticle.sentiment > 0 ? '+' : ''}{selectedArticle.sentiment.toFixed(2)}
+                  </Badge>
+                  {selectedArticle.hasWeight ? (
+                    <Badge variant="secondary" className="text-[10px] font-mono">
+                      Poids {selectedArticle.importance}
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] font-mono border-dashed text-amber-600 dark:text-amber-500 border-amber-500/40"
+                    >
+                      Poids — (exclu)
+                    </Badge>
+                  )}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-3 text-sm">
+                <div className="space-y-1">
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Sentiment</p>
+                  <Progress value={sentimentPct} className="h-1.5" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Source</p>
+                    {selectedArticle.source_nom ? (
+                      <p className="text-sm">{selectedArticle.source_nom}</p>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] border-dashed text-muted-foreground italic"
+                      >
+                        Source non renseignée
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Date</p>
+                    <p className="text-sm">
+                      {selectedArticle.date
+                        ? new Date(selectedArticle.date).toLocaleString('fr-FR')
+                        : <span className="italic text-muted-foreground">—</span>}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Lien source</p>
+                  {hasUrl ? (
+                    <a
+                      href={selectedArticle.source_url!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary hover:underline break-all inline-flex items-center gap-1"
+                    >
+                      <ExternalLink className="h-3 w-3 shrink-0" />
+                      {selectedArticle.source_url}
+                    </a>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] border-dashed text-muted-foreground italic"
+                      title="Aucune URL n'est disponible pour cet article"
+                    >
+                      Source indisponible
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="space-y-1 pt-1 border-t">
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Contribution pondérée</p>
+                  <p className="text-sm font-mono">
+                    {selectedArticle.hasWeight
+                      ? (selectedArticle.sentiment * selectedArticle.importance).toFixed(2)
+                      : <span className="italic text-muted-foreground">n/a — importance manquante</span>}
+                  </p>
+                </div>
+              </div>
+
+              <DialogFooter className="gap-2">
+                {hasUrl && (
+                  <Button asChild variant="default" size="sm">
+                    <a href={selectedArticle.source_url!} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                      Ouvrir la source
+                    </a>
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" onClick={() => setSelectedArticle(null)}>
+                  Fermer
+                </Button>
+              </DialogFooter>
+            </>
+          );
+        })()}
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
