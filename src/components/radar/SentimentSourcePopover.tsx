@@ -314,13 +314,14 @@ function SentimentContent({
   // Rafraîchissement discret en arrière-plan (données déjà affichées)
   const isBackgroundRefreshing = isFetching && !!data && !isLoading;
 
-  const filteredArticles = (data?.articles.filter((a) =>
+  const [onlyTop, setOnlyTop] = useState(false);
+
+  const sortedArticles = (data?.articles.filter((a) =>
     filter === 'all' ? true : classifySentiment(a.sentiment) === filter
   ) ?? []).slice().sort((a, b) => {
     const dateOf = (x: typeof a) => (x.date ? new Date(x.date).getTime() : 0);
     switch (sort) {
       case 'impact_then_date': {
-        // Tri composite : poids ↓ d'abord, puis date ↓ en cas d'égalité de poids
         if (b.importance !== a.importance) return b.importance - a.importance;
         return dateOf(b) - dateOf(a);
       }
@@ -331,6 +332,19 @@ function SentimentContent({
       case 'date_desc': return dateOf(b) - dateOf(a);
     }
   });
+
+  // Top contributions par |sentiment × importance| (calculé sur la liste filtrée par sentiment)
+  const ranked = sortedArticles
+    .filter((a) => a.hasWeight)
+    .map((a) => ({ id: a.id, contrib: Math.abs(a.sentiment * a.importance) }))
+    .filter((x) => x.contrib > 0)
+    .sort((a, b) => b.contrib - a.contrib);
+  const topThreshold = ranked.length >= 5 ? 2 : ranked.length >= 2 ? 1 : ranked.length;
+  const topIds = new Set(ranked.slice(0, topThreshold).map((x) => x.id));
+
+  const filteredArticles = onlyTop
+    ? sortedArticles.filter((a) => topIds.has(a.id))
+    : sortedArticles;
 
   // Counts par catégorie pour les badges
   const counts = {
