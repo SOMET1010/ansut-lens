@@ -5,6 +5,7 @@ import { TrendingUp, TrendingDown, Minus, Target, MessageSquare, Newspaper, Aler
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { EvidencePopover } from './EvidencePopover';
+import { SectionEmptyState } from './SectionEmptyState';
 
 interface MediaImpactData {
   totalArticles: number;
@@ -89,7 +90,7 @@ function SentimentIndicator({ value, trend }: { value: number; trend: 'up' | 'do
 }
 
 export default function MediaImpactWidget() {
-  const { data, isLoading } = useMediaImpact();
+  const { data, isLoading, isError, refetch } = useMediaImpact();
 
   if (isLoading) {
     return (
@@ -100,7 +101,49 @@ export default function MediaImpactWidget() {
     );
   }
 
-  if (!data) return null;
+  if (isError) {
+    return (
+      <Card className="glass">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Newspaper className="h-4 w-4 text-primary" />
+            Mon impact média du jour
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SectionEmptyState
+            variant="error"
+            title="Impossible de charger l'impact média"
+            description="Le service de veille n'a pas pu être joint. Réessayez dans quelques instants."
+            onRetry={() => refetch()}
+            compact
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const isEmpty = !data || (data.totalArticles === 0 && data.mentionsAnsut === 0 && data.criticalAlerts === 0);
+
+  if (isEmpty) {
+    return (
+      <Card className="glass">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Newspaper className="h-4 w-4 text-primary" />
+            Mon impact média du jour
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SectionEmptyState
+            title="Aucune donnée média sur 24h"
+            description="Aucun article ou mention n'a été collecté ces dernières 24 heures. La prochaine collecte automatique mettra à jour cette section."
+            compact
+          />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="glass border-primary/20">
