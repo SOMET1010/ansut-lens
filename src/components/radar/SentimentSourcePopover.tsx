@@ -46,6 +46,31 @@ function classifySentiment(value: number): Exclude<SentimentFilter, 'all'> {
   return 'neutral';
 }
 
+/** Échappe une cellule CSV (RFC 4180) : guillemets doublés + entourage si besoin */
+function csvCell(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  const str = String(value);
+  if (/[",\n;]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+/** Déclenche le téléchargement d'un fichier CSV côté navigateur */
+function downloadCSV(filename: string, rows: string[][]) {
+  // BOM UTF-8 pour qu'Excel ouvre le CSV avec les bons accents
+  const csv = '\uFEFF' + rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 interface SentimentSourcePopoverProps {
   children: ReactNode;
   /** Période initiale sélectionnée (défaut: 24h) */
