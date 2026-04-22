@@ -623,7 +623,7 @@ function SentimentContent({
           </TabsList>
         </Tabs>
 
-        {/* Sélecteur de tri + taille de page */}
+        {/* Sélecteur de tri + taille de page + export CSV */}
         <div className="flex items-center gap-2">
           <ArrowUpDown className="h-3 w-3 text-muted-foreground shrink-0" />
           <Select value={sort} onValueChange={(v) => onSortChange(v as SortKey)}>
@@ -656,6 +656,38 @@ function SentimentContent({
               ))}
             </SelectContent>
           </Select>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-[10px] shrink-0 gap-1"
+            disabled={filteredArticles.length === 0}
+            onClick={() => {
+              const header = ['Titre', 'Source', 'URL', 'Date', 'Sentiment', 'Poids (importance)', 'Contribution (sentiment × poids)'];
+              const rows = filteredArticles.map((a) => [
+                a.titre,
+                a.source_nom ?? '',
+                a.source_url ?? '',
+                a.date ? new Date(a.date).toISOString() : '',
+                a.sentiment.toFixed(2),
+                a.hasWeight ? String(a.importance) : '',
+                a.hasWeight ? (a.sentiment * a.importance).toFixed(2) : '',
+              ]);
+              const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+              const filterTag = filter !== 'all' ? `_${filter}` : '';
+              const searchTag = normalizedSearch ? '_recherche' : '';
+              downloadCSV(`sentiment_${period}${filterTag}${searchTag}_${stamp}.csv`, [header, ...rows]);
+            }}
+            title={
+              filteredArticles.length === 0
+                ? 'Aucun article à exporter'
+                : `Exporter ${filteredArticles.length} article${filteredArticles.length > 1 ? 's' : ''} (CSV)`
+            }
+            aria-label="Exporter la liste affichée en CSV"
+          >
+            <Download className="h-3 w-3" />
+            CSV
+          </Button>
         </div>
       </div>
 
