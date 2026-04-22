@@ -1,15 +1,25 @@
-import { ReactNode } from 'react';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { ReactNode, useState } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+type PeriodKey = '24h' | '7j' | '30j';
+
+const PERIOD_HOURS: Record<PeriodKey, number> = {
+  '24h': 24,
+  '7j': 24 * 7,
+  '30j': 24 * 30,
+};
+
 interface SentimentSourcePopoverProps {
   children: ReactNode;
-  sinceISO?: string;
+  /** Période initiale sélectionnée (défaut: 24h) */
+  defaultPeriod?: PeriodKey;
   limit?: number;
   title?: string;
 }
