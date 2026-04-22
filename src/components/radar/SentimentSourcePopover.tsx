@@ -408,6 +408,16 @@ function SentimentContent({
     negative: articlesAfterSearch.filter((a) => classifySentiment(a.sentiment) === 'negative').length,
   };
 
+  // Top 3 contributions par poids (importance) — lifté pour partager avec l'en-tête
+  const rankedTop = filteredArticles
+    .filter((a) => a.hasWeight)
+    .slice()
+    .sort((a, b) => b.importance - a.importance);
+  const topCount = Math.min(3, rankedTop.length);
+  const topRankById = new Map<string, number>();
+  for (let i = 0; i < topCount; i++) topRankById.set(rankedTop[i].id, i + 1);
+  // Seuil = poids minimum requis pour entrer dans le Top
+  const topThresholdWeight = topCount > 0 ? rankedTop[topCount - 1].importance : null;
   // Recalcul de la moyenne pondérée restreinte au filtre de sentiment courant
   // (sur l'univers déjà restreint par la recherche)
   const scopedArticles = articlesAfterSearch.filter((a) =>
@@ -452,6 +462,32 @@ function SentimentContent({
               >
                 {period}
               </Badge>
+              {topThresholdWeight !== null && (
+                <Tooltip delayDuration={150}>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="outline"
+                      className="ml-1 text-[9px] font-mono border-primary/40 text-primary cursor-help gap-0.5 px-1.5 py-0 h-4 align-middle"
+                    >
+                      <Sparkles className="h-2.5 w-2.5" />
+                      Seuil Top ≥ {topThresholdWeight}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-[260px] text-[11px] leading-snug">
+                    <p className="font-semibold mb-1">Seuil de classement Top</p>
+                    <p className="text-muted-foreground">
+                      Poids minimum (importance) requis pour figurer dans le Top {topCount}{' '}
+                      sur la liste actuellement filtrée.
+                    </p>
+                    <p className="font-mono mt-1">
+                      Importance min. = <span className="font-semibold">{topThresholdWeight}</span>
+                    </p>
+                    <p className="text-muted-foreground mt-1">
+                      Contribution = <span className="font-mono">sentiment × importance</span>
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </p>
             {isBackgroundRefreshing && (
               <span
@@ -722,17 +758,6 @@ function SentimentContent({
           </p>
         ) : (
           (() => {
-            // Top 3 contributions par poids (importance) parmi les articles filtrés
-            const ranked = filteredArticles
-              .filter((a) => a.hasWeight)
-              .slice()
-              .sort((a, b) => b.importance - a.importance);
-            const topCount = Math.min(3, ranked.length);
-            const topRankById = new Map<string, number>();
-            for (let i = 0; i < topCount; i++) {
-              topRankById.set(ranked[i].id, i + 1);
-            }
-
             return filteredArticles.map((article) => {
               const s = sentimentLabel(article.sentiment);
               const sentimentPct = Math.round(((article.sentiment + 1) / 2) * 100);
