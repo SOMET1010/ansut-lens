@@ -146,13 +146,18 @@ export function SentimentSourcePopover({
   limit = 10,
   title = 'Détail du sentiment moyen',
 }: SentimentSourcePopoverProps) {
+  // Taille de page initiale = la plus proche dans les options autorisées
+  const initialPageSize: PageSize = (PAGE_SIZE_OPTIONS as readonly number[]).includes(limit)
+    ? (limit as PageSize)
+    : 10;
+  const [pageSize, setPageSize] = useState<PageSize>(initialPageSize);
   const [period, setPeriod] = useState<PeriodKey>(defaultPeriod);
   const [filter, setFilter] = useState<SentimentFilter>('all');
   const [sort, setSort] = useState<SortKey>('impact_then_date');
-  const [displayedLimit, setDisplayedLimit] = useState<number>(limit);
+  const [displayedLimit, setDisplayedLimit] = useState<number>(initialPageSize);
   // Versions debouncées qui pilotent réellement la requête réseau
   const [debouncedPeriod, setDebouncedPeriod] = useState<PeriodKey>(defaultPeriod);
-  const [debouncedLimit, setDebouncedLimit] = useState<number>(limit);
+  const [debouncedLimit, setDebouncedLimit] = useState<number>(initialPageSize);
   const [isFilterPending, setIsFilterPending] = useState(false);
   const [isPeriodPending, setIsPeriodPending] = useState(false);
   const filterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
