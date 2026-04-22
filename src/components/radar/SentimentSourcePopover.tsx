@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState, useTransition } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -129,14 +129,38 @@ export function SentimentSourcePopover({
   const [filter, setFilter] = useState<SentimentFilter>('all');
   const [sort, setSort] = useState<SortKey>('impact_then_date');
   const [displayedLimit, setDisplayedLimit] = useState<number>(limit);
+  const [isFilterPending, setIsFilterPending] = useState(false);
+  const [isPeriodPending, setIsPeriodPending] = useState(false);
+  const filterTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const periodTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sinceISO = new Date(Date.now() - PERIOD_HOURS[period] * 3600 * 1000).toISOString();
   const queryClient = useQueryClient();
 
-  // Reset pagination quand la période change
+  // Reset pagination quand la période change + skeleton bref dédié
   const handlePeriodChange = (p: PeriodKey) => {
+    if (p === period) return;
     setPeriod(p);
     setDisplayedLimit(limit);
+    setIsPeriodPending(true);
+    if (periodTimer.current) clearTimeout(periodTimer.current);
+    periodTimer.current = setTimeout(() => setIsPeriodPending(false), 350);
   };
+
+  // Skeleton bref lors du changement de filtre sentiment (purement client-side)
+  const handleFilterChange = (f: SentimentFilter) => {
+    if (f === filter) return;
+    setFilter(f);
+    setIsFilterPending(true);
+    if (filterTimer.current) clearTimeout(filterTimer.current);
+    filterTimer.current = setTimeout(() => setIsFilterPending(false), 200);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (filterTimer.current) clearTimeout(filterTimer.current);
+      if (periodTimer.current) clearTimeout(periodTimer.current);
+    };
+  }, []);
 
   // Précharge les données du popover dès que l'utilisateur survole / focus le trigger
   const prefetch = () => {
@@ -169,10 +193,12 @@ export function SentimentSourcePopover({
           period={period}
           onPeriodChange={handlePeriodChange}
           filter={filter}
-          onFilterChange={setFilter}
+          onFilterChange={handleFilterChange}
           sort={sort}
           onSortChange={setSort}
           onLoadMore={() => setDisplayedLimit((n) => n + 10)}
+          isFilterPending={isFilterPending}
+          isPeriodPending={isPeriodPending}
         />
       </PopoverContent>
     </Popover>
@@ -191,6 +217,8 @@ function SentimentContent({
   sort,
   onSortChange,
   onLoadMore,
+  isFilterPending,
+  isPeriodPending,
 }: {
   sinceISO: string;
   limit: number;
@@ -203,6 +231,8 @@ function SentimentContent({
   sort: SortKey;
   onSortChange: (s: SortKey) => void;
   onLoadMore: () => void;
+  isFilterPending: boolean;
+  isPeriodPending: boolean;
 }) {
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['sentiment-sources', sinceISO, limit],
@@ -443,14 +473,24 @@ function SentimentContent({
       </div>
 
       <div className="px-3 pb-3 space-y-2 max-h-80 overflow-y-auto">
-        {isRecomputing ? (
+        {isRecomputing || isPeriodPending ? (
           <div aria-busy="true" aria-label={`Chargement des contributeurs (${period})`} className="space-y-2">
-            <p className="text-[10px] text-muted-foreground italic text-center">
+            <p className="text-[10px] text-muted-foreground italic text-center flex items-center justify-center gap-1.5">
+              <Loader2 className="h-3 w-3 animate-spin" />
               Chargement des contributeurs sur la période <span className="font-semibold">{period}</span>…
             </p>
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
+          </div>
+        ) : isFilterPending ? (
+          <div aria-busy="true" aria-label={`Filtrage en cours (${filter})`} className="space-y-2">
+            <p className="text-[10px] text-muted-foreground italic text-center flex items-center justify-center gap-1.5">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Application du filtre <span className="font-semibold">{FILTER_LABEL[filter]}</span>…
+            </p>
+            <Skeleton className="h-12 w-full opacity-60" />
+            <Skeleton className="h-12 w-full opacity-40" />
           </div>
         ) : !data || data.articles.length === 0 ? (
           <p className="text-xs text-muted-foreground text-center py-4">
