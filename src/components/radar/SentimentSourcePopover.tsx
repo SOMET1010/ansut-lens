@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown, Sparkles, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown, Sparkles, Loader2, Eye } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -274,6 +275,7 @@ function SentimentContent({
   isFilterPending: boolean;
   isPeriodPending: boolean;
 }) {
+  const [selectedArticle, setSelectedArticle] = useState<SentimentArticle | null>(null);
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['sentiment-sources', sinceISO, limit],
     queryFn: () => fetchSentimentSources(sinceISO, limit),
@@ -339,6 +341,7 @@ function SentimentContent({
   };
 
   return (
+    <>
     <div className="space-y-2">
       <div className="border-b px-3 py-2 space-y-2">
         <div className="flex items-center justify-between gap-2">
@@ -559,13 +562,23 @@ function SentimentContent({
               return (
                 <div
                   key={article.id}
-                  className={`rounded-md border p-2 space-y-1.5 transition-colors ${
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedArticle(article)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedArticle(article);
+                    }
+                  }}
+                  className={`rounded-md border p-2 space-y-1.5 transition-colors cursor-pointer hover:border-primary/50 hover:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-primary/40 ${
                     isTop
                       ? 'bg-primary/5 border-primary/40 ring-1 ring-primary/20'
                       : article.hasWeight
                         ? 'bg-muted/30'
                         : 'bg-muted/20 opacity-75'
                   }`}
+                  title="Voir les détails de l'article"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
@@ -593,7 +606,7 @@ function SentimentContent({
                         </Badge>
                       )}
                     </div>
-                  {hasSource && (
+                  {hasSource ? (
                     <a
                       href={article.source_url!}
                       target="_blank"
@@ -604,6 +617,8 @@ function SentimentContent({
                     >
                       <ExternalLink className="h-3 w-3" />
                     </a>
+                  ) : (
+                    <Eye className="h-3 w-3 text-muted-foreground shrink-0" aria-label="Voir les détails" />
                   )}
                 </div>
 
@@ -665,5 +680,121 @@ function SentimentContent({
         )}
       </div>
     </div>
+
+    {/* Vue détaillée d'un article — accessible même sans source_url */}
+    <Dialog open={!!selectedArticle} onOpenChange={(open) => !open && setSelectedArticle(null)}>
+      <DialogContent className="max-w-lg">
+        {selectedArticle && (() => {
+          const s = sentimentLabel(selectedArticle.sentiment);
+          const sentimentPct = Math.round(((selectedArticle.sentiment + 1) / 2) * 100);
+          const hasUrl = Boolean(selectedArticle.source_url);
+          return (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-base leading-snug pr-6">
+                  {selectedArticle.titre}
+                </DialogTitle>
+                <DialogDescription className="flex items-center gap-2 flex-wrap pt-1">
+                  <s.Icon className={`h-3.5 w-3.5 ${s.color}`} />
+                  <Badge variant="outline" className={`text-[10px] ${s.color}`}>
+                    {s.label} {selectedArticle.sentiment > 0 ? '+' : ''}{selectedArticle.sentiment.toFixed(2)}
+                  </Badge>
+                  {selectedArticle.hasWeight ? (
+                    <Badge variant="secondary" className="text-[10px] font-mono">
+                      Poids {selectedArticle.importance}
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] font-mono border-dashed text-amber-600 dark:text-amber-500 border-amber-500/40"
+                    >
+                      Poids — (exclu)
+                    </Badge>
+                  )}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-3 text-sm">
+                <div className="space-y-1">
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Sentiment</p>
+                  <Progress value={sentimentPct} className="h-1.5" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Source</p>
+                    {selectedArticle.source_nom ? (
+                      <p className="text-sm">{selectedArticle.source_nom}</p>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] border-dashed text-muted-foreground italic"
+                      >
+                        Source non renseignée
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Date</p>
+                    <p className="text-sm">
+                      {selectedArticle.date
+                        ? new Date(selectedArticle.date).toLocaleString('fr-FR')
+                        : <span className="italic text-muted-foreground">—</span>}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Lien source</p>
+                  {hasUrl ? (
+                    <a
+                      href={selectedArticle.source_url!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary hover:underline break-all inline-flex items-center gap-1"
+                    >
+                      <ExternalLink className="h-3 w-3 shrink-0" />
+                      {selectedArticle.source_url}
+                    </a>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] border-dashed text-muted-foreground italic"
+                      title="Aucune URL n'est disponible pour cet article"
+                    >
+                      Source indisponible
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="space-y-1 pt-1 border-t">
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Contribution pondérée</p>
+                  <p className="text-sm font-mono">
+                    {selectedArticle.hasWeight
+                      ? (selectedArticle.sentiment * selectedArticle.importance).toFixed(2)
+                      : <span className="italic text-muted-foreground">n/a — importance manquante</span>}
+                  </p>
+                </div>
+              </div>
+
+              <DialogFooter className="gap-2">
+                {hasUrl && (
+                  <Button asChild variant="default" size="sm">
+                    <a href={selectedArticle.source_url!} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                      Ouvrir la source
+                    </a>
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" onClick={() => setSelectedArticle(null)}>
+                  Fermer
+                </Button>
+              </DialogFooter>
+            </>
+          );
+        })()}
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
