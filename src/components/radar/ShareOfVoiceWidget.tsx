@@ -6,6 +6,7 @@ import { Megaphone, Newspaper, Users, AlertTriangle, TrendingUp, Lightbulb, Refr
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
+import { EvidencePopover } from './EvidencePopover';
 
 interface VoiceData {
   pubAnsut: number;
