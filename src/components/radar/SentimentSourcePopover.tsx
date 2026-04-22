@@ -732,17 +732,6 @@ function SentimentContent({
           </p>
         ) : (
           (() => {
-            // Top 3 contributions par poids (importance) parmi les articles filtrés
-            const ranked = filteredArticles
-              .filter((a) => a.hasWeight)
-              .slice()
-              .sort((a, b) => b.importance - a.importance);
-            const topCount = Math.min(3, ranked.length);
-            const topRankById = new Map<string, number>();
-            for (let i = 0; i < topCount; i++) {
-              topRankById.set(ranked[i].id, i + 1);
-            }
-
             return filteredArticles.map((article) => {
               const s = sentimentLabel(article.sentiment);
               const sentimentPct = Math.round(((article.sentiment + 1) / 2) * 100);
