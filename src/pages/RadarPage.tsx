@@ -21,6 +21,7 @@ import {
   MediaImpactWidget,
   ShareOfVoiceWidget,
   RadarProximiteWidget,
+  CriticalAlertsCard,
 } from '@/components/radar';
 
 const periodLabels: Record<PeriodFilter, string> = {
@@ -82,6 +83,9 @@ export default function RadarPage() {
           ))}
         </TabsList>
       </Tabs>
+
+      {/* Critical Alerts — minimal notification center */}
+      <CriticalAlertsCard />
 
       {/* Media Impact Widget - for Com team */}
       <MediaImpactWidget />
