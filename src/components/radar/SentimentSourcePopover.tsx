@@ -333,6 +333,7 @@ function SentimentContent({
   onPageSizeChange: (n: PageSize) => void;
 }) {
   const [selectedArticle, setSelectedArticle] = useState<SentimentArticle | null>(null);
+  const [search, setSearch] = useState('');
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['sentiment-sources', sinceISO, limit],
     queryFn: () => fetchSentimentSources(sinceISO, limit),
@@ -344,9 +345,19 @@ function SentimentContent({
   // Rafraîchissement discret en arrière-plan (données déjà affichées)
   const isBackgroundRefreshing = isFetching && !!data && !isLoading;
 
-  const filteredArticles = (data?.articles.filter((a) =>
+  // 1. Recherche mot-clé (titre + source) → 2. filtre sentiment → 3. tri
+  const normalizedSearch = search.trim().toLowerCase();
+  const matchesSearch = (a: SentimentArticle) => {
+    if (!normalizedSearch) return true;
+    return (
+      a.titre.toLowerCase().includes(normalizedSearch) ||
+      (a.source_nom?.toLowerCase().includes(normalizedSearch) ?? false)
+    );
+  };
+  const articlesAfterSearch = data?.articles.filter(matchesSearch) ?? [];
+  const filteredArticles = articlesAfterSearch.filter((a) =>
     filter === 'all' ? true : classifySentiment(a.sentiment) === filter
-  ) ?? []).slice().sort((a, b) => {
+  ).slice().sort((a, b) => {
     const dateOf = (x: typeof a) => (x.date ? new Date(x.date).getTime() : 0);
     switch (sort) {
       case 'impact_then_date': {
