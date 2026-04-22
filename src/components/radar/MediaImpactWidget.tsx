@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, TrendingDown, Minus, Target, MessageSquare, Newspaper, AlertTriangle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { EvidencePopover } from './EvidencePopover';
 
 interface MediaImpactData {
   totalArticles: number;
