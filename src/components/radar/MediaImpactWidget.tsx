@@ -183,9 +183,9 @@ export default function MediaImpactWidget() {
           </EvidencePopover>
 
           <SentimentSourcePopover
-            sinceISO={new Date(Date.now() - 24 * 3600 * 1000).toISOString()}
+            defaultPeriod="24h"
             limit={10}
-            title="Sentiment moyen — sources détaillées (24h)"
+            title="Sentiment moyen — sources détaillées"
           >
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
