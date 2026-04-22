@@ -338,8 +338,9 @@ function SentimentContent({
                   )}
                 </div>
               </div>
-            );
-          })
+              );
+            });
+          })()
         )}
 
         {data && data.articles.length > 0 && (
