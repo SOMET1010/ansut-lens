@@ -284,6 +284,17 @@ function SentimentContent({
                 {period}
               </Badge>
             </p>
+            {isBackgroundRefreshing && (
+              <span
+                className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0 animate-in fade-in"
+                role="status"
+                aria-live="polite"
+                title="Données actualisées en arrière-plan"
+              >
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span className="hidden sm:inline">Mise à jour…</span>
+              </span>
+            )}
           </div>
           <Tabs value={period} onValueChange={(v) => onPeriodChange(v as PeriodKey)}>
             <TabsList className="h-7">
