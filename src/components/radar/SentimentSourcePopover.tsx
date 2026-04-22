@@ -126,7 +126,14 @@ export function SentimentSourcePopover({
   const [period, setPeriod] = useState<PeriodKey>(defaultPeriod);
   const [filter, setFilter] = useState<SentimentFilter>('all');
   const [sort, setSort] = useState<SortKey>('weight_desc');
+  const [displayedLimit, setDisplayedLimit] = useState<number>(limit);
   const sinceISO = new Date(Date.now() - PERIOD_HOURS[period] * 3600 * 1000).toISOString();
+
+  // Reset pagination quand la période change
+  const handlePeriodChange = (p: PeriodKey) => {
+    setPeriod(p);
+    setDisplayedLimit(limit);
+  };
 
   return (
     <Popover>
@@ -136,14 +143,16 @@ export function SentimentSourcePopover({
       <PopoverContent className="w-[440px] p-0" side="top" align="start">
         <SentimentContent
           sinceISO={sinceISO}
-          limit={limit}
+          limit={displayedLimit}
+          baseLimit={limit}
           title={title}
           period={period}
-          onPeriodChange={setPeriod}
+          onPeriodChange={handlePeriodChange}
           filter={filter}
           onFilterChange={setFilter}
           sort={sort}
           onSortChange={setSort}
+          onLoadMore={() => setDisplayedLimit((n) => n + 10)}
         />
       </PopoverContent>
     </Popover>
@@ -153,6 +162,7 @@ export function SentimentSourcePopover({
 function SentimentContent({
   sinceISO,
   limit,
+  baseLimit,
   title,
   period,
   onPeriodChange,
@@ -160,9 +170,11 @@ function SentimentContent({
   onFilterChange,
   sort,
   onSortChange,
+  onLoadMore,
 }: {
   sinceISO: string;
   limit: number;
+  baseLimit: number;
   title: string;
   period: PeriodKey;
   onPeriodChange: (p: PeriodKey) => void;
@@ -170,6 +182,7 @@ function SentimentContent({
   onFilterChange: (f: SentimentFilter) => void;
   sort: SortKey;
   onSortChange: (s: SortKey) => void;
+  onLoadMore: () => void;
 }) {
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['sentiment-sources', sinceISO, limit],
