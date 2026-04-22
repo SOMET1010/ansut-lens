@@ -477,10 +477,30 @@ function SentimentContent({
           })()
         )}
 
+        {/* Voir plus / Pagination */}
         {data && data.articles.length > 0 && (
-          <p className="text-[10px] text-muted-foreground text-center pt-1 border-t">
-            Le sentiment moyen est calculé en moyennant les scores individuels des articles analysés par l'IA.
-          </p>
+          <div className="space-y-1.5 pt-1 border-t">
+            {data.articles.length >= limit ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full h-7 text-[11px]"
+                onClick={onLoadMore}
+                disabled={isFetching}
+              >
+                {isFetching ? 'Chargement…' : `Voir plus (+10) — actuellement ${data.articles.length} affichés`}
+              </Button>
+            ) : (
+              limit > baseLimit && (
+                <p className="text-[10px] text-muted-foreground text-center italic">
+                  Tous les articles disponibles sont affichés ({data.articles.length}).
+                </p>
+              )
+            )}
+            <p className="text-[10px] text-muted-foreground text-center">
+              La moyenne pondérée se met à jour automatiquement avec chaque article chargé.
+            </p>
+          </div>
         )}
       </div>
     </div>
