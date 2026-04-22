@@ -800,6 +800,11 @@ function SentimentContent({
                         ? 'bg-muted/30'
                         : 'bg-muted/20 opacity-75'
                   }`}
+                  aria-label={
+                    isTop
+                      ? `Top ${topRank} contribution. ${article.titre}. Sentiment ${article.sentiment.toFixed(2)}, poids ${article.importance}.`
+                      : `${article.titre}. Sentiment ${article.sentiment.toFixed(2)}${article.hasWeight ? `, poids ${article.importance}` : ', poids exclu'}.`
+                  }
                   title={isTop ? `Top ${topRank} des contributions par poids` : "Voir les détails de l'article"}
                 >
                   <div className="flex items-start justify-between gap-2">
