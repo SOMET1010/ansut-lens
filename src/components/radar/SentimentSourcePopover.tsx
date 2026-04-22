@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown, Sparkles } from 'lucide-react';
+import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown, Sparkles, Loader2 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -212,6 +212,8 @@ function SentimentContent({
 
   // Recalcul en cours = nouvelle période non encore mise en cache OU premier chargement
   const isRecomputing = isLoading || (isFetching && !data);
+  // Rafraîchissement discret en arrière-plan (données déjà affichées)
+  const isBackgroundRefreshing = isFetching && !!data && !isLoading;
 
   const filteredArticles = (data?.articles.filter((a) =>
     filter === 'all' ? true : classifySentiment(a.sentiment) === filter
@@ -282,6 +284,17 @@ function SentimentContent({
                 {period}
               </Badge>
             </p>
+            {isBackgroundRefreshing && (
+              <span
+                className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0 animate-in fade-in"
+                role="status"
+                aria-live="polite"
+                title="Données actualisées en arrière-plan"
+              >
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span className="hidden sm:inline">Mise à jour…</span>
+              </span>
+            )}
           </div>
           <Tabs value={period} onValueChange={(v) => onPeriodChange(v as PeriodKey)}>
             <TabsList className="h-7">
