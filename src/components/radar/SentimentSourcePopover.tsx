@@ -462,6 +462,32 @@ function SentimentContent({
               >
                 {period}
               </Badge>
+              {topThresholdWeight !== null && (
+                <Tooltip delayDuration={150}>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="outline"
+                      className="ml-1 text-[9px] font-mono border-primary/40 text-primary cursor-help gap-0.5 px-1.5 py-0 h-4 align-middle"
+                    >
+                      <Sparkles className="h-2.5 w-2.5" />
+                      Seuil Top ≥ {topThresholdWeight}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-[260px] text-[11px] leading-snug">
+                    <p className="font-semibold mb-1">Seuil de classement Top</p>
+                    <p className="text-muted-foreground">
+                      Poids minimum (importance) requis pour figurer dans le Top {topCount}{' '}
+                      sur la liste actuellement filtrée.
+                    </p>
+                    <p className="font-mono mt-1">
+                      Importance min. = <span className="font-semibold">{topThresholdWeight}</span>
+                    </p>
+                    <p className="text-muted-foreground mt-1">
+                      Contribution = <span className="font-mono">sentiment × importance</span>
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </p>
             {isBackgroundRefreshing && (
               <span
