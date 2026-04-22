@@ -189,10 +189,23 @@ export function SentimentSourcePopover({
   const handlePeriodChange = (p: PeriodKey) => {
     if (p === period) return;
     setPeriod(p);
-    setDisplayedLimit(limit);
+    setDisplayedLimit(pageSize);
     setIsPeriodPending(true);
     if (periodTimer.current) clearTimeout(periodTimer.current);
     periodTimer.current = setTimeout(() => setIsPeriodPending(false), 350);
+  };
+
+  // Changement de taille de page : invalide les anciennes entrées de cache devenues
+  // sous-dimensionnées et reset la pagination locale sur la nouvelle taille.
+  const handlePageSizeChange = (newSize: PageSize) => {
+    if (newSize === pageSize) return;
+    setPageSize(newSize);
+    setDisplayedLimit(newSize);
+    setIsPeriodPending(true);
+    if (periodTimer.current) clearTimeout(periodTimer.current);
+    periodTimer.current = setTimeout(() => setIsPeriodPending(false), 250);
+    // Invalide explicitement le cache des autres tailles pour la même fenêtre
+    queryClient.invalidateQueries({ queryKey: ['sentiment-sources', sinceISO], exact: false });
   };
 
   // Skeleton bref lors du changement de filtre sentiment (purement client-side)
