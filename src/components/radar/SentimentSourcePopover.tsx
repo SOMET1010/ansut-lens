@@ -150,11 +150,41 @@ export function SentimentSourcePopover({
   const initialPageSize: PageSize = (PAGE_SIZE_OPTIONS as readonly number[]).includes(limit)
     ? (limit as PageSize)
     : 10;
+  // Restaure tri & filtre depuis localStorage pour qu'ils persistent entre ouvertures
+  const STORAGE_KEY = 'sentiment-popover-prefs:v1';
+  const persisted = (() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      return raw ? (JSON.parse(raw) as { filter?: SentimentFilter; sort?: SortKey }) : null;
+    } catch {
+      return null;
+    }
+  })();
+  const isValidFilter = (v: unknown): v is SentimentFilter =>
+    v === 'all' || v === 'positive' || v === 'neutral' || v === 'negative';
+  const isValidSort = (v: unknown): v is SortKey =>
+    typeof v === 'string' && v in SORT_LABELS;
+
   const [pageSize, setPageSize] = useState<PageSize>(initialPageSize);
   const [period, setPeriod] = useState<PeriodKey>(defaultPeriod);
-  const [filter, setFilter] = useState<SentimentFilter>('all');
-  const [sort, setSort] = useState<SortKey>('impact_then_date');
+  const [filter, setFilter] = useState<SentimentFilter>(
+    isValidFilter(persisted?.filter) ? persisted!.filter! : 'all'
+  );
+  const [sort, setSort] = useState<SortKey>(
+    isValidSort(persisted?.sort) ? persisted!.sort! : 'impact_then_date'
+  );
   const [displayedLimit, setDisplayedLimit] = useState<number>(initialPageSize);
+
+  // Persiste tri + filtre dans localStorage à chaque changement
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ filter, sort }));
+    } catch {
+      /* quota plein ou stockage indisponible — silencieux */
+    }
+  }, [filter, sort]);
   // Versions debouncées qui pilotent réellement la requête réseau
   const [debouncedPeriod, setDebouncedPeriod] = useState<PeriodKey>(defaultPeriod);
   const [debouncedLimit, setDebouncedLimit] = useState<number>(initialPageSize);
