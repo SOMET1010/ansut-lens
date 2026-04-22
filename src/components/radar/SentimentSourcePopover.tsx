@@ -664,20 +664,23 @@ function SentimentContent({
           </p>
         ) : (
           (() => {
-            // Top 1-2 contributions par valeur absolue (sentiment × importance)
+            // Top 3 contributions par poids (importance) parmi les articles filtrés
             const ranked = filteredArticles
               .filter((a) => a.hasWeight)
-              .map((a) => ({ id: a.id, contrib: Math.abs(a.sentiment * a.importance) }))
-              .filter((x) => x.contrib > 0)
-              .sort((a, b) => b.contrib - a.contrib);
-            const topThreshold = ranked.length >= 5 ? 2 : ranked.length >= 2 ? 1 : ranked.length;
-            const topIds = new Set(ranked.slice(0, topThreshold).map((x) => x.id));
+              .slice()
+              .sort((a, b) => b.importance - a.importance);
+            const topCount = Math.min(3, ranked.length);
+            const topRankById = new Map<string, number>();
+            for (let i = 0; i < topCount; i++) {
+              topRankById.set(ranked[i].id, i + 1);
+            }
 
             return filteredArticles.map((article) => {
               const s = sentimentLabel(article.sentiment);
               const sentimentPct = Math.round(((article.sentiment + 1) / 2) * 100);
               const hasSource = Boolean(article.source_url) && Boolean(article.source_nom);
-              const isTop = topIds.has(article.id);
+              const topRank = topRankById.get(article.id);
+              const isTop = topRank !== undefined;
               return (
                 <div
                   key={article.id}
@@ -692,19 +695,22 @@ function SentimentContent({
                   }}
                   className={`rounded-md border p-2 space-y-1.5 transition-colors cursor-pointer hover:border-primary/50 hover:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-primary/40 ${
                     isTop
-                      ? 'bg-primary/5 border-primary/40 ring-1 ring-primary/20'
+                      ? 'bg-primary/5 border-primary/40 ring-1 ring-primary/20 shadow-sm'
                       : article.hasWeight
                         ? 'bg-muted/30'
                         : 'bg-muted/20 opacity-75'
                   }`}
-                  title="Voir les détails de l'article"
+                  title={isTop ? `Top ${topRank} des contributions par poids` : "Voir les détails de l'article"}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
                       {isTop && (
-                        <Badge className="text-[9px] px-1.5 py-0 h-4 bg-primary/15 text-primary border border-primary/30 hover:bg-primary/20 gap-0.5">
+                        <Badge
+                          className="text-[9px] px-1.5 py-0 h-4 bg-primary text-primary-foreground border border-primary hover:bg-primary/90 gap-0.5 font-semibold"
+                          title={`Classé n°${topRank} par poids sur la liste filtrée`}
+                        >
                           <Sparkles className="h-2.5 w-2.5" />
-                          Top contribution
+                          Top {topRank}
                         </Badge>
                       )}
                       <s.Icon className={`h-3 w-3 ${s.color}`} />
