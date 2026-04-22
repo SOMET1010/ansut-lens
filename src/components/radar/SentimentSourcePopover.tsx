@@ -62,12 +62,14 @@ async function fetchSentimentSources(sinceISO?: string, limit = 10): Promise<{
   articles: SentimentArticle[];
   avgSentiment: number;
   totalAnalyzed: number;
+  totalWeighted: number;
+  totalUnweighted: number;
 }> {
   let q = supabase
     .from('actualites')
     .select('id, titre, source_nom, source_url, sentiment, importance, date_publication, created_at')
     .not('sentiment', 'is', null)
-    .order('importance', { ascending: false })
+    .order('importance', { ascending: false, nullsFirst: false })
     .limit(limit);
 
   if (sinceISO) q = q.gte('created_at', sinceISO);
@@ -75,21 +77,34 @@ async function fetchSentimentSources(sinceISO?: string, limit = 10): Promise<{
   const { data } = await q;
   const items = data ?? [];
 
-  const articles: SentimentArticle[] = items.map((a) => ({
-    id: a.id,
-    titre: a.titre,
-    source_nom: a.source_nom,
-    source_url: a.source_url,
-    sentiment: Number(a.sentiment ?? 0),
-    importance: a.importance ?? 50,
-    date: a.date_publication ?? a.created_at,
-  }));
+  const articles: SentimentArticle[] = items.map((a) => {
+    const rawImp = a.importance;
+    const hasWeight = rawImp != null && Number(rawImp) > 0;
+    return {
+      id: a.id,
+      titre: a.titre,
+      source_nom: a.source_nom,
+      source_url: a.source_url,
+      sentiment: Number(a.sentiment ?? 0),
+      importance: hasWeight ? Number(rawImp) : 0,
+      hasWeight,
+      date: a.date_publication ?? a.created_at,
+    };
+  });
 
-  const totalWeight = articles.reduce((s, a) => s + a.importance, 0);
-  const weightedSum = articles.reduce((s, a) => s + a.sentiment * a.importance, 0);
+  // Calcul pondéré uniquement sur les articles avec importance valide
+  const weighted = articles.filter((a) => a.hasWeight);
+  const totalWeight = weighted.reduce((s, a) => s + a.importance, 0);
+  const weightedSum = weighted.reduce((s, a) => s + a.sentiment * a.importance, 0);
   const avg = totalWeight > 0 ? weightedSum / totalWeight : 0;
 
-  return { articles, avgSentiment: Math.round(avg * 100) / 100, totalAnalyzed: articles.length };
+  return {
+    articles,
+    avgSentiment: Math.round(avg * 100) / 100,
+    totalAnalyzed: articles.length,
+    totalWeighted: weighted.length,
+    totalUnweighted: articles.length - weighted.length,
+  };
 }
 
 export function SentimentSourcePopover({
