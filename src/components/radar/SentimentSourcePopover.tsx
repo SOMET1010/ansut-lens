@@ -506,6 +506,12 @@ function SentimentContent({
                 </Tooltip>
               )}
             </p>
+            {/* Annonce accessible : informe les lecteurs d'écran du nombre de Top contributions et du seuil */}
+            <span aria-live="polite" aria-atomic="true" className="sr-only">
+              {topCount > 0
+                ? `${topCount} contribution${topCount > 1 ? 's' : ''} marquée${topCount > 1 ? 's' : ''} comme Top, seuil de poids ${topThresholdWeight} sur la liste actuelle.`
+                : 'Aucune contribution Top dans la liste actuelle.'}
+            </span>
             {isBackgroundRefreshing && (
               <span
                 className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0 animate-in fade-in"
@@ -800,6 +806,11 @@ function SentimentContent({
                         ? 'bg-muted/30'
                         : 'bg-muted/20 opacity-75'
                   }`}
+                  aria-label={
+                    isTop
+                      ? `Top ${topRank} contribution. ${article.titre}. Sentiment ${article.sentiment.toFixed(2)}, poids ${article.importance}.`
+                      : `${article.titre}. Sentiment ${article.sentiment.toFixed(2)}${article.hasWeight ? `, poids ${article.importance}` : ', poids exclu'}.`
+                  }
                   title={isTop ? `Top ${topRank} des contributions par poids` : "Voir les détails de l'article"}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -810,9 +821,11 @@ function SentimentContent({
                             <Badge
                               className="text-[9px] px-1.5 py-0 h-4 bg-primary text-primary-foreground border border-primary hover:bg-primary/90 gap-0.5 font-semibold cursor-help"
                               onClick={(e) => e.stopPropagation()}
+                              aria-label={`Top ${topRank} contribution sur ${topCount}`}
                             >
-                              <Sparkles className="h-2.5 w-2.5" />
-                              Top {topRank}
+                              <Sparkles className="h-2.5 w-2.5" aria-hidden="true" />
+                              <span aria-hidden="true">Top {topRank}</span>
+                              <span className="sr-only">Top {topRank} contribution</span>
                             </Badge>
                           </TooltipTrigger>
                           <TooltipContent side="top" className="max-w-[260px] text-[11px] leading-snug">
