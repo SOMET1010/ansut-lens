@@ -561,13 +561,23 @@ function SentimentContent({
               return (
                 <div
                   key={article.id}
-                  className={`rounded-md border p-2 space-y-1.5 transition-colors ${
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedArticle(article)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedArticle(article);
+                    }
+                  }}
+                  className={`rounded-md border p-2 space-y-1.5 transition-colors cursor-pointer hover:border-primary/50 hover:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-primary/40 ${
                     isTop
                       ? 'bg-primary/5 border-primary/40 ring-1 ring-primary/20'
                       : article.hasWeight
                         ? 'bg-muted/30'
                         : 'bg-muted/20 opacity-75'
                   }`}
+                  title="Voir les détails de l'article"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
@@ -595,7 +605,7 @@ function SentimentContent({
                         </Badge>
                       )}
                     </div>
-                  {hasSource && (
+                  {hasSource ? (
                     <a
                       href={article.source_url!}
                       target="_blank"
@@ -606,6 +616,8 @@ function SentimentContent({
                     >
                       <ExternalLink className="h-3 w-3" />
                     </a>
+                  ) : (
+                    <Eye className="h-3 w-3 text-muted-foreground shrink-0" aria-label="Voir les détails" />
                   )}
                 </div>
 
