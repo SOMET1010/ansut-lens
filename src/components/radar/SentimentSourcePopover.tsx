@@ -1,15 +1,25 @@
-import { ReactNode } from 'react';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { ReactNode, useState } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+type PeriodKey = '24h' | '7j' | '30j';
+
+const PERIOD_HOURS: Record<PeriodKey, number> = {
+  '24h': 24,
+  '7j': 24 * 7,
+  '30j': 24 * 30,
+};
+
 interface SentimentSourcePopoverProps {
   children: ReactNode;
-  sinceISO?: string;
+  /** Période initiale sélectionnée (défaut: 24h) */
+  defaultPeriod?: PeriodKey;
   limit?: number;
   title?: string;
 }
@@ -66,23 +76,44 @@ async function fetchSentimentSources(sinceISO?: string, limit = 10): Promise<{
 
 export function SentimentSourcePopover({
   children,
-  sinceISO,
+  defaultPeriod = '24h',
   limit = 10,
   title = 'Détail du sentiment moyen',
 }: SentimentSourcePopoverProps) {
+  const [period, setPeriod] = useState<PeriodKey>(defaultPeriod);
+  const sinceISO = new Date(Date.now() - PERIOD_HOURS[period] * 3600 * 1000).toISOString();
+
   return (
-    <HoverCard openDelay={200} closeDelay={100}>
-      <HoverCardTrigger asChild>
-        <div className="cursor-help">{children}</div>
-      </HoverCardTrigger>
-      <HoverCardContent className="w-[420px] p-0" side="top" align="start">
-        <SentimentContent sinceISO={sinceISO} limit={limit} title={title} />
-      </HoverCardContent>
-    </HoverCard>
+    <Popover>
+      <PopoverTrigger asChild>
+        <div className="cursor-pointer">{children}</div>
+      </PopoverTrigger>
+      <PopoverContent className="w-[440px] p-0" side="top" align="start">
+        <SentimentContent
+          sinceISO={sinceISO}
+          limit={limit}
+          title={title}
+          period={period}
+          onPeriodChange={setPeriod}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
 
-function SentimentContent({ sinceISO, limit, title }: { sinceISO?: string; limit: number; title: string }) {
+function SentimentContent({
+  sinceISO,
+  limit,
+  title,
+  period,
+  onPeriodChange,
+}: {
+  sinceISO: string;
+  limit: number;
+  title: string;
+  period: PeriodKey;
+  onPeriodChange: (p: PeriodKey) => void;
+}) {
   const { data, isLoading } = useQuery({
     queryKey: ['sentiment-sources', sinceISO, limit],
     queryFn: () => fetchSentimentSources(sinceISO, limit),
@@ -91,13 +122,22 @@ function SentimentContent({ sinceISO, limit, title }: { sinceISO?: string; limit
 
   return (
     <div className="space-y-2">
-      <div className="border-b px-3 py-2">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="h-3.5 w-3.5 text-primary" />
-          <p className="text-sm font-semibold">{title}</p>
+      <div className="border-b px-3 py-2 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="h-3.5 w-3.5 text-primary" />
+            <p className="text-sm font-semibold">{title}</p>
+          </div>
+          <Tabs value={period} onValueChange={(v) => onPeriodChange(v as PeriodKey)}>
+            <TabsList className="h-7">
+              <TabsTrigger value="24h" className="text-[10px] px-2 py-0.5 h-6">24h</TabsTrigger>
+              <TabsTrigger value="7j" className="text-[10px] px-2 py-0.5 h-6">7j</TabsTrigger>
+              <TabsTrigger value="30j" className="text-[10px] px-2 py-0.5 h-6">30j</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
         {data && (
-          <div className="mt-1 space-y-0.5">
+          <div className="space-y-0.5">
             <p className="text-xs text-muted-foreground">
               Calculé sur {data.totalAnalyzed} article{data.totalAnalyzed > 1 ? 's' : ''} analysé{data.totalAnalyzed > 1 ? 's' : ''}
               {' · '}Moyenne pondérée : <span className="font-semibold text-foreground">{data.avgSentiment.toFixed(2)}</span>
