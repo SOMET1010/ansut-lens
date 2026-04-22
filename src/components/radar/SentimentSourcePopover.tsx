@@ -27,6 +27,12 @@ const PERIOD_HOURS: Record<PeriodKey, number> = {
   '30j': 24 * 30,
 };
 
+const PERIOD_LABELS: Record<PeriodKey, string> = {
+  '24h': '24 dernières heures',
+  '7j': '7 derniers jours',
+  '30j': '30 derniers jours',
+};
+
 function classifySentiment(value: number): Exclude<SentimentFilter, 'all'> {
   if (value > 0.2) return 'positive';
   if (value < -0.2) return 'negative';
