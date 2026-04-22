@@ -600,19 +600,12 @@ function SentimentContent({
           </p>
         ) : filteredArticles.length === 0 ? (
           <p className="text-xs text-muted-foreground text-center py-4">
-            Aucun article {filter === 'positive' ? 'positif' : filter === 'negative' ? 'négatif' : 'neutre'} sur cette période.
+            {onlyTop
+              ? 'Aucune contribution majeure identifiée pour ce filtre.'
+              : `Aucun article ${filter === 'positive' ? 'positif' : filter === 'negative' ? 'négatif' : 'neutre'} sur cette période.`}
           </p>
         ) : (
           (() => {
-            // Top 1-2 contributions par valeur absolue (sentiment × importance)
-            const ranked = filteredArticles
-              .filter((a) => a.hasWeight)
-              .map((a) => ({ id: a.id, contrib: Math.abs(a.sentiment * a.importance) }))
-              .filter((x) => x.contrib > 0)
-              .sort((a, b) => b.contrib - a.contrib);
-            const topThreshold = ranked.length >= 5 ? 2 : ranked.length >= 2 ? 1 : ranked.length;
-            const topIds = new Set(ranked.slice(0, topThreshold).map((x) => x.id));
-
             return filteredArticles.map((article) => {
               const s = sentimentLabel(article.sentiment);
               const sentimentPct = Math.round(((article.sentiment + 1) / 2) * 100);
