@@ -275,6 +275,7 @@ function SentimentContent({
   isFilterPending: boolean;
   isPeriodPending: boolean;
 }) {
+  const [selectedArticle, setSelectedArticle] = useState<SentimentArticle | null>(null);
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['sentiment-sources', sinceISO, limit],
     queryFn: () => fetchSentimentSources(sinceISO, limit),
