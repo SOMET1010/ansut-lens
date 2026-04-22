@@ -231,6 +231,27 @@ function SentimentContent({
                 = {data.avgSentiment.toFixed(2)}
               </span>
             </div>
+            <details className="text-[10px] text-muted-foreground">
+              <summary className="cursor-pointer hover:text-foreground select-none">
+                ℹ️ Comment lire ce calcul ?
+              </summary>
+              <div className="mt-1 space-y-1 pl-3 border-l border-muted">
+                <p>
+                  <span className="font-semibold text-foreground">Importance (poids) :</span> note brute 0–100 attribuée par l'IA lors de l'ingestion (pertinence stratégique, source, fraîcheur). Aucune normalisation : la valeur est utilisée telle quelle comme coefficient. Un article à 90 pèse ainsi 3× plus qu'un article à 30.
+                </p>
+                <p>
+                  <span className="font-semibold text-foreground">Sentiment :</span> score IA borné entre <span className="font-mono">−1</span> (très négatif) et <span className="font-mono">+1</span> (très positif). Le seuil de classification est ±0,2 (zone neutre entre les deux).
+                </p>
+                <p>
+                  <span className="font-semibold text-foreground">Signe du sentiment pondéré :</span>
+                </p>
+                <ul className="list-disc list-inside space-y-0.5 pl-1">
+                  <li><span className="text-emerald-600 dark:text-emerald-500 font-semibold">+ (positif)</span> : la couverture penche favorablement, surtout sur les articles à fort poids.</li>
+                  <li><span className="text-muted-foreground font-semibold">≈ 0 (neutre)</span> : équilibre ou absence de polarité marquée.</li>
+                  <li><span className="text-destructive font-semibold">− (négatif)</span> : couverture critique dominante, à surveiller.</li>
+                </ul>
+              </div>
+            </details>
             {data.totalUnweighted > 0 && (
               <p className="text-[10px] text-amber-600 dark:text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded px-1.5 py-1 flex items-start gap-1">
                 <span className="font-semibold">⚠</span>
