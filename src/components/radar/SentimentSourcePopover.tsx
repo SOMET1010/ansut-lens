@@ -473,14 +473,24 @@ function SentimentContent({
       </div>
 
       <div className="px-3 pb-3 space-y-2 max-h-80 overflow-y-auto">
-        {isRecomputing ? (
+        {isRecomputing || isPeriodPending ? (
           <div aria-busy="true" aria-label={`Chargement des contributeurs (${period})`} className="space-y-2">
-            <p className="text-[10px] text-muted-foreground italic text-center">
+            <p className="text-[10px] text-muted-foreground italic text-center flex items-center justify-center gap-1.5">
+              <Loader2 className="h-3 w-3 animate-spin" />
               Chargement des contributeurs sur la période <span className="font-semibold">{period}</span>…
             </p>
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
+          </div>
+        ) : isFilterPending ? (
+          <div aria-busy="true" aria-label={`Filtrage en cours (${filter})`} className="space-y-2">
+            <p className="text-[10px] text-muted-foreground italic text-center flex items-center justify-center gap-1.5">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Application du filtre <span className="font-semibold">{FILTER_LABEL[filter]}</span>…
+            </p>
+            <Skeleton className="h-12 w-full opacity-60" />
+            <Skeleton className="h-12 w-full opacity-40" />
           </div>
         ) : !data || data.articles.length === 0 ? (
           <p className="text-xs text-muted-foreground text-center py-4">
