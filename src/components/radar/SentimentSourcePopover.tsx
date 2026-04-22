@@ -366,7 +366,7 @@ function SentimentContent({
                     ) : (
                       <span className="italic text-muted-foreground/70">Source inconnue</span>
                     )}
-                    {' · '}Contribution : <span className="font-mono">{(article.sentiment * article.importance).toFixed(1)}</span>
+                    {' · '}Contribution : <span className="font-mono">{article.hasWeight ? (article.sentiment * article.importance).toFixed(1) : 'n/a'}</span>
                   </span>
                   {article.date && (
                     <span className="shrink-0 ml-2">
