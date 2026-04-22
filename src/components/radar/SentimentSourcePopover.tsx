@@ -217,6 +217,8 @@ function SentimentContent({
   sort,
   onSortChange,
   onLoadMore,
+  isFilterPending,
+  isPeriodPending,
 }: {
   sinceISO: string;
   limit: number;
@@ -229,6 +231,8 @@ function SentimentContent({
   sort: SortKey;
   onSortChange: (s: SortKey) => void;
   onLoadMore: () => void;
+  isFilterPending: boolean;
+  isPeriodPending: boolean;
 }) {
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['sentiment-sources', sinceISO, limit],
