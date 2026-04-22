@@ -9,12 +9,19 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 type PeriodKey = '24h' | '7j' | '30j';
+type SentimentFilter = 'all' | 'positive' | 'neutral' | 'negative';
 
 const PERIOD_HOURS: Record<PeriodKey, number> = {
   '24h': 24,
   '7j': 24 * 7,
   '30j': 24 * 30,
 };
+
+function classifySentiment(value: number): Exclude<SentimentFilter, 'all'> {
+  if (value > 0.2) return 'positive';
+  if (value < -0.2) return 'negative';
+  return 'neutral';
+}
 
 interface SentimentSourcePopoverProps {
   children: ReactNode;
@@ -81,6 +88,7 @@ export function SentimentSourcePopover({
   title = 'Détail du sentiment moyen',
 }: SentimentSourcePopoverProps) {
   const [period, setPeriod] = useState<PeriodKey>(defaultPeriod);
+  const [filter, setFilter] = useState<SentimentFilter>('all');
   const sinceISO = new Date(Date.now() - PERIOD_HOURS[period] * 3600 * 1000).toISOString();
 
   return (
@@ -95,6 +103,8 @@ export function SentimentSourcePopover({
           title={title}
           period={period}
           onPeriodChange={setPeriod}
+          filter={filter}
+          onFilterChange={setFilter}
         />
       </PopoverContent>
     </Popover>
@@ -107,18 +117,34 @@ function SentimentContent({
   title,
   period,
   onPeriodChange,
+  filter,
+  onFilterChange,
 }: {
   sinceISO: string;
   limit: number;
   title: string;
   period: PeriodKey;
   onPeriodChange: (p: PeriodKey) => void;
+  filter: SentimentFilter;
+  onFilterChange: (f: SentimentFilter) => void;
 }) {
   const { data, isLoading } = useQuery({
     queryKey: ['sentiment-sources', sinceISO, limit],
     queryFn: () => fetchSentimentSources(sinceISO, limit),
     staleTime: 60_000,
   });
+
+  const filteredArticles = data?.articles.filter((a) =>
+    filter === 'all' ? true : classifySentiment(a.sentiment) === filter
+  ) ?? [];
+
+  // Counts par catégorie pour les badges
+  const counts = {
+    all: data?.articles.length ?? 0,
+    positive: data?.articles.filter((a) => classifySentiment(a.sentiment) === 'positive').length ?? 0,
+    neutral: data?.articles.filter((a) => classifySentiment(a.sentiment) === 'neutral').length ?? 0,
+    negative: data?.articles.filter((a) => classifySentiment(a.sentiment) === 'negative').length ?? 0,
+  };
 
   return (
     <div className="space-y-2">
@@ -137,7 +163,7 @@ function SentimentContent({
           </Tabs>
         </div>
         {data && (
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             <p className="text-xs text-muted-foreground">
               Calculé sur {data.totalAnalyzed} article{data.totalAnalyzed > 1 ? 's' : ''} analysé{data.totalAnalyzed > 1 ? 's' : ''}
               {' · '}Moyenne pondérée : <span className="font-semibold text-foreground">{data.avgSentiment.toFixed(2)}</span>
@@ -147,6 +173,27 @@ function SentimentContent({
             </p>
           </div>
         )}
+
+        {/* Filtre par sentiment */}
+        <Tabs value={filter} onValueChange={(v) => onFilterChange(v as SentimentFilter)}>
+          <TabsList className="h-7 w-full grid grid-cols-4">
+            <TabsTrigger value="all" className="text-[10px] px-1 h-6">
+              Tous ({counts.all})
+            </TabsTrigger>
+            <TabsTrigger value="positive" className="text-[10px] px-1 h-6 data-[state=active]:text-signal-positive">
+              <TrendingUp className="h-3 w-3 mr-0.5" />
+              {counts.positive}
+            </TabsTrigger>
+            <TabsTrigger value="neutral" className="text-[10px] px-1 h-6">
+              <Minus className="h-3 w-3 mr-0.5" />
+              {counts.neutral}
+            </TabsTrigger>
+            <TabsTrigger value="negative" className="text-[10px] px-1 h-6 data-[state=active]:text-destructive">
+              <TrendingDown className="h-3 w-3 mr-0.5" />
+              {counts.negative}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       <div className="px-3 pb-3 space-y-2 max-h-80 overflow-y-auto">
@@ -160,8 +207,12 @@ function SentimentContent({
           <p className="text-xs text-muted-foreground text-center py-4">
             Aucun article avec sentiment analysé sur cette période.
           </p>
+        ) : filteredArticles.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-4">
+            Aucun article {filter === 'positive' ? 'positif' : filter === 'negative' ? 'négatif' : 'neutre'} sur cette période.
+          </p>
         ) : (
-          data.articles.map((article) => {
+          filteredArticles.map((article) => {
             const s = sentimentLabel(article.sentiment);
             // Score normalisé sur barre 0-100 (sentiment va de -1 à +1)
             const sentimentPct = Math.round(((article.sentiment + 1) / 2) * 100);
