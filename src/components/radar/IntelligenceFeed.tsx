@@ -4,12 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { IntelligenceCard } from './IntelligenceCard';
+import { SectionEmptyState } from './SectionEmptyState';
 import { Actualite } from '@/types';
 import { toast } from 'sonner';
 
 interface IntelligenceFeedProps {
   actualites: Actualite[];
   isLoading?: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
   lastUpdate?: Date | null;
   hasMore?: boolean;
   onLoadMore?: () => void;
@@ -21,6 +24,8 @@ const INITIAL_DISPLAY_COUNT = 10;
 export function IntelligenceFeed({ 
   actualites, 
   isLoading, 
+  isError,
+  onRetry,
   lastUpdate,
   hasMore = true,
   onLoadMore,
@@ -94,18 +99,36 @@ export function IntelligenceFeed({
     );
   }
 
+  if (isError) {
+    return (
+      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-border bg-muted/30">
+          <h2 className="font-semibold text-foreground">Flux d'Analyse Temps Réel</h2>
+        </div>
+        <div className="p-5">
+          <SectionEmptyState
+            variant="error"
+            title="Flux d'analyse indisponible"
+            description="Les actualités n'ont pas pu être récupérées. Vérifiez la connexion au backend."
+            onRetry={onRetry}
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (actualites.length === 0) {
     return (
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
         <div className="p-5 border-b border-border bg-muted/30 flex justify-between items-center">
           <h2 className="font-semibold text-foreground">Flux d'Analyse Temps Réel</h2>
         </div>
-        <div className="py-16 text-center">
-          <Newspaper className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
-          <p className="text-muted-foreground font-medium">Aucune actualité récente</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Les analyses apparaîtront après la prochaine collecte
-          </p>
+        <div className="p-5">
+          <SectionEmptyState
+            icon={<Newspaper className="h-8 w-8" />}
+            title="Aucune actualité récente"
+            description="Les analyses apparaîtront automatiquement après la prochaine collecte programmée."
+          />
         </div>
       </div>
     );
