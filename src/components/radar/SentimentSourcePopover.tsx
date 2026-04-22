@@ -180,7 +180,7 @@ function SentimentContent({
             <TabsTrigger value="all" className="text-[10px] px-1 h-6">
               Tous ({counts.all})
             </TabsTrigger>
-            <TabsTrigger value="positive" className="text-[10px] px-1 h-6 data-[state=active]:text-emerald-600">
+            <TabsTrigger value="positive" className="text-[10px] px-1 h-6 data-[state=active]:text-signal-positive">
               <TrendingUp className="h-3 w-3 mr-0.5" />
               {counts.positive}
             </TabsTrigger>
