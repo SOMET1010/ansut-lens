@@ -12,9 +12,10 @@ import { supabase } from '@/integrations/supabase/client';
 
 type PeriodKey = '24h' | '7j' | '30j';
 type SentimentFilter = 'all' | 'positive' | 'neutral' | 'negative';
-type SortKey = 'weight_desc' | 'weight_asc' | 'sentiment_desc' | 'sentiment_asc' | 'date_desc';
+type SortKey = 'impact_then_date' | 'weight_desc' | 'weight_asc' | 'sentiment_desc' | 'sentiment_asc' | 'date_desc';
 
 const SORT_LABELS: Record<SortKey, string> = {
+  impact_then_date: 'Impact (poids ↓) puis date ↓',
   weight_desc: 'Poids ↓ (contributions majeures)',
   weight_asc: 'Poids ↑',
   sentiment_desc: 'Sentiment ↓ (positif d\'abord)',
@@ -126,7 +127,7 @@ export function SentimentSourcePopover({
 }: SentimentSourcePopoverProps) {
   const [period, setPeriod] = useState<PeriodKey>(defaultPeriod);
   const [filter, setFilter] = useState<SentimentFilter>('all');
-  const [sort, setSort] = useState<SortKey>('weight_desc');
+  const [sort, setSort] = useState<SortKey>('impact_then_date');
   const [displayedLimit, setDisplayedLimit] = useState<number>(limit);
   const sinceISO = new Date(Date.now() - PERIOD_HOURS[period] * 3600 * 1000).toISOString();
 
@@ -197,16 +198,18 @@ function SentimentContent({
   const filteredArticles = (data?.articles.filter((a) =>
     filter === 'all' ? true : classifySentiment(a.sentiment) === filter
   ) ?? []).slice().sort((a, b) => {
+    const dateOf = (x: typeof a) => (x.date ? new Date(x.date).getTime() : 0);
     switch (sort) {
+      case 'impact_then_date': {
+        // Tri composite : poids ↓ d'abord, puis date ↓ en cas d'égalité de poids
+        if (b.importance !== a.importance) return b.importance - a.importance;
+        return dateOf(b) - dateOf(a);
+      }
       case 'weight_desc': return b.importance - a.importance;
       case 'weight_asc': return a.importance - b.importance;
       case 'sentiment_desc': return b.sentiment - a.sentiment;
       case 'sentiment_asc': return a.sentiment - b.sentiment;
-      case 'date_desc': {
-        const da = a.date ? new Date(a.date).getTime() : 0;
-        const db = b.date ? new Date(b.date).getTime() : 0;
-        return db - da;
-      }
+      case 'date_desc': return dateOf(b) - dateOf(a);
     }
   });
 
