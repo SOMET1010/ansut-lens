@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, TrendingDown, Minus, Target, MessageSquare, Newspaper, AlertTriangle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { EvidencePopover } from './EvidencePopover';
 
 interface MediaImpactData {
   totalArticles: number;
@@ -112,35 +113,62 @@ export default function MediaImpactWidget() {
       <CardContent className="space-y-4">
         {/* KPI Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="text-center">
-            <p className="text-2xl font-bold">{data.totalArticles}</p>
-            <p className="text-xs text-muted-foreground">Articles 24h</p>
-          </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-1">
-              <Target className="h-4 w-4 text-primary" />
-              <p className="text-2xl font-bold">{data.mentionsAnsut}</p>
+          <EvidencePopover
+            title="Articles collectés (24h)"
+            description="Articles ingérés ces dernières 24 heures"
+            source={{ kind: 'actualites', sinceISO: new Date(Date.now() - 24 * 3600 * 1000).toISOString(), limit: 5 }}
+          >
+            <div className="text-center">
+              <p className="text-2xl font-bold">{data.totalArticles}</p>
+              <p className="text-xs text-muted-foreground">Articles 24h</p>
             </div>
-            <p className="text-xs text-muted-foreground">Mentions ANSUT</p>
-          </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-1">
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              <SentimentIndicator value={data.avgSentiment} trend={data.sentimentTrend} />
-            </div>
-            <p className="text-xs text-muted-foreground">Sentiment</p>
-          </div>
-          <div className="text-center">
-            {data.criticalAlerts > 0 ? (
+          </EvidencePopover>
+
+          <EvidencePopover
+            title="Mentions ANSUT (24h)"
+            description="Articles avec impact ANSUT identifié"
+            source={{ kind: 'actualites', sinceISO: new Date(Date.now() - 24 * 3600 * 1000).toISOString(), filter: 'ansut', limit: 5 }}
+          >
+            <div className="text-center">
               <div className="flex items-center justify-center gap-1">
-                <AlertTriangle className="h-4 w-4 text-destructive animate-pulse" />
-                <p className="text-2xl font-bold text-destructive">{data.criticalAlerts}</p>
+                <Target className="h-4 w-4 text-primary" />
+                <p className="text-2xl font-bold">{data.mentionsAnsut}</p>
               </div>
-            ) : (
-              <p className="text-2xl font-bold text-emerald-500">0</p>
-            )}
-            <p className="text-xs text-muted-foreground">Alertes critiques</p>
-          </div>
+              <p className="text-xs text-muted-foreground">Mentions ANSUT</p>
+            </div>
+          </EvidencePopover>
+
+          <EvidencePopover
+            title="Sentiment moyen"
+            description="Articles ayant déterminé le sentiment global"
+            source={{ kind: 'actualites', sinceISO: new Date(Date.now() - 24 * 3600 * 1000).toISOString(), limit: 5 }}
+          >
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1">
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                <SentimentIndicator value={data.avgSentiment} trend={data.sentimentTrend} />
+              </div>
+              <p className="text-xs text-muted-foreground">Sentiment</p>
+            </div>
+          </EvidencePopover>
+
+          <EvidencePopover
+            title="Alertes critiques (24h)"
+            description="Alertes de niveau critique sur 24 heures"
+            source={{ kind: 'alertes', sinceISO: new Date(Date.now() - 24 * 3600 * 1000).toISOString(), niveau: 'critical', limit: 5 }}
+          >
+            <div className="text-center">
+              {data.criticalAlerts > 0 ? (
+                <div className="flex items-center justify-center gap-1">
+                  <AlertTriangle className="h-4 w-4 text-destructive animate-pulse" />
+                  <p className="text-2xl font-bold text-destructive">{data.criticalAlerts}</p>
+                </div>
+              ) : (
+                <p className="text-2xl font-bold text-emerald-500">0</p>
+              )}
+              <p className="text-xs text-muted-foreground">Alertes critiques</p>
+            </div>
+          </EvidencePopover>
         </div>
 
         {/* Top article */}
