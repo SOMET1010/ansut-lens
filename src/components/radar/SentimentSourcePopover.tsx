@@ -78,7 +78,7 @@ async function fetchSentimentSources(sinceISO?: string, limit = 10): Promise<{
 }> {
   let q = supabase
     .from('actualites')
-    .select('id, titre, source_nom, source_url, sentiment, importance, date_publication, created_at')
+    .select('id, titre, source_nom, source_url, source_type, sentiment, importance, date_publication, created_at')
     .not('sentiment', 'is', null)
     .order('importance', { ascending: false, nullsFirst: false })
     .limit(limit);
@@ -96,6 +96,7 @@ async function fetchSentimentSources(sinceISO?: string, limit = 10): Promise<{
       titre: a.titre,
       source_nom: a.source_nom,
       source_url: a.source_url,
+      source_type: a.source_type ?? null,
       sentiment: Number(a.sentiment ?? 0),
       importance: hasWeight ? Number(rawImp) : 0,
       hasWeight,
