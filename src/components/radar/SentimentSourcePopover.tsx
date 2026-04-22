@@ -317,12 +317,15 @@ function SentimentContent({
       </div>
 
       <div className="px-3 pb-3 space-y-2 max-h-80 overflow-y-auto">
-        {isLoading ? (
-          <>
+        {isRecomputing ? (
+          <div aria-busy="true" aria-label={`Chargement des contributeurs (${period})`} className="space-y-2">
+            <p className="text-[10px] text-muted-foreground italic text-center">
+              Chargement des contributeurs sur la période <span className="font-semibold">{period}</span>…
+            </p>
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
-          </>
+          </div>
         ) : !data || data.articles.length === 0 ? (
           <p className="text-xs text-muted-foreground text-center py-4">
             Aucun article avec sentiment analysé sur cette période.
