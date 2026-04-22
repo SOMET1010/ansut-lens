@@ -4,12 +4,22 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 type PeriodKey = '24h' | '7j' | '30j';
 type SentimentFilter = 'all' | 'positive' | 'neutral' | 'negative';
+type SortKey = 'weight_desc' | 'weight_asc' | 'sentiment_desc' | 'sentiment_asc' | 'date_desc';
+
+const SORT_LABELS: Record<SortKey, string> = {
+  weight_desc: 'Poids ↓ (contributions majeures)',
+  weight_asc: 'Poids ↑',
+  sentiment_desc: 'Sentiment ↓ (positif d\'abord)',
+  sentiment_asc: 'Sentiment ↑ (négatif d\'abord)',
+  date_desc: 'Date (plus récent)',
+};
 
 const PERIOD_HOURS: Record<PeriodKey, number> = {
   '24h': 24,
