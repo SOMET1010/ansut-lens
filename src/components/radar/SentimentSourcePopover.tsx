@@ -217,6 +217,20 @@ function SentimentContent({
         {data && (
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">
+        {isRecomputing ? (
+          <div className="space-y-1.5" aria-busy="true" aria-label={`Recalcul du sentiment pour ${period}`}>
+            <Skeleton className="h-3 w-2/3" />
+            <Skeleton className="h-4 w-full" />
+            <div className="flex gap-1.5">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-12" />
+            </div>
+            <p className="text-[10px] text-muted-foreground italic">Recalcul en cours pour la période {period}…</p>
+          </div>
+        ) : data && (
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">
               Calculé sur <span className="font-semibold text-foreground">{data.totalWeighted}</span> article{data.totalWeighted > 1 ? 's' : ''} pondéré{data.totalWeighted > 1 ? 's' : ''}
               {' · '}Moyenne : <span className="font-semibold text-foreground">{data.avgSentiment.toFixed(2)}</span>
             </p>
