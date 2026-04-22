@@ -170,6 +170,10 @@ function SentimentContent({
   onFilterChange,
   sort,
   onSortChange,
+  sourceType,
+  onSourceTypeChange,
+  minImportance,
+  onMinImportanceChange,
 }: {
   sinceISO: string;
   limit: number;
@@ -180,6 +184,10 @@ function SentimentContent({
   onFilterChange: (f: SentimentFilter) => void;
   sort: SortKey;
   onSortChange: (s: SortKey) => void;
+  sourceType: string;
+  onSourceTypeChange: (v: string) => void;
+  minImportance: number;
+  onMinImportanceChange: (v: number) => void;
 }) {
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['sentiment-sources', sinceISO, limit],
@@ -190,9 +198,29 @@ function SentimentContent({
   // Recalcul en cours = nouvelle période non encore mise en cache OU premier chargement
   const isRecomputing = isLoading || (isFetching && !data);
 
-  const filteredArticles = (data?.articles.filter((a) =>
-    filter === 'all' ? true : classifySentiment(a.sentiment) === filter
-  ) ?? []).slice().sort((a, b) => {
+  // Liste des types de source disponibles dans le jeu de données
+  const availableSourceTypes = Array.from(
+    new Set((data?.articles ?? []).map((a) => a.source_type).filter((t): t is string => Boolean(t)))
+  ).sort();
+
+  // Sous-ensemble filtré par l'utilisateur (sentiment + source type + seuil importance)
+  const subset = (data?.articles ?? []).filter((a) => {
+    if (filter !== 'all' && classifySentiment(a.sentiment) !== filter) return false;
+    if (sourceType !== 'all' && a.source_type !== sourceType) return false;
+    if (minImportance > 0 && (!a.hasWeight || a.importance < minImportance)) return false;
+    return true;
+  });
+
+  // Recalcul des stats pondérées sur le sous-ensemble
+  const subsetWeighted = subset.filter((a) => a.hasWeight);
+  const subsetSumWeight = subsetWeighted.reduce((s, a) => s + a.importance, 0);
+  const subsetSumWeightedSentiment = subsetWeighted.reduce((s, a) => s + a.sentiment * a.importance, 0);
+  const subsetAvg = subsetSumWeight > 0
+    ? Math.round((subsetSumWeightedSentiment / subsetSumWeight) * 100) / 100
+    : 0;
+  const subsetUnweighted = subset.length - subsetWeighted.length;
+
+  const filteredArticles = subset.slice().sort((a, b) => {
     switch (sort) {
       case 'weight_desc': return b.importance - a.importance;
       case 'weight_asc': return a.importance - b.importance;
@@ -206,7 +234,9 @@ function SentimentContent({
     }
   });
 
-  // Counts par catégorie pour les badges
+  const isFiltered = filter !== 'all' || sourceType !== 'all' || minImportance > 0;
+
+  // Counts par catégorie pour les badges (sur l'ensemble brut)
   const counts = {
     all: data?.articles.length ?? 0,
     positive: data?.articles.filter((a) => classifySentiment(a.sentiment) === 'positive').length ?? 0,
