@@ -5,6 +5,7 @@ import { TrendingUp, TrendingDown, Minus, Target, MessageSquare, Newspaper, Aler
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { EvidencePopover } from './EvidencePopover';
+import { SentimentSourcePopover } from './SentimentSourcePopover';
 import { SectionEmptyState } from './SectionEmptyState';
 
 interface MediaImpactData {
