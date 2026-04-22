@@ -506,6 +506,12 @@ function SentimentContent({
                 </Tooltip>
               )}
             </p>
+            {/* Annonce accessible : informe les lecteurs d'écran du nombre de Top contributions et du seuil */}
+            <span aria-live="polite" aria-atomic="true" className="sr-only">
+              {topCount > 0
+                ? `${topCount} contribution${topCount > 1 ? 's' : ''} marquée${topCount > 1 ? 's' : ''} comme Top, seuil de poids ${topThresholdWeight} sur la liste actuelle.`
+                : 'Aucune contribution Top dans la liste actuelle.'}
+            </span>
             {isBackgroundRefreshing && (
               <span
                 className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0 animate-in fade-in"
