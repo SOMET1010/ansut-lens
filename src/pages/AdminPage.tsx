@@ -171,7 +171,7 @@ export default function AdminPage() {
               title="Auto-Veille Institutionnelle"
               badge="Miroir"
               badgeVariant="info"
-              subtitle="Mesurez la résonance de vos publications, part de voix et VIP tracker."
+              subtitle="Mesurez la résonance de vos publications, visibilité globale et VIP tracker."
               to="/admin/auto-veille"
               loading={isLoading}
             />

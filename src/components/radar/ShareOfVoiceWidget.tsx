@@ -115,7 +115,7 @@ export default function ShareOfVoiceWidget() {
       <CardContent className="space-y-4">
         <div className="space-y-3">
           <EvidencePopover
-            title="Owned — Publications ANSUT"
+            title="Communication ANSUT — Publications"
             description="Publications institutionnelles diffusées ce mois"
             source={{ kind: 'publications', sinceISO: startOfMonth, limit: 5 }}
           >
@@ -123,7 +123,7 @@ export default function ShareOfVoiceWidget() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-primary" />
-                  <span className="text-sm font-medium">Owned (ANSUT)</span>
+                  <span className="text-sm font-medium">Communication ANSUT</span>
                 </div>
                 <span className="text-sm font-bold">{data.pubAnsut}</span>
               </div>
@@ -176,7 +176,7 @@ export default function ShareOfVoiceWidget() {
             )}
             <div>
               <p className={`text-sm font-medium ${gapColor}`}>
-                Ratio Earned/Owned : {data.ratio}
+                Ratio Écho médiatique / Communication : {data.ratio}
               </p>
               {data.gap && (
                 <p className="text-xs text-muted-foreground mt-1">{data.gap}</p>
