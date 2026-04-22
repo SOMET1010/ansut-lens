@@ -127,7 +127,7 @@ export function SentimentSourcePopover({
 }: SentimentSourcePopoverProps) {
   const [period, setPeriod] = useState<PeriodKey>(defaultPeriod);
   const [filter, setFilter] = useState<SentimentFilter>('all');
-  const [sort, setSort] = useState<SortKey>('weight_desc');
+  const [sort, setSort] = useState<SortKey>('impact_then_date');
   const [displayedLimit, setDisplayedLimit] = useState<number>(limit);
   const sinceISO = new Date(Date.now() - PERIOD_HOURS[period] * 3600 * 1000).toISOString();
 
