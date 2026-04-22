@@ -9,12 +9,19 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 type PeriodKey = '24h' | '7j' | '30j';
+type SentimentFilter = 'all' | 'positive' | 'neutral' | 'negative';
 
 const PERIOD_HOURS: Record<PeriodKey, number> = {
   '24h': 24,
   '7j': 24 * 7,
   '30j': 24 * 30,
 };
+
+function classifySentiment(value: number): Exclude<SentimentFilter, 'all'> {
+  if (value > 0.2) return 'positive';
+  if (value < -0.2) return 'negative';
+  return 'neutral';
+}
 
 interface SentimentSourcePopoverProps {
   children: ReactNode;
