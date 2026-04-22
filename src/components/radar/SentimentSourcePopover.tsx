@@ -7,7 +7,8 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown, Sparkles, Loader2, Eye } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown, Sparkles, Loader2, Eye, Search, X } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -333,6 +334,7 @@ function SentimentContent({
   onPageSizeChange: (n: PageSize) => void;
 }) {
   const [selectedArticle, setSelectedArticle] = useState<SentimentArticle | null>(null);
+  const [search, setSearch] = useState('');
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['sentiment-sources', sinceISO, limit],
     queryFn: () => fetchSentimentSources(sinceISO, limit),
@@ -344,9 +346,19 @@ function SentimentContent({
   // Rafraîchissement discret en arrière-plan (données déjà affichées)
   const isBackgroundRefreshing = isFetching && !!data && !isLoading;
 
-  const filteredArticles = (data?.articles.filter((a) =>
+  // 1. Recherche mot-clé (titre + source) → 2. filtre sentiment → 3. tri
+  const normalizedSearch = search.trim().toLowerCase();
+  const matchesSearch = (a: SentimentArticle) => {
+    if (!normalizedSearch) return true;
+    return (
+      a.titre.toLowerCase().includes(normalizedSearch) ||
+      (a.source_nom?.toLowerCase().includes(normalizedSearch) ?? false)
+    );
+  };
+  const articlesAfterSearch = data?.articles.filter(matchesSearch) ?? [];
+  const filteredArticles = articlesAfterSearch.filter((a) =>
     filter === 'all' ? true : classifySentiment(a.sentiment) === filter
-  ) ?? []).slice().sort((a, b) => {
+  ).slice().sort((a, b) => {
     const dateOf = (x: typeof a) => (x.date ? new Date(x.date).getTime() : 0);
     switch (sort) {
       case 'impact_then_date': {
@@ -362,16 +374,17 @@ function SentimentContent({
     }
   });
 
-  // Counts par catégorie pour les badges
+  // Counts par catégorie pour les badges (après recherche, avant filtre sentiment)
   const counts = {
-    all: data?.articles.length ?? 0,
-    positive: data?.articles.filter((a) => classifySentiment(a.sentiment) === 'positive').length ?? 0,
-    neutral: data?.articles.filter((a) => classifySentiment(a.sentiment) === 'neutral').length ?? 0,
-    negative: data?.articles.filter((a) => classifySentiment(a.sentiment) === 'negative').length ?? 0,
+    all: articlesAfterSearch.length,
+    positive: articlesAfterSearch.filter((a) => classifySentiment(a.sentiment) === 'positive').length,
+    neutral: articlesAfterSearch.filter((a) => classifySentiment(a.sentiment) === 'neutral').length,
+    negative: articlesAfterSearch.filter((a) => classifySentiment(a.sentiment) === 'negative').length,
   };
 
   // Recalcul de la moyenne pondérée restreinte au filtre de sentiment courant
-  const scopedArticles = (data?.articles ?? []).filter((a) =>
+  // (sur l'univers déjà restreint par la recherche)
+  const scopedArticles = articlesAfterSearch.filter((a) =>
     filter === 'all' ? true : classifySentiment(a.sentiment) === filter
   );
   const scopedWeighted = scopedArticles.filter((a) => a.hasWeight);
@@ -381,7 +394,7 @@ function SentimentContent({
     ? Math.round((scopedSumWeightedSentiment / scopedSumWeight) * 100) / 100
     : 0;
   const scopedUnweighted = scopedArticles.length - scopedWeighted.length;
-  const isScoped = filter !== 'all';
+  const isScoped = filter !== 'all' || normalizedSearch.length > 0;
 
   // Valeurs affichées (scopées si un filtre est actif, sinon globales)
   const dispWeightedCount = isScoped ? scopedWeighted.length : (data?.totalWeighted ?? 0);
@@ -531,6 +544,37 @@ function SentimentContent({
               </p>
             )}
           </div>
+        )}
+
+        {/* Recherche par mot-clé (titre + source) — appliquée AVANT sentiment & tri */}
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+          <Input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher par titre ou source…"
+            className="h-7 pl-7 pr-7 text-[11px]"
+            aria-label="Filtrer les articles par mot-clé"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+              aria-label="Effacer la recherche"
+              title="Effacer la recherche"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+        {normalizedSearch && (
+          <p className="text-[10px] text-muted-foreground -mt-1">
+            {articlesAfterSearch.length} résultat{articlesAfterSearch.length > 1 ? 's' : ''} pour
+            <span className="font-mono mx-1 text-foreground">"{search.trim()}"</span>
+            avant filtre sentiment.
+          </p>
         )}
 
         {/* Filtre par sentiment */}
