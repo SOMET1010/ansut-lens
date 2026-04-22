@@ -373,16 +373,17 @@ function SentimentContent({
     }
   });
 
-  // Counts par catégorie pour les badges
+  // Counts par catégorie pour les badges (après recherche, avant filtre sentiment)
   const counts = {
-    all: data?.articles.length ?? 0,
-    positive: data?.articles.filter((a) => classifySentiment(a.sentiment) === 'positive').length ?? 0,
-    neutral: data?.articles.filter((a) => classifySentiment(a.sentiment) === 'neutral').length ?? 0,
-    negative: data?.articles.filter((a) => classifySentiment(a.sentiment) === 'negative').length ?? 0,
+    all: articlesAfterSearch.length,
+    positive: articlesAfterSearch.filter((a) => classifySentiment(a.sentiment) === 'positive').length,
+    neutral: articlesAfterSearch.filter((a) => classifySentiment(a.sentiment) === 'neutral').length,
+    negative: articlesAfterSearch.filter((a) => classifySentiment(a.sentiment) === 'negative').length,
   };
 
   // Recalcul de la moyenne pondérée restreinte au filtre de sentiment courant
-  const scopedArticles = (data?.articles ?? []).filter((a) =>
+  // (sur l'univers déjà restreint par la recherche)
+  const scopedArticles = articlesAfterSearch.filter((a) =>
     filter === 'all' ? true : classifySentiment(a.sentiment) === filter
   );
   const scopedWeighted = scopedArticles.filter((a) => a.hasWeight);
@@ -392,7 +393,7 @@ function SentimentContent({
     ? Math.round((scopedSumWeightedSentiment / scopedSumWeight) * 100) / 100
     : 0;
   const scopedUnweighted = scopedArticles.length - scopedWeighted.length;
-  const isScoped = filter !== 'all';
+  const isScoped = filter !== 'all' || normalizedSearch.length > 0;
 
   // Valeurs affichées (scopées si un filtre est actif, sinon globales)
   const dispWeightedCount = isScoped ? scopedWeighted.length : (data?.totalWeighted ?? 0);
