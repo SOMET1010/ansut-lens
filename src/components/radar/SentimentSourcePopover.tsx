@@ -198,16 +198,18 @@ function SentimentContent({
   const filteredArticles = (data?.articles.filter((a) =>
     filter === 'all' ? true : classifySentiment(a.sentiment) === filter
   ) ?? []).slice().sort((a, b) => {
+    const dateOf = (x: typeof a) => (x.date ? new Date(x.date).getTime() : 0);
     switch (sort) {
+      case 'impact_then_date': {
+        // Tri composite : poids ↓ d'abord, puis date ↓ en cas d'égalité de poids
+        if (b.importance !== a.importance) return b.importance - a.importance;
+        return dateOf(b) - dateOf(a);
+      }
       case 'weight_desc': return b.importance - a.importance;
       case 'weight_asc': return a.importance - b.importance;
       case 'sentiment_desc': return b.sentiment - a.sentiment;
       case 'sentiment_asc': return a.sentiment - b.sentiment;
-      case 'date_desc': {
-        const da = a.date ? new Date(a.date).getTime() : 0;
-        const db = b.date ? new Date(b.date).getTime() : 0;
-        return db - da;
-      }
+      case 'date_desc': return dateOf(b) - dateOf(a);
     }
   });
 
