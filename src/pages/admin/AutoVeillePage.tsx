@@ -59,9 +59,9 @@ export default function AutoVeillePage() {
 
   const latestVoix = partDeVoix?.[0];
   const pieData = latestVoix ? [
-    { name: 'Owned (Publications)', value: latestVoix.nb_publications_ansut, color: 'hsl(var(--primary))' },
-    { name: 'Earned (Presse)', value: latestVoix.nb_articles_presse, color: 'hsl(var(--chart-2))' },
-    { name: 'Social', value: latestVoix.nb_mentions_social, color: 'hsl(var(--chart-3))' },
+    { name: 'Communication ANSUT', value: latestVoix.nb_publications_ansut, color: 'hsl(var(--primary))' },
+    { name: 'Écho médiatique (Presse)', value: latestVoix.nb_articles_presse, color: 'hsl(var(--chart-2))' },
+    { name: 'Mentions sociales', value: latestVoix.nb_mentions_social, color: 'hsl(var(--chart-3))' },
   ] : [];
 
   return (
@@ -121,7 +121,7 @@ export default function AutoVeillePage() {
         </Card>
         <Card className="glass">
           <CardContent className="pt-4 pb-3">
-            <p className="text-xs text-muted-foreground">Ratio Earned/Owned</p>
+            <p className="text-xs text-muted-foreground">Ratio Écho / Communication</p>
             {statsLoading ? <Skeleton className="h-8 w-20 mt-1" /> : (
               <p className="text-2xl font-bold">
                 {stats?.latestVoix?.ratio_earned_owned?.toFixed(1) || '—'}
@@ -144,7 +144,7 @@ export default function AutoVeillePage() {
         <TabsList className="grid grid-cols-5 w-full max-w-2xl">
           <TabsTrigger value="publications">Publications</TabsTrigger>
           <TabsTrigger value="echo">Écho</TabsTrigger>
-          <TabsTrigger value="voix">Part de Voix</TabsTrigger>
+          <TabsTrigger value="voix">Visibilité Globale</TabsTrigger>
           <TabsTrigger value="architecture">Architecture</TabsTrigger>
           <TabsTrigger value="vip">VIP</TabsTrigger>
         </TabsList>
@@ -296,7 +296,7 @@ export default function AutoVeillePage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card className="glass">
                 <CardHeader>
-                  <CardTitle className="text-sm">Évolution Part de Voix</CardTitle>
+                  <CardTitle className="text-sm">Évolution Visibilité Globale</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {voixChartData.length > 0 ? (
@@ -347,7 +347,7 @@ export default function AutoVeillePage() {
             <Card className="glass">
               <CardContent className="py-12 text-center">
                 <BarChart3 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="font-semibold mb-2">Pas encore de données Part de Voix</h3>
+                <h3 className="font-semibold mb-2">Pas encore de données Visibilité Globale</h3>
                 <p className="text-sm text-muted-foreground">Lancez l'analyse Écho en mode batch pour générer le rapport.</p>
               </CardContent>
             </Card>

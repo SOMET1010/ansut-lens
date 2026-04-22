@@ -199,10 +199,10 @@ export function SPDIBenchmarkPanel({ open, onOpenChange, preselectedActeur }: SP
               </MetricBlock>
 
               {/* Share of Voice */}
-              <MetricBlock title={`Part de Voix — ${acteurA.prenom ?? ''} ${acteurA.nom}`}>
+              <MetricBlock title={`Visibilité Globale — ${acteurA.prenom ?? ''} ${acteurA.nom}`}>
                 {isLoading ? <Skeleton className="h-14 w-full" /> : <ShareOfVoiceDonut {...dashA.shareOfVoice} />}
               </MetricBlock>
-              <MetricBlock title={`Part de Voix — ${acteurB.prenom ?? ''} ${acteurB.nom}`}>
+              <MetricBlock title={`Visibilité Globale — ${acteurB.prenom ?? ''} ${acteurB.nom}`}>
                 {isLoading ? <Skeleton className="h-14 w-full" /> : <ShareOfVoiceDonut {...dashB.shareOfVoice} />}
               </MetricBlock>
 

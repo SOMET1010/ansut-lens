@@ -155,7 +155,7 @@ export function SPDIDashboardCompact({
               )}
             </div>
             <div className="p-3 bg-muted/20 rounded-lg border border-border/50">
-              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">Part de Voix</span>
+              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2 block">Visibilité Globale</span>
               {dashboard.isLoading ? (
                 <Skeleton className="h-12 w-full" />
               ) : (
