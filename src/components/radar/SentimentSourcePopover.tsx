@@ -64,6 +64,8 @@ async function fetchSentimentSources(sinceISO?: string, limit = 10): Promise<{
   totalAnalyzed: number;
   totalWeighted: number;
   totalUnweighted: number;
+  sumWeight: number;
+  sumWeightedSentiment: number;
 }> {
   let q = supabase
     .from('actualites')
