@@ -220,6 +220,17 @@ function SentimentContent({
             <p className="text-[10px] text-muted-foreground font-mono bg-muted/50 px-1.5 py-0.5 rounded inline-block">
               Σ(sentiment × importance) ÷ Σ(importance)
             </p>
+            <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
+              <span className="bg-muted/50 px-1.5 py-0.5 rounded" title="Somme des poids (importance) des articles inclus">
+                Σ(importance) = <span className="font-semibold text-foreground">{data.sumWeight.toFixed(0)}</span>
+              </span>
+              <span className="bg-muted/50 px-1.5 py-0.5 rounded" title="Somme des contributions (sentiment × importance)">
+                Σ(sentiment × importance) = <span className="font-semibold text-foreground">{data.sumWeightedSentiment.toFixed(2)}</span>
+              </span>
+              <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded" title="Vérification : Σ pondérée ÷ Σ poids">
+                = {data.avgSentiment.toFixed(2)}
+              </span>
+            </div>
             {data.totalUnweighted > 0 && (
               <p className="text-[10px] text-amber-600 dark:text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded px-1.5 py-1 flex items-start gap-1">
                 <span className="font-semibold">⚠</span>
