@@ -214,9 +214,6 @@ function SentimentContent({
             </TabsList>
           </Tabs>
         </div>
-        {data && (
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">
         {isRecomputing ? (
           <div className="space-y-1.5" aria-busy="true" aria-label={`Recalcul du sentiment pour ${period}`}>
             <Skeleton className="h-3 w-2/3" />
