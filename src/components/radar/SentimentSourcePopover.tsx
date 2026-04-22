@@ -106,6 +106,8 @@ async function fetchSentimentSources(sinceISO?: string, limit = 10): Promise<{
     totalAnalyzed: articles.length,
     totalWeighted: weighted.length,
     totalUnweighted: articles.length - weighted.length,
+    sumWeight: totalWeight,
+    sumWeightedSentiment: weightedSum,
   };
 }
 
