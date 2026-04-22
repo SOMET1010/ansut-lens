@@ -13,17 +13,13 @@ import {
 } from '@/hooks/useRadarData';
 import {
   DailyBriefing,
-  CriticalAlertBanner,
   IntelligenceFeed,
   CompactRadar,
   SocialPulseWidget,
   RadarKpiTiles,
-  RealtimeAlertFeed,
   WeakSignalDetector,
   MediaImpactWidget,
   ShareOfVoiceWidget,
-  EchoResonanceWidget,
-  InfluenceursMetierWidget,
   RadarProximiteWidget,
 } from '@/components/radar';
 
@@ -90,17 +86,11 @@ export default function RadarPage() {
       {/* Media Impact Widget - for Com team */}
       <MediaImpactWidget />
 
-      {/* Share of Voice + Echo Resonance */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <ShareOfVoiceWidget />
-        <EchoResonanceWidget />
-      </div>
+      {/* Visibilité Globale (ex Share of Voice) */}
+      <ShareOfVoiceWidget />
 
-      {/* Influenceurs Métier + Radar de Proximité */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <InfluenceursMetierWidget />
-        <RadarProximiteWidget />
-      </div>
+      {/* Radar de Proximité */}
+      <RadarProximiteWidget />
 
       {/* KPI Tiles */}
       <RadarKpiTiles
@@ -117,17 +107,6 @@ export default function RadarPage() {
 
       {/* Weak Signal Detector */}
       <WeakSignalDetector />
-
-      {/* Critical Alert Banner */}
-      <CriticalAlertBanner 
-        signals={signaux || []}
-        onViewDetails={() => {
-          // TODO: implement signal detail view
-        }}
-      />
-
-      {/* Realtime Alert Feed */}
-      <RealtimeAlertFeed />
 
       {/* Social Pulse Widget */}
       <SocialPulseWidget />
