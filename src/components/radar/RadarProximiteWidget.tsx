@@ -27,6 +27,39 @@ function getHostname(u: string): string {
 }
 
 function useRadarProximite() {
+  const queryClient = useQueryClient();
+
+  // Realtime : recalcul automatique du tri pertinence dès qu'une donnée
+  // (similitude_score, date_detection, recommandation_com, projet_ansut_equivalent…)
+  // est créée ou mise à jour côté Supabase.
+  useEffect(() => {
+    const channel = supabase
+      .channel('radar-proximite-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'radar_proximite' },
+        (payload) => {
+          queryClient.invalidateQueries({ queryKey: ['radar-proximite'] });
+          if (payload.eventType === 'INSERT') {
+            toast.info('Nouveau projet détecté – tri pertinence mis à jour', { duration: 2500 });
+          } else if (payload.eventType === 'UPDATE') {
+            const oldRow: any = payload.old || {};
+            const newRow: any = payload.new || {};
+            const simChanged = oldRow.similitude_score !== newRow.similitude_score;
+            const dateChanged = oldRow.date_detection !== newRow.date_detection;
+            if (simChanged || dateChanged) {
+              toast.info('Données de pertinence actualisées – tri recalculé', { duration: 2500 });
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ['radar-proximite'],
     queryFn: async () => {
