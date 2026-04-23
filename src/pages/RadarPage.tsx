@@ -17,11 +17,8 @@ import {
   CompactRadar,
   SocialPulseWidget,
   RadarKpiTiles,
-  WeakSignalDetector,
-  MediaImpactWidget,
   ShareOfVoiceWidget,
   RadarProximiteWidget,
-  CriticalAlertsCard,
 } from '@/components/radar';
 
 const periodLabels: Record<PeriodFilter, string> = {
@@ -84,12 +81,6 @@ export default function RadarPage() {
         </TabsList>
       </Tabs>
 
-      {/* Critical Alerts — minimal notification center */}
-      <CriticalAlertsCard />
-
-      {/* Media Impact Widget - for Com team */}
-      <MediaImpactWidget />
-
       {/* Visibilité Globale (ex Share of Voice) */}
       <ShareOfVoiceWidget />
 
@@ -110,9 +101,6 @@ export default function RadarPage() {
 
       {/* Daily Briefing */}
       <DailyBriefing />
-
-      {/* Weak Signal Detector */}
-      <WeakSignalDetector />
 
       {/* Social Pulse Widget */}
       <SocialPulseWidget />
