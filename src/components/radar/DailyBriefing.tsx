@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Briefcase, RefreshCw, ShieldAlert, AlertCircle, Flag, CheckCircle, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Briefcase, RefreshCw, ShieldAlert, AlertCircle, Flag, CheckCircle, ExternalLink, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
