@@ -365,6 +365,47 @@ export default function RadarProximiteWidget() {
               </p>
             )}
 
+            {/* Filtre qualité de pertinence */}
+            {sourcedSorted.length > 0 && (partialCount > 0 || qualityFilter !== 'all') && (
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="text-[10px] text-muted-foreground mr-1">Filtrer :</span>
+                <Button
+                  variant={qualityFilter === 'all' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-6 px-2 text-[10px]"
+                  onClick={() => setQualityFilter('all')}
+                >
+                  Tous <span className="ml-1 text-muted-foreground">({sourcedSorted.length})</span>
+                </Button>
+                <Button
+                  variant={qualityFilter === 'complete' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-6 px-2 text-[10px] gap-1"
+                  onClick={() => setQualityFilter('complete')}
+                  disabled={completeCount === 0}
+                >
+                  <CheckCircle2 className="h-2.5 w-2.5 text-emerald-600" />
+                  Complète <span className="text-muted-foreground">({completeCount})</span>
+                </Button>
+                <Button
+                  variant={qualityFilter === 'partial' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-6 px-2 text-[10px] gap-1"
+                  onClick={() => setQualityFilter('partial')}
+                  disabled={partialCount === 0}
+                >
+                  <CircleHelp className="h-2.5 w-2.5 text-amber-600" />
+                  Indicative <span className="text-muted-foreground">({partialCount})</span>
+                </Button>
+              </div>
+            )}
+
+            {data.length === 0 && qualityFilter !== 'all' && (
+              <p className="text-[11px] text-muted-foreground italic px-1 py-3 text-center">
+                Aucun projet ne correspond à ce filtre.
+              </p>
+            )}
+
             {allPartial && (
               <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-2.5 text-[11px] flex items-start gap-2">
                 <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
