@@ -34,7 +34,9 @@ export default function FreshnessPage() {
     draft.default_window_hours !== settings.default_window_hours ||
     draft.publication_tolerance_hours !== settings.publication_tolerance_hours ||
     draft.max_articles !== settings.max_articles ||
-    draft.drop_without_pub_date !== settings.drop_without_pub_date
+    draft.drop_without_pub_date !== settings.drop_without_pub_date ||
+    draft.alert_drop_rate_pct !== settings.alert_drop_rate_pct ||
+    draft.alert_min_raw_articles !== settings.alert_min_raw_articles
   );
 
   const filteredOut = stats ? stats.recent_ingest_old_pub : 0;
