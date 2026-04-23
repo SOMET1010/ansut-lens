@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { getDataQuality } from './utils/dataQuality';
 
 function isValidUrl(u?: string | null): boolean {
   if (!u || typeof u !== 'string') return false;
