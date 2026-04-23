@@ -177,84 +177,176 @@ export default function MatinalePage() {
 
           {matinaleData && (
             <div className="space-y-4">
-              {/* Flash Info */}
+              {/* B. Revue de presse */}
               <Card className="glass border-primary/20">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-primary" />
-                    Flash Info
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {matinaleData.flash_info?.map((item: any, i: number) => (
-                    <div key={i} className="p-3 rounded-lg bg-muted/50 border-l-4 border-primary">
-                      <p className="font-medium text-sm">{item.titre}</p>
-                      <p className="text-sm text-muted-foreground mt-1">{item.resume}</p>
-                      <p className="text-xs text-muted-foreground mt-1">— {item.source}</p>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* Veille Réputation */}
-              <Card className="glass">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Target className="h-4 w-4" />
-                    Veille Réputation
-                    <Badge className={
-                      matinaleData.veille_reputation?.tonalite === 'positif'
-                        ? 'bg-emerald-500/15 text-emerald-600'
-                        : matinaleData.veille_reputation?.tonalite === 'negatif'
-                          ? 'bg-destructive/15 text-destructive'
-                          : 'bg-amber-500/15 text-amber-600'
-                    }>
-                      {matinaleData.veille_reputation?.tonalite === 'positif' ? '✅ Positif'
-                        : matinaleData.veille_reputation?.tonalite === 'negatif' ? '🔴 Négatif'
-                          : '🟡 Neutre'}
+                    <FileText className="h-4 w-4 text-primary" />
+                    Revue de presse
+                    <Badge variant="secondary" className="ml-auto text-xs">
+                      {matinaleData.revue_de_presse?.length ?? 0} titres
                     </Badge>
                   </CardTitle>
+                  <CardDescription>Tri par rubrique — neutre, sans analyse</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-sm leading-relaxed">{matinaleData.veille_reputation?.resume}</p>
-                  {matinaleData.veille_reputation?.mentions_cles?.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-3">
-                      {matinaleData.veille_reputation.mentions_cles.map((m: string, i: number) => (
-                        <Badge key={i} variant="secondary" className="text-xs">{m}</Badge>
-                      ))}
-                    </div>
+                <CardContent className="space-y-4">
+                  {RUBRIQUE_ORDER.map((rub) => {
+                    const items = (matinaleData.revue_de_presse || []).filter((r: any) => r.rubrique === rub);
+                    if (!items.length) return null;
+                    return (
+                      <div key={rub}>
+                        <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">
+                          {RUBRIQUE_LABELS[rub]}
+                        </h4>
+                        <ul className="space-y-2">
+                          {items.map((it: any, i: number) => (
+                            <li key={i} className="text-sm border-l-2 border-primary/40 pl-3">
+                              <a
+                                href={it.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-medium hover:underline inline-flex items-center gap-1"
+                              >
+                                {it.titre}
+                                <ExternalLink className="h-3 w-3 opacity-60" />
+                              </a>
+                              <div className="text-xs text-muted-foreground mt-0.5">
+                                {it.source} · {it.date}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                  {!matinaleData.revue_de_presse?.length && (
+                    <p className="text-sm text-muted-foreground text-center py-4">Aucun titre retenu</p>
                   )}
                 </CardContent>
               </Card>
 
-              {/* Prêt-à-Poster */}
-              <Card className="glass border-violet-500/20">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4 text-violet-500" />
-                    Prêt-à-Poster LinkedIn
-                  </CardTitle>
-                  <CardDescription>{matinaleData.pret_a_poster?.angle}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="p-4 rounded-lg bg-violet-500/5 border border-dashed border-violet-500/30">
+              {/* C. À retenir */}
+              {matinaleData.a_retenir?.length > 0 && (
+                <Card className="glass">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <ListChecks className="h-4 w-4 text-primary" />
+                      À retenir aujourd'hui
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2">
+                      {matinaleData.a_retenir.map((p: string, i: number) => (
+                        <li key={i} className="text-sm flex gap-2">
+                          <span className="text-primary font-bold">{i + 1}.</span>
+                          <span>{p}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* D. Retour ANSUT */}
+              {matinaleData.retour_ansut && (
+                <Card className="glass border-primary/20">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-primary" />
+                      Retour ANSUT
+                      {matinaleData.retour_ansut.niveau_attention && (
+                        <Badge className={
+                          matinaleData.retour_ansut.niveau_attention === 'Élevé'
+                            ? 'bg-destructive/15 text-destructive'
+                            : matinaleData.retour_ansut.niveau_attention === 'Moyen'
+                              ? 'bg-amber-500/15 text-amber-600'
+                              : 'bg-emerald-500/15 text-emerald-600'
+                        }>
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          Attention {matinaleData.retour_ansut.niveau_attention}
+                        </Badge>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    {matinaleData.retour_ansut.lecture_service_universel && (
+                      <div className="rounded-lg bg-muted/40 p-3 space-y-1.5">
+                        <div className="text-xs font-semibold uppercase text-muted-foreground">Lecture Service Universel</div>
+                        {matinaleData.retour_ansut.lecture_service_universel.acces && (
+                          <p><strong>Accès :</strong> {matinaleData.retour_ansut.lecture_service_universel.acces}</p>
+                        )}
+                        {matinaleData.retour_ansut.lecture_service_universel.usages && (
+                          <p><strong>Usages :</strong> {matinaleData.retour_ansut.lecture_service_universel.usages}</p>
+                        )}
+                        {matinaleData.retour_ansut.lecture_service_universel.impact && (
+                          <p><strong>Impact :</strong> {matinaleData.retour_ansut.lecture_service_universel.impact}</p>
+                        )}
+                      </div>
+                    )}
+                    {matinaleData.retour_ansut.implication_ansut && (
+                      <div>
+                        <div className="text-xs font-semibold uppercase text-muted-foreground mb-1">Implication ANSUT</div>
+                        <p>{matinaleData.retour_ansut.implication_ansut}</p>
+                      </div>
+                    )}
+                    {matinaleData.retour_ansut.action_suggeree && (
+                      <div className="rounded-lg bg-violet-500/5 border border-dashed border-violet-500/30 p-3 flex gap-2">
+                        <Lightbulb className="h-4 w-4 text-violet-500 shrink-0 mt-0.5" />
+                        <div>
+                          <div className="text-xs font-semibold uppercase text-violet-600 mb-0.5">Action suggérée</div>
+                          <p>{matinaleData.retour_ansut.action_suggeree}</p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* E. Focus du jour (conditional) */}
+              {matinaleData.focus_du_jour && (
+                <Card className="glass border-amber-500/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Target className="h-4 w-4 text-amber-600" />
+                      Focus du jour — {matinaleData.focus_du_jour.titre}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
                     <p className="text-sm whitespace-pre-line leading-relaxed">
-                      {matinaleData.pret_a_poster?.linkedin}
+                      {matinaleData.focus_du_jour.contenu}
                     </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-3"
-                    onClick={() => {
-                      navigator.clipboard.writeText(matinaleData.pret_a_poster?.linkedin || '');
-                      import('sonner').then(({ toast }) => toast.success('Post copié !'));
-                    }}
-                  >
-                    Copier le post
-                  </Button>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* F. Activité ANSUT */}
+              {matinaleData.activite_ansut && (
+                <Card className="glass">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4 text-primary" />
+                      Activité ANSUT
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex gap-3 flex-wrap">
+                      <Badge variant="secondary" className="gap-1">
+                        <MessageSquare className="h-3 w-3" />
+                        {matinaleData.activite_ansut.publications_count ?? 0} publication(s)
+                      </Badge>
+                      <Badge className={
+                        matinaleData.activite_ansut.visibilite === 'Fort'
+                          ? 'bg-emerald-500/15 text-emerald-600'
+                          : matinaleData.activite_ansut.visibilite === 'Moyen'
+                            ? 'bg-amber-500/15 text-amber-600'
+                            : 'bg-muted text-muted-foreground'
+                      }>
+                        Visibilité : {matinaleData.activite_ansut.visibilite ?? 'Faible'}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
         </TabsContent>
