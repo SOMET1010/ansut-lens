@@ -692,7 +692,17 @@ export default function RadarProximiteWidget() {
                       <Info className="h-3 w-3" />
                       {projet.organisme || 'Organisme non précisé'}
                     </span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-[10px] gap-1 text-primary hover:text-primary"
+                        onClick={() => setDetailProjet(projet)}
+                        aria-label={`Ouvrir le panneau Détails pertinence pour ${projet.titre}`}
+                      >
+                        <Sparkles className="h-3 w-3" aria-hidden="true" />
+                        Détails pertinence
+                      </Button>
                       {urlOk ? (
                         <a
                           href={projet.source_url}
