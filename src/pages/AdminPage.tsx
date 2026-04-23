@@ -226,6 +226,18 @@ export default function AdminPage() {
           </PermissionGate>
           <PermissionGate permission="manage_newsletters">
             <AdminNavCard
+              color="emerald"
+              icon={<Clock size={24} />}
+              title="Fraîcheur des données"
+              badge="Configuration"
+              badgeVariant="info"
+              subtitle="Pédagogie created_at vs date_publication, métriques de filtrage et paramètres."
+              to="/admin/freshness"
+              loading={isLoading}
+            />
+          </PermissionGate>
+          <PermissionGate permission="manage_newsletters">
+            <AdminNavCard
               color="blue"
               icon={<Mail size={24} />}
               title="Newsletters"
