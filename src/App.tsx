@@ -32,6 +32,7 @@ import DiffusionPage from "@/pages/admin/DiffusionPage";
 import SourcesPage from "@/pages/admin/SourcesPage";
 import RolesPage from "@/pages/admin/RolesPage";
 import MatinalePage from "@/pages/admin/MatinalePage";
+import FreshnessPage from "@/pages/admin/FreshnessPage";
 import EvenementsPage from "@/pages/admin/EvenementsPage";
 import ShadowTrackerPage from "@/pages/admin/ShadowTrackerPage";
 import CoffreContenuPage from "@/pages/admin/CoffreContenuPage";
@@ -168,6 +169,7 @@ const App = () => (
                           
                           <Route element={<PermissionRoute permission="manage_newsletters" />}>
                             <Route path="/admin/matinale" element={<MatinalePage />} />
+                            <Route path="/admin/freshness" element={<FreshnessPage />} />
                           </Route>
                           
                           <Route element={<PermissionRoute permission="manage_keywords" />}>
