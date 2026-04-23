@@ -765,9 +765,29 @@ ${titrologieHtml}
 </body>
 </html>`;
 
+    // Compute freshness metadata for UI transparency
+    const oldestPub = articles.reduce<string | null>((acc, a) => {
+      if (!a.date_publication) return acc;
+      if (!acc || a.date_publication < acc) return a.date_publication;
+      return acc;
+    }, null);
+    const newestPub = articles.reduce<string | null>((acc, a) => {
+      if (!a.date_publication) return acc;
+      if (!acc || a.date_publication > acc) return a.date_publication;
+      return acc;
+    }, null);
+    const freshnessMeta = {
+      window_hours: freshnessHours,
+      based_on: 'date_publication',
+      articles_total_raw: articlesRaw?.length || 0,
+      articles_kept: articles.length,
+      oldest_publication: oldestPub,
+      newest_publication: newestPub,
+    };
+
     if (previewOnly) {
       return new Response(JSON.stringify({
-        matinale, titrologie, html: htmlEmail, articles_count: (articles || []).length, perplexity_articles_count: perplexityNews.articles.length, accounts_activity: accountsActivity, generated_at: new Date().toISOString(),
+        matinale, titrologie, html: htmlEmail, articles_count: (articles || []).length, perplexity_articles_count: perplexityNews.articles.length, accounts_activity: accountsActivity, generated_at: new Date().toISOString(), freshness: freshnessMeta,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
