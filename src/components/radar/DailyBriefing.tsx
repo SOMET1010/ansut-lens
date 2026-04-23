@@ -336,11 +336,7 @@ export function DailyBriefing() {
               "text-foreground leading-relaxed",
               isGenerating && "opacity-50"
             )}>
-              {sources.length > 0 ? (
-                <BriefingText text={displayBriefing} sources={sources} />
-              ) : (
-                displayBriefing
-              )}
+              <BriefingText text={displayBriefing} sources={sources} />
             </div>
             
             {/* Sources list */}
