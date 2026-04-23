@@ -666,44 +666,53 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     // Replace matinale fields with sanitized versions
     Object.assign(matinale, sanitizedMatinale);
 
-    // Generate HTML email
+    // Generate HTML email — TEMPLATE MATINALE CODIR (PROD)
+    const generatedAtUtc = new Date().toISOString();
     const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-    const tonaliteColor = matinale.veille_reputation.tonalite === 'positif' ? '#10b981'
-      : matinale.veille_reputation.tonalite === 'negatif' ? '#ef4444' : '#f59e0b';
-    const tonaliteLabel = matinale.veille_reputation.tonalite === 'positif' ? '✅ Positif'
-      : matinale.veille_reputation.tonalite === 'negatif' ? '🔴 Négatif' : '🟡 Neutre';
+    const RUBRIQUE_LABELS: Record<string, string> = {
+      telecom_numerique: 'Télécom / Numérique',
+      economie_finance: 'Économie / Finance',
+      gouvernance_regulation: 'Gouvernance / Régulation',
+      international: 'International',
+    };
+    const RUBRIQUE_ORDER = ['telecom_numerique', 'economie_finance', 'gouvernance_regulation', 'international'];
 
-    // Group titrologie by type
-    const titroNationale = titrologie.filter(t => t.type === 'nationale');
-    const titroEnLigne = titrologie.filter(t => t.type === 'en_ligne');
-    const titroEco = titrologie.filter(t => t.type === 'economique');
+    const revue = matinale.revue_de_presse as Array<{ titre: string; source: string; date: string; url: string; rubrique: string }>;
+    const aRetenir = matinale.a_retenir as string[];
+    const ra = matinale.retour_ansut;
+    const focus = matinale.focus_du_jour;
+    const act = matinale.activite_ansut;
 
-    const buildTitroSection = (titres: typeof titrologie, label: string, icon: string) => {
-      if (titres.length === 0) return '';
+    const niveauColor = ra?.niveau_attention === 'Élevé' ? '#ef4444'
+      : ra?.niveau_attention === 'Moyen' ? '#f59e0b' : '#10b981';
+
+    // Indicateur qualité (G)
+    const qualiteScore = revue.length >= 8 ? 'Bonne' : revue.length >= 4 ? 'Moyenne' : 'Faible';
+    const qualiteColor = qualiteScore === 'Bonne' ? '#10b981' : qualiteScore === 'Moyenne' ? '#f59e0b' : '#ef4444';
+
+    // Group revue by rubrique
+    const groupedRevue: Record<string, typeof revue> = {};
+    for (const r of revue) {
+      if (!groupedRevue[r.rubrique]) groupedRevue[r.rubrique] = [];
+      groupedRevue[r.rubrique].push(r);
+    }
+
+    const buildRubriqueBlock = (key: string) => {
+      const items = groupedRevue[key];
+      if (!items || items.length === 0) return '';
       return `
-      <div style="margin-bottom:12px;">
-        <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#1e3a5f;">${icon} ${label}</p>
-        ${titres.map(t => `
-        <div style="margin-bottom:8px;padding:8px 10px;background:#ffffff;border-radius:6px;border-left:3px solid #6366f1;">
-          <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#6366f1;">${t.journal}</p>
-          <p style="margin:0 0 2px;font-size:13px;font-weight:600;color:#1e3a5f;">${t.titre}</p>
-          ${t.resume ? `<p style="margin:0 0 2px;font-size:12px;color:#6b7280;">${t.resume}</p>` : ''}
-          ${t.url ? `<p style="margin:0;font-size:11px;"><a href="${t.url}" style="color:#2563eb;text-decoration:underline;" target="_blank">Lire →</a></p>` : ''}
+      <div style="margin-bottom:14px;">
+        <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#1e3a5f;text-transform:uppercase;letter-spacing:0.5px;">${RUBRIQUE_LABELS[key]}</p>
+        ${items.map(it => `
+        <div style="margin-bottom:6px;padding:8px 10px;background:#ffffff;border-radius:6px;border-left:3px solid #2563eb;">
+          <p style="margin:0 0 2px;font-size:13px;color:#1e3a5f;line-height:1.4;"><strong>${it.titre}</strong></p>
+          <p style="margin:0;font-size:11px;color:#6b7280;">${it.source} (${it.date}) — <a href="${it.url}" style="color:#2563eb;text-decoration:underline;" target="_blank">URL →</a></p>
         </div>`).join('')}
       </div>`;
     };
 
-    const titrologieHtml = titrologie.length > 0 ? `
-<tr><td style="padding:0 24px 24px;">
-  <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid #6366f1;padding-bottom:8px;">📰 Revue de Presse — Titrologie du jour</h2>
-  <div style="padding:16px;background-color:#f0f0ff;border-radius:8px;">
-    <p style="margin:0 0 12px;font-size:12px;color:#6b7280;">${titrologie.length} titre${titrologie.length > 1 ? 's' : ''} — ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-    ${buildTitroSection(titroNationale, 'Presse Nationale', '🗞️')}
-    ${buildTitroSection(titroEnLigne, 'Presse en Ligne', '🌐')}
-    ${buildTitroSection(titroEco, 'Presse Économique & Tech', '📊')}
-  </div>
-</td></tr>` : '';
+    const allUrlsTraceability = revue.map(r => r.url).filter(Boolean);
 
     const htmlEmail = `<!DOCTYPE html>
 <html lang="fr">
@@ -711,101 +720,111 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
 <body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:20px 0;">
 <tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
-<tr><td style="background:linear-gradient(135deg,#1e3a5f,#2563eb);padding:30px;text-align:center;">
-  <h1 style="color:#ffffff;margin:0;font-size:24px;">📰 La Matinale ANSUT</h1>
-  <p style="color:#93c5fd;margin:8px 0 0;font-size:14px;">${dateStr}</p>
-</td></tr>
-${titrologieHtml}
-<tr><td style="padding:24px;">
-  <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid #2563eb;padding-bottom:8px;">⚡ Flash Info</h2>
-  ${matinale.flash_info.map((item: any) => `
-  <div style="margin-bottom:16px;padding:12px;background-color:#f0f9ff;border-radius:8px;border-left:4px solid #2563eb;">
-    <p style="margin:0 0 4px;font-weight:bold;color:#1e3a5f;font-size:14px;">${item.titre}</p>
-    <p style="margin:0 0 4px;color:#374151;font-size:13px;">${item.resume}</p>
-    <p style="margin:0;color:#6b7280;font-size:11px;">Source : ${item.source}${item.source_url ? ` — <a href="${item.source_url}" style="color:#2563eb;text-decoration:underline;" target="_blank">Lire →</a>` : ''}</p>
-  </div>`).join('')}
-</td></tr>
-<tr><td style="padding:0 24px 24px;">
-  <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid #6366f1;padding-bottom:8px;">📊 Activité des Comptes Sociaux (24h)</h2>
-  ${accountsActivity.length > 0 ? `
-  <p style="margin:0 0 12px;font-size:13px;color:#374151;">
-    <strong>${(recentPubs || []).length}</strong> publication${(recentPubs || []).length !== 1 ? 's' : ''} détectée${(recentPubs || []).length !== 1 ? 's' : ''} sur <strong>${accountsActivity.length}</strong> compte${accountsActivity.length !== 1 ? 's' : ''} suivis
-    ${accountsActivity.filter(a => a.publications_24h === 0).length > 0 ? ` — <span style="color:#ef4444;font-weight:bold;">⚠ ${accountsActivity.filter(a => a.publications_24h === 0).length} inactif${accountsActivity.filter(a => a.publications_24h === 0).length > 1 ? 's' : ''}</span>` : ''}
-  </p>
-  <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-  ${accountsActivity.map(a => {
-    const platformIcon = a.plateforme === 'linkedin' ? '🔵' : a.plateforme === 'facebook' ? '📘' : a.plateforme === 'twitter' || a.plateforme === 'x' ? '🐦' : '🌐';
-    const statusColor = a.publications_24h > 0 ? '#10b981' : '#ef4444';
-    const statusLabel = a.publications_24h > 0 ? `✅ ${a.publications_24h} pub${a.publications_24h > 1 ? 's' : ''}` : '❌ 0 publication';
-    return `
+<table width="640" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+
+<!-- A. EN-TÊTE -->
+<tr><td style="background:linear-gradient(135deg,#1e3a5f,#2563eb);padding:28px 30px;">
+  <h1 style="color:#ffffff;margin:0;font-size:22px;letter-spacing:0.3px;">Matinale CODIR – ANSUT</h1>
+  <p style="color:#bfdbfe;margin:6px 0 0;font-size:13px;">${dateStr}</p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;">
     <tr>
-      <td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;">
-        <span style="font-size:14px;">${platformIcon}</span>
-        <span style="font-size:13px;font-weight:600;color:#1e3a5f;margin-left:6px;">${a.nom}</span>
-        <span style="font-size:11px;color:#9ca3af;margin-left:4px;">@${a.identifiant}</span>
-      </td>
-      <td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;text-align:right;">
-        <span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;color:${statusColor};background-color:${a.publications_24h > 0 ? '#ecfdf5' : '#fef2f2'};">${statusLabel}</span>
-        ${a.total_engagement > 0 ? `<span style="font-size:10px;color:#6b7280;margin-left:6px;">💬 ${a.total_engagement}</span>` : ''}
-      </td>
-    </tr>`;
-  }).join('')}
-  </table>` : `
-  <div style="padding:12px;background:#fff7ed;border-radius:6px;border:1px dashed #f59e0b;">
-    <p style="margin:0;font-size:12px;color:#92400e;">⚠️ Aucun compte VIP actif configuré.</p>
-  </div>`}
+      <td style="font-size:11px;color:#dbeafe;">Génération (UTC) : <strong>${generatedAtUtc}</strong></td>
+      <td style="font-size:11px;color:#dbeafe;text-align:right;">Fenêtre : <strong>${freshnessHours}h</strong></td>
+    </tr>
+    <tr>
+      <td colspan="2" style="font-size:11px;color:#dbeafe;padding-top:4px;">Sources retenues : <strong>${revue.length}</strong> / Articles analysés : <strong>${articlesRaw?.length || 0}</strong></td>
+    </tr>
+  </table>
 </td></tr>
-<tr><td style="padding:0 24px 24px;">
-  <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid ${tonaliteColor};padding-bottom:8px;">🎯 Veille Réputation ANSUT ${tonaliteLabel}</h2>
-  <div style="padding:16px;background-color:#fefce8;border-radius:8px;">
-    <p style="margin:0 0 12px;color:#374151;font-size:14px;line-height:1.6;">${matinale.veille_reputation.resume}</p>
-    ${(matinale.veille_reputation.preuves || []).length > 0 ? `
-    <div style="margin:12px 0;border-top:1px solid #e5e7eb;padding-top:12px;">
-      <p style="margin:0 0 8px;font-size:12px;font-weight:bold;color:#1e3a5f;">📎 Preuves — Articles mentionnant l'ANSUT :</p>
-      ${(matinale.veille_reputation.preuves || []).map((p: any) => {
-        const sColor = p.sentiment_article === 'positif' ? '#10b981' : p.sentiment_article === 'negatif' ? '#ef4444' : '#f59e0b';
-        return `
-      <div style="margin-bottom:8px;padding:10px;background:#ffffff;border-radius:6px;border-left:3px solid ${sColor};">
-        <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#1e3a5f;">${p.titre}</p>
-        <p style="margin:0 0 4px;font-size:12px;color:#6b7280;font-style:italic;">« ${p.extrait} »</p>
-        <p style="margin:0;font-size:11px;">
-          <span style="color:#6b7280;">Source : ${p.source}</span>
-          ${p.url ? ` — <a href="${p.url}" style="color:#2563eb;text-decoration:underline;" target="_blank">Voir l'article →</a>` : ''}
-        </p>
-      </div>`;
-      }).join('')}
-    </div>` : `
-    <div style="margin:12px 0;padding:10px;background:#fff7ed;border-radius:6px;border:1px dashed #f59e0b;">
-      <p style="margin:0;font-size:12px;color:#92400e;">ℹ️ Aucune mention directe de l'ANSUT détectée dans les médias sur les dernières 24h.</p>
-    </div>`}
-    ${matinale.veille_reputation.mentions_cles.length > 0 ? `
-    <p style="margin:0;font-size:12px;color:#6b7280;">Mentions clés : ${matinale.veille_reputation.mentions_cles.map((m: string) => `<span style="display:inline-block;background:#e5e7eb;padding:2px 8px;border-radius:12px;margin:2px;font-size:11px;">${m}</span>`).join(' ')}</p>` : ''}
+
+<!-- B. REVUE DE PRESSE -->
+<tr><td style="padding:24px;">
+  <h2 style="color:#1e3a5f;font-size:16px;margin:0 0 14px;border-bottom:2px solid #2563eb;padding-bottom:6px;">B. Revue de presse</h2>
+  ${revue.length === 0 ? '<p style="font-size:13px;color:#6b7280;font-style:italic;">Aucun titre vérifié sur la fenêtre de veille.</p>' :
+    RUBRIQUE_ORDER.map(buildRubriqueBlock).join('')}
+</td></tr>
+
+<!-- C. À RETENIR -->
+<tr><td style="padding:0 24px 20px;">
+  <h2 style="color:#1e3a5f;font-size:16px;margin:0 0 12px;border-bottom:2px solid #6366f1;padding-bottom:6px;">C. À retenir aujourd'hui</h2>
+  ${aRetenir.length === 0 ? '<p style="font-size:13px;color:#6b7280;font-style:italic;">—</p>' : `
+  <ul style="margin:0;padding-left:20px;">
+    ${aRetenir.map(p => `<li style="margin:0 0 6px;font-size:13px;color:#1e3a5f;line-height:1.5;">${p}</li>`).join('')}
+  </ul>`}
+</td></tr>
+
+<!-- D. RETOUR ANSUT -->
+<tr><td style="padding:0 24px 20px;">
+  <h2 style="color:#1e3a5f;font-size:16px;margin:0 0 12px;border-bottom:2px solid #8b5cf6;padding-bottom:6px;">D. Retour ANSUT</h2>
+  <div style="padding:14px;background-color:#faf5ff;border-radius:8px;">
+
+    ${(ra?.lecture_service_universel?.acces || ra?.lecture_service_universel?.usages || ra?.lecture_service_universel?.impact) ? `
+    <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#6b21a8;">D1. Lecture Service Universel</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;">
+      ${ra.lecture_service_universel.acces ? `<tr><td style="font-size:12px;color:#6b7280;width:70px;padding:2px 0;"><strong>Accès :</strong></td><td style="font-size:13px;color:#1e3a5f;padding:2px 0;">${ra.lecture_service_universel.acces}</td></tr>` : ''}
+      ${ra.lecture_service_universel.usages ? `<tr><td style="font-size:12px;color:#6b7280;width:70px;padding:2px 0;"><strong>Usages :</strong></td><td style="font-size:13px;color:#1e3a5f;padding:2px 0;">${ra.lecture_service_universel.usages}</td></tr>` : ''}
+      ${ra.lecture_service_universel.impact ? `<tr><td style="font-size:12px;color:#6b7280;width:70px;padding:2px 0;"><strong>Impact :</strong></td><td style="font-size:13px;color:#1e3a5f;padding:2px 0;">${ra.lecture_service_universel.impact}</td></tr>` : ''}
+    </table>` : ''}
+
+    ${ra?.implication_ansut ? `
+    <p style="margin:8px 0 4px;font-size:12px;font-weight:bold;color:#6b21a8;">D2. Implication ANSUT</p>
+    <p style="margin:0 0 10px;font-size:13px;color:#1e3a5f;line-height:1.5;">${ra.implication_ansut}</p>` : ''}
+
+    <p style="margin:8px 0 4px;font-size:12px;font-weight:bold;color:#6b21a8;">D3. Niveau d'attention</p>
+    <p style="margin:0 0 10px;"><span style="display:inline-block;padding:4px 12px;border-radius:14px;font-size:12px;font-weight:700;color:#ffffff;background:${niveauColor};">${ra?.niveau_attention || 'Faible'}</span></p>
+
+    ${ra?.action_suggeree ? `
+    <p style="margin:8px 0 4px;font-size:12px;font-weight:bold;color:#6b21a8;">D4. Action suggérée</p>
+    <p style="margin:0;font-size:13px;color:#1e3a5f;line-height:1.5;">${ra.action_suggeree}</p>` : ''}
+
   </div>
 </td></tr>
+
+<!-- E. FOCUS DU JOUR (optionnel) -->
+${focus && focus.titre ? `
+<tr><td style="padding:0 24px 20px;">
+  <h2 style="color:#1e3a5f;font-size:16px;margin:0 0 12px;border-bottom:2px solid #f59e0b;padding-bottom:6px;">E. Focus du jour</h2>
+  <div style="padding:14px;background-color:#fffbeb;border-radius:8px;border-left:4px solid #f59e0b;">
+    <p style="margin:0 0 6px;font-size:14px;font-weight:bold;color:#92400e;">${focus.titre}</p>
+    <p style="margin:0;font-size:13px;color:#78350f;line-height:1.5;white-space:pre-line;">${focus.contenu}</p>
+  </div>
+</td></tr>` : ''}
+
+<!-- F. ACTIVITÉ ANSUT -->
+<tr><td style="padding:0 24px 20px;">
+  <h2 style="color:#1e3a5f;font-size:16px;margin:0 0 12px;border-bottom:2px solid #10b981;padding-bottom:6px;">F. Activité ANSUT</h2>
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border-radius:8px;">
+    <tr>
+      <td style="padding:12px;font-size:13px;color:#1e3a5f;"><strong>Publications :</strong> ${act.publications_count}</td>
+      <td style="padding:12px;font-size:13px;color:#1e3a5f;text-align:right;"><strong>Visibilité :</strong> <span style="color:${act.visibilite === 'Fort' ? '#10b981' : act.visibilite === 'Moyen' ? '#f59e0b' : '#ef4444'};font-weight:700;">${act.visibilite}</span></td>
+    </tr>
+  </table>
+</td></tr>
+
+<!-- G. TRAÇABILITÉ -->
 <tr><td style="padding:0 24px 24px;">
-  <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid #8b5cf6;padding-bottom:8px;">📝 Prêt-à-Poster LinkedIn</h2>
-  <div style="padding:16px;background-color:#f5f3ff;border-radius:8px;border:1px dashed #8b5cf6;">
-    <p style="margin:0 0 12px;color:#374151;font-size:14px;line-height:1.6;white-space:pre-line;">${matinale.pret_a_poster.linkedin}</p>
-    <p style="margin:0;font-size:12px;color:#7c3aed;font-style:italic;">💡 Angle : ${matinale.pret_a_poster.angle}</p>
+  <h2 style="color:#1e3a5f;font-size:16px;margin:0 0 12px;border-bottom:2px solid #6b7280;padding-bottom:6px;">G. Traçabilité</h2>
+  <div style="padding:12px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
+    <p style="margin:0 0 6px;font-size:11px;color:#6b7280;"><strong>Timestamp collecte :</strong> ${generatedAtUtc}</p>
+    <p style="margin:0 0 6px;font-size:11px;color:#6b7280;"><strong>Indicateur qualité :</strong> <span style="color:${qualiteColor};font-weight:700;">${qualiteScore}</span> (${revue.length} sources retenues sur ${articlesRaw?.length || 0} analysées)</p>
+    ${allUrlsTraceability.length > 0 ? `
+    <p style="margin:8px 0 4px;font-size:11px;font-weight:bold;color:#374151;">URLs utilisées :</p>
+    <ol style="margin:0;padding-left:18px;">
+      ${allUrlsTraceability.map(u => `<li style="font-size:10px;color:#6b7280;line-height:1.4;word-break:break-all;"><a href="${u}" style="color:#2563eb;text-decoration:none;" target="_blank">${u}</a></li>`).join('')}
+    </ol>` : ''}
   </div>
 </td></tr>
-<tr><td style="padding:0 24px 24px;">
-  <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid #1d9bf0;padding-bottom:8px;">🐦 Prêt-à-Poster X (Twitter)</h2>
-  <div style="padding:16px;background-color:#f0f9ff;border-radius:8px;border:1px dashed #1d9bf0;">
-    <p style="margin:0 0 8px;color:#374151;font-size:14px;line-height:1.6;">${matinale.pret_a_poster.x_post || ''}</p>
-    <p style="margin:0;font-size:11px;color:#6b7280;">${(matinale.pret_a_poster.x_post || '').length}/280 caractères</p>
-  </div>
+
+<tr><td style="background-color:#f8fafc;padding:16px;text-align:center;border-top:1px solid #e5e7eb;">
+  <p style="margin:0;color:#9ca3af;font-size:10px;">ANSUT RADAR — Matinale CODIR — Document interne</p>
 </td></tr>
-<tr><td style="background-color:#f8fafc;padding:20px;text-align:center;border-top:1px solid #e5e7eb;">
-  <p style="margin:0;color:#9ca3af;font-size:11px;">ANSUT RADAR — Veille Stratégique & Communication</p>
-  <p style="margin:4px 0 0;color:#9ca3af;font-size:11px;">Généré à partir de ${(articles || []).length} articles DB + ${perplexityNews.articles.length} articles temps réel + ${titrologie.length} titres presse, ${(mentions || []).length} mentions, ${(socialInsights || []).length} insights sociaux, ${accountsActivity.length} comptes suivis</p>
-</td></tr>
+
 </table>
 </td></tr>
 </table>
 </body>
 </html>`;
+
 
     // Compute freshness metadata for UI transparency
     const oldestPub = articles.reduce<string | null>((acc, a) => {
