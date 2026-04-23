@@ -618,24 +618,41 @@ export default function RadarProximiteWidget() {
                           }
                           className="w-full text-left space-y-1 cursor-help rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                         >
-                          <div className="flex items-center justify-between text-[10px]">
+                          <div className="flex items-center justify-between gap-2 text-[10px]">
                             <span className="text-muted-foreground">Pertinence</span>
-                            <span className="font-mono font-semibold text-foreground">
+                            <span className="font-mono font-semibold text-foreground tabular-nums">
                               {Math.round(bd.total)}
-                              <span className="text-muted-foreground font-normal ml-1" aria-hidden="true">
+                              {/* Détail inline masqué <640px pour éviter le wrap */}
+                              <span className="text-muted-foreground font-normal ml-1 hidden sm:inline" aria-hidden="true">
                                 = {Math.round(bd.sim)} − {Math.round(bd.freshnessPenalty)} + {Math.round(bd.actionBonus)}
                               </span>
                             </span>
                           </div>
-                          <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-muted" role="presentation" aria-hidden="true">
+                          <div className="flex h-2 sm:h-1.5 w-full rounded-full overflow-hidden bg-muted" role="presentation" aria-hidden="true">
                             <div className="bg-primary" style={{ width: `${wSim}%` }} />
                             <div className="bg-amber-500" style={{ width: `${wFresh}%` }} />
                             <div className="bg-emerald-500" style={{ width: `${wAction}%` }} />
                           </div>
-                          <div className="flex items-center gap-3 text-[9px] text-muted-foreground" aria-hidden="true">
-                            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-primary" /> Similarité {Math.round(bd.sim)}</span>
-                            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Fraîcheur −{Math.round(bd.freshnessPenalty)}</span>
-                            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Action +{Math.round(bd.actionBonus)}</span>
+                          {/* Légende : compacte sur mobile (chiffres seuls + pastilles), complète à partir de sm */}
+                          <div className="flex items-center justify-between sm:justify-start sm:gap-3 gap-1 text-[9px] text-muted-foreground tabular-nums" aria-hidden="true">
+                            <span className="flex items-center gap-1">
+                              <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                              <span className="hidden sm:inline">Similarité </span>
+                              <span className="sm:hidden">Sim </span>
+                              {Math.round(bd.sim)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+                              <span className="hidden sm:inline">Fraîcheur </span>
+                              <span className="sm:hidden">Frais </span>
+                              −{Math.round(bd.freshnessPenalty)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                              <span className="hidden sm:inline">Action </span>
+                              <span className="sm:hidden">Act </span>
+                              +{Math.round(bd.actionBonus)}
+                            </span>
                           </div>
                         </button>
                       </TooltipTrigger>
