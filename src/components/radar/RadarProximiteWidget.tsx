@@ -260,7 +260,7 @@ export default function RadarProximiteWidget() {
         w_bonus_reco: weights.bonusReco,
         w_bonus_equivalent: weights.bonusEquivalent,
         qualite_partielle: quality.isPartial,
-        qualite_raisons: quality.reasons.join(' | '),
+        qualite_raisons: [quality.missingSimilarity && 'similarite_manquante', quality.missingDate && 'date_manquante'].filter(Boolean).join(' | '),
       };
     });
   };
