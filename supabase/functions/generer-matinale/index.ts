@@ -195,42 +195,45 @@ RÈGLES: Ne fournis QUE des titres réels publiés aujourd'hui. Maximum 15 titre
   return [];
 }
 
-const MATINALE_PROMPT = `Tu es à la fois rédacteur en chef de la communication ET analyste stratégique de l'ANSUT (Agence du Service Universel des Télécommunications de Côte d'Ivoire). Tu produis un briefing matinal opérationnel pour la cellule Communication ET utile à la décision DG/CODIR.
+const MATINALE_PROMPT = `Tu produis la **MATINALE CODIR – ANSUT** en mode PRODUCTION.
+Tu es analyste senior de l'Agence Nationale du Service Universel des Télécommunications (Côte d'Ivoire).
+Le livrable est destiné au CODIR : il doit être SOBRE, FACTUEL, DIRECTEMENT EXPLOITABLE.
 
-CADRE D'ANALYSE OBLIGATOIRE — applique ce prisme à TOUTE sélection d'info :
-1. SERVICE UNIVERSEL : Accès (couverture, infrastructures, zones blanches) / Usages (adoption, services numériques, inclusion) / Impact (effets socio-économiques, populations touchées)
-2. IA & COMMUNICATIONS ÉLECTRONIQUES : Optimisation réseau (planification, maintenance, QoS) / Inclusion (voice-first, low literacy, offline) / Réduction des coûts / Souveraineté (data, sécurité, interopérabilité)
+CADRE D'ANALYSE OBLIGATOIRE (à appliquer en interne, sans le verbaliser inutilement) :
+1. SERVICE UNIVERSEL : Accès / Usages / Impact
+2. IA & COMMUNICATIONS ÉLECTRONIQUES : Optimisation réseau / Inclusion / Coûts / Souveraineté
 
 CONTRAINTES STRICTES :
-- Ne JAMAIS inventer un fait, un chiffre, une URL ou une personne
-- Si une donnée est incertaine → "information non disponible"
-- Ignorer toute information sans lien avec ANSUT, le Service Universel ou l'IA télécom
-- Supprimer toute généralité non actionnable
+- JAMAIS inventer un titre, une URL, un chiffre, un nom ou une fonction
+- Si une donnée est incertaine → l'omettre purement (ne pas écrire "non disponible" partout)
+- Aucune analyse dans la revue de presse (section B)
+- Aucun jargon de communication interne
+- Français professionnel, ton institutionnel neutre
 
-Génère un briefing structuré en 3 sections EXACTES au format JSON :
+STRUCTURE DE SORTIE OBLIGATOIRE (JSON via tool call) :
 
-1. "flash_info" : Tableau de 3 objets sélectionnés via le cadre d'analyse ci-dessus (priorité Service Universel + IA + décisions stratégiques) parmi les ACTUALITÉS (générales + temps réel) :
-   - "titre" : Titre court (max 15 mots)
-   - "resume" : Résumé percutant (20 mots max) qui rend explicite l'angle stratégique (Accès / Usages / Impact / IA / Souveraineté)
-   - "source" : Nom de la source
-   - "source_url" : URL EXACTE depuis le contexte (jamais inventée)
+B. revue_de_presse (8 à 15 titres MAX, sinon réduire) :
+   Tableau d'objets {titre exact, source, date (AAAA-MM-JJ), url valide, rubrique}.
+   Rubriques autorisées : "telecom_numerique", "economie_finance", "gouvernance_regulation", "international".
+   Tri par rubrique. Aucune analyse.
 
-2. "veille_reputation" : Analyse EXCLUSIVEMENT basée sur les sections "MENTIONS DIRECTES ANSUT" et "MENTIONS SOCIALES ANSUT" :
-   - "resume" : 2-3 phrases sur l'image ACTUELLE de l'ANSUT (uniquement articles/mentions citant nommément l'agence ou le Service Universel). Si aucune : indiquer clairement.
-   - "tonalite" : "positif" | "neutre" | "negatif"
-   - "mentions_cles" : Tableau des mentions directes ANSUT trouvées
-   - "preuves" : Tableau d'objets {titre exact, source, url exacte, extrait (20 mots max), sentiment_article} — UNIQUEMENT pour articles citant explicitement ANSUT/Service Universel. Tableau vide si aucune. JAMAIS de fausses preuves.
+C. a_retenir (max 3 phrases) :
+   Tableau de 1 à 3 phrases courtes, factuelles, sans interprétation excessive.
 
-3. "pret_a_poster" : Objet contenant :
-   - "linkedin" : Post professionnel 3-4 phrases valorisant l'action ANSUT à partir de l'actu (emojis pro, angle Service Universel ou IA)
-   - "x_post" : Tweet max 280 caractères, 2-3 hashtags pertinents (#ANSUT #ServiceUniversel #NumériqueCIV)
-   - "angle" : Angle de communication suggéré (1 phrase) avec lien explicite à un axe du cadre (Accès/Usages/Impact/IA/Souveraineté)
+D. retour_ansut :
+   - lecture_service_universel : { acces, usages, impact } — chaque champ : 1 phrase ou null si non applicable (ne pas écrire "RAS" inutilement, mettre null).
+   - implication_ansut : 2 lignes MAX. Si aucune implication réelle : null.
+   - niveau_attention : "Faible" | "Moyen" | "Élevé"
+   - action_suggeree : 1 phrase actionnable, ou null si rien d'utile à proposer.
 
-Règles :
-- Français professionnel, contenu directement utilisable sans modification
-- CRITIQUE : URLs des preuves copiées EXACTEMENT depuis le contexte. Jamais inventées.
-- Si aucune mention directe ANSUT : suggérer un angle de rebond dans le résumé
-- ANTI-HALLUCINATION NOMS : si tu mentionnes une personne, utiliser UNIQUEMENT le "RÉFÉRENTIEL PERSONNALITÉS VÉRIFIÉES" du contexte. Jamais de nom/titre inventé. Si absent du référentiel : ne pas nommer.`;
+E. focus_du_jour : { titre, contenu (5 lignes max) } UNIQUEMENT si un sujet domine clairement la journée. Sinon : null.
+
+F. activite_ansut :
+   - publications_count : nombre (fourni dans le contexte)
+   - visibilite : "Faible" | "Moyen" | "Fort" (fourni dans le contexte, ne pas recalculer)
+
+ANTI-HALLUCINATION NOMS : si tu mentionnes une personne, utiliser UNIQUEMENT le "RÉFÉRENTIEL PERSONNALITÉS VÉRIFIÉES". Sinon : ne pas nommer.
+URLS : copier EXACTEMENT depuis le contexte. Aucune URL inventée. Si pas d'URL fiable, exclure le titre.`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -433,6 +436,11 @@ Deno.serve(async (req) => {
       ? `\n\nAlertes actives:\n${alertes!.map(a => `⚠️ ${a.titre}: ${a.message || ''}`).join('\n')}`
       : '';
 
+    // Activité ANSUT (publications + engagement)
+    const ansutPubsCount = (recentPubs || []).length;
+    const ansutTotalEngagement = (recentPubs || []).reduce((s, p) => s + (p.likes_count || 0) + (p.shares_count || 0) + (p.comments_count || 0), 0);
+    const ansutVisibilite = ansutPubsCount >= 5 ? 'Fort' : ansutPubsCount >= 2 ? 'Moyen' : 'Faible';
+
     // Build personnalites reference list
     const personnalitesRef = (personnalites || []).length > 0
       ? (personnalites || []).map(p => {
@@ -442,7 +450,7 @@ Deno.serve(async (req) => {
         }).join('\n')
       : 'Aucune personnalité enregistrée.';
 
-    const context = `=== ACTUALITÉS CONSOLIDÉES (${consolidated.length} faits uniques, ${dupGroups} doublon(s) fusionné(s) entre base + Perplexity) ===
+    const context = `=== ACTUALITÉS CONSOLIDÉES (${consolidated.length} faits uniques, ${dupGroups} doublon(s) fusionné(s)) ===
 Une seule référence [N] par fait, toutes les sources listées par groupe.
 ${consolidatedList}
 
@@ -455,14 +463,23 @@ ${mentionsList}
 === MENTIONS SOCIALES ANSUT (réseaux sociaux) ===
 ${socialList}${alertesList}
 
+=== ACTIVITÉ ANSUT (24h) — à reporter tel quel ===
+- publications_count : ${ansutPubsCount}
+- visibilite : ${ansutVisibilite}
+
+=== FENÊTRE DE VEILLE ===
+- Fenêtre demandée : ${freshnessHours}h
+- Articles bruts analysés : ${articlesRaw?.length || 0}
+- Articles retenus après filtre fraîcheur : ${articles.length}
+
 === RÉFÉRENTIEL PERSONNALITÉS VÉRIFIÉES (source de vérité) ===
 ${personnalitesRef}
 RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
-1. Si tu mentionnes une personne (nom, titre, fonction), tu DOIS utiliser UNIQUEMENT les informations de ce référentiel. Ne JAMAIS inventer ou deviner un nom ou une fonction qui ne figure pas dans cette liste.
-2. Les personnes marquées "Ancien(ne)" ou "⚠️ N'EST PLUS EN POSTE" ne doivent JAMAIS être présentées comme occupant encore leur fonction. Utilise le préfixe "Ancien" systématiquement.
-3. Ne JAMAIS attribuer un poste ministériel ou une fonction officielle à quelqu'un sans vérifier dans ce référentiel.`;
+1. Si tu mentionnes une personne (nom, titre, fonction), tu DOIS utiliser UNIQUEMENT les informations de ce référentiel.
+2. Les personnes marquées "Ancien(ne)" ou "⚠️ N'EST PLUS EN POSTE" : utiliser le préfixe "Ancien" systématiquement.
+3. Ne JAMAIS attribuer un poste à quelqu'un sans vérifier dans ce référentiel.`;
 
-    console.log('[Matinale] Generating with', (articles || []).length, 'DB articles,', perplexityNews.articles.length, 'Perplexity articles,', ansutArticles.length, 'ANSUT articles,', (mentions || []).length, 'mentions,', (socialInsights || []).length, 'social insights');
+    console.log('[Matinale] Generating CODIR with', (articles || []).length, 'DB articles,', perplexityNews.articles.length, 'Perplexity,', ansutArticles.length, 'ANSUT,', (mentions || []).length, 'mentions');
 
     // Call AI — Using GPT-5 (OpenAI) via Lovable AI Gateway for structured generation
     // GPT-5 follows instructions much more strictly than Gemini, reducing hallucinations
@@ -481,63 +498,74 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
         tools: [{
           type: 'function',
           function: {
-            name: 'generate_matinale',
-            description: 'Generate the structured morning briefing for the Com team',
+            name: 'generate_matinale_codir',
+            description: 'Génère la Matinale CODIR ANSUT au format strict (sections B→F)',
             parameters: {
               type: 'object',
               properties: {
-                flash_info: {
+                revue_de_presse: {
                   type: 'array',
+                  description: '8 à 15 titres MAX, triés par rubrique, sans analyse',
                   items: {
                     type: 'object',
                     properties: {
-                      titre: { type: 'string' },
-                      resume: { type: 'string' },
+                      titre: { type: 'string', description: 'Titre EXACT de l\'article' },
                       source: { type: 'string' },
-                      source_url: { type: 'string', description: "URL réelle de l'article source, depuis le contexte fourni" },
-                    },
-                    required: ['titre', 'resume', 'source', 'source_url'],
-                  },
-                },
-                veille_reputation: {
-                  type: 'object',
-                  properties: {
-                    resume: { type: 'string', description: "Analyse basée UNIQUEMENT sur les mentions directes de l'ANSUT" },
-                    tonalite: { type: 'string', enum: ['positif', 'neutre', 'negatif'] },
-                    mentions_cles: { type: 'array', items: { type: 'string' } },
-                    preuves: {
-                      type: 'array',
-                      description: "Articles/mentions qui citent EXPLICITEMENT l'ANSUT avec URL EXACTE du contexte et extrait mentionnant l'ANSUT",
-                      items: {
-                        type: 'object',
-                        properties: {
-                          titre: { type: 'string', description: "Titre EXACT de l'article/mention du contexte" },
-                          source: { type: 'string' },
-                          url: { type: 'string', description: "URL EXACTE copiée du contexte, NE JAMAIS inventer" },
-                          extrait: { type: 'string', description: "Citation EXACTE mentionnant l'ANSUT" },
-                          sentiment_article: { type: 'string', enum: ['positif', 'neutre', 'negatif'] },
-                        },
-                        required: ['titre', 'source', 'url', 'extrait', 'sentiment_article'],
+                      date: { type: 'string', description: 'AAAA-MM-JJ' },
+                      url: { type: 'string', description: 'URL EXACTE depuis le contexte, valide' },
+                      rubrique: {
+                        type: 'string',
+                        enum: ['telecom_numerique', 'economie_finance', 'gouvernance_regulation', 'international'],
                       },
                     },
+                    required: ['titre', 'source', 'date', 'url', 'rubrique'],
                   },
-                  required: ['resume', 'tonalite', 'mentions_cles', 'preuves'],
                 },
-                pret_a_poster: {
+                a_retenir: {
+                  type: 'array',
+                  description: 'Maximum 3 phrases courtes factuelles',
+                  items: { type: 'string' },
+                },
+                retour_ansut: {
                   type: 'object',
                   properties: {
-                    linkedin: { type: 'string' },
-                    x_post: { type: 'string', description: 'Tweet max 280 characters with hashtags' },
-                    angle: { type: 'string' },
+                    lecture_service_universel: {
+                      type: 'object',
+                      properties: {
+                        acces: { type: ['string', 'null'] },
+                        usages: { type: ['string', 'null'] },
+                        impact: { type: ['string', 'null'] },
+                      },
+                      required: ['acces', 'usages', 'impact'],
+                    },
+                    implication_ansut: { type: ['string', 'null'], description: '2 lignes max ou null' },
+                    niveau_attention: { type: 'string', enum: ['Faible', 'Moyen', 'Élevé'] },
+                    action_suggeree: { type: ['string', 'null'] },
                   },
-                  required: ['linkedin', 'x_post', 'angle'],
+                  required: ['lecture_service_universel', 'implication_ansut', 'niveau_attention', 'action_suggeree'],
+                },
+                focus_du_jour: {
+                  type: ['object', 'null'],
+                  description: 'UNIQUEMENT si un sujet domine clairement, sinon null',
+                  properties: {
+                    titre: { type: 'string' },
+                    contenu: { type: 'string', description: '5 lignes max' },
+                  },
+                },
+                activite_ansut: {
+                  type: 'object',
+                  properties: {
+                    publications_count: { type: 'number' },
+                    visibilite: { type: 'string', enum: ['Faible', 'Moyen', 'Fort'] },
+                  },
+                  required: ['publications_count', 'visibilite'],
                 },
               },
-              required: ['flash_info', 'veille_reputation', 'pret_a_poster'],
+              required: ['revue_de_presse', 'a_retenir', 'retour_ansut', 'activite_ansut'],
             },
           },
         }],
-        tool_choice: { type: 'function', function: { name: 'generate_matinale' } },
+        tool_choice: { type: 'function', function: { name: 'generate_matinale_codir' } },
         // Note: GPT-5 does not support custom temperature parameter
       }),
     });
@@ -569,13 +597,27 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     for (const p of perplexityNews.articles) { if (p.url) validUrls.add(p.url); }
     for (const c of perplexityNews.citations) { validUrls.add(c); }
 
-    // Post-process: filter out preuves with invalid/invented URLs
-    if (matinale.veille_reputation?.preuves) {
-      matinale.veille_reputation.preuves = matinale.veille_reputation.preuves.filter((p: any) => {
-        if (!p.url || p.url === 'N/A' || p.url === '') return false;
-        return validUrls.has(p.url);
-      });
+    // Post-process: filtrer la revue_de_presse — exiger URLs valides du contexte + 8 à 15 max
+    if (Array.isArray(matinale.revue_de_presse)) {
+      matinale.revue_de_presse = matinale.revue_de_presse
+        .filter((r: any) => r?.url && r.url !== 'N/A' && validUrls.has(r.url))
+        .slice(0, 15);
+    } else {
+      matinale.revue_de_presse = [];
     }
+
+    // Cap "à retenir" à 3 items
+    if (Array.isArray(matinale.a_retenir)) {
+      matinale.a_retenir = matinale.a_retenir.slice(0, 3);
+    } else {
+      matinale.a_retenir = [];
+    }
+
+    // Forcer activite_ansut à utiliser les vraies métriques (jamais l'IA)
+    matinale.activite_ansut = {
+      publications_count: ansutPubsCount,
+      visibilite: ansutVisibilite,
+    };
 
     // Post-process: ANTI-HALLUCINATION — scrub names/titles not in référentiel
     const knownNames = new Set<string>();
@@ -624,44 +666,53 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     // Replace matinale fields with sanitized versions
     Object.assign(matinale, sanitizedMatinale);
 
-    // Generate HTML email
+    // Generate HTML email — TEMPLATE MATINALE CODIR (PROD)
+    const generatedAtUtc = new Date().toISOString();
     const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-    const tonaliteColor = matinale.veille_reputation.tonalite === 'positif' ? '#10b981'
-      : matinale.veille_reputation.tonalite === 'negatif' ? '#ef4444' : '#f59e0b';
-    const tonaliteLabel = matinale.veille_reputation.tonalite === 'positif' ? '✅ Positif'
-      : matinale.veille_reputation.tonalite === 'negatif' ? '🔴 Négatif' : '🟡 Neutre';
+    const RUBRIQUE_LABELS: Record<string, string> = {
+      telecom_numerique: 'Télécom / Numérique',
+      economie_finance: 'Économie / Finance',
+      gouvernance_regulation: 'Gouvernance / Régulation',
+      international: 'International',
+    };
+    const RUBRIQUE_ORDER = ['telecom_numerique', 'economie_finance', 'gouvernance_regulation', 'international'];
 
-    // Group titrologie by type
-    const titroNationale = titrologie.filter(t => t.type === 'nationale');
-    const titroEnLigne = titrologie.filter(t => t.type === 'en_ligne');
-    const titroEco = titrologie.filter(t => t.type === 'economique');
+    const revue = matinale.revue_de_presse as Array<{ titre: string; source: string; date: string; url: string; rubrique: string }>;
+    const aRetenir = matinale.a_retenir as string[];
+    const ra = matinale.retour_ansut;
+    const focus = matinale.focus_du_jour;
+    const act = matinale.activite_ansut;
 
-    const buildTitroSection = (titres: typeof titrologie, label: string, icon: string) => {
-      if (titres.length === 0) return '';
+    const niveauColor = ra?.niveau_attention === 'Élevé' ? '#ef4444'
+      : ra?.niveau_attention === 'Moyen' ? '#f59e0b' : '#10b981';
+
+    // Indicateur qualité (G)
+    const qualiteScore = revue.length >= 8 ? 'Bonne' : revue.length >= 4 ? 'Moyenne' : 'Faible';
+    const qualiteColor = qualiteScore === 'Bonne' ? '#10b981' : qualiteScore === 'Moyenne' ? '#f59e0b' : '#ef4444';
+
+    // Group revue by rubrique
+    const groupedRevue: Record<string, typeof revue> = {};
+    for (const r of revue) {
+      if (!groupedRevue[r.rubrique]) groupedRevue[r.rubrique] = [];
+      groupedRevue[r.rubrique].push(r);
+    }
+
+    const buildRubriqueBlock = (key: string) => {
+      const items = groupedRevue[key];
+      if (!items || items.length === 0) return '';
       return `
-      <div style="margin-bottom:12px;">
-        <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#1e3a5f;">${icon} ${label}</p>
-        ${titres.map(t => `
-        <div style="margin-bottom:8px;padding:8px 10px;background:#ffffff;border-radius:6px;border-left:3px solid #6366f1;">
-          <p style="margin:0 0 2px;font-size:11px;font-weight:700;color:#6366f1;">${t.journal}</p>
-          <p style="margin:0 0 2px;font-size:13px;font-weight:600;color:#1e3a5f;">${t.titre}</p>
-          ${t.resume ? `<p style="margin:0 0 2px;font-size:12px;color:#6b7280;">${t.resume}</p>` : ''}
-          ${t.url ? `<p style="margin:0;font-size:11px;"><a href="${t.url}" style="color:#2563eb;text-decoration:underline;" target="_blank">Lire →</a></p>` : ''}
+      <div style="margin-bottom:14px;">
+        <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#1e3a5f;text-transform:uppercase;letter-spacing:0.5px;">${RUBRIQUE_LABELS[key]}</p>
+        ${items.map(it => `
+        <div style="margin-bottom:6px;padding:8px 10px;background:#ffffff;border-radius:6px;border-left:3px solid #2563eb;">
+          <p style="margin:0 0 2px;font-size:13px;color:#1e3a5f;line-height:1.4;"><strong>${it.titre}</strong></p>
+          <p style="margin:0;font-size:11px;color:#6b7280;">${it.source} (${it.date}) — <a href="${it.url}" style="color:#2563eb;text-decoration:underline;" target="_blank">URL →</a></p>
         </div>`).join('')}
       </div>`;
     };
 
-    const titrologieHtml = titrologie.length > 0 ? `
-<tr><td style="padding:0 24px 24px;">
-  <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid #6366f1;padding-bottom:8px;">📰 Revue de Presse — Titrologie du jour</h2>
-  <div style="padding:16px;background-color:#f0f0ff;border-radius:8px;">
-    <p style="margin:0 0 12px;font-size:12px;color:#6b7280;">${titrologie.length} titre${titrologie.length > 1 ? 's' : ''} — ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-    ${buildTitroSection(titroNationale, 'Presse Nationale', '🗞️')}
-    ${buildTitroSection(titroEnLigne, 'Presse en Ligne', '🌐')}
-    ${buildTitroSection(titroEco, 'Presse Économique & Tech', '📊')}
-  </div>
-</td></tr>` : '';
+    const allUrlsTraceability = revue.map(r => r.url).filter(Boolean);
 
     const htmlEmail = `<!DOCTYPE html>
 <html lang="fr">
@@ -669,101 +720,111 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
 <body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:20px 0;">
 <tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
-<tr><td style="background:linear-gradient(135deg,#1e3a5f,#2563eb);padding:30px;text-align:center;">
-  <h1 style="color:#ffffff;margin:0;font-size:24px;">📰 La Matinale ANSUT</h1>
-  <p style="color:#93c5fd;margin:8px 0 0;font-size:14px;">${dateStr}</p>
-</td></tr>
-${titrologieHtml}
-<tr><td style="padding:24px;">
-  <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid #2563eb;padding-bottom:8px;">⚡ Flash Info</h2>
-  ${matinale.flash_info.map((item: any) => `
-  <div style="margin-bottom:16px;padding:12px;background-color:#f0f9ff;border-radius:8px;border-left:4px solid #2563eb;">
-    <p style="margin:0 0 4px;font-weight:bold;color:#1e3a5f;font-size:14px;">${item.titre}</p>
-    <p style="margin:0 0 4px;color:#374151;font-size:13px;">${item.resume}</p>
-    <p style="margin:0;color:#6b7280;font-size:11px;">Source : ${item.source}${item.source_url ? ` — <a href="${item.source_url}" style="color:#2563eb;text-decoration:underline;" target="_blank">Lire →</a>` : ''}</p>
-  </div>`).join('')}
-</td></tr>
-<tr><td style="padding:0 24px 24px;">
-  <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid #6366f1;padding-bottom:8px;">📊 Activité des Comptes Sociaux (24h)</h2>
-  ${accountsActivity.length > 0 ? `
-  <p style="margin:0 0 12px;font-size:13px;color:#374151;">
-    <strong>${(recentPubs || []).length}</strong> publication${(recentPubs || []).length !== 1 ? 's' : ''} détectée${(recentPubs || []).length !== 1 ? 's' : ''} sur <strong>${accountsActivity.length}</strong> compte${accountsActivity.length !== 1 ? 's' : ''} suivis
-    ${accountsActivity.filter(a => a.publications_24h === 0).length > 0 ? ` — <span style="color:#ef4444;font-weight:bold;">⚠ ${accountsActivity.filter(a => a.publications_24h === 0).length} inactif${accountsActivity.filter(a => a.publications_24h === 0).length > 1 ? 's' : ''}</span>` : ''}
-  </p>
-  <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-  ${accountsActivity.map(a => {
-    const platformIcon = a.plateforme === 'linkedin' ? '🔵' : a.plateforme === 'facebook' ? '📘' : a.plateforme === 'twitter' || a.plateforme === 'x' ? '🐦' : '🌐';
-    const statusColor = a.publications_24h > 0 ? '#10b981' : '#ef4444';
-    const statusLabel = a.publications_24h > 0 ? `✅ ${a.publications_24h} pub${a.publications_24h > 1 ? 's' : ''}` : '❌ 0 publication';
-    return `
+<table width="640" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+
+<!-- A. EN-TÊTE -->
+<tr><td style="background:linear-gradient(135deg,#1e3a5f,#2563eb);padding:28px 30px;">
+  <h1 style="color:#ffffff;margin:0;font-size:22px;letter-spacing:0.3px;">Matinale CODIR – ANSUT</h1>
+  <p style="color:#bfdbfe;margin:6px 0 0;font-size:13px;">${dateStr}</p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;">
     <tr>
-      <td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;">
-        <span style="font-size:14px;">${platformIcon}</span>
-        <span style="font-size:13px;font-weight:600;color:#1e3a5f;margin-left:6px;">${a.nom}</span>
-        <span style="font-size:11px;color:#9ca3af;margin-left:4px;">@${a.identifiant}</span>
-      </td>
-      <td style="padding:8px 10px;border-bottom:1px solid #f3f4f6;text-align:right;">
-        <span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;color:${statusColor};background-color:${a.publications_24h > 0 ? '#ecfdf5' : '#fef2f2'};">${statusLabel}</span>
-        ${a.total_engagement > 0 ? `<span style="font-size:10px;color:#6b7280;margin-left:6px;">💬 ${a.total_engagement}</span>` : ''}
-      </td>
-    </tr>`;
-  }).join('')}
-  </table>` : `
-  <div style="padding:12px;background:#fff7ed;border-radius:6px;border:1px dashed #f59e0b;">
-    <p style="margin:0;font-size:12px;color:#92400e;">⚠️ Aucun compte VIP actif configuré.</p>
-  </div>`}
+      <td style="font-size:11px;color:#dbeafe;">Génération (UTC) : <strong>${generatedAtUtc}</strong></td>
+      <td style="font-size:11px;color:#dbeafe;text-align:right;">Fenêtre : <strong>${freshnessHours}h</strong></td>
+    </tr>
+    <tr>
+      <td colspan="2" style="font-size:11px;color:#dbeafe;padding-top:4px;">Sources retenues : <strong>${revue.length}</strong> / Articles analysés : <strong>${articlesRaw?.length || 0}</strong></td>
+    </tr>
+  </table>
 </td></tr>
-<tr><td style="padding:0 24px 24px;">
-  <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid ${tonaliteColor};padding-bottom:8px;">🎯 Veille Réputation ANSUT ${tonaliteLabel}</h2>
-  <div style="padding:16px;background-color:#fefce8;border-radius:8px;">
-    <p style="margin:0 0 12px;color:#374151;font-size:14px;line-height:1.6;">${matinale.veille_reputation.resume}</p>
-    ${(matinale.veille_reputation.preuves || []).length > 0 ? `
-    <div style="margin:12px 0;border-top:1px solid #e5e7eb;padding-top:12px;">
-      <p style="margin:0 0 8px;font-size:12px;font-weight:bold;color:#1e3a5f;">📎 Preuves — Articles mentionnant l'ANSUT :</p>
-      ${(matinale.veille_reputation.preuves || []).map((p: any) => {
-        const sColor = p.sentiment_article === 'positif' ? '#10b981' : p.sentiment_article === 'negatif' ? '#ef4444' : '#f59e0b';
-        return `
-      <div style="margin-bottom:8px;padding:10px;background:#ffffff;border-radius:6px;border-left:3px solid ${sColor};">
-        <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#1e3a5f;">${p.titre}</p>
-        <p style="margin:0 0 4px;font-size:12px;color:#6b7280;font-style:italic;">« ${p.extrait} »</p>
-        <p style="margin:0;font-size:11px;">
-          <span style="color:#6b7280;">Source : ${p.source}</span>
-          ${p.url ? ` — <a href="${p.url}" style="color:#2563eb;text-decoration:underline;" target="_blank">Voir l'article →</a>` : ''}
-        </p>
-      </div>`;
-      }).join('')}
-    </div>` : `
-    <div style="margin:12px 0;padding:10px;background:#fff7ed;border-radius:6px;border:1px dashed #f59e0b;">
-      <p style="margin:0;font-size:12px;color:#92400e;">ℹ️ Aucune mention directe de l'ANSUT détectée dans les médias sur les dernières 24h.</p>
-    </div>`}
-    ${matinale.veille_reputation.mentions_cles.length > 0 ? `
-    <p style="margin:0;font-size:12px;color:#6b7280;">Mentions clés : ${matinale.veille_reputation.mentions_cles.map((m: string) => `<span style="display:inline-block;background:#e5e7eb;padding:2px 8px;border-radius:12px;margin:2px;font-size:11px;">${m}</span>`).join(' ')}</p>` : ''}
+
+<!-- B. REVUE DE PRESSE -->
+<tr><td style="padding:24px;">
+  <h2 style="color:#1e3a5f;font-size:16px;margin:0 0 14px;border-bottom:2px solid #2563eb;padding-bottom:6px;">B. Revue de presse</h2>
+  ${revue.length === 0 ? '<p style="font-size:13px;color:#6b7280;font-style:italic;">Aucun titre vérifié sur la fenêtre de veille.</p>' :
+    RUBRIQUE_ORDER.map(buildRubriqueBlock).join('')}
+</td></tr>
+
+<!-- C. À RETENIR -->
+<tr><td style="padding:0 24px 20px;">
+  <h2 style="color:#1e3a5f;font-size:16px;margin:0 0 12px;border-bottom:2px solid #6366f1;padding-bottom:6px;">C. À retenir aujourd'hui</h2>
+  ${aRetenir.length === 0 ? '<p style="font-size:13px;color:#6b7280;font-style:italic;">—</p>' : `
+  <ul style="margin:0;padding-left:20px;">
+    ${aRetenir.map(p => `<li style="margin:0 0 6px;font-size:13px;color:#1e3a5f;line-height:1.5;">${p}</li>`).join('')}
+  </ul>`}
+</td></tr>
+
+<!-- D. RETOUR ANSUT -->
+<tr><td style="padding:0 24px 20px;">
+  <h2 style="color:#1e3a5f;font-size:16px;margin:0 0 12px;border-bottom:2px solid #8b5cf6;padding-bottom:6px;">D. Retour ANSUT</h2>
+  <div style="padding:14px;background-color:#faf5ff;border-radius:8px;">
+
+    ${(ra?.lecture_service_universel?.acces || ra?.lecture_service_universel?.usages || ra?.lecture_service_universel?.impact) ? `
+    <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#6b21a8;">D1. Lecture Service Universel</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;">
+      ${ra.lecture_service_universel.acces ? `<tr><td style="font-size:12px;color:#6b7280;width:70px;padding:2px 0;"><strong>Accès :</strong></td><td style="font-size:13px;color:#1e3a5f;padding:2px 0;">${ra.lecture_service_universel.acces}</td></tr>` : ''}
+      ${ra.lecture_service_universel.usages ? `<tr><td style="font-size:12px;color:#6b7280;width:70px;padding:2px 0;"><strong>Usages :</strong></td><td style="font-size:13px;color:#1e3a5f;padding:2px 0;">${ra.lecture_service_universel.usages}</td></tr>` : ''}
+      ${ra.lecture_service_universel.impact ? `<tr><td style="font-size:12px;color:#6b7280;width:70px;padding:2px 0;"><strong>Impact :</strong></td><td style="font-size:13px;color:#1e3a5f;padding:2px 0;">${ra.lecture_service_universel.impact}</td></tr>` : ''}
+    </table>` : ''}
+
+    ${ra?.implication_ansut ? `
+    <p style="margin:8px 0 4px;font-size:12px;font-weight:bold;color:#6b21a8;">D2. Implication ANSUT</p>
+    <p style="margin:0 0 10px;font-size:13px;color:#1e3a5f;line-height:1.5;">${ra.implication_ansut}</p>` : ''}
+
+    <p style="margin:8px 0 4px;font-size:12px;font-weight:bold;color:#6b21a8;">D3. Niveau d'attention</p>
+    <p style="margin:0 0 10px;"><span style="display:inline-block;padding:4px 12px;border-radius:14px;font-size:12px;font-weight:700;color:#ffffff;background:${niveauColor};">${ra?.niveau_attention || 'Faible'}</span></p>
+
+    ${ra?.action_suggeree ? `
+    <p style="margin:8px 0 4px;font-size:12px;font-weight:bold;color:#6b21a8;">D4. Action suggérée</p>
+    <p style="margin:0;font-size:13px;color:#1e3a5f;line-height:1.5;">${ra.action_suggeree}</p>` : ''}
+
   </div>
 </td></tr>
+
+<!-- E. FOCUS DU JOUR (optionnel) -->
+${focus && focus.titre ? `
+<tr><td style="padding:0 24px 20px;">
+  <h2 style="color:#1e3a5f;font-size:16px;margin:0 0 12px;border-bottom:2px solid #f59e0b;padding-bottom:6px;">E. Focus du jour</h2>
+  <div style="padding:14px;background-color:#fffbeb;border-radius:8px;border-left:4px solid #f59e0b;">
+    <p style="margin:0 0 6px;font-size:14px;font-weight:bold;color:#92400e;">${focus.titre}</p>
+    <p style="margin:0;font-size:13px;color:#78350f;line-height:1.5;white-space:pre-line;">${focus.contenu}</p>
+  </div>
+</td></tr>` : ''}
+
+<!-- F. ACTIVITÉ ANSUT -->
+<tr><td style="padding:0 24px 20px;">
+  <h2 style="color:#1e3a5f;font-size:16px;margin:0 0 12px;border-bottom:2px solid #10b981;padding-bottom:6px;">F. Activité ANSUT</h2>
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border-radius:8px;">
+    <tr>
+      <td style="padding:12px;font-size:13px;color:#1e3a5f;"><strong>Publications :</strong> ${act.publications_count}</td>
+      <td style="padding:12px;font-size:13px;color:#1e3a5f;text-align:right;"><strong>Visibilité :</strong> <span style="color:${act.visibilite === 'Fort' ? '#10b981' : act.visibilite === 'Moyen' ? '#f59e0b' : '#ef4444'};font-weight:700;">${act.visibilite}</span></td>
+    </tr>
+  </table>
+</td></tr>
+
+<!-- G. TRAÇABILITÉ -->
 <tr><td style="padding:0 24px 24px;">
-  <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid #8b5cf6;padding-bottom:8px;">📝 Prêt-à-Poster LinkedIn</h2>
-  <div style="padding:16px;background-color:#f5f3ff;border-radius:8px;border:1px dashed #8b5cf6;">
-    <p style="margin:0 0 12px;color:#374151;font-size:14px;line-height:1.6;white-space:pre-line;">${matinale.pret_a_poster.linkedin}</p>
-    <p style="margin:0;font-size:12px;color:#7c3aed;font-style:italic;">💡 Angle : ${matinale.pret_a_poster.angle}</p>
+  <h2 style="color:#1e3a5f;font-size:16px;margin:0 0 12px;border-bottom:2px solid #6b7280;padding-bottom:6px;">G. Traçabilité</h2>
+  <div style="padding:12px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
+    <p style="margin:0 0 6px;font-size:11px;color:#6b7280;"><strong>Timestamp collecte :</strong> ${generatedAtUtc}</p>
+    <p style="margin:0 0 6px;font-size:11px;color:#6b7280;"><strong>Indicateur qualité :</strong> <span style="color:${qualiteColor};font-weight:700;">${qualiteScore}</span> (${revue.length} sources retenues sur ${articlesRaw?.length || 0} analysées)</p>
+    ${allUrlsTraceability.length > 0 ? `
+    <p style="margin:8px 0 4px;font-size:11px;font-weight:bold;color:#374151;">URLs utilisées :</p>
+    <ol style="margin:0;padding-left:18px;">
+      ${allUrlsTraceability.map(u => `<li style="font-size:10px;color:#6b7280;line-height:1.4;word-break:break-all;"><a href="${u}" style="color:#2563eb;text-decoration:none;" target="_blank">${u}</a></li>`).join('')}
+    </ol>` : ''}
   </div>
 </td></tr>
-<tr><td style="padding:0 24px 24px;">
-  <h2 style="color:#1e3a5f;font-size:18px;margin:0 0 16px;border-bottom:2px solid #1d9bf0;padding-bottom:8px;">🐦 Prêt-à-Poster X (Twitter)</h2>
-  <div style="padding:16px;background-color:#f0f9ff;border-radius:8px;border:1px dashed #1d9bf0;">
-    <p style="margin:0 0 8px;color:#374151;font-size:14px;line-height:1.6;">${matinale.pret_a_poster.x_post || ''}</p>
-    <p style="margin:0;font-size:11px;color:#6b7280;">${(matinale.pret_a_poster.x_post || '').length}/280 caractères</p>
-  </div>
+
+<tr><td style="background-color:#f8fafc;padding:16px;text-align:center;border-top:1px solid #e5e7eb;">
+  <p style="margin:0;color:#9ca3af;font-size:10px;">ANSUT RADAR — Matinale CODIR — Document interne</p>
 </td></tr>
-<tr><td style="background-color:#f8fafc;padding:20px;text-align:center;border-top:1px solid #e5e7eb;">
-  <p style="margin:0;color:#9ca3af;font-size:11px;">ANSUT RADAR — Veille Stratégique & Communication</p>
-  <p style="margin:4px 0 0;color:#9ca3af;font-size:11px;">Généré à partir de ${(articles || []).length} articles DB + ${perplexityNews.articles.length} articles temps réel + ${titrologie.length} titres presse, ${(mentions || []).length} mentions, ${(socialInsights || []).length} insights sociaux, ${accountsActivity.length} comptes suivis</p>
-</td></tr>
+
 </table>
 </td></tr>
 </table>
 </body>
 </html>`;
+
 
     // Compute freshness metadata for UI transparency
     const oldestPub = articles.reduce<string | null>((acc, a) => {
