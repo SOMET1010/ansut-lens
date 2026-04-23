@@ -6,7 +6,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Radar, MapPin, RefreshCw, Loader2, ArrowRight, ExternalLink, HelpCircle, AlertTriangle, Info, CheckCircle2, CircleHelp, Settings2, RotateCcw, Copy, Check } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { Radar, MapPin, RefreshCw, Loader2, ArrowRight, ExternalLink, HelpCircle, AlertTriangle, Info, CheckCircle2, CircleHelp, Settings2, RotateCcw, Copy, Check, Sparkles } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -156,6 +163,7 @@ export default function RadarProximiteWidget() {
 
   const [copied, setCopied] = useState(false);
   const [qualityFilter, setQualityFilter] = useState<'all' | 'complete' | 'partial'>('all');
+  const [detailProjet, setDetailProjet] = useState<any | null>(null);
 
   // Pondérations ajustables (persistées en localStorage)
   const [weights, setWeights] = useState<PertinenceWeights>(() => {
@@ -684,7 +692,17 @@ export default function RadarProximiteWidget() {
                       <Info className="h-3 w-3" />
                       {projet.organisme || 'Organisme non précisé'}
                     </span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-[10px] gap-1 text-primary hover:text-primary"
+                        onClick={() => setDetailProjet(projet)}
+                        aria-label={`Ouvrir le panneau Détails pertinence pour ${projet.titre}`}
+                      >
+                        <Sparkles className="h-3 w-3" aria-hidden="true" />
+                        Détails pertinence
+                      </Button>
                       {urlOk ? (
                         <a
                           href={projet.source_url}
@@ -709,6 +727,163 @@ export default function RadarProximiteWidget() {
           </div>
         )}
       </CardContent>
+
+      {/* Panneau Détails pertinence (drawer latéral) */}
+      <Sheet open={!!detailProjet} onOpenChange={(o) => !o && setDetailProjet(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          {detailProjet && (() => {
+            const bd = breakdownPertinence(detailProjet, weights);
+            const quality = getDataQuality(detailProjet);
+            const denom = Math.max(1, bd.sim + bd.freshnessPenalty + bd.actionBonus);
+            const wSim = (bd.sim / denom) * 100;
+            const wFresh = (bd.freshnessPenalty / denom) * 100;
+            const wAction = (bd.actionBonus / denom) * 100;
+            return (
+              <>
+                <SheetHeader className="space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="text-[10px]">{detailProjet.pays}</Badge>
+                    <Badge className={`text-[10px] ${scoreColor(detailProjet.similitude_score)}`}>
+                      {detailProjet.similitude_score ?? '?'}% · {scoreLabel(detailProjet.similitude_score)}
+                    </Badge>
+                    {quality.isPartial && (
+                      <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-600 text-[10px]">
+                        <CircleHelp className="h-2.5 w-2.5" />
+                        Pertinence indicative
+                      </Badge>
+                    )}
+                  </div>
+                  <SheetTitle className="text-base leading-snug">{detailProjet.titre}</SheetTitle>
+                  <SheetDescription className="text-xs">
+                    Décomposition complète du score de pertinence éditoriale et pondérations en cours.
+                  </SheetDescription>
+                </SheetHeader>
+
+                <div className="mt-5 space-y-5">
+                  {/* Total + barre */}
+                  <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-xs text-muted-foreground">Pertinence totale</span>
+                      <span className="font-mono text-2xl font-bold text-foreground tabular-nums">{Math.round(bd.total)}</span>
+                    </div>
+                    <div className="flex h-2 w-full rounded-full overflow-hidden bg-muted" role="presentation" aria-hidden="true">
+                      <div className="bg-primary" style={{ width: `${wSim}%` }} />
+                      <div className="bg-amber-500" style={{ width: `${wFresh}%` }} />
+                      <div className="bg-emerald-500" style={{ width: `${wAction}%` }} />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground font-mono">
+                      = {Math.round(bd.sim)} − {Math.round(bd.freshnessPenalty)} + {Math.round(bd.actionBonus)}
+                    </p>
+                  </div>
+
+                  {/* Similarité */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-primary" />
+                        <span className="text-sm font-semibold">Similarité</span>
+                      </div>
+                      <span className="font-mono text-sm tabular-nums">{Math.round(bd.sim)}/100</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Convergence d'objectifs, infrastructures et publics cibles avec un projet ANSUT.
+                      {quality.missingSimilarity && (
+                        <span className="block mt-1 text-amber-600 font-medium">
+                          ⚠ Score manquant ou nul — tri basé uniquement sur fraîcheur et actionnabilité.
+                        </span>
+                      )}
+                    </p>
+                  </div>
+
+                  {/* Fraîcheur */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-amber-500" />
+                        <span className="text-sm font-semibold">Fraîcheur</span>
+                      </div>
+                      <span className="font-mono text-sm tabular-nums text-amber-600">−{bd.freshnessPenalty.toFixed(1)}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {quality.missingDate
+                        ? <>⚠ Date de détection absente — le projet est traité comme « récent » par défaut (pénalité = 0).</>
+                        : <>Détecté il y a <strong className="text-foreground">{Math.round(bd.ageDays)} jour(s)</strong> · {weights.freshnessPerDay} pt/jour, plafond −{weights.freshnessMax}.</>
+                      }
+                    </p>
+                  </div>
+
+                  {/* Actionnabilité */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                        <span className="text-sm font-semibold">Actionnabilité</span>
+                      </div>
+                      <span className="font-mono text-sm tabular-nums text-emerald-600">+{bd.actionBonus}</span>
+                    </div>
+                    <ul className="text-xs text-muted-foreground space-y-1 pl-1">
+                      <li className="flex items-center gap-2">
+                        {bd.bonusReco > 0
+                          ? <CheckCircle2 className="h-3 w-3 text-emerald-600 shrink-0" />
+                          : <CircleHelp className="h-3 w-3 text-muted-foreground shrink-0" />}
+                        Recommandation com {bd.bonusReco > 0 ? `: +${bd.bonusReco}` : '— absente'}
+                      </li>
+                      <li className="flex items-center gap-2">
+                        {bd.bonusEq > 0
+                          ? <CheckCircle2 className="h-3 w-3 text-emerald-600 shrink-0" />
+                          : <CircleHelp className="h-3 w-3 text-muted-foreground shrink-0" />}
+                        Équivalent ANSUT identifié {bd.bonusEq > 0 ? `: +${bd.bonusEq}` : '— non précisé'}
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Pondérations en cours */}
+                  <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-3 space-y-2">
+                    <div className="flex items-center gap-1.5">
+                      <Settings2 className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs font-semibold text-primary">Pondérations en cours</span>
+                      {isCustomized && (
+                        <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-primary/40 text-primary">personnalisées</Badge>
+                      )}
+                    </div>
+                    <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+                      <dt className="text-muted-foreground">Pénalité fraîcheur</dt>
+                      <dd className="font-mono tabular-nums text-right">{weights.freshnessPerDay} pt/j</dd>
+                      <dt className="text-muted-foreground">Plafond fraîcheur</dt>
+                      <dd className="font-mono tabular-nums text-right">−{weights.freshnessMax}</dd>
+                      <dt className="text-muted-foreground">Bonus reco com</dt>
+                      <dd className="font-mono tabular-nums text-right">+{weights.bonusReco}</dd>
+                      <dt className="text-muted-foreground">Bonus équivalent ANSUT</dt>
+                      <dd className="font-mono tabular-nums text-right">+{weights.bonusEquivalent}</dd>
+                    </dl>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col gap-2 pt-2 border-t">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyFormule}
+                      className="gap-1.5"
+                    >
+                      {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                      {copied ? 'Formule copiée' : 'Copier formule + pondérations'}
+                    </Button>
+                    {isValidUrl(detailProjet.source_url) && (
+                      <Button asChild variant="ghost" size="sm" className="gap-1.5">
+                        <a href={detailProjet.source_url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          Voir la source ({getHostname(detailProjet.source_url)})
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </>
+            );
+          })()}
+        </SheetContent>
+      </Sheet>
     </Card>
   );
 }
