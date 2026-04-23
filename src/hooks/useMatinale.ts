@@ -31,6 +31,15 @@ interface MatinaleContent {
   };
 }
 
+interface FreshnessMeta {
+  window_hours: number;
+  based_on: string;
+  articles_total_raw: number;
+  articles_kept: number;
+  oldest_publication: string | null;
+  newest_publication: string | null;
+}
+
 interface MatinaleResponse {
   matinale: MatinaleContent;
   html?: string;
@@ -40,13 +49,16 @@ interface MatinaleResponse {
   failed?: number;
   warning?: string;
   error?: string;
+  freshness?: FreshnessMeta;
 }
+
+export type FreshnessWindow = 24 | 48 | 168;
 
 export function useMatinalePreview() {
   return useMutation({
-    mutationFn: async (): Promise<MatinaleResponse> => {
+    mutationFn: async (freshnessHours: FreshnessWindow = 24): Promise<MatinaleResponse> => {
       const { data, error } = await supabase.functions.invoke('generer-matinale', {
-        body: { previewOnly: true },
+        body: { previewOnly: true, freshnessHours },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
