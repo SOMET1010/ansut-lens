@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Briefcase, RefreshCw, ShieldAlert, AlertCircle, Flag, CheckCircle, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Briefcase, RefreshCw, ShieldAlert, AlertCircle, Flag, CheckCircle, ExternalLink, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -140,15 +141,38 @@ function BriefingText({ text, sources }: { text: string; sources: BriefingSource
     flushList();
     flushPara();
 
-    // Fallback: long unique paragraph → split into ~2-sentence chunks
+    // Fallback: long unique paragraph → split into thematic chunks
     if (result.length === 1 && result[0].kind === 'paragraph' && result[0].text.length > 280) {
       const para = result[0].text;
-      const sentences = para.match(/[^.!?]+[.!?]+(\s|$)/g) || [para];
-      const grouped: string[] = [];
-      for (let i = 0; i < sentences.length; i += 2) {
-        grouped.push(sentences.slice(i, i + 2).join('').trim());
+      const blocks: { kind: 'heading' | 'paragraph'; text: string; level?: 2 | 3 }[] = [];
+
+      // 1) Extract a trailing "Recommandation ANSUT : ..." block if present
+      let body = para;
+      const recoMatch = body.match(/(Recommandation\s+ANSUT\s*[:\-–]\s*)([\s\S]+)$/i);
+      let recoText: string | null = null;
+      if (recoMatch) {
+        recoText = recoMatch[2].trim();
+        body = body.slice(0, recoMatch.index).trim();
       }
-      return grouped.filter(Boolean).map((t) => ({ kind: 'paragraph' as const, text: t }));
+
+      // 2) Split body into ~2-sentence paragraphs, keeping citation markers attached
+      const sentences = body.match(/[^.!?]+[.!?]+(?:\s*\[\d+\])*\s*/g) || [body];
+      for (let i = 0; i < sentences.length; i += 2) {
+        const chunk = sentences.slice(i, i + 2).join('').trim();
+        if (chunk) blocks.push({ kind: 'paragraph', text: chunk });
+      }
+
+      // 3) Append the recommendation as its own highlighted section
+      if (recoText) {
+        blocks.push({ kind: 'heading', level: 3, text: 'Recommandation ANSUT' });
+        blocks.push({ kind: 'paragraph', text: recoText });
+      }
+
+      return blocks.map((b) =>
+        b.kind === 'heading'
+          ? ({ kind: 'heading' as const, level: (b.level ?? 3) as 2 | 3, text: b.text })
+          : ({ kind: 'paragraph' as const, text: b.text })
+      );
     }
 
     return result;
@@ -366,10 +390,17 @@ export function DailyBriefing() {
             )}
             
             {alertsCount > 0 && (
-              <p className="mt-3 text-signal-critical font-medium flex items-center gap-2">
+              <Link
+                to="/alertes"
+                className="mt-3 inline-flex items-center gap-2 rounded-md border border-signal-critical/30 bg-signal-critical/10 px-3 py-2 text-sm font-medium text-signal-critical transition-colors hover:bg-signal-critical/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal-critical"
+                aria-label={`Voir les ${alertsCount} alerte${alertsCount > 1 ? 's' : ''} critique${alertsCount > 1 ? 's' : ''} en cours`}
+              >
                 <ShieldAlert className="h-4 w-4" />
-                Attention : {alertsCount} alerte{alertsCount > 1 ? 's' : ''} critique{alertsCount > 1 ? 's' : ''} en cours.
-              </p>
+                <span>
+                  Attention : {alertsCount} alerte{alertsCount > 1 ? 's' : ''} critique{alertsCount > 1 ? 's' : ''} en cours
+                </span>
+                <ChevronRight className="h-4 w-4 opacity-70" />
+              </Link>
             )}
             
             {error && !briefing && (
