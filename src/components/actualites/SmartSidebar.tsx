@@ -110,6 +110,20 @@ export function SmartSidebar({
         <CardContent className="p-5">
           <h3 className="text-xs font-bold text-muted-foreground uppercase mb-3 flex items-center gap-2">
             <Activity className="h-3.5 w-3.5" /> Moniteur Sentiment
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" className="text-muted-foreground/60 hover:text-primary transition-colors normal-case">
+                  <AlertCircle className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs">
+                <p className="font-semibold mb-1">Source des scores</p>
+                <p className="text-muted-foreground">
+                  Calculé par IA (Gemini 2.5 Flash) sur {sentimentHealth.enrichedCount} article{sentimentHealth.enrichedCount > 1 ? 's' : ''} enrichi{sentimentHealth.enrichedCount > 1 ? 's' : ''} des 7 derniers jours.
+                  Échelle : -1 (très négatif) → +1 (très positif).
+                </p>
+              </TooltipContent>
+            </Tooltip>
             {sentimentHealth.alertActive && (
               <span className="ml-auto flex items-center gap-1 text-[10px] font-semibold text-destructive normal-case">
                 <AlertTriangle className="h-3 w-3" /> Seuil critique
