@@ -4,7 +4,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Radar, MapPin, RefreshCw, Loader2, ArrowRight, ExternalLink, HelpCircle, AlertTriangle, Info, CheckCircle2, CircleHelp } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Label } from '@/components/ui/label';
+import { Radar, MapPin, RefreshCw, Loader2, ArrowRight, ExternalLink, HelpCircle, AlertTriangle, Info, CheckCircle2, CircleHelp, Settings2, RotateCcw } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -78,14 +81,30 @@ function getDataQuality(p: any) {
   return { missingSimilarity, missingDate, isPartial: missingSimilarity || missingDate };
 }
 
+type PertinenceWeights = {
+  freshnessPerDay: number;
+  freshnessMax: number;
+  bonusReco: number;
+  bonusEquivalent: number;
+};
+
+const DEFAULT_WEIGHTS: PertinenceWeights = {
+  freshnessPerDay: 1,
+  freshnessMax: 30,
+  bonusReco: 10,
+  bonusEquivalent: 5,
+};
+
+const WEIGHTS_STORAGE_KEY = 'radar-proximite-weights-v1';
+
 // Pertinence éditoriale (com institutionnelle) :
-// similarité brute − pénalité fraîcheur (1pt/jour, max 30) + bonus actionnabilité
-function computePertinence(p: any): number {
+// similarité brute − pénalité fraîcheur + bonus actionnabilité
+function computePertinence(p: any, w: PertinenceWeights): number {
   const sim = Number(p.similitude_score) || 0;
   const detected = p.date_detection ? new Date(p.date_detection).getTime() : Date.now();
   const ageDays = Math.max(0, (Date.now() - detected) / 86400000);
-  const freshnessPenalty = Math.min(30, ageDays);
-  const actionBonus = (p.recommandation_com ? 10 : 0) + (p.projet_ansut_equivalent ? 5 : 0);
+  const freshnessPenalty = Math.min(w.freshnessMax, ageDays * w.freshnessPerDay);
+  const actionBonus = (p.recommandation_com ? w.bonusReco : 0) + (p.projet_ansut_equivalent ? w.bonusEquivalent : 0);
   return sim - freshnessPenalty + actionBonus;
 }
 
@@ -93,10 +112,31 @@ export default function RadarProximiteWidget() {
   const { data: rawData, isLoading } = useRadarProximite();
   const detecter = useDetecterProximite();
 
-  // Filtrer (source vérifiable obligatoire) puis trier par pertinence éditoriale
-  const data = (rawData || [])
-    .filter((p: any) => isValidUrl(p.source_url))
-    .sort((a: any, b: any) => computePertinence(b) - computePertinence(a));
+  // Pondérations ajustables (persistées en localStorage)
+  const [weights, setWeights] = useState<PertinenceWeights>(() => {
+    try {
+      const raw = localStorage.getItem(WEIGHTS_STORAGE_KEY);
+      if (raw) return { ...DEFAULT_WEIGHTS, ...JSON.parse(raw) };
+    } catch {}
+    return DEFAULT_WEIGHTS;
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem(WEIGHTS_STORAGE_KEY, JSON.stringify(weights)); } catch {}
+  }, [weights]);
+
+  const isCustomized = useMemo(
+    () => (Object.keys(DEFAULT_WEIGHTS) as (keyof PertinenceWeights)[])
+      .some((k) => weights[k] !== DEFAULT_WEIGHTS[k]),
+    [weights]
+  );
+
+  // Tri recalculé instantanément à chaque changement de pondération
+  const data = useMemo(() => {
+    return (rawData || [])
+      .filter((p: any) => isValidUrl(p.source_url))
+      .sort((a: any, b: any) => computePertinence(b, weights) - computePertinence(a, weights));
+  }, [rawData, weights]);
   const hiddenCount = (rawData?.length || 0) - data.length;
   const allPartial = data.length > 0 && data.every((p: any) => getDataQuality(p).isPartial);
 
@@ -147,19 +187,107 @@ export default function RadarProximiteWidget() {
               Benchmark régional · Projets télécoms/numériques voisins comparables
             </CardDescription>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => detecter.mutate()}
-            disabled={detecter.isPending}
-            title="Relancer la détection"
-          >
-            {detecter.isPending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3.5 w-3.5" />
-            )}
-          </Button>
+          <div className="flex items-center gap-1">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  title="Régler les pondérations"
+                  className="relative"
+                >
+                  <Settings2 className="h-3.5 w-3.5" />
+                  {isCustomized && (
+                    <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-primary" />
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80 space-y-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold">Pondérations du tri</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      L'ordre se recalcule instantanément.
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-[11px]"
+                    onClick={() => setWeights(DEFAULT_WEIGHTS)}
+                    disabled={!isCustomized}
+                    title="Réinitialiser aux valeurs par défaut"
+                  >
+                    <RotateCcw className="h-3 w-3 mr-1" />
+                    Réinitialiser
+                  </Button>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Pénalité fraîcheur (pts/jour)</Label>
+                    <span className="text-xs font-mono text-muted-foreground">{weights.freshnessPerDay.toFixed(1)}</span>
+                  </div>
+                  <Slider
+                    value={[weights.freshnessPerDay]}
+                    min={0} max={5} step={0.1}
+                    onValueChange={([v]) => setWeights((w) => ({ ...w, freshnessPerDay: v }))}
+                  />
+                  <p className="text-[10px] text-muted-foreground">0 = fraîcheur ignorée. 5 = projets anciens fortement déclassés.</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Plafond pénalité fraîcheur</Label>
+                    <span className="text-xs font-mono text-muted-foreground">−{weights.freshnessMax}</span>
+                  </div>
+                  <Slider
+                    value={[weights.freshnessMax]}
+                    min={0} max={100} step={5}
+                    onValueChange={([v]) => setWeights((w) => ({ ...w, freshnessMax: v }))}
+                  />
+                  <p className="text-[10px] text-muted-foreground">Au-delà, l'âge n'est plus pénalisé davantage.</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Bonus recommandation com</Label>
+                    <span className="text-xs font-mono text-muted-foreground">+{weights.bonusReco}</span>
+                  </div>
+                  <Slider
+                    value={[weights.bonusReco]}
+                    min={0} max={50} step={1}
+                    onValueChange={([v]) => setWeights((w) => ({ ...w, bonusReco: v }))}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Bonus équivalent ANSUT</Label>
+                    <span className="text-xs font-mono text-muted-foreground">+{weights.bonusEquivalent}</span>
+                  </div>
+                  <Slider
+                    value={[weights.bonusEquivalent]}
+                    min={0} max={50} step={1}
+                    onValueChange={([v]) => setWeights((w) => ({ ...w, bonusEquivalent: v }))}
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => detecter.mutate()}
+              disabled={detecter.isPending}
+              title="Relancer la détection"
+            >
+              {detecter.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
