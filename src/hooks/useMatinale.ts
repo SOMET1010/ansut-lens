@@ -72,9 +72,11 @@ export function useMatinalePreview() {
 
 export function useMatinaleSend() {
   return useMutation({
-    mutationFn: async (recipients?: string[]): Promise<MatinaleResponse> => {
+    mutationFn: async (params?: { recipients?: string[]; freshnessHours?: FreshnessWindow }): Promise<MatinaleResponse> => {
+      const recipients = params?.recipients;
+      const freshnessHours = params?.freshnessHours ?? 24;
       const { data, error } = await supabase.functions.invoke('generer-matinale', {
-        body: { previewOnly: false, ...(recipients ? { recipients } : {}) },
+        body: { previewOnly: false, freshnessHours, ...(recipients ? { recipients } : {}) },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
