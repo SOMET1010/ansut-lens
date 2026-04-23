@@ -5,16 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
   Newspaper, Send, Eye, Loader2, Zap, Target, MessageSquare,
-  CheckCircle2, XCircle, Clock, ArrowLeft,
+  CheckCircle2, XCircle, Clock, ArrowLeft, CalendarClock, Info,
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useMatinalePreview, useMatinaleSend, useMatinaleHistory } from '@/hooks/useMatinale';
+import { useMatinalePreview, useMatinaleSend, useMatinaleHistory, type FreshnessWindow } from '@/hooks/useMatinale';
 
 export default function MatinalePage() {
   const preview = useMatinalePreview();
@@ -22,16 +24,21 @@ export default function MatinalePage() {
   const { data: history, isLoading: historyLoading } = useMatinaleHistory();
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [matinaleData, setMatinaleData] = useState<any>(null);
+  const [freshnessMeta, setFreshnessMeta] = useState<any>(null);
+  const [freshness, setFreshness] = useState<FreshnessWindow>(24);
 
   const handlePreview = async () => {
-    const result = await preview.mutateAsync();
+    const result = await preview.mutateAsync(freshness);
     setPreviewHtml(result.html || null);
     setMatinaleData(result.matinale);
+    setFreshnessMeta(result.freshness || null);
   };
 
   const handleSend = async () => {
-    await send.mutateAsync(undefined);
+    await send.mutateAsync({ freshnessHours: freshness });
   };
+
+  const freshnessLabel = freshness === 24 ? '24 dernières heures' : freshness === 48 ? '48 dernières heures' : '7 derniers jours';
 
   return (
     <div className="w-full space-y-6 animate-fade-in">
