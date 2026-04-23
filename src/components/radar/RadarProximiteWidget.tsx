@@ -484,12 +484,23 @@ export default function RadarProximiteWidget() {
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-600 text-[10px] px-1.5 py-0 cursor-help">
-                                  <CircleHelp className="h-2.5 w-2.5" />
-                                  Pertinence indicative
-                                </Badge>
+                                <button
+                                  type="button"
+                                  aria-label={
+                                    `Pertinence indicative : ${[
+                                      quality.missingSimilarity && 'score de similarité manquant',
+                                      quality.missingDate && 'date de détection manquante',
+                                    ].filter(Boolean).join(', ')}. Appuyez sur Entrée pour plus de détails.`
+                                  }
+                                  className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                                >
+                                  <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-600 text-[10px] px-1.5 py-0 cursor-help">
+                                    <CircleHelp className="h-2.5 w-2.5" aria-hidden="true" />
+                                    Pertinence indicative
+                                  </Badge>
+                                </button>
                               </TooltipTrigger>
-                              <TooltipContent side="top" className="max-w-xs text-xs space-y-1">
+                              <TooltipContent side="top" role="tooltip" className="max-w-xs text-xs space-y-1">
                                 <p className="font-semibold">Données partielles pour ce projet</p>
                                 {quality.missingSimilarity && (
                                   <p>• <strong>Score de similarité manquant</strong> : impossible de mesurer la convergence avec un projet ANSUT. Le tri se fait alors uniquement sur la fraîcheur et l'actionnabilité.</p>
