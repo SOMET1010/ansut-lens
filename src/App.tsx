@@ -13,7 +13,7 @@ import { ProtectedRoute, PermissionRoute } from "@/components/auth";
 import AuthPage from "@/pages/AuthPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import RadarPage from "@/pages/RadarPage";
-import ActualitesPage from "@/pages/ActualitesPage";
+
 import ActeursInfluencePage from "@/pages/ActeursInfluencePage";
 import DossiersPage from "@/pages/DossiersPage";
 import AssistantPage from "@/pages/AssistantPage";
@@ -95,6 +95,7 @@ const App = () => (
                       {/* Redirections */}
                       <Route path="/" element={<Navigate to="/radar" replace />} />
                       <Route path="/medias" element={<Navigate to="/radar" replace />} />
+                      <Route path="/actualites" element={<Navigate to="/radar?tab=flux" replace />} />
                       <Route path="/personnalites" element={<Navigate to="/acteurs?tab=cartographie" replace />} />
                       <Route path="/presence-digitale" element={<Navigate to="/acteurs?tab=spdi" replace />} />
                       <Route path="/spdi-review" element={<Navigate to="/acteurs?tab=revue" replace />} />
@@ -105,9 +106,7 @@ const App = () => (
                           <Route path="/radar" element={<RadarPage />} />
                         </Route>
                         
-                        <Route element={<PermissionRoute permission="view_actualites" />}>
-                          <Route path="/actualites" element={<ActualitesPage />} />
-                        </Route>
+                        {/* /actualites is now merged into /radar (tab "flux") via redirect above */}
                         
                         <Route element={<PermissionRoute permission="view_personnalites" />}>
                           <Route path="/acteurs" element={<ActeursInfluencePage />} />

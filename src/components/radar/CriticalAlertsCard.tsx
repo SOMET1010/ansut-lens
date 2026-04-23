@@ -44,7 +44,7 @@ function resolveTarget(alert: CriticalAlert): string {
     return alert.reference_id ? `/personnalites?id=${alert.reference_id}` : '/personnalites';
   }
   // Default: news/actualités
-  return alert.reference_id ? `/actualites?id=${alert.reference_id}` : '/actualites';
+  return alert.reference_id ? `/radar?tab=flux&id=${alert.reference_id}` : '/radar?tab=flux';
 }
 
 export default function CriticalAlertsCard() {
