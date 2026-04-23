@@ -22,7 +22,7 @@ export function MessageContent({ content }: MessageContentProps) {
     
     const [, type, id, title] = match;
     const isActualite = type === 'ACTU';
-    const href = isActualite ? `/actualites?id=${id}` : `/dossiers?id=${id}`;
+    const href = isActualite ? `/radar?tab=flux&id=${id}` : `/dossiers?id=${id}`;
     const Icon = isActualite ? Newspaper : FileText;
     const colorClass = isActualite ? 'text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100' : 'text-purple-600 hover:text-purple-800 bg-purple-50 hover:bg-purple-100';
     
