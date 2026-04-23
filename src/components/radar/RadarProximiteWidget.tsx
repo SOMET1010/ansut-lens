@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { getDataQuality } from './utils/dataQuality';
 
 function isValidUrl(u?: string | null): boolean {
   if (!u || typeof u !== 'string') return false;
@@ -107,12 +108,7 @@ const scoreLabel = (score: number) => {
   return 'Faible similarité';
 };
 
-// Détecte les données de qualité dégradée (similitude/date manquantes ou par défaut)
-function getDataQuality(p: any) {
-  const missingSimilarity = p.similitude_score == null || Number(p.similitude_score) === 0;
-  const missingDate = !p.date_detection;
-  return { missingSimilarity, missingDate, isPartial: missingSimilarity || missingDate };
-}
+// Helper centralisé importé depuis utils/dataQuality (cf. tests dataQuality.test.ts)
 
 type PertinenceWeights = {
   freshnessPerDay: number;
