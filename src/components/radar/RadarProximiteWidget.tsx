@@ -533,7 +533,7 @@ export default function RadarProximiteWidget() {
                                   </Badge>
                                 </button>
                               </TooltipTrigger>
-                              <TooltipContent side="top" role="tooltip" className="max-w-xs text-xs space-y-1">
+                              <TooltipContent side="top" role="tooltip" className="max-w-xs text-xs space-y-2">
                                 <p className="font-semibold">Données partielles pour ce projet</p>
                                 {quality.missingSimilarity && (
                                   <p>• <strong>Score de similarité manquant</strong> : impossible de mesurer la convergence avec un projet ANSUT. Le tri se fait alors uniquement sur la fraîcheur et l'actionnabilité.</p>
@@ -541,7 +541,21 @@ export default function RadarProximiteWidget() {
                                 {quality.missingDate && (
                                   <p>• <strong>Date de détection manquante</strong> : la pénalité de fraîcheur ne peut pas s'appliquer (le projet est traité comme « récent » par défaut).</p>
                                 )}
-                                <p className="text-muted-foreground italic pt-1">Relancez une détection pour obtenir un score complet.</p>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  className="h-7 w-full gap-1.5 text-[11px]"
+                                  onClick={(e) => { e.stopPropagation(); detecter.mutate(); }}
+                                  disabled={detecter.isPending}
+                                  aria-label="Relancer la détection pour enrichir les données manquantes"
+                                >
+                                  {detecter.isPending ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                                  ) : (
+                                    <RefreshCw className="h-3 w-3" aria-hidden="true" />
+                                  )}
+                                  {detecter.isPending ? 'Enrichissement…' : 'Relancer détection'}
+                                </Button>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
