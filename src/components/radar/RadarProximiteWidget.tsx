@@ -233,6 +233,88 @@ export default function RadarProximiteWidget() {
     }
   };
 
+  // Export audit : génère un dataset complet par projet (valeurs + pondérations)
+  const buildAuditRows = () => {
+    return (sourcedSorted || []).map((p: any, idx: number) => {
+      const bd = breakdownPertinence(p, weights);
+      const quality = getDataQuality(p);
+      return {
+        rang: idx + 1,
+        id: p.id,
+        titre: p.titre,
+        pays: p.pays,
+        organisme: p.organisme || '',
+        projet_ansut_equivalent: p.projet_ansut_equivalent || '',
+        recommandation_com: p.recommandation_com || '',
+        source_url: p.source_url || '',
+        date_detection: p.date_detection || '',
+        similitude_score: bd.sim,
+        age_jours: Number(bd.ageDays.toFixed(2)),
+        penalite_fraicheur: Number(bd.freshnessPenalty.toFixed(2)),
+        bonus_recommandation: bd.bonusReco,
+        bonus_equivalent_ansut: bd.bonusEq,
+        bonus_actionnabilite_total: bd.actionBonus,
+        pertinence_finale: Number(bd.total.toFixed(2)),
+        w_freshness_per_day: weights.freshnessPerDay,
+        w_freshness_max: weights.freshnessMax,
+        w_bonus_reco: weights.bonusReco,
+        w_bonus_equivalent: weights.bonusEquivalent,
+        qualite_partielle: quality.isPartial,
+        qualite_raisons: quality.reasons.join(' | '),
+      };
+    });
+  };
+
+  const triggerDownload = (content: string, filename: string, mime: string) => {
+    const blob = new Blob([content], { type: `${mime};charset=utf-8;` });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const csvEscape = (v: any): string => {
+    if (v === null || v === undefined) return '';
+    const s = String(v);
+    if (/[",;\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+    return s;
+  };
+
+  const handleExportJSON = () => {
+    const rows = buildAuditRows();
+    if (rows.length === 0) { toast.error('Aucun projet à exporter'); return; }
+    const payload = {
+      generated_at: new Date().toISOString(),
+      source: 'ANSUT Radar de Proximité',
+      formule: 'pertinence = similarité − pénalité_fraîcheur + bonus_actionnabilité',
+      ponderations: weights,
+      ponderations_default: DEFAULT_WEIGHTS,
+      ponderations_personnalisees: isCustomized,
+      nb_projets: rows.length,
+      projets: rows,
+    };
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    triggerDownload(JSON.stringify(payload, null, 2), `radar-proximite-audit-${stamp}.json`, 'application/json');
+    toast.success(`Briefing exporté (JSON) — ${rows.length} projet(s)`);
+  };
+
+  const handleExportCSV = () => {
+    const rows = buildAuditRows();
+    if (rows.length === 0) { toast.error('Aucun projet à exporter'); return; }
+    const headers = Object.keys(rows[0]);
+    const lines = [
+      headers.join(';'),
+      ...rows.map((r: any) => headers.map((h) => csvEscape(r[h])).join(';')),
+    ];
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    triggerDownload('\uFEFF' + lines.join('\n'), `radar-proximite-audit-${stamp}.csv`, 'text/csv');
+    toast.success(`Briefing exporté (CSV) — ${rows.length} projet(s)`);
+  };
+
   return (
     <Card className="glass border-primary/20">
       <CardHeader className="pb-3">
