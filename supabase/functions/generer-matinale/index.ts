@@ -433,6 +433,11 @@ Deno.serve(async (req) => {
       ? `\n\nAlertes actives:\n${alertes!.map(a => `⚠️ ${a.titre}: ${a.message || ''}`).join('\n')}`
       : '';
 
+    // Activité ANSUT (publications + engagement)
+    const ansutPubsCount = (recentPubs || []).length;
+    const ansutTotalEngagement = (recentPubs || []).reduce((s, p) => s + (p.likes_count || 0) + (p.shares_count || 0) + (p.comments_count || 0), 0);
+    const ansutVisibilite = ansutPubsCount >= 5 ? 'Fort' : ansutPubsCount >= 2 ? 'Moyen' : 'Faible';
+
     // Build personnalites reference list
     const personnalitesRef = (personnalites || []).length > 0
       ? (personnalites || []).map(p => {
