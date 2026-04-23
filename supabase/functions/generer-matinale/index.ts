@@ -776,11 +776,52 @@ ${titrologieHtml}
       if (!acc || a.date_publication > acc) return a.date_publication;
       return acc;
     }, null);
+    const totalRaw = articlesRaw?.length || 0;
+    const droppedCount = Math.max(0, totalRaw - articles.length);
+    const dropRatePct = totalRaw > 0 ? Math.round((droppedCount / totalRaw) * 100) : 0;
+
+    // Charger les seuils d'alerte fraîcheur
+    let alertThresholdPct = 40;
+    let alertMinRaw = 5;
+    try {
+      const { data: cfgRows } = await supabase
+        .from('config_seuils')
+        .select('cle, valeur')
+        .in('cle', ['freshness_alert_drop_rate_pct', 'freshness_alert_min_raw_articles']);
+      for (const r of cfgRows || []) {
+        if (r.cle === 'freshness_alert_drop_rate_pct' && typeof r.valeur === 'number') alertThresholdPct = r.valeur;
+        if (r.cle === 'freshness_alert_min_raw_articles' && typeof r.valeur === 'number') alertMinRaw = r.valeur;
+      }
+    } catch (e) {
+      console.warn('[Matinale/Freshness] config_seuils unreadable, using defaults', e);
+    }
+
+    let alertTriggered = false;
+    if (totalRaw >= alertMinRaw && dropRatePct >= alertThresholdPct && !previewOnly) {
+      try {
+        await supabase.from('alertes').insert({
+          type: 'freshness_degraded',
+          niveau: dropRatePct >= 70 ? 'critique' : 'attention',
+          titre: `Matinale : ${dropRatePct}% d'articles écartés (trop anciens)`,
+          message: `Sur ${totalRaw} articles ingérés (${freshnessHours}h), ${droppedCount} ont été écartés car leur date de publication dépasse la fenêtre. Seuls ${articles.length} articles frais ont alimenté la Matinale. Vérifiez la qualité des sources ou ajustez les paramètres dans /admin/freshness.`,
+          reference_type: 'matinale',
+        });
+        alertTriggered = true;
+        console.warn(`[Matinale/Freshness] ALERTE créée : ${dropRatePct}% écartés (seuil ${alertThresholdPct}%)`);
+      } catch (e) {
+        console.error('[Matinale/Freshness] Échec création alerte', e);
+      }
+    }
+
     const freshnessMeta = {
       window_hours: freshnessHours,
       based_on: 'date_publication',
-      articles_total_raw: articlesRaw?.length || 0,
+      articles_total_raw: totalRaw,
       articles_kept: articles.length,
+      articles_dropped: droppedCount,
+      drop_rate_pct: dropRatePct,
+      alert_threshold_pct: alertThresholdPct,
+      alert_triggered: alertTriggered,
       oldest_publication: oldestPub,
       newest_publication: newestPub,
     };
