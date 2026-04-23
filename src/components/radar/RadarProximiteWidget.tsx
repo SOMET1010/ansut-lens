@@ -173,6 +173,36 @@ export default function RadarProximiteWidget() {
                 {hiddenCount} projet(s) masqué(s) faute de source vérifiable.
               </p>
             )}
+
+            {/* Encart pédagogique : explication du tri */}
+            <details className="rounded-md border border-dashed border-primary/30 bg-primary/5 p-2.5 text-[11px] group">
+              <summary className="cursor-pointer font-semibold text-primary flex items-center gap-1.5 select-none">
+                <Info className="h-3 w-3" />
+                Pourquoi cet ordre ?
+              </summary>
+              <div className="mt-2 space-y-1.5 text-muted-foreground">
+                <p>
+                  Les projets sont classés par <strong className="text-foreground">pertinence éditoriale</strong>,
+                  pas seulement par similarité brute. Calcul :
+                </p>
+                <div className="font-mono text-[10px] bg-background/60 rounded px-2 py-1.5 leading-relaxed">
+                  pertinence = <strong className="text-primary">similarité</strong> (0-100)
+                  <br />
+                  &nbsp;&nbsp;− <strong className="text-amber-600">fraîcheur</strong> (1 pt par jour, max 30)
+                  <br />
+                  &nbsp;&nbsp;+ <strong className="text-emerald-600">actionnabilité</strong> (+10 reco com, +5 équivalent ANSUT)
+                </div>
+                <ul className="space-y-0.5 pl-3 list-disc">
+                  <li><strong>Similarité (0-100)</strong> : convergence d'objectifs, infrastructures et publics cibles avec un projet ANSUT.</li>
+                  <li><strong>Pénalité fraîcheur</strong> : −1 pt par jour écoulé depuis la détection (plafonnée à −30). Un projet d'il y a 1 mois est neutralisé.</li>
+                  <li><strong>Bonus actionnabilité</strong> : +10 si une recommandation com existe, +5 si l'équivalent ANSUT est identifié — pour faire remonter ce qui est <em>directement exploitable</em>.</li>
+                </ul>
+                <p className="italic">
+                  Objectif : afficher en tête ce qui est à la fois <strong className="text-foreground">proche, récent et exploitable</strong> par l'équipe communication.
+                </p>
+              </div>
+            </details>
+
             {data.map((projet: any) => {
               const urlOk = true; // garanti par le filtre ci-dessus
               return (
