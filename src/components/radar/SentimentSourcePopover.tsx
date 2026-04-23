@@ -7,9 +7,8 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown, Sparkles, Loader2, Eye, Search, X, Download } from 'lucide-react';
+import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown, Sparkles, Loader2, Eye, RefreshCw } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -45,31 +44,6 @@ function classifySentiment(value: number): Exclude<SentimentFilter, 'all'> {
   if (value > 0.2) return 'positive';
   if (value < -0.2) return 'negative';
   return 'neutral';
-}
-
-/** Échappe une cellule CSV (RFC 4180) : guillemets doublés + entourage si besoin */
-function csvCell(value: unknown): string {
-  if (value === null || value === undefined) return '';
-  const str = String(value);
-  if (/[",\n;]/.test(str)) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
-}
-
-/** Déclenche le téléchargement d'un fichier CSV côté navigateur */
-function downloadCSV(filename: string, rows: string[][]) {
-  // BOM UTF-8 pour qu'Excel ouvre le CSV avec les bons accents
-  const csv = '\uFEFF' + rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 interface SentimentSourcePopoverProps {
@@ -177,41 +151,11 @@ export function SentimentSourcePopover({
   const initialPageSize: PageSize = (PAGE_SIZE_OPTIONS as readonly number[]).includes(limit)
     ? (limit as PageSize)
     : 10;
-  // Restaure tri & filtre depuis localStorage pour qu'ils persistent entre ouvertures
-  const STORAGE_KEY = 'sentiment-popover-prefs:v1';
-  const persisted = (() => {
-    if (typeof window === 'undefined') return null;
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      return raw ? (JSON.parse(raw) as { filter?: SentimentFilter; sort?: SortKey }) : null;
-    } catch {
-      return null;
-    }
-  })();
-  const isValidFilter = (v: unknown): v is SentimentFilter =>
-    v === 'all' || v === 'positive' || v === 'neutral' || v === 'negative';
-  const isValidSort = (v: unknown): v is SortKey =>
-    typeof v === 'string' && v in SORT_LABELS;
-
   const [pageSize, setPageSize] = useState<PageSize>(initialPageSize);
   const [period, setPeriod] = useState<PeriodKey>(defaultPeriod);
-  const [filter, setFilter] = useState<SentimentFilter>(
-    isValidFilter(persisted?.filter) ? persisted!.filter! : 'all'
-  );
-  const [sort, setSort] = useState<SortKey>(
-    isValidSort(persisted?.sort) ? persisted!.sort! : 'impact_then_date'
-  );
+  const [filter, setFilter] = useState<SentimentFilter>('all');
+  const [sort, setSort] = useState<SortKey>('impact_then_date');
   const [displayedLimit, setDisplayedLimit] = useState<number>(initialPageSize);
-
-  // Persiste tri + filtre dans localStorage à chaque changement
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ filter, sort }));
-    } catch {
-      /* quota plein ou stockage indisponible — silencieux */
-    }
-  }, [filter, sort]);
   // Versions debouncées qui pilotent réellement la requête réseau
   const [debouncedPeriod, setDebouncedPeriod] = useState<PeriodKey>(defaultPeriod);
   const [debouncedLimit, setDebouncedLimit] = useState<number>(initialPageSize);
@@ -360,35 +304,31 @@ function SentimentContent({
   onPageSizeChange: (n: PageSize) => void;
 }) {
   const [selectedArticle, setSelectedArticle] = useState<SentimentArticle | null>(null);
-  const [search, setSearch] = useState('');
-  const { data, isLoading, isFetching } = useQuery({
+  const queryClient = useQueryClient();
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['sentiment-sources', sinceISO, limit],
     queryFn: () => fetchSentimentSources(sinceISO, limit),
     staleTime: 60_000,
   });
+
+  const handleManualRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['sentiment-sources', sinceISO], exact: false });
+    refetch();
+  };
 
   // Recalcul en cours = nouvelle période non encore mise en cache OU premier chargement
   const isRecomputing = isLoading || (isFetching && !data);
   // Rafraîchissement discret en arrière-plan (données déjà affichées)
   const isBackgroundRefreshing = isFetching && !!data && !isLoading;
 
-  // 1. Recherche mot-clé (titre + source) → 2. filtre sentiment → 3. tri
-  const normalizedSearch = search.trim().toLowerCase();
-  const matchesSearch = (a: SentimentArticle) => {
-    if (!normalizedSearch) return true;
-    return (
-      a.titre.toLowerCase().includes(normalizedSearch) ||
-      (a.source_nom?.toLowerCase().includes(normalizedSearch) ?? false)
-    );
-  };
-  const articlesAfterSearch = data?.articles.filter(matchesSearch) ?? [];
-  const filteredArticles = articlesAfterSearch.filter((a) =>
+  const [onlyTop, setOnlyTop] = useState(false);
+
+  const sortedArticles = (data?.articles.filter((a) =>
     filter === 'all' ? true : classifySentiment(a.sentiment) === filter
-  ).slice().sort((a, b) => {
+  ) ?? []).slice().sort((a, b) => {
     const dateOf = (x: typeof a) => (x.date ? new Date(x.date).getTime() : 0);
     switch (sort) {
       case 'impact_then_date': {
-        // Tri composite : poids ↓ d'abord, puis date ↓ en cas d'égalité de poids
         if (b.importance !== a.importance) return b.importance - a.importance;
         return dateOf(b) - dateOf(a);
       }
@@ -400,44 +340,29 @@ function SentimentContent({
     }
   });
 
-  // Counts par catégorie pour les badges (après recherche, avant filtre sentiment)
+  // Top contributions par |sentiment × importance| (calculé sur la liste filtrée par sentiment)
+  const ranked = sortedArticles
+    .filter((a) => a.hasWeight)
+    .map((a) => ({ id: a.id, contrib: Math.abs(a.sentiment * a.importance) }))
+    .filter((x) => x.contrib > 0)
+    .sort((a, b) => b.contrib - a.contrib);
+  const topThreshold = ranked.length >= 5 ? 2 : ranked.length >= 2 ? 1 : ranked.length;
+  const topIds = new Set(ranked.slice(0, topThreshold).map((x) => x.id));
+
+  const filteredArticles = onlyTop
+    ? sortedArticles.filter((a) => topIds.has(a.id))
+    : sortedArticles;
+
+  // Counts par catégorie pour les badges
   const counts = {
-    all: articlesAfterSearch.length,
-    positive: articlesAfterSearch.filter((a) => classifySentiment(a.sentiment) === 'positive').length,
-    neutral: articlesAfterSearch.filter((a) => classifySentiment(a.sentiment) === 'neutral').length,
-    negative: articlesAfterSearch.filter((a) => classifySentiment(a.sentiment) === 'negative').length,
+    all: data?.articles.length ?? 0,
+    positive: data?.articles.filter((a) => classifySentiment(a.sentiment) === 'positive').length ?? 0,
+    neutral: data?.articles.filter((a) => classifySentiment(a.sentiment) === 'neutral').length ?? 0,
+    negative: data?.articles.filter((a) => classifySentiment(a.sentiment) === 'negative').length ?? 0,
   };
 
-  // Top 3 contributions — toujours synchronisé avec la liste affichée (recherche + filtre sentiment + tri courants).
-  // Le rang Top suit l'ordre visuel : Top 1 = premier article surligné rencontré dans `filteredArticles`.
-  // La sélection privilégie le poids (importance) ; en cas d'égalité, on respecte l'ordre courant du tri.
-  const topEligible = filteredArticles.filter((a) => a.hasWeight);
-  const maxImportanceSet = new Set(
-    topEligible
-      .slice()
-      .sort((a, b) => b.importance - a.importance)
-      .slice(0, 3)
-      .map((a) => a.id)
-  );
-  // Re-parcours dans l'ordre d'affichage pour assigner Top 1/2/3 selon la position visible
-  const topRankById = new Map<string, number>();
-  let rank = 0;
-  for (const a of filteredArticles) {
-    if (maxImportanceSet.has(a.id)) {
-      rank += 1;
-      topRankById.set(a.id, rank);
-      if (rank >= 3) break;
-    }
-  }
-  const topCount = topRankById.size;
-  // Seuil = poids minimum requis pour entrer dans le Top (basé sur la sélection par importance)
-  const topThresholdWeight =
-    topCount > 0
-      ? Math.min(...Array.from(topRankById.keys()).map((id) => filteredArticles.find((a) => a.id === id)!.importance))
-      : null;
   // Recalcul de la moyenne pondérée restreinte au filtre de sentiment courant
-  // (sur l'univers déjà restreint par la recherche)
-  const scopedArticles = articlesAfterSearch.filter((a) =>
+  const scopedArticles = (data?.articles ?? []).filter((a) =>
     filter === 'all' ? true : classifySentiment(a.sentiment) === filter
   );
   const scopedWeighted = scopedArticles.filter((a) => a.hasWeight);
@@ -447,7 +372,7 @@ function SentimentContent({
     ? Math.round((scopedSumWeightedSentiment / scopedSumWeight) * 100) / 100
     : 0;
   const scopedUnweighted = scopedArticles.length - scopedWeighted.length;
-  const isScoped = filter !== 'all' || normalizedSearch.length > 0;
+  const isScoped = filter !== 'all';
 
   // Valeurs affichées (scopées si un filtre est actif, sinon globales)
   const dispWeightedCount = isScoped ? scopedWeighted.length : (data?.totalWeighted ?? 0);
@@ -479,39 +404,7 @@ function SentimentContent({
               >
                 {period}
               </Badge>
-              {topThresholdWeight !== null && (
-                <Tooltip delayDuration={150}>
-                  <TooltipTrigger asChild>
-                    <Badge
-                      variant="outline"
-                      className="ml-1 text-[9px] font-mono border-primary/40 text-primary cursor-help gap-0.5 px-1.5 py-0 h-4 align-middle"
-                    >
-                      <Sparkles className="h-2.5 w-2.5" />
-                      Seuil Top ≥ {topThresholdWeight}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-[260px] text-[11px] leading-snug">
-                    <p className="font-semibold mb-1">Seuil de classement Top</p>
-                    <p className="text-muted-foreground">
-                      Poids minimum (importance) requis pour figurer dans le Top {topCount}{' '}
-                      sur la liste actuellement filtrée.
-                    </p>
-                    <p className="font-mono mt-1">
-                      Importance min. = <span className="font-semibold">{topThresholdWeight}</span>
-                    </p>
-                    <p className="text-muted-foreground mt-1">
-                      Contribution = <span className="font-mono">sentiment × importance</span>
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
             </p>
-            {/* Annonce accessible : informe les lecteurs d'écran du nombre de Top contributions et du seuil */}
-            <span aria-live="polite" aria-atomic="true" className="sr-only">
-              {topCount > 0
-                ? `${topCount} contribution${topCount > 1 ? 's' : ''} marquée${topCount > 1 ? 's' : ''} comme Top, seuil de poids ${topThresholdWeight} sur la liste actuelle.`
-                : 'Aucune contribution Top dans la liste actuelle.'}
-            </span>
             {isBackgroundRefreshing && (
               <span
                 className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0 animate-in fade-in"
@@ -524,28 +417,49 @@ function SentimentContent({
               </span>
             )}
           </div>
-          <Tabs value={period} onValueChange={(v) => onPeriodChange(v as PeriodKey)}>
-            <TabsList className="h-7">
-              <TabsTrigger
-                value="24h"
-                className="text-[10px] px-2 py-0.5 h-6 data-[state=active]:font-bold data-[state=active]:underline data-[state=active]:underline-offset-4 data-[state=active]:decoration-2 data-[state=active]:decoration-primary"
-              >
-                24h
-              </TabsTrigger>
-              <TabsTrigger
-                value="7j"
-                className="text-[10px] px-2 py-0.5 h-6 data-[state=active]:font-bold data-[state=active]:underline data-[state=active]:underline-offset-4 data-[state=active]:decoration-2 data-[state=active]:decoration-primary"
-              >
-                7j
-              </TabsTrigger>
-              <TabsTrigger
-                value="30j"
-                className="text-[10px] px-2 py-0.5 h-6 data-[state=active]:font-bold data-[state=active]:underline data-[state=active]:underline-offset-4 data-[state=active]:decoration-2 data-[state=active]:decoration-primary"
-              >
-                30j
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex items-center gap-1.5">
+            <Tabs value={period} onValueChange={(v) => onPeriodChange(v as PeriodKey)}>
+              <TabsList className="h-7">
+                <TabsTrigger
+                  value="24h"
+                  className="text-[10px] px-2 py-0.5 h-6 data-[state=active]:font-bold data-[state=active]:underline data-[state=active]:underline-offset-4 data-[state=active]:decoration-2 data-[state=active]:decoration-primary"
+                >
+                  24h
+                </TabsTrigger>
+                <TabsTrigger
+                  value="7j"
+                  className="text-[10px] px-2 py-0.5 h-6 data-[state=active]:font-bold data-[state=active]:underline data-[state=active]:underline-offset-4 data-[state=active]:decoration-2 data-[state=active]:decoration-primary"
+                >
+                  7j
+                </TabsTrigger>
+                <TabsTrigger
+                  value="30j"
+                  className="text-[10px] px-2 py-0.5 h-6 data-[state=active]:font-bold data-[state=active]:underline data-[state=active]:underline-offset-4 data-[state=active]:decoration-2 data-[state=active]:decoration-primary"
+                >
+                  30j
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0"
+                    onClick={handleManualRefresh}
+                    disabled={isFetching}
+                    aria-label="Rafraîchir les données"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="text-xs">Forcer le rafraîchissement</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
         {isRecomputing ? (
           <div className="space-y-1.5" aria-busy="true" aria-label={`Recalcul du sentiment pour ${period}`}>
@@ -631,37 +545,6 @@ function SentimentContent({
           </div>
         )}
 
-        {/* Recherche par mot-clé (titre + source) — appliquée AVANT sentiment & tri */}
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
-          <Input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher par titre ou source…"
-            className="h-7 pl-7 pr-7 text-[11px]"
-            aria-label="Filtrer les articles par mot-clé"
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch('')}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
-              aria-label="Effacer la recherche"
-              title="Effacer la recherche"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-        {normalizedSearch && (
-          <p className="text-[10px] text-muted-foreground -mt-1">
-            {articlesAfterSearch.length} résultat{articlesAfterSearch.length > 1 ? 's' : ''} pour
-            <span className="font-mono mx-1 text-foreground">"{search.trim()}"</span>
-            avant filtre sentiment.
-          </p>
-        )}
-
         {/* Filtre par sentiment */}
         <Tabs value={filter} onValueChange={(v) => onFilterChange(v as SentimentFilter)}>
           <TabsList className="h-7 w-full grid grid-cols-4">
@@ -683,7 +566,7 @@ function SentimentContent({
           </TabsList>
         </Tabs>
 
-        {/* Sélecteur de tri + taille de page + export CSV */}
+        {/* Sélecteur de tri + taille de page */}
         <div className="flex items-center gap-2">
           <ArrowUpDown className="h-3 w-3 text-muted-foreground shrink-0" />
           <Select value={sort} onValueChange={(v) => onSortChange(v as SortKey)}>
@@ -718,35 +601,22 @@ function SentimentContent({
           </Select>
           <Button
             type="button"
-            variant="outline"
+            variant={onlyTop ? 'default' : 'outline'}
             size="sm"
+            disabled={topIds.size === 0}
+            onClick={() => setOnlyTop((v) => !v)}
             className="h-7 px-2 text-[10px] shrink-0 gap-1"
-            disabled={filteredArticles.length === 0}
-            onClick={() => {
-              const header = ['Titre', 'Source', 'URL', 'Date', 'Sentiment', 'Poids (importance)', 'Contribution (sentiment × poids)'];
-              const rows = filteredArticles.map((a) => [
-                a.titre,
-                a.source_nom ?? '',
-                a.source_url ?? '',
-                a.date ? new Date(a.date).toISOString() : '',
-                a.sentiment.toFixed(2),
-                a.hasWeight ? String(a.importance) : '',
-                a.hasWeight ? (a.sentiment * a.importance).toFixed(2) : '',
-              ]);
-              const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-              const filterTag = filter !== 'all' ? `_${filter}` : '';
-              const searchTag = normalizedSearch ? '_recherche' : '';
-              downloadCSV(`sentiment_${period}${filterTag}${searchTag}_${stamp}.csv`, [header, ...rows]);
-            }}
             title={
-              filteredArticles.length === 0
-                ? 'Aucun article à exporter'
-                : `Exporter ${filteredArticles.length} article${filteredArticles.length > 1 ? 's' : ''} (CSV)`
+              topIds.size === 0
+                ? 'Aucune contribution majeure à afficher'
+                : onlyTop
+                  ? 'Afficher tous les articles'
+                  : `Afficher uniquement le${topIds.size > 1 ? 's' : ''} ${topIds.size} contributeur${topIds.size > 1 ? 's' : ''} majeur${topIds.size > 1 ? 's' : ''}`
             }
-            aria-label="Exporter la liste affichée en CSV"
+            aria-pressed={onlyTop}
           >
-            <Download className="h-3 w-3" />
-            CSV
+            <Sparkles className="h-3 w-3" />
+            Top {topIds.size > 0 && `(${topIds.size})`}
           </Button>
         </div>
       </div>
@@ -777,7 +647,9 @@ function SentimentContent({
           </p>
         ) : filteredArticles.length === 0 ? (
           <p className="text-xs text-muted-foreground text-center py-4">
-            Aucun article {filter === 'positive' ? 'positif' : filter === 'negative' ? 'négatif' : 'neutre'} sur cette période.
+            {onlyTop
+              ? 'Aucune contribution majeure identifiée pour ce filtre.'
+              : `Aucun article ${filter === 'positive' ? 'positif' : filter === 'negative' ? 'négatif' : 'neutre'} sur cette période.`}
           </p>
         ) : (
           (() => {
@@ -785,8 +657,7 @@ function SentimentContent({
               const s = sentimentLabel(article.sentiment);
               const sentimentPct = Math.round(((article.sentiment + 1) / 2) * 100);
               const hasSource = Boolean(article.source_url) && Boolean(article.source_nom);
-              const topRank = topRankById.get(article.id);
-              const isTop = topRank !== undefined;
+              const isTop = topIds.has(article.id);
               return (
                 <div
                   key={article.id}
@@ -801,49 +672,20 @@ function SentimentContent({
                   }}
                   className={`rounded-md border p-2 space-y-1.5 transition-colors cursor-pointer hover:border-primary/50 hover:bg-muted/40 focus:outline-none focus:ring-2 focus:ring-primary/40 ${
                     isTop
-                      ? 'bg-primary/5 border-primary/40 ring-1 ring-primary/20 shadow-sm'
+                      ? 'bg-primary/5 border-primary/40 ring-1 ring-primary/20'
                       : article.hasWeight
                         ? 'bg-muted/30'
                         : 'bg-muted/20 opacity-75'
                   }`}
-                  aria-label={
-                    isTop
-                      ? `Top ${topRank} contribution. ${article.titre}. Sentiment ${article.sentiment.toFixed(2)}, poids ${article.importance}.`
-                      : `${article.titre}. Sentiment ${article.sentiment.toFixed(2)}${article.hasWeight ? `, poids ${article.importance}` : ', poids exclu'}.`
-                  }
-                  title={isTop ? `Top ${topRank} des contributions par poids` : "Voir les détails de l'article"}
+                  title="Voir les détails de l'article"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
                       {isTop && (
-                        <Tooltip delayDuration={150}>
-                          <TooltipTrigger asChild>
-                            <Badge
-                              className="text-[9px] px-1.5 py-0 h-4 bg-primary text-primary-foreground border border-primary hover:bg-primary/90 gap-0.5 font-semibold cursor-help"
-                              onClick={(e) => e.stopPropagation()}
-                              aria-label={`Top ${topRank} contribution sur ${topCount}`}
-                            >
-                              <Sparkles className="h-2.5 w-2.5" aria-hidden="true" />
-                              <span aria-hidden="true">Top {topRank}</span>
-                              <span className="sr-only">Top {topRank} contribution</span>
-                            </Badge>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-[260px] text-[11px] leading-snug">
-                            <p className="font-semibold mb-1">Top {topRank} contribution</p>
-                            <p className="text-muted-foreground">
-                              Contribution = <span className="font-mono">sentiment × importance</span>
-                            </p>
-                            <p className="font-mono mt-1">
-                              {article.sentiment.toFixed(2)} × {article.importance} ={' '}
-                              <span className="font-semibold">
-                                {(article.sentiment * article.importance).toFixed(2)}
-                              </span>
-                            </p>
-                            <p className="text-muted-foreground mt-1">
-                              Classement par poids (importance) parmi la liste filtrée.
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
+                        <Badge className="text-[9px] px-1.5 py-0 h-4 bg-primary/15 text-primary border border-primary/30 hover:bg-primary/20 gap-0.5">
+                          <Sparkles className="h-2.5 w-2.5" />
+                          Top contribution
+                        </Badge>
                       )}
                       <s.Icon className={`h-3 w-3 ${s.color}`} />
                       <Badge variant="outline" className={`text-[10px] ${s.color}`}>
