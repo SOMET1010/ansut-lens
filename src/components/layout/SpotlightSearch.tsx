@@ -108,7 +108,7 @@ export function SpotlightSearch({ open, onOpenChange }: SpotlightSearchProps) {
         {results.actualites.length > 0 && (
           <CommandGroup heading="Actualités">
             {results.actualites.map(a => (
-              <CommandItem key={a.id} onSelect={() => go('/actualites')}>
+              <CommandItem key={a.id} onSelect={() => go('/radar?tab=flux')}>
                 <Newspaper className="mr-2 h-4 w-4 text-muted-foreground" />
                 <span className="truncate">{a.titre}</span>
                 {a.source_nom && <span className="ml-auto text-xs text-muted-foreground">{a.source_nom}</span>}
