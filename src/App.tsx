@@ -106,9 +106,7 @@ const App = () => (
                           <Route path="/radar" element={<RadarPage />} />
                         </Route>
                         
-                        <Route element={<PermissionRoute permission="view_actualites" />}>
-                          <Route path="/actualites" element={<ActualitesPage />} />
-                        </Route>
+                        {/* /actualites is now merged into /radar (tab "flux") via redirect above */}
                         
                         <Route element={<PermissionRoute permission="view_personnalites" />}>
                           <Route path="/acteurs" element={<ActeursInfluencePage />} />
