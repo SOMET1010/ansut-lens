@@ -126,6 +126,7 @@ export default function RadarProximiteWidget() {
   const detecter = useDetecterProximite();
 
   const [copied, setCopied] = useState(false);
+  const [qualityFilter, setQualityFilter] = useState<'all' | 'complete' | 'partial'>('all');
 
   // Pondérations ajustables (persistées en localStorage)
   const [weights, setWeights] = useState<PertinenceWeights>(() => {
@@ -146,13 +147,26 @@ export default function RadarProximiteWidget() {
     [weights]
   );
 
-  // Tri recalculé instantanément à chaque changement de pondération
-  const data = useMemo(() => {
+  // Liste sourcée + triée par pertinence (avant filtre qualité, pour les compteurs)
+  const sourcedSorted = useMemo(() => {
     return (rawData || [])
       .filter((p: any) => isValidUrl(p.source_url))
       .sort((a: any, b: any) => computePertinence(b, weights) - computePertinence(a, weights));
   }, [rawData, weights]);
-  const hiddenCount = (rawData?.length || 0) - data.length;
+
+  const completeCount = useMemo(
+    () => sourcedSorted.filter((p: any) => !getDataQuality(p).isPartial).length,
+    [sourcedSorted]
+  );
+  const partialCount = sourcedSorted.length - completeCount;
+
+  const data = useMemo(() => {
+    if (qualityFilter === 'complete') return sourcedSorted.filter((p: any) => !getDataQuality(p).isPartial);
+    if (qualityFilter === 'partial') return sourcedSorted.filter((p: any) => getDataQuality(p).isPartial);
+    return sourcedSorted;
+  }, [sourcedSorted, qualityFilter]);
+
+  const hiddenCount = (rawData?.length || 0) - sourcedSorted.length;
   const allPartial = data.length > 0 && data.every((p: any) => getDataQuality(p).isPartial);
 
   if (isLoading) {
