@@ -597,13 +597,27 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     for (const p of perplexityNews.articles) { if (p.url) validUrls.add(p.url); }
     for (const c of perplexityNews.citations) { validUrls.add(c); }
 
-    // Post-process: filter out preuves with invalid/invented URLs
-    if (matinale.veille_reputation?.preuves) {
-      matinale.veille_reputation.preuves = matinale.veille_reputation.preuves.filter((p: any) => {
-        if (!p.url || p.url === 'N/A' || p.url === '') return false;
-        return validUrls.has(p.url);
-      });
+    // Post-process: filtrer la revue_de_presse — exiger URLs valides du contexte + 8 à 15 max
+    if (Array.isArray(matinale.revue_de_presse)) {
+      matinale.revue_de_presse = matinale.revue_de_presse
+        .filter((r: any) => r?.url && r.url !== 'N/A' && validUrls.has(r.url))
+        .slice(0, 15);
+    } else {
+      matinale.revue_de_presse = [];
     }
+
+    // Cap "à retenir" à 3 items
+    if (Array.isArray(matinale.a_retenir)) {
+      matinale.a_retenir = matinale.a_retenir.slice(0, 3);
+    } else {
+      matinale.a_retenir = [];
+    }
+
+    // Forcer activite_ansut à utiliser les vraies métriques (jamais l'IA)
+    matinale.activite_ansut = {
+      publications_count: ansutPubsCount,
+      visibilite: ansutVisibilite,
+    };
 
     // Post-process: ANTI-HALLUCINATION — scrub names/titles not in référentiel
     const knownNames = new Set<string>();
