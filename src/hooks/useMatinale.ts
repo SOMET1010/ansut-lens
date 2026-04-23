@@ -31,6 +31,15 @@ interface MatinaleContent {
   };
 }
 
+interface FreshnessMeta {
+  window_hours: number;
+  based_on: string;
+  articles_total_raw: number;
+  articles_kept: number;
+  oldest_publication: string | null;
+  newest_publication: string | null;
+}
+
 interface MatinaleResponse {
   matinale: MatinaleContent;
   html?: string;
@@ -40,13 +49,16 @@ interface MatinaleResponse {
   failed?: number;
   warning?: string;
   error?: string;
+  freshness?: FreshnessMeta;
 }
+
+export type FreshnessWindow = 24 | 48 | 168;
 
 export function useMatinalePreview() {
   return useMutation({
-    mutationFn: async (): Promise<MatinaleResponse> => {
+    mutationFn: async (freshnessHours: FreshnessWindow = 24): Promise<MatinaleResponse> => {
       const { data, error } = await supabase.functions.invoke('generer-matinale', {
-        body: { previewOnly: true },
+        body: { previewOnly: true, freshnessHours },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -60,9 +72,11 @@ export function useMatinalePreview() {
 
 export function useMatinaleSend() {
   return useMutation({
-    mutationFn: async (recipients?: string[]): Promise<MatinaleResponse> => {
+    mutationFn: async (params?: { recipients?: string[]; freshnessHours?: FreshnessWindow }): Promise<MatinaleResponse> => {
+      const recipients = params?.recipients;
+      const freshnessHours = params?.freshnessHours ?? 24;
       const { data, error } = await supabase.functions.invoke('generer-matinale', {
-        body: { previewOnly: false, ...(recipients ? { recipients } : {}) },
+        body: { previewOnly: false, freshnessHours, ...(recipients ? { recipients } : {}) },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);

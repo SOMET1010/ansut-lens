@@ -5,16 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
   Newspaper, Send, Eye, Loader2, Zap, Target, MessageSquare,
-  CheckCircle2, XCircle, Clock, ArrowLeft,
+  CheckCircle2, XCircle, Clock, ArrowLeft, CalendarClock, Info,
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useMatinalePreview, useMatinaleSend, useMatinaleHistory } from '@/hooks/useMatinale';
+import { useMatinalePreview, useMatinaleSend, useMatinaleHistory, type FreshnessWindow } from '@/hooks/useMatinale';
 
 export default function MatinalePage() {
   const preview = useMatinalePreview();
@@ -22,16 +24,21 @@ export default function MatinalePage() {
   const { data: history, isLoading: historyLoading } = useMatinaleHistory();
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [matinaleData, setMatinaleData] = useState<any>(null);
+  const [freshnessMeta, setFreshnessMeta] = useState<any>(null);
+  const [freshness, setFreshness] = useState<FreshnessWindow>(24);
 
   const handlePreview = async () => {
-    const result = await preview.mutateAsync();
+    const result = await preview.mutateAsync(freshness);
     setPreviewHtml(result.html || null);
     setMatinaleData(result.matinale);
+    setFreshnessMeta(result.freshness || null);
   };
 
   const handleSend = async () => {
-    await send.mutateAsync(undefined);
+    await send.mutateAsync({ freshnessHours: freshness });
   };
+
+  const freshnessLabel = freshness === 24 ? '24 dernières heures' : freshness === 48 ? '48 dernières heures' : '7 derniers jours';
 
   return (
     <div className="w-full space-y-6 animate-fade-in">
@@ -67,6 +74,65 @@ export default function MatinalePage() {
           </Button>
         </div>
       </div>
+
+      {/* Freshness control bar */}
+      <TooltipProvider>
+        <Card className="glass border-primary/20">
+          <CardContent className="py-3 flex flex-wrap items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <CalendarClock className="h-4 w-4 text-primary" />
+              Période d'analyse
+            </div>
+            <ToggleGroup
+              type="single"
+              value={String(freshness)}
+              onValueChange={(v) => v && setFreshness(Number(v) as FreshnessWindow)}
+              className="bg-muted/40 rounded-md"
+            >
+              <ToggleGroupItem value="24" className="text-xs px-3">24h</ToggleGroupItem>
+              <ToggleGroupItem value="48" className="text-xs px-3">48h</ToggleGroupItem>
+              <ToggleGroupItem value="168" className="text-xs px-3">7 jours</ToggleGroupItem>
+            </ToggleGroup>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="secondary" className="gap-1 cursor-help">
+                  <Info className="h-3 w-3" />
+                  Fraîcheur basée sur date de publication
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs">
+                <p className="font-semibold mb-1">Garantie de fraîcheur</p>
+                <p>
+                  Les articles sont filtrés sur leur <strong>date de publication réelle</strong>{' '}
+                  ({freshnessLabel}), pas sur leur date d'ingestion. Les vieux articles
+                  ré-indexés récemment sont automatiquement écartés.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+
+            {freshnessMeta && (
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground ml-auto">
+                <Badge variant="outline" className="gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                  {freshnessMeta.articles_kept} articles retenus
+                </Badge>
+                {freshnessMeta.articles_total_raw > freshnessMeta.articles_kept && (
+                  <Badge variant="outline" className="gap-1">
+                    <XCircle className="h-3 w-3 text-amber-600" />
+                    {freshnessMeta.articles_total_raw - freshnessMeta.articles_kept} écartés (trop anciens)
+                  </Badge>
+                )}
+                {freshnessMeta.newest_publication && (
+                  <span>
+                    + récent : {format(new Date(freshnessMeta.newest_publication), 'dd MMM HH:mm', { locale: fr })}
+                  </span>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </TooltipProvider>
 
       {/* Content Sections */}
       <Tabs defaultValue="preview" className="w-full">

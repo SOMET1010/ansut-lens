@@ -77,7 +77,7 @@ function MatinaleBriefingSection() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => generatePreview()} disabled={isPending} className="gap-2">
+          <Button onClick={() => generatePreview(24)} disabled={isPending} className="gap-2">
             {isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {isPending ? 'Génération…' : 'Générer le briefing'}
           </Button>
