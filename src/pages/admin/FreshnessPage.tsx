@@ -34,7 +34,9 @@ export default function FreshnessPage() {
     draft.default_window_hours !== settings.default_window_hours ||
     draft.publication_tolerance_hours !== settings.publication_tolerance_hours ||
     draft.max_articles !== settings.max_articles ||
-    draft.drop_without_pub_date !== settings.drop_without_pub_date
+    draft.drop_without_pub_date !== settings.drop_without_pub_date ||
+    draft.alert_drop_rate_pct !== settings.alert_drop_rate_pct ||
+    draft.alert_min_raw_articles !== settings.alert_min_raw_articles
   );
 
   const filteredOut = stats ? stats.recent_ingest_old_pub : 0;
@@ -269,6 +271,51 @@ export default function FreshnessPage() {
                   <p className="text-xs text-muted-foreground">
                     Activez si vos sources fournissent toujours une date fiable.
                   </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Alertes automatiques */}
+              <div>
+                <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
+                  <FileWarning className="h-4 w-4 text-amber-600" />
+                  Alerte automatique de fraîcheur dégradée
+                </h3>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Une alerte est créée dans le centre de notifications dès qu'une Matinale est générée
+                  avec un taux d'articles écartés (date de publication trop ancienne) supérieur au seuil défini.
+                  Niveau <strong>critique</strong> au-delà de 70%.
+                </p>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="alert-rate">Seuil de déclenchement (%)</Label>
+                    <Input
+                      id="alert-rate"
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={draft.alert_drop_rate_pct}
+                      onChange={(e) => setDraft({ ...draft, alert_drop_rate_pct: Number(e.target.value) || 0 })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Pourcentage minimum d'articles écartés pour générer une alerte. Recommandé : 40%.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="alert-min">Volume minimum d'articles bruts</Label>
+                    <Input
+                      id="alert-min"
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={draft.alert_min_raw_articles}
+                      onChange={(e) => setDraft({ ...draft, alert_min_raw_articles: Number(e.target.value) || 1 })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Évite les fausses alertes lorsque la base contient peu d'articles. Recommandé : 5.
+                    </p>
+                  </div>
                 </div>
               </div>
 

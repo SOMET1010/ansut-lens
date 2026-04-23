@@ -19,6 +19,8 @@ export interface FreshnessSettings {
   publication_tolerance_hours: number;
   max_articles: number;
   drop_without_pub_date: boolean;
+  alert_drop_rate_pct: number;
+  alert_min_raw_articles: number;
 }
 
 const SETTING_KEYS = {
@@ -26,6 +28,8 @@ const SETTING_KEYS = {
   publication_tolerance_hours: 'freshness_publication_tolerance_hours',
   max_articles: 'freshness_max_articles',
   drop_without_pub_date: 'freshness_drop_without_pub_date',
+  alert_drop_rate_pct: 'freshness_alert_drop_rate_pct',
+  alert_min_raw_articles: 'freshness_alert_min_raw_articles',
 } as const;
 
 export function useFreshnessStats() {
@@ -97,6 +101,8 @@ export function useFreshnessSettings() {
         publication_tolerance_hours: num(SETTING_KEYS.publication_tolerance_hours, 24),
         max_articles: num(SETTING_KEYS.max_articles, 20),
         drop_without_pub_date: bool(SETTING_KEYS.drop_without_pub_date, false),
+        alert_drop_rate_pct: num(SETTING_KEYS.alert_drop_rate_pct, 40),
+        alert_min_raw_articles: num(SETTING_KEYS.alert_min_raw_articles, 5),
       };
     },
   });
@@ -111,6 +117,8 @@ export function useUpdateFreshnessSettings() {
         { cle: SETTING_KEYS.publication_tolerance_hours, valeur: settings.publication_tolerance_hours },
         { cle: SETTING_KEYS.max_articles, valeur: settings.max_articles },
         { cle: SETTING_KEYS.drop_without_pub_date, valeur: settings.drop_without_pub_date },
+        { cle: SETTING_KEYS.alert_drop_rate_pct, valeur: settings.alert_drop_rate_pct },
+        { cle: SETTING_KEYS.alert_min_raw_articles, valeur: settings.alert_min_raw_articles },
       ];
 
       for (const u of updates) {
