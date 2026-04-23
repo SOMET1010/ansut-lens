@@ -370,6 +370,12 @@ export default function RadarProximiteWidget() {
             {data.map((projet: any) => {
               const urlOk = true; // garanti par le filtre ci-dessus
               const quality = getDataQuality(projet);
+              const bd = breakdownPertinence(projet, weights);
+              // Largeurs proportionnelles pour la barre empilée (en valeurs absolues, plafonnées à 100 pour la lisibilité)
+              const denom = Math.max(1, bd.sim + bd.freshnessPenalty + bd.actionBonus);
+              const wSim = (bd.sim / denom) * 100;
+              const wFresh = (bd.freshnessPenalty / denom) * 100;
+              const wAction = (bd.actionBonus / denom) * 100;
               return (
                 <div key={projet.id} className="rounded-lg border p-3 space-y-2">
                   <div className="flex items-start justify-between gap-2">
