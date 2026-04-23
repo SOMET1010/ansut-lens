@@ -6,7 +6,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Radar, MapPin, RefreshCw, Loader2, ArrowRight, ExternalLink, HelpCircle, AlertTriangle, Info, CheckCircle2, CircleHelp, Settings2, RotateCcw, Copy, Check } from 'lucide-react';
+import { Radar, MapPin, RefreshCw, Loader2, ArrowRight, ExternalLink, HelpCircle, AlertTriangle, Info, CheckCircle2, CircleHelp, Settings2, RotateCcw, Copy, Check, Download } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -232,6 +233,88 @@ export default function RadarProximiteWidget() {
     }
   };
 
+  // Export audit : génère un dataset complet par projet (valeurs + pondérations)
+  const buildAuditRows = () => {
+    return (sourcedSorted || []).map((p: any, idx: number) => {
+      const bd = breakdownPertinence(p, weights);
+      const quality = getDataQuality(p);
+      return {
+        rang: idx + 1,
+        id: p.id,
+        titre: p.titre,
+        pays: p.pays,
+        organisme: p.organisme || '',
+        projet_ansut_equivalent: p.projet_ansut_equivalent || '',
+        recommandation_com: p.recommandation_com || '',
+        source_url: p.source_url || '',
+        date_detection: p.date_detection || '',
+        similitude_score: bd.sim,
+        age_jours: Number(bd.ageDays.toFixed(2)),
+        penalite_fraicheur: Number(bd.freshnessPenalty.toFixed(2)),
+        bonus_recommandation: bd.bonusReco,
+        bonus_equivalent_ansut: bd.bonusEq,
+        bonus_actionnabilite_total: bd.actionBonus,
+        pertinence_finale: Number(bd.total.toFixed(2)),
+        w_freshness_per_day: weights.freshnessPerDay,
+        w_freshness_max: weights.freshnessMax,
+        w_bonus_reco: weights.bonusReco,
+        w_bonus_equivalent: weights.bonusEquivalent,
+        qualite_partielle: quality.isPartial,
+        qualite_raisons: [quality.missingSimilarity && 'similarite_manquante', quality.missingDate && 'date_manquante'].filter(Boolean).join(' | '),
+      };
+    });
+  };
+
+  const triggerDownload = (content: string, filename: string, mime: string) => {
+    const blob = new Blob([content], { type: `${mime};charset=utf-8;` });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const csvEscape = (v: any): string => {
+    if (v === null || v === undefined) return '';
+    const s = String(v);
+    if (/[",;\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+    return s;
+  };
+
+  const handleExportJSON = () => {
+    const rows = buildAuditRows();
+    if (rows.length === 0) { toast.error('Aucun projet à exporter'); return; }
+    const payload = {
+      generated_at: new Date().toISOString(),
+      source: 'ANSUT Radar de Proximité',
+      formule: 'pertinence = similarité − pénalité_fraîcheur + bonus_actionnabilité',
+      ponderations: weights,
+      ponderations_default: DEFAULT_WEIGHTS,
+      ponderations_personnalisees: isCustomized,
+      nb_projets: rows.length,
+      projets: rows,
+    };
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    triggerDownload(JSON.stringify(payload, null, 2), `radar-proximite-audit-${stamp}.json`, 'application/json');
+    toast.success(`Briefing exporté (JSON) — ${rows.length} projet(s)`);
+  };
+
+  const handleExportCSV = () => {
+    const rows = buildAuditRows();
+    if (rows.length === 0) { toast.error('Aucun projet à exporter'); return; }
+    const headers = Object.keys(rows[0]);
+    const lines = [
+      headers.join(';'),
+      ...rows.map((r: any) => headers.map((h) => csvEscape(r[h])).join(';')),
+    ];
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    triggerDownload('\uFEFF' + lines.join('\n'), `radar-proximite-audit-${stamp}.csv`, 'text/csv');
+    toast.success(`Briefing exporté (CSV) — ${rows.length} projet(s)`);
+  };
+
   return (
     <Card className="glass border-primary/20">
       <CardHeader className="pb-3">
@@ -357,6 +440,34 @@ export default function RadarProximiteWidget() {
                 </div>
               </PopoverContent>
             </Popover>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  title="Exporter le briefing pour audit"
+                  disabled={!sourcedSorted || sourcedSorted.length === 0}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel className="text-xs">Exporter briefing (audit)</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleExportJSON} className="text-xs">
+                  <Download className="h-3.5 w-3.5 mr-2" />
+                  JSON — calculs détaillés
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportCSV} className="text-xs">
+                  <Download className="h-3.5 w-3.5 mr-2" />
+                  CSV — tableau (Excel)
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <div className="px-2 py-1.5 text-[10px] text-muted-foreground">
+                  Inclut similarité, fraîcheur, bonus et pondérations en cours pour chaque projet.
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               variant="ghost"
               size="sm"
