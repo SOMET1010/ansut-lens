@@ -286,13 +286,25 @@ Deno.serve(async (req) => {
     const titrologiePromise = fetchTitrologie();
 
     // Fetch last 24h articles (general news)
+    // FRESHNESS FIX: filtrer sur date_publication (vraie date de l'article) ET created_at (date d'ingestion)
+    // pour exclure les vieux articles récemment ingérés (ex: 2025 ingérés en 2026)
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data: articles } = await supabase
+    const freshnessWindow = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(); // tolérance 48h pour date_publication
+    const { data: articlesRaw } = await supabase
       .from('actualites')
-      .select('titre, resume, source_nom, source_url, importance, sentiment, impact_ansut, categorie, contenu')
+      .select('titre, resume, source_nom, source_url, importance, sentiment, impact_ansut, categorie, contenu, date_publication, created_at')
       .gte('created_at', yesterday)
       .order('importance', { ascending: false })
-      .limit(20);
+      .limit(50);
+
+    // Filtrer côté code : on garde uniquement les articles dont la date_publication est récente (< 48h)
+    // OU absente (fallback sur created_at qui est déjà filtré)
+    const articles = (articlesRaw || []).filter(a => {
+      if (!a.date_publication) return true; // pas de date pub → on garde (created_at < 24h déjà filtré)
+      return a.date_publication >= freshnessWindow;
+    }).slice(0, 20);
+
+    console.log(`[Matinale/Freshness] ${articlesRaw?.length || 0} articles bruts → ${articles.length} après filtre fraîcheur (date_publication >= ${freshnessWindow})`);
 
     // Fetch ANSUT-specific mentions from mentions table
     const { data: mentions } = await supabase
