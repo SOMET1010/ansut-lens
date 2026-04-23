@@ -390,10 +390,17 @@ export function DailyBriefing() {
             )}
             
             {alertsCount > 0 && (
-              <p className="mt-3 text-signal-critical font-medium flex items-center gap-2">
+              <Link
+                to="/alertes"
+                className="mt-3 inline-flex items-center gap-2 rounded-md border border-signal-critical/30 bg-signal-critical/10 px-3 py-2 text-sm font-medium text-signal-critical transition-colors hover:bg-signal-critical/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal-critical"
+                aria-label={`Voir les ${alertsCount} alerte${alertsCount > 1 ? 's' : ''} critique${alertsCount > 1 ? 's' : ''} en cours`}
+              >
                 <ShieldAlert className="h-4 w-4" />
-                Attention : {alertsCount} alerte{alertsCount > 1 ? 's' : ''} critique{alertsCount > 1 ? 's' : ''} en cours.
-              </p>
+                <span>
+                  Attention : {alertsCount} alerte{alertsCount > 1 ? 's' : ''} critique{alertsCount > 1 ? 's' : ''} en cours
+                </span>
+                <ChevronRight className="h-4 w-4 opacity-70" />
+              </Link>
             )}
             
             {error && !briefing && (
