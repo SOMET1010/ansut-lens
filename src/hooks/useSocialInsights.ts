@@ -49,13 +49,59 @@ export function useSocialInsights(limit = 20) {
   });
 }
 
+/**
+ * Mots-clés strictement liés à la mission ANSUT / écosystème télécoms ivoirien.
+ * Sert à filtrer les insights "critiques" pour ne retenir que ceux qui
+ * concernent réellement notre périmètre (et écarter le bruit cyber générique
+ * type "faille Cisco IOS XE" qui n'a aucune valeur opérationnelle pour nous).
+ */
+const ANSUT_RELEVANCE_KEYWORDS = [
+  'ansut',
+  'service universel',
+  'côte d\'ivoire',
+  'cote d\'ivoire',
+  'ivoirien',
+  'artci',
+  'mtnd',
+  'transition numérique',
+  'orange ci',
+  'mtn ci',
+  'moov africa',
+  'wave',
+  'inclusion numérique',
+  'fracture numérique',
+  'zone blanche',
+  'zones blanches',
+  'fibre optique',
+  'haut débit',
+  'fai',
+  'opérateur télécom',
+];
+
+function isAnsutRelevant(insight: {
+  contenu: string | null;
+  hashtags: string[] | null;
+  entites_detectees: string[] | null;
+}): boolean {
+  const haystack = [
+    insight.contenu ?? '',
+    ...(insight.hashtags ?? []),
+    ...(insight.entites_detectees ?? []),
+  ]
+    .join(' ')
+    .toLowerCase();
+
+  if (!haystack.trim()) return false;
+  return ANSUT_RELEVANCE_KEYWORDS.some((kw) => haystack.includes(kw));
+}
+
 export function useSocialStats() {
   return useQuery({
     queryKey: ['social-stats'],
     queryFn: async (): Promise<WebStats> => {
       const { data, error } = await supabase
         .from('social_insights')
-        .select('plateforme, engagement_score, sentiment, est_critique')
+        .select('plateforme, engagement_score, sentiment, est_critique, contenu, hashtags, entites_detectees')
         .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
 
       if (error) throw error;
@@ -74,7 +120,10 @@ export function useSocialStats() {
           sentimentCount++;
         }
         totalEngagement += insight.engagement_score || 0;
-        if (insight.est_critique) criticalCount++;
+        // Ne compte comme "critique à traiter" que si pertinent pour l'ANSUT
+        if (insight.est_critique && isAnsutRelevant(insight)) {
+          criticalCount++;
+        }
       }
 
       return {
