@@ -183,6 +183,20 @@ export default function RadarProximiteWidget() {
               </p>
             )}
 
+            {allPartial && (
+              <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-2.5 text-[11px] flex items-start gap-2">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <p className="font-semibold text-amber-700 dark:text-amber-400">Pertinence indicative</p>
+                  <p className="text-muted-foreground">
+                    Les scores de similarité ou dates de détection sont incomplets pour tous les projets affichés.
+                    L'ordre reste basé sur l'actionnabilité, mais le tri par pertinence est dégradé.
+                    Relancez une détection pour rafraîchir les données.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Encart pédagogique : explication du tri */}
             <details className="rounded-md border border-dashed border-primary/30 bg-primary/5 p-2.5 text-[11px] group">
               <summary className="cursor-pointer font-semibold text-primary flex items-center gap-1.5 select-none">
