@@ -604,47 +604,81 @@ export default function RadarProximiteWidget() {
                     </div>
                   </div>
 
-                  {/* Mini-score pédagogique : décomposition similarité / fraîcheur / actionnabilité */}
-                  <TooltipProvider>
+                  {/* Mini-score pédagogique : décomposition similarité / fraîcheur / actionnabilité.
+                      Accessibilité (a11y) :
+                      - <button> = focusable au clavier (Tab) ; Radix Tooltip ouvre au focus, ferme à Esc/blur.
+                      - aria-label complet → score lisible sans dépendre du visuel ni du tooltip.
+                      - aria-describedby relie explicitement le bouton à la décomposition (lecteur d'écran).
+                      - delayDuration={0} → tooltip immédiat au focus clavier (pas d'attente hover).
+                      - Contraste dark mode : remplacement de text-muted-foreground (insuffisant à 9px)
+                        par text-foreground/75 + bump à 10px → conforme WCAG AA en dark theme.
+                      - Pastilles de légende : ring-1 ring-background pour démarquer les couleurs sur fond sombre. */}
+                  <TooltipProvider delayDuration={0}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
                           type="button"
                           aria-label={
-                            `Pertinence ${Math.round(bd.total)}, décomposition : similarité ${Math.round(bd.sim)}, ` +
+                            `Pertinence ${Math.round(bd.total)} sur 100. ` +
+                            `Décomposition : similarité ${Math.round(bd.sim)}, ` +
                             `pénalité fraîcheur moins ${Math.round(bd.freshnessPenalty)}, ` +
                             `bonus actionnabilité plus ${Math.round(bd.actionBonus)}. ` +
-                            `Appuyez sur Entrée pour le détail.`
+                            `Appuyez sur Entrée ou Espace pour afficher le détail, Échap pour fermer.`
                           }
-                          className="w-full text-left space-y-1 cursor-help rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                          aria-describedby={`pertinence-detail-${projet.id}`}
+                          className="w-full text-left space-y-1 cursor-help rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background hover:bg-muted/30 transition-colors px-1 py-0.5 -mx-1"
                         >
-                          <div className="flex items-center justify-between text-[10px]">
-                            <span className="text-muted-foreground">Pertinence</span>
-                            <span className="font-mono font-semibold text-foreground">
+                          <div className="flex items-center justify-between gap-2 text-[10px]">
+                            <span className="text-foreground/75 font-medium">Pertinence</span>
+                            <span className="font-mono font-semibold text-foreground tabular-nums">
                               {Math.round(bd.total)}
-                              <span className="text-muted-foreground font-normal ml-1" aria-hidden="true">
+                              {/* Détail inline masqué <640px (déjà cassait le layout mobile) */}
+                              <span className="text-foreground/60 font-normal ml-1 hidden sm:inline" aria-hidden="true">
                                 = {Math.round(bd.sim)} − {Math.round(bd.freshnessPenalty)} + {Math.round(bd.actionBonus)}
                               </span>
                             </span>
                           </div>
-                          <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-muted" role="presentation" aria-hidden="true">
+                          {/* Barre empilée — bordure subtile pour contraste en dark mode */}
+                          <div className="flex h-2 sm:h-1.5 w-full rounded-full overflow-hidden bg-muted ring-1 ring-border/50" role="presentation" aria-hidden="true">
                             <div className="bg-primary" style={{ width: `${wSim}%` }} />
-                            <div className="bg-amber-500" style={{ width: `${wFresh}%` }} />
-                            <div className="bg-emerald-500" style={{ width: `${wAction}%` }} />
+                            <div className="bg-amber-500 dark:bg-amber-400" style={{ width: `${wFresh}%` }} />
+                            <div className="bg-emerald-600 dark:bg-emerald-400" style={{ width: `${wAction}%` }} />
                           </div>
-                          <div className="flex items-center gap-3 text-[9px] text-muted-foreground" aria-hidden="true">
-                            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-primary" /> Similarité {Math.round(bd.sim)}</span>
-                            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Fraîcheur −{Math.round(bd.freshnessPenalty)}</span>
-                            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Action +{Math.round(bd.actionBonus)}</span>
+                          {/* Légende : compacte mobile, contraste renforcé pour dark mode */}
+                          <div className="flex items-center justify-between sm:justify-start sm:gap-3 gap-1 text-[10px] text-foreground/75 tabular-nums" aria-hidden="true">
+                            <span className="flex items-center gap-1">
+                              <span className="h-2 w-2 rounded-full bg-primary shrink-0 ring-1 ring-background" />
+                              <span className="hidden sm:inline">Similarité </span>
+                              <span className="sm:hidden">Sim </span>
+                              {Math.round(bd.sim)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <span className="h-2 w-2 rounded-full bg-amber-500 dark:bg-amber-400 shrink-0 ring-1 ring-background" />
+                              <span className="hidden sm:inline">Fraîcheur </span>
+                              <span className="sm:hidden">Frais </span>
+                              −{Math.round(bd.freshnessPenalty)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <span className="h-2 w-2 rounded-full bg-emerald-600 dark:bg-emerald-400 shrink-0 ring-1 ring-background" />
+                              <span className="hidden sm:inline">Action </span>
+                              <span className="sm:hidden">Act </span>
+                              +{Math.round(bd.actionBonus)}
+                            </span>
                           </div>
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent side="top" role="tooltip" className="max-w-xs text-xs space-y-1">
+                      <TooltipContent
+                        id={`pertinence-detail-${projet.id}`}
+                        side="top"
+                        role="tooltip"
+                        className="max-w-xs text-xs space-y-1"
+                      >
                         <p className="font-semibold">Décomposition du score</p>
                         <p>• <strong>Similarité brute</strong> : {Math.round(bd.sim)}/100</p>
                         <p>• <strong>Pénalité fraîcheur</strong> : −{bd.freshnessPenalty.toFixed(1)} pt ({Math.round(bd.ageDays)} j × {weights.freshnessPerDay}/j, plafond {weights.freshnessMax})</p>
                         <p>• <strong>Bonus actionnabilité</strong> : +{bd.actionBonus} ({bd.bonusReco > 0 ? `reco com +${bd.bonusReco}` : 'pas de reco'}{bd.bonusEq > 0 ? `, équivalent ANSUT +${bd.bonusEq}` : ''})</p>
                         <p className="pt-1 border-t font-semibold">Total : {Math.round(bd.total)}</p>
+                        <p className="text-[10px] text-muted-foreground italic pt-1">Échap pour fermer · Tab pour passer au suivant</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
