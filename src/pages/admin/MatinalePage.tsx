@@ -23,6 +23,24 @@ const RUBRIQUE_LABELS: Record<string, string> = {
   international: 'International',
 };
 const RUBRIQUE_ORDER = ['telecom_numerique', 'economie_finance', 'gouvernance_regulation', 'international'];
+
+function isValidUrl(u?: string): boolean {
+  if (!u || typeof u !== 'string') return false;
+  try {
+    const parsed = new URL(u);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function formatRevueDate(d?: string): string {
+  if (!d) return '—';
+  const parsed = new Date(d);
+  if (isNaN(parsed.getTime())) return d;
+  return format(parsed, 'dd MMM yyyy', { locale: fr });
+}
+
 import { formatDistanceToNow, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useMatinalePreview, useMatinaleSend, useMatinaleHistory, type FreshnessWindow } from '@/hooks/useMatinale';
@@ -199,22 +217,45 @@ export default function MatinalePage() {
                           {RUBRIQUE_LABELS[rub]}
                         </h4>
                         <ul className="space-y-2">
-                          {items.map((it: any, i: number) => (
-                            <li key={i} className="text-sm border-l-2 border-primary/40 pl-3">
-                              <a
-                                href={it.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-medium hover:underline inline-flex items-center gap-1"
-                              >
-                                {it.titre}
-                                <ExternalLink className="h-3 w-3 opacity-60" />
-                              </a>
-                              <div className="text-xs text-muted-foreground mt-0.5">
-                                {it.source} · {it.date}
-                              </div>
-                            </li>
-                          ))}
+                          {items.map((it: any, i: number) => {
+                            const urlOk = isValidUrl(it.url);
+                            return (
+                              <li key={i} className="text-sm border-l-2 border-primary/40 pl-3">
+                                <div className="flex items-start gap-2 flex-wrap">
+                                  {urlOk ? (
+                                    <a
+                                      href={it.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="font-medium hover:underline inline-flex items-center gap-1"
+                                    >
+                                      {it.titre}
+                                      <ExternalLink className="h-3 w-3 opacity-60" />
+                                    </a>
+                                  ) : (
+                                    <span className="font-medium text-muted-foreground">{it.titre}</span>
+                                  )}
+                                  {urlOk ? (
+                                    <Badge variant="outline" className="gap-1 border-emerald-500/40 text-emerald-600 text-[10px] px-1.5 py-0">
+                                      <CheckCircle2 className="h-2.5 w-2.5" />
+                                      URL valide
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="gap-1 border-destructive/40 text-destructive text-[10px] px-1.5 py-0">
+                                      <XCircle className="h-2.5 w-2.5" />
+                                      URL invalide
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                                  <span>{it.source}</span>
+                                  <span>·</span>
+                                  <Clock className="h-3 w-3" />
+                                  <span>{formatRevueDate(it.date)}</span>
+                                </div>
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
                     );
