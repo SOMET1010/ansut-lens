@@ -3,7 +3,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Radar, MapPin, RefreshCw, Loader2, ArrowRight, ExternalLink, HelpCircle, AlertTriangle, Info, CheckCircle2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Radar, MapPin, RefreshCw, Loader2, ArrowRight, ExternalLink, HelpCircle, AlertTriangle, Info, CheckCircle2, CircleHelp } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -70,6 +71,13 @@ const scoreLabel = (score: number) => {
   return 'Faible similarité';
 };
 
+// Détecte les données de qualité dégradée (similitude/date manquantes ou par défaut)
+function getDataQuality(p: any) {
+  const missingSimilarity = p.similitude_score == null || Number(p.similitude_score) === 0;
+  const missingDate = !p.date_detection;
+  return { missingSimilarity, missingDate, isPartial: missingSimilarity || missingDate };
+}
+
 // Pertinence éditoriale (com institutionnelle) :
 // similarité brute − pénalité fraîcheur (1pt/jour, max 30) + bonus actionnabilité
 function computePertinence(p: any): number {
@@ -90,6 +98,7 @@ export default function RadarProximiteWidget() {
     .filter((p: any) => isValidUrl(p.source_url))
     .sort((a: any, b: any) => computePertinence(b) - computePertinence(a));
   const hiddenCount = (rawData?.length || 0) - data.length;
+  const allPartial = data.length > 0 && data.every((p: any) => getDataQuality(p).isPartial);
 
   if (isLoading) {
     return (
@@ -174,6 +183,20 @@ export default function RadarProximiteWidget() {
               </p>
             )}
 
+            {allPartial && (
+              <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-2.5 text-[11px] flex items-start gap-2">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <p className="font-semibold text-amber-700 dark:text-amber-400">Pertinence indicative</p>
+                  <p className="text-muted-foreground">
+                    Les scores de similarité ou dates de détection sont incomplets pour tous les projets affichés.
+                    L'ordre reste basé sur l'actionnabilité, mais le tri par pertinence est dégradé.
+                    Relancez une détection pour rafraîchir les données.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Encart pédagogique : explication du tri */}
             <details className="rounded-md border border-dashed border-primary/30 bg-primary/5 p-2.5 text-[11px] group">
               <summary className="cursor-pointer font-semibold text-primary flex items-center gap-1.5 select-none">
@@ -205,6 +228,7 @@ export default function RadarProximiteWidget() {
 
             {data.map((projet: any) => {
               const urlOk = true; // garanti par le filtre ci-dessus
+              const quality = getDataQuality(projet);
               return (
                 <div key={projet.id} className="rounded-lg border p-3 space-y-2">
                   <div className="flex items-start justify-between gap-2">
@@ -213,8 +237,30 @@ export default function RadarProximiteWidget() {
                         <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
                         <Badge variant="outline" className="text-[10px]">{projet.pays}</Badge>
                         <Badge className={`text-[10px] ${scoreColor(projet.similitude_score)}`}>
-                          {projet.similitude_score}% · {scoreLabel(projet.similitude_score)}
+                          {projet.similitude_score ?? '?'}% · {scoreLabel(projet.similitude_score)}
                         </Badge>
+                        {quality.isPartial && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-600 text-[10px] px-1.5 py-0 cursor-help">
+                                  <CircleHelp className="h-2.5 w-2.5" />
+                                  Pertinence indicative
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs text-xs space-y-1">
+                                <p className="font-semibold">Données partielles pour ce projet</p>
+                                {quality.missingSimilarity && (
+                                  <p>• <strong>Score de similarité manquant</strong> : impossible de mesurer la convergence avec un projet ANSUT. Le tri se fait alors uniquement sur la fraîcheur et l'actionnabilité.</p>
+                                )}
+                                {quality.missingDate && (
+                                  <p>• <strong>Date de détection manquante</strong> : la pénalité de fraîcheur ne peut pas s'appliquer (le projet est traité comme « récent » par défaut).</p>
+                                )}
+                                <p className="text-muted-foreground italic pt-1">Relancez une détection pour obtenir un score complet.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
                         {urlOk ? (
                           <Badge variant="outline" className="gap-1 border-emerald-500/40 text-emerald-600 text-[10px] px-1.5 py-0">
                             <CheckCircle2 className="h-2.5 w-2.5" />
