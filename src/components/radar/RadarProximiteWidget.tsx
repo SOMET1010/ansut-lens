@@ -534,29 +534,38 @@ export default function RadarProximiteWidget() {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="space-y-1 cursor-help">
+                        <button
+                          type="button"
+                          aria-label={
+                            `Pertinence ${Math.round(bd.total)}, décomposition : similarité ${Math.round(bd.sim)}, ` +
+                            `pénalité fraîcheur moins ${Math.round(bd.freshnessPenalty)}, ` +
+                            `bonus actionnabilité plus ${Math.round(bd.actionBonus)}. ` +
+                            `Appuyez sur Entrée pour le détail.`
+                          }
+                          className="w-full text-left space-y-1 cursor-help rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                        >
                           <div className="flex items-center justify-between text-[10px]">
                             <span className="text-muted-foreground">Pertinence</span>
                             <span className="font-mono font-semibold text-foreground">
                               {Math.round(bd.total)}
-                              <span className="text-muted-foreground font-normal ml-1">
+                              <span className="text-muted-foreground font-normal ml-1" aria-hidden="true">
                                 = {Math.round(bd.sim)} − {Math.round(bd.freshnessPenalty)} + {Math.round(bd.actionBonus)}
                               </span>
                             </span>
                           </div>
-                          <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-muted">
+                          <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-muted" role="presentation" aria-hidden="true">
                             <div className="bg-primary" style={{ width: `${wSim}%` }} />
                             <div className="bg-amber-500" style={{ width: `${wFresh}%` }} />
                             <div className="bg-emerald-500" style={{ width: `${wAction}%` }} />
                           </div>
-                          <div className="flex items-center gap-3 text-[9px] text-muted-foreground">
+                          <div className="flex items-center gap-3 text-[9px] text-muted-foreground" aria-hidden="true">
                             <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-primary" /> Similarité {Math.round(bd.sim)}</span>
                             <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Fraîcheur −{Math.round(bd.freshnessPenalty)}</span>
                             <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Action +{Math.round(bd.actionBonus)}</span>
                           </div>
-                        </div>
+                        </button>
                       </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs text-xs space-y-1">
+                      <TooltipContent side="top" role="tooltip" className="max-w-xs text-xs space-y-1">
                         <p className="font-semibold">Décomposition du score</p>
                         <p>• <strong>Similarité brute</strong> : {Math.round(bd.sim)}/100</p>
                         <p>• <strong>Pénalité fraîcheur</strong> : −{bd.freshnessPenalty.toFixed(1)} pt ({Math.round(bd.ageDays)} j × {weights.freshnessPerDay}/j, plafond {weights.freshnessMax})</p>
