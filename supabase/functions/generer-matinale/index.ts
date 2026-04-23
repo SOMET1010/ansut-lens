@@ -498,63 +498,74 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
         tools: [{
           type: 'function',
           function: {
-            name: 'generate_matinale',
-            description: 'Generate the structured morning briefing for the Com team',
+            name: 'generate_matinale_codir',
+            description: 'Génère la Matinale CODIR ANSUT au format strict (sections B→F)',
             parameters: {
               type: 'object',
               properties: {
-                flash_info: {
+                revue_de_presse: {
                   type: 'array',
+                  description: '8 à 15 titres MAX, triés par rubrique, sans analyse',
                   items: {
                     type: 'object',
                     properties: {
-                      titre: { type: 'string' },
-                      resume: { type: 'string' },
+                      titre: { type: 'string', description: 'Titre EXACT de l\'article' },
                       source: { type: 'string' },
-                      source_url: { type: 'string', description: "URL réelle de l'article source, depuis le contexte fourni" },
-                    },
-                    required: ['titre', 'resume', 'source', 'source_url'],
-                  },
-                },
-                veille_reputation: {
-                  type: 'object',
-                  properties: {
-                    resume: { type: 'string', description: "Analyse basée UNIQUEMENT sur les mentions directes de l'ANSUT" },
-                    tonalite: { type: 'string', enum: ['positif', 'neutre', 'negatif'] },
-                    mentions_cles: { type: 'array', items: { type: 'string' } },
-                    preuves: {
-                      type: 'array',
-                      description: "Articles/mentions qui citent EXPLICITEMENT l'ANSUT avec URL EXACTE du contexte et extrait mentionnant l'ANSUT",
-                      items: {
-                        type: 'object',
-                        properties: {
-                          titre: { type: 'string', description: "Titre EXACT de l'article/mention du contexte" },
-                          source: { type: 'string' },
-                          url: { type: 'string', description: "URL EXACTE copiée du contexte, NE JAMAIS inventer" },
-                          extrait: { type: 'string', description: "Citation EXACTE mentionnant l'ANSUT" },
-                          sentiment_article: { type: 'string', enum: ['positif', 'neutre', 'negatif'] },
-                        },
-                        required: ['titre', 'source', 'url', 'extrait', 'sentiment_article'],
+                      date: { type: 'string', description: 'AAAA-MM-JJ' },
+                      url: { type: 'string', description: 'URL EXACTE depuis le contexte, valide' },
+                      rubrique: {
+                        type: 'string',
+                        enum: ['telecom_numerique', 'economie_finance', 'gouvernance_regulation', 'international'],
                       },
                     },
+                    required: ['titre', 'source', 'date', 'url', 'rubrique'],
                   },
-                  required: ['resume', 'tonalite', 'mentions_cles', 'preuves'],
                 },
-                pret_a_poster: {
+                a_retenir: {
+                  type: 'array',
+                  description: 'Maximum 3 phrases courtes factuelles',
+                  items: { type: 'string' },
+                },
+                retour_ansut: {
                   type: 'object',
                   properties: {
-                    linkedin: { type: 'string' },
-                    x_post: { type: 'string', description: 'Tweet max 280 characters with hashtags' },
-                    angle: { type: 'string' },
+                    lecture_service_universel: {
+                      type: 'object',
+                      properties: {
+                        acces: { type: ['string', 'null'] },
+                        usages: { type: ['string', 'null'] },
+                        impact: { type: ['string', 'null'] },
+                      },
+                      required: ['acces', 'usages', 'impact'],
+                    },
+                    implication_ansut: { type: ['string', 'null'], description: '2 lignes max ou null' },
+                    niveau_attention: { type: 'string', enum: ['Faible', 'Moyen', 'Élevé'] },
+                    action_suggeree: { type: ['string', 'null'] },
                   },
-                  required: ['linkedin', 'x_post', 'angle'],
+                  required: ['lecture_service_universel', 'implication_ansut', 'niveau_attention', 'action_suggeree'],
+                },
+                focus_du_jour: {
+                  type: ['object', 'null'],
+                  description: 'UNIQUEMENT si un sujet domine clairement, sinon null',
+                  properties: {
+                    titre: { type: 'string' },
+                    contenu: { type: 'string', description: '5 lignes max' },
+                  },
+                },
+                activite_ansut: {
+                  type: 'object',
+                  properties: {
+                    publications_count: { type: 'number' },
+                    visibilite: { type: 'string', enum: ['Faible', 'Moyen', 'Fort'] },
+                  },
+                  required: ['publications_count', 'visibilite'],
                 },
               },
-              required: ['flash_info', 'veille_reputation', 'pret_a_poster'],
+              required: ['revue_de_presse', 'a_retenir', 'retour_ansut', 'activite_ansut'],
             },
           },
         }],
-        tool_choice: { type: 'function', function: { name: 'generate_matinale' } },
+        tool_choice: { type: 'function', function: { name: 'generate_matinale_codir' } },
         // Note: GPT-5 does not support custom temperature parameter
       }),
     });
