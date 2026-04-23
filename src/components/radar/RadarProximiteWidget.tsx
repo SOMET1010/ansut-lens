@@ -81,14 +81,30 @@ function getDataQuality(p: any) {
   return { missingSimilarity, missingDate, isPartial: missingSimilarity || missingDate };
 }
 
+type PertinenceWeights = {
+  freshnessPerDay: number;
+  freshnessMax: number;
+  bonusReco: number;
+  bonusEquivalent: number;
+};
+
+const DEFAULT_WEIGHTS: PertinenceWeights = {
+  freshnessPerDay: 1,
+  freshnessMax: 30,
+  bonusReco: 10,
+  bonusEquivalent: 5,
+};
+
+const WEIGHTS_STORAGE_KEY = 'radar-proximite-weights-v1';
+
 // Pertinence éditoriale (com institutionnelle) :
-// similarité brute − pénalité fraîcheur (1pt/jour, max 30) + bonus actionnabilité
-function computePertinence(p: any): number {
+// similarité brute − pénalité fraîcheur + bonus actionnabilité
+function computePertinence(p: any, w: PertinenceWeights): number {
   const sim = Number(p.similitude_score) || 0;
   const detected = p.date_detection ? new Date(p.date_detection).getTime() : Date.now();
   const ageDays = Math.max(0, (Date.now() - detected) / 86400000);
-  const freshnessPenalty = Math.min(30, ageDays);
-  const actionBonus = (p.recommandation_com ? 10 : 0) + (p.projet_ansut_equivalent ? 5 : 0);
+  const freshnessPenalty = Math.min(w.freshnessMax, ageDays * w.freshnessPerDay);
+  const actionBonus = (p.recommandation_com ? w.bonusReco : 0) + (p.projet_ansut_equivalent ? w.bonusEquivalent : 0);
   return sim - freshnessPenalty + actionBonus;
 }
 
@@ -96,10 +112,31 @@ export default function RadarProximiteWidget() {
   const { data: rawData, isLoading } = useRadarProximite();
   const detecter = useDetecterProximite();
 
-  // Filtrer (source vérifiable obligatoire) puis trier par pertinence éditoriale
-  const data = (rawData || [])
-    .filter((p: any) => isValidUrl(p.source_url))
-    .sort((a: any, b: any) => computePertinence(b) - computePertinence(a));
+  // Pondérations ajustables (persistées en localStorage)
+  const [weights, setWeights] = useState<PertinenceWeights>(() => {
+    try {
+      const raw = localStorage.getItem(WEIGHTS_STORAGE_KEY);
+      if (raw) return { ...DEFAULT_WEIGHTS, ...JSON.parse(raw) };
+    } catch {}
+    return DEFAULT_WEIGHTS;
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem(WEIGHTS_STORAGE_KEY, JSON.stringify(weights)); } catch {}
+  }, [weights]);
+
+  const isCustomized = useMemo(
+    () => (Object.keys(DEFAULT_WEIGHTS) as (keyof PertinenceWeights)[])
+      .some((k) => weights[k] !== DEFAULT_WEIGHTS[k]),
+    [weights]
+  );
+
+  // Tri recalculé instantanément à chaque changement de pondération
+  const data = useMemo(() => {
+    return (rawData || [])
+      .filter((p: any) => isValidUrl(p.source_url))
+      .sort((a: any, b: any) => computePertinence(b, weights) - computePertinence(a, weights));
+  }, [rawData, weights]);
   const hiddenCount = (rawData?.length || 0) - data.length;
   const allPartial = data.length > 0 && data.every((p: any) => getDataQuality(p).isPartial);
 
