@@ -126,6 +126,7 @@ export default function RadarProximiteWidget() {
   const detecter = useDetecterProximite();
 
   const [copied, setCopied] = useState(false);
+  const [qualityFilter, setQualityFilter] = useState<'all' | 'complete' | 'partial'>('all');
 
   // Pondérations ajustables (persistées en localStorage)
   const [weights, setWeights] = useState<PertinenceWeights>(() => {
@@ -146,13 +147,26 @@ export default function RadarProximiteWidget() {
     [weights]
   );
 
-  // Tri recalculé instantanément à chaque changement de pondération
-  const data = useMemo(() => {
+  // Liste sourcée + triée par pertinence (avant filtre qualité, pour les compteurs)
+  const sourcedSorted = useMemo(() => {
     return (rawData || [])
       .filter((p: any) => isValidUrl(p.source_url))
       .sort((a: any, b: any) => computePertinence(b, weights) - computePertinence(a, weights));
   }, [rawData, weights]);
-  const hiddenCount = (rawData?.length || 0) - data.length;
+
+  const completeCount = useMemo(
+    () => sourcedSorted.filter((p: any) => !getDataQuality(p).isPartial).length,
+    [sourcedSorted]
+  );
+  const partialCount = sourcedSorted.length - completeCount;
+
+  const data = useMemo(() => {
+    if (qualityFilter === 'complete') return sourcedSorted.filter((p: any) => !getDataQuality(p).isPartial);
+    if (qualityFilter === 'partial') return sourcedSorted.filter((p: any) => getDataQuality(p).isPartial);
+    return sourcedSorted;
+  }, [sourcedSorted, qualityFilter]);
+
+  const hiddenCount = (rawData?.length || 0) - sourcedSorted.length;
   const allPartial = data.length > 0 && data.every((p: any) => getDataQuality(p).isPartial);
 
   if (isLoading) {
@@ -348,6 +362,47 @@ export default function RadarProximiteWidget() {
             {hiddenCount > 0 && (
               <p className="text-[11px] text-muted-foreground italic px-1">
                 {hiddenCount} projet(s) masqué(s) faute de source vérifiable.
+              </p>
+            )}
+
+            {/* Filtre qualité de pertinence */}
+            {sourcedSorted.length > 0 && (partialCount > 0 || qualityFilter !== 'all') && (
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="text-[10px] text-muted-foreground mr-1">Filtrer :</span>
+                <Button
+                  variant={qualityFilter === 'all' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-6 px-2 text-[10px]"
+                  onClick={() => setQualityFilter('all')}
+                >
+                  Tous <span className="ml-1 text-muted-foreground">({sourcedSorted.length})</span>
+                </Button>
+                <Button
+                  variant={qualityFilter === 'complete' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-6 px-2 text-[10px] gap-1"
+                  onClick={() => setQualityFilter('complete')}
+                  disabled={completeCount === 0}
+                >
+                  <CheckCircle2 className="h-2.5 w-2.5 text-emerald-600" />
+                  Complète <span className="text-muted-foreground">({completeCount})</span>
+                </Button>
+                <Button
+                  variant={qualityFilter === 'partial' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-6 px-2 text-[10px] gap-1"
+                  onClick={() => setQualityFilter('partial')}
+                  disabled={partialCount === 0}
+                >
+                  <CircleHelp className="h-2.5 w-2.5 text-amber-600" />
+                  Indicative <span className="text-muted-foreground">({partialCount})</span>
+                </Button>
+              </div>
+            )}
+
+            {data.length === 0 && qualityFilter !== 'all' && (
+              <p className="text-[11px] text-muted-foreground italic px-1 py-3 text-center">
+                Aucun projet ne correspond à ce filtre.
               </p>
             )}
 
