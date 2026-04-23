@@ -2,11 +2,35 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Megaphone, Newspaper, Users, AlertTriangle, TrendingUp, Lightbulb, RefreshCw } from 'lucide-react';
+import { Megaphone, Newspaper, Users, AlertTriangle, TrendingUp, Lightbulb, RefreshCw, HelpCircle, Info } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
 import { EvidencePopover } from './EvidencePopover';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+/** Petit composant utilitaire : icône d'aide avec infobulle accessible. */
+function InfoHint({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label={`Définition : ${label}`}
+            className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <HelpCircle className="h-3.5 w-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+          {children}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 interface VoiceData {
   pubAnsut: number;
