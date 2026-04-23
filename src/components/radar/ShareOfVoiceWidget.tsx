@@ -123,7 +123,7 @@ export default function ShareOfVoiceWidget() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-primary" />
-                  <span className="text-sm font-medium">Communication ANSUT</span>
+                  <span className="text-sm font-medium">Nos Publications</span>
                 </div>
                 <span className="text-sm font-bold">{data.pubAnsut}</span>
               </div>
@@ -140,7 +140,7 @@ export default function ShareOfVoiceWidget() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                  <span className="text-sm font-medium">Écho Médiatique (Presse)</span>
+                  <span className="text-sm font-medium">Écho Médiatique</span>
                 </div>
                 <span className="text-sm font-bold">{data.articlesPresse}</span>
               </div>
@@ -157,7 +157,7 @@ export default function ShareOfVoiceWidget() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-blue-500" />
-                  <span className="text-sm font-medium">Social (Mentions)</span>
+                  <span className="text-sm font-medium">Bruit Social</span>
                 </div>
                 <span className="text-sm font-bold">{data.mentionsSocial}</span>
               </div>
@@ -176,7 +176,7 @@ export default function ShareOfVoiceWidget() {
             )}
             <div>
               <p className={`text-sm font-medium ${gapColor}`}>
-                Ratio Écho médiatique / Communication : {data.ratio}
+                Indice de Reprise : {data.ratio}
               </p>
               {data.gap && (
                 <p className="text-xs text-muted-foreground mt-1">{data.gap}</p>

@@ -45,7 +45,7 @@ export default function RadarPage() {
       {/* Header with date and status */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Centre de Veille Stratégique</h1>
+          <h1 className="text-2xl font-bold">Accueil</h1>
           <p className="text-sm text-muted-foreground">
             {format(new Date(), 'EEEE d MMMM yyyy', { locale: fr })}
           </p>
@@ -58,7 +58,7 @@ export default function RadarPage() {
             ) : (
               <WifiOff className="h-4 w-4 text-signal-critical" />
             )}
-            <span className="hidden sm:inline">{isConnected ? 'Connecté' : 'Hors ligne'}</span>
+            {!isConnected && <span className="hidden sm:inline">Hors ligne</span>}
           </div>
           
           {lastCollecte && (
