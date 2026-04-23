@@ -268,12 +268,16 @@ Deno.serve(async (req) => {
     let sendEmail = true;
     let previewOnly = false;
     let recipients: string[] = [];
+    let freshnessHours = 24; // défaut : 24h
 
     try {
       const body = await req.json();
       previewOnly = body.previewOnly === true;
       if (body.recipients && Array.isArray(body.recipients)) {
         recipients = body.recipients;
+      }
+      if (typeof body.freshnessHours === 'number' && [24, 48, 168].includes(body.freshnessHours)) {
+        freshnessHours = body.freshnessHours;
       }
     } catch {
       // No body = cron trigger, send to all configured recipients
@@ -285,11 +289,11 @@ Deno.serve(async (req) => {
     const perplexityPromise = fetchPerplexityNews();
     const titrologiePromise = fetchTitrologie();
 
-    // Fetch last 24h articles (general news)
+    // Fetch articles within freshness window
     // FRESHNESS FIX: filtrer sur date_publication (vraie date de l'article) ET created_at (date d'ingestion)
     // pour exclure les vieux articles récemment ingérés (ex: 2025 ingérés en 2026)
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const freshnessWindow = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(); // tolérance 48h pour date_publication
+    const yesterday = new Date(Date.now() - freshnessHours * 60 * 60 * 1000).toISOString();
+    const freshnessWindow = new Date(Date.now() - (freshnessHours + 24) * 60 * 60 * 1000).toISOString(); // tolérance +24h pour date_publication
     const { data: articlesRaw } = await supabase
       .from('actualites')
       .select('titre, resume, source_nom, source_url, importance, sentiment, impact_ansut, categorie, contenu, date_publication, created_at')
@@ -297,14 +301,14 @@ Deno.serve(async (req) => {
       .order('importance', { ascending: false })
       .limit(50);
 
-    // Filtrer côté code : on garde uniquement les articles dont la date_publication est récente (< 48h)
+    // Filtrer côté code : on garde uniquement les articles dont la date_publication est récente
     // OU absente (fallback sur created_at qui est déjà filtré)
     const articles = (articlesRaw || []).filter(a => {
-      if (!a.date_publication) return true; // pas de date pub → on garde (created_at < 24h déjà filtré)
+      if (!a.date_publication) return true; // pas de date pub → on garde (created_at déjà filtré)
       return a.date_publication >= freshnessWindow;
     }).slice(0, 20);
 
-    console.log(`[Matinale/Freshness] ${articlesRaw?.length || 0} articles bruts → ${articles.length} après filtre fraîcheur (date_publication >= ${freshnessWindow})`);
+    console.log(`[Matinale/Freshness] window=${freshnessHours}h, ${articlesRaw?.length || 0} articles bruts → ${articles.length} après filtre date_publication`);
 
     // Fetch ANSUT-specific mentions from mentions table
     const { data: mentions } = await supabase
