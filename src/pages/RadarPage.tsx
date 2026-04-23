@@ -55,7 +55,6 @@ export default function RadarPage() {
             ) : (
               <WifiOff className="h-4 w-4 text-signal-critical" />
             )}
-            {!isConnected && <span className="hidden sm:inline">Hors ligne</span>}
           </div>
           
           {lastCollecte && (
