@@ -22,19 +22,11 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-/** Replace [1], [2] etc. in briefing text with interactive source badges */
-function BriefingText({ text, sources }: { text: string; sources: BriefingSource[] }) {
-  const sourcesMap = useMemo(() => {
-    const map = new Map<number, BriefingSource>();
-    sources.forEach(s => map.set(s.index, s));
-    return map;
-  }, [sources]);
-
-  // Split text on citation patterns like [1], [2], etc.
+/** Render inline citations [1], [2] inside a single line of text */
+function InlineCitations({ text, sourcesMap }: { text: string; sourcesMap: Map<number, BriefingSource> }) {
   const parts = text.split(/(\[\d+\])/g);
-
   return (
-    <span>
+    <>
       {parts.map((part, i) => {
         const match = part.match(/^\[(\d+)\]$/);
         if (match) {
@@ -71,7 +63,132 @@ function BriefingText({ text, sources }: { text: string; sources: BriefingSource
         }
         return <span key={i}>{part}</span>;
       })}
-    </span>
+    </>
+  );
+}
+
+/** Strip basic markdown emphasis (**bold**) inline */
+function renderInline(text: string, sourcesMap: Map<number, BriefingSource>) {
+  const segments = text.split(/(\*\*[^*]+\*\*)/g);
+  return segments.map((seg, i) => {
+    const boldMatch = seg.match(/^\*\*([^*]+)\*\*$/);
+    if (boldMatch) {
+      return (
+        <strong key={i} className="font-semibold text-foreground">
+          <InlineCitations text={boldMatch[1]} sourcesMap={sourcesMap} />
+        </strong>
+      );
+    }
+    return <InlineCitations key={i} text={seg} sourcesMap={sourcesMap} />;
+  });
+}
+
+/**
+ * Format the briefing into structured blocks for readability.
+ * Detects markdown headings, bullet lists, and paragraph breaks.
+ * Falls back to splitting long single paragraphs into sentence groups.
+ */
+function BriefingText({ text, sources }: { text: string; sources: BriefingSource[] }) {
+  const sourcesMap = useMemo(() => {
+    const map = new Map<number, BriefingSource>();
+    sources.forEach(s => map.set(s.index, s));
+    return map;
+  }, [sources]);
+
+  const blocks = useMemo(() => {
+    const lines = text.replace(/\r\n/g, '\n').split('\n');
+    type Block =
+      | { kind: 'heading'; level: 2 | 3; text: string }
+      | { kind: 'list'; items: string[] }
+      | { kind: 'paragraph'; text: string };
+    const result: Block[] = [];
+    let currentList: string[] | null = null;
+    let currentPara: string[] | null = null;
+
+    const flushList = () => {
+      if (currentList && currentList.length) result.push({ kind: 'list', items: currentList });
+      currentList = null;
+    };
+    const flushPara = () => {
+      if (currentPara && currentPara.length) {
+        const joined = currentPara.join(' ').trim();
+        if (joined) result.push({ kind: 'paragraph', text: joined });
+      }
+      currentPara = null;
+    };
+
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) { flushList(); flushPara(); continue; }
+
+      const h3 = line.match(/^###\s+(.+)$/);
+      const h2 = line.match(/^##\s+(.+)$/);
+      const bullet = line.match(/^(?:[-*•]|\d+\.)\s+(.+)$/);
+
+      if (h2) { flushList(); flushPara(); result.push({ kind: 'heading', level: 2, text: h2[1] }); continue; }
+      if (h3) { flushList(); flushPara(); result.push({ kind: 'heading', level: 3, text: h3[1] }); continue; }
+      if (bullet) {
+        flushPara();
+        if (!currentList) currentList = [];
+        currentList.push(bullet[1]);
+        continue;
+      }
+      flushList();
+      if (!currentPara) currentPara = [];
+      currentPara.push(line);
+    }
+    flushList();
+    flushPara();
+
+    // Fallback: long unique paragraph → split into ~2-sentence chunks
+    if (result.length === 1 && result[0].kind === 'paragraph' && result[0].text.length > 280) {
+      const para = result[0].text;
+      const sentences = para.match(/[^.!?]+[.!?]+(\s|$)/g) || [para];
+      const grouped: string[] = [];
+      for (let i = 0; i < sentences.length; i += 2) {
+        grouped.push(sentences.slice(i, i + 2).join('').trim());
+      }
+      return grouped.filter(Boolean).map((t) => ({ kind: 'paragraph' as const, text: t }));
+    }
+
+    return result;
+  }, [text]);
+
+  return (
+    <div className="space-y-3">
+      {blocks.map((b, i) => {
+        if (b.kind === 'heading') {
+          return (
+            <h3
+              key={i}
+              className={cn(
+                'font-semibold',
+                b.level === 2 ? 'text-base text-foreground mt-2' : 'text-sm text-primary/90 mt-1'
+              )}
+            >
+              {renderInline(b.text, sourcesMap)}
+            </h3>
+          );
+        }
+        if (b.kind === 'list') {
+          return (
+            <ul key={i} className="space-y-1.5 pl-1">
+              {b.items.map((item, j) => (
+                <li key={j} className="flex gap-2 text-sm leading-relaxed">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/60" aria-hidden />
+                  <span className="flex-1">{renderInline(item, sourcesMap)}</span>
+                </li>
+              ))}
+            </ul>
+          );
+        }
+        return (
+          <p key={i} className="text-sm leading-relaxed">
+            {renderInline(b.text, sourcesMap)}
+          </p>
+        );
+      })}
+    </div>
   );
 }
 
@@ -219,11 +336,7 @@ export function DailyBriefing() {
               "text-foreground leading-relaxed",
               isGenerating && "opacity-50"
             )}>
-              {sources.length > 0 ? (
-                <BriefingText text={displayBriefing} sources={sources} />
-              ) : (
-                displayBriefing
-              )}
+              <BriefingText text={displayBriefing} sources={sources} />
             </div>
             
             {/* Sources list */}
