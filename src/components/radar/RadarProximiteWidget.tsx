@@ -434,21 +434,52 @@ export default function RadarProximiteWidget() {
             )}
 
             {data.length === 0 && qualityFilter !== 'all' && (
-              <p className="text-[11px] text-muted-foreground italic px-1 py-3 text-center">
-                Aucun projet ne correspond à ce filtre.
-              </p>
+              <div className="px-1 py-3 text-center space-y-2">
+                <p className="text-[11px] text-muted-foreground italic">
+                  Aucun projet ne correspond à ce filtre.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => detecter.mutate()}
+                  disabled={detecter.isPending}
+                  className="h-7 gap-1.5 text-[11px]"
+                  aria-label="Relancer la détection pour enrichir les données manquantes"
+                >
+                  {detecter.isPending ? (
+                    <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <RefreshCw className="h-3 w-3" aria-hidden="true" />
+                  )}
+                  {detecter.isPending ? 'Enrichissement…' : 'Relancer détection'}
+                </Button>
+              </div>
             )}
 
             {allPartial && (
               <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-2.5 text-[11px] flex items-start gap-2">
                 <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
+                <div className="space-y-1.5 flex-1">
                   <p className="font-semibold text-amber-700 dark:text-amber-400">Pertinence indicative</p>
                   <p className="text-muted-foreground">
                     Les scores de similarité ou dates de détection sont incomplets pour tous les projets affichés.
                     L'ordre reste basé sur l'actionnabilité, mais le tri par pertinence est dégradé.
-                    Relancez une détection pour rafraîchir les données.
                   </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => detecter.mutate()}
+                    disabled={detecter.isPending}
+                    className="h-7 gap-1.5 text-[11px] border-amber-500/40"
+                    aria-label="Relancer la détection pour enrichir les données manquantes"
+                  >
+                    {detecter.isPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <RefreshCw className="h-3 w-3" aria-hidden="true" />
+                    )}
+                    {detecter.isPending ? 'Enrichissement…' : 'Relancer détection'}
+                  </Button>
                 </div>
               </div>
             )}
@@ -533,7 +564,7 @@ export default function RadarProximiteWidget() {
                                   </Badge>
                                 </button>
                               </TooltipTrigger>
-                              <TooltipContent side="top" role="tooltip" className="max-w-xs text-xs space-y-1">
+                              <TooltipContent side="top" role="tooltip" className="max-w-xs text-xs space-y-2">
                                 <p className="font-semibold">Données partielles pour ce projet</p>
                                 {quality.missingSimilarity && (
                                   <p>• <strong>Score de similarité manquant</strong> : impossible de mesurer la convergence avec un projet ANSUT. Le tri se fait alors uniquement sur la fraîcheur et l'actionnabilité.</p>
@@ -541,7 +572,21 @@ export default function RadarProximiteWidget() {
                                 {quality.missingDate && (
                                   <p>• <strong>Date de détection manquante</strong> : la pénalité de fraîcheur ne peut pas s'appliquer (le projet est traité comme « récent » par défaut).</p>
                                 )}
-                                <p className="text-muted-foreground italic pt-1">Relancez une détection pour obtenir un score complet.</p>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  className="h-7 w-full gap-1.5 text-[11px]"
+                                  onClick={(e) => { e.stopPropagation(); detecter.mutate(); }}
+                                  disabled={detecter.isPending}
+                                  aria-label="Relancer la détection pour enrichir les données manquantes"
+                                >
+                                  {detecter.isPending ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                                  ) : (
+                                    <RefreshCw className="h-3 w-3" aria-hidden="true" />
+                                  )}
+                                  {detecter.isPending ? 'Enrichissement…' : 'Relancer détection'}
+                                </Button>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
