@@ -407,7 +407,7 @@ function QuickToolsSection() {
   const shortcuts = [
     { label: 'Studio Publication', icon: FileText, to: '/dossiers', desc: 'Notes et dossiers' },
     { label: 'Assistant IA', icon: MessageSquare, to: '/assistant', desc: 'Copilote intelligence' },
-    { label: 'Centre de Veille', icon: Newspaper, to: '/radar', desc: 'Flux en temps réel' },
+    { label: 'Accueil', icon: Newspaper, to: '/radar', desc: 'Flux en temps réel' },
   ];
 
   return (
