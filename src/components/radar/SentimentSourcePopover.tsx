@@ -417,29 +417,49 @@ function SentimentContent({
               </span>
             )}
           </div>
-          <Tabs value={period} onValueChange={(v) => onPeriodChange(v as PeriodKey)}>
-            <TabsList className="h-7">
-              <TabsTrigger
-                value="24h"
-                className="text-[10px] px-2 py-0.5 h-6 data-[state=active]:font-bold data-[state=active]:underline data-[state=active]:underline-offset-4 data-[state=active]:decoration-2 data-[state=active]:decoration-primary"
-              >
-                24h
-              </TabsTrigger>
-              <TabsTrigger
-                value="7j"
-                className="text-[10px] px-2 py-0.5 h-6 data-[state=active]:font-bold data-[state=active]:underline data-[state=active]:underline-offset-4 data-[state=active]:decoration-2 data-[state=active]:decoration-primary"
-              >
-                7j
-              </TabsTrigger>
-              <TabsTrigger
-                value="30j"
-                className="text-[10px] px-2 py-0.5 h-6 data-[state=active]:font-bold data-[state=active]:underline data-[state=active]:underline-offset-4 data-[state=active]:decoration-2 data-[state=active]:decoration-primary"
-              >
-                30j
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
+          <div className="flex items-center gap-1.5">
+            <Tabs value={period} onValueChange={(v) => onPeriodChange(v as PeriodKey)}>
+              <TabsList className="h-7">
+                <TabsTrigger
+                  value="24h"
+                  className="text-[10px] px-2 py-0.5 h-6 data-[state=active]:font-bold data-[state=active]:underline data-[state=active]:underline-offset-4 data-[state=active]:decoration-2 data-[state=active]:decoration-primary"
+                >
+                  24h
+                </TabsTrigger>
+                <TabsTrigger
+                  value="7j"
+                  className="text-[10px] px-2 py-0.5 h-6 data-[state=active]:font-bold data-[state=active]:underline data-[state=active]:underline-offset-4 data-[state=active]:decoration-2 data-[state=active]:decoration-primary"
+                >
+                  7j
+                </TabsTrigger>
+                <TabsTrigger
+                  value="30j"
+                  className="text-[10px] px-2 py-0.5 h-6 data-[state=active]:font-bold data-[state=active]:underline data-[state=active]:underline-offset-4 data-[state=active]:decoration-2 data-[state=active]:decoration-primary"
+                >
+                  30j
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0"
+                    onClick={handleManualRefresh}
+                    disabled={isFetching}
+                    aria-label="Rafraîchir les données"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="text-xs">Forcer le rafraîchissement</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         {isRecomputing ? (
           <div className="space-y-1.5" aria-busy="true" aria-label={`Recalcul du sentiment pour ${period}`}>
             <Skeleton className="h-3 w-2/3" />
