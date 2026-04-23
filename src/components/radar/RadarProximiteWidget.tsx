@@ -6,7 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Radar, MapPin, RefreshCw, Loader2, ArrowRight, ExternalLink, HelpCircle, AlertTriangle, Info, CheckCircle2, CircleHelp, Settings2, RotateCcw } from 'lucide-react';
+import { Radar, MapPin, RefreshCw, Loader2, ArrowRight, ExternalLink, HelpCircle, AlertTriangle, Info, CheckCircle2, CircleHelp, Settings2, RotateCcw, Copy, Check } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -125,6 +125,8 @@ export default function RadarProximiteWidget() {
   const { data: rawData, isLoading } = useRadarProximite();
   const detecter = useDetecterProximite();
 
+  const [copied, setCopied] = useState(false);
+
   // Pondérations ajustables (persistées en localStorage)
   const [weights, setWeights] = useState<PertinenceWeights>(() => {
     try {
@@ -161,6 +163,31 @@ export default function RadarProximiteWidget() {
       </Card>
     );
   }
+
+  const formuleText =
+    `Pertinence éditoriale (Radar de Proximité ANSUT)\n` +
+    `\n` +
+    `pertinence = similarité (0-100)\n` +
+    `             − pénalité fraîcheur (${weights.freshnessPerDay} pt/jour, plafond ${weights.freshnessMax})\n` +
+    `             + bonus actionnabilité (+${weights.bonusReco} si recommandation com, +${weights.bonusEquivalent} si équivalent ANSUT)\n` +
+    `\n` +
+    `Pondérations actuelles :\n` +
+    `  • Pénalité fraîcheur : ${weights.freshnessPerDay} pt/jour (plafond −${weights.freshnessMax})\n` +
+    `  • Bonus recommandation com : +${weights.bonusReco}\n` +
+    `  • Bonus équivalent ANSUT : +${weights.bonusEquivalent}\n` +
+    `\n` +
+    `Lecture : un projet récent et actionnable peut dépasser un projet plus similaire mais ancien.`;
+
+  const handleCopyFormule = async () => {
+    try {
+      await navigator.clipboard.writeText(formuleText);
+      setCopied(true);
+      toast.success('Formule copiée — prête à coller dans le briefing DG');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Impossible de copier la formule');
+    }
+  };
 
   return (
     <Card className="glass border-primary/20">
@@ -345,10 +372,22 @@ export default function RadarProximiteWidget() {
                 Pourquoi cet ordre ?
               </summary>
               <div className="mt-2 space-y-1.5 text-muted-foreground">
-                <p>
-                  Les projets sont classés par <strong className="text-foreground">pertinence éditoriale</strong>,
-                  pas seulement par similarité brute. Calcul :
-                </p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="flex-1">
+                    Les projets sont classés par <strong className="text-foreground">pertinence éditoriale</strong>,
+                    pas seulement par similarité brute. Calcul :
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyFormule}
+                    className="h-6 px-2 text-[10px] gap-1 shrink-0"
+                    title="Copier la formule + pondérations actuelles"
+                  >
+                    {copied ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                    {copied ? 'Copié' : 'Copier le calcul'}
+                  </Button>
+                </div>
                 <div className="font-mono text-[10px] bg-background/60 rounded px-2 py-1.5 leading-relaxed">
                   pertinence = <strong className="text-primary">similarité</strong> (0-100)
                   <br />
