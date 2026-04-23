@@ -1,0 +1,1 @@
+UPDATE public.radar_proximite SET source_url = NULL WHERE source_url IS NOT NULL AND source_url !~ '^https?://';
