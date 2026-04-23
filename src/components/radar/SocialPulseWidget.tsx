@@ -268,13 +268,19 @@ export function SocialPulseWidget() {
           </div>
         )}
 
-        {/* Indicateurs critiques */}
+        {/* Indicateurs critiques — uniquement les insights pertinents pour l'ANSUT */}
         {stats && stats.critical > 0 && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
-            <AlertTriangle className="h-5 w-5 text-destructive" />
-            <span className="text-sm font-medium">
-              {stats.critical} insight{stats.critical > 1 ? 's' : ''} critique{stats.critical > 1 ? 's' : ''} à traiter
-            </span>
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">
+                {stats.critical} signal{stats.critical > 1 ? 'aux' : ''} critique{stats.critical > 1 ? 's' : ''} ANSUT à traiter
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Mentions critiques liées à l'ANSUT, à l'écosystème télécoms ivoirien
+                ou au service universel (sur 7 jours).
+              </p>
+            </div>
           </div>
         )}
 
