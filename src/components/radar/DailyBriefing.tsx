@@ -141,15 +141,38 @@ function BriefingText({ text, sources }: { text: string; sources: BriefingSource
     flushList();
     flushPara();
 
-    // Fallback: long unique paragraph → split into ~2-sentence chunks
+    // Fallback: long unique paragraph → split into thematic chunks
     if (result.length === 1 && result[0].kind === 'paragraph' && result[0].text.length > 280) {
       const para = result[0].text;
-      const sentences = para.match(/[^.!?]+[.!?]+(\s|$)/g) || [para];
-      const grouped: string[] = [];
-      for (let i = 0; i < sentences.length; i += 2) {
-        grouped.push(sentences.slice(i, i + 2).join('').trim());
+      const blocks: { kind: 'heading' | 'paragraph'; text: string; level?: 2 | 3 }[] = [];
+
+      // 1) Extract a trailing "Recommandation ANSUT : ..." block if present
+      let body = para;
+      const recoMatch = body.match(/(Recommandation\s+ANSUT\s*[:\-–]\s*)([\s\S]+)$/i);
+      let recoText: string | null = null;
+      if (recoMatch) {
+        recoText = recoMatch[2].trim();
+        body = body.slice(0, recoMatch.index).trim();
       }
-      return grouped.filter(Boolean).map((t) => ({ kind: 'paragraph' as const, text: t }));
+
+      // 2) Split body into ~2-sentence paragraphs, keeping citation markers attached
+      const sentences = body.match(/[^.!?]+[.!?]+(?:\s*\[\d+\])*\s*/g) || [body];
+      for (let i = 0; i < sentences.length; i += 2) {
+        const chunk = sentences.slice(i, i + 2).join('').trim();
+        if (chunk) blocks.push({ kind: 'paragraph', text: chunk });
+      }
+
+      // 3) Append the recommendation as its own highlighted section
+      if (recoText) {
+        blocks.push({ kind: 'heading', level: 3, text: 'Recommandation ANSUT' });
+        blocks.push({ kind: 'paragraph', text: recoText });
+      }
+
+      return blocks.map((b) =>
+        b.kind === 'heading'
+          ? ({ kind: 'heading' as const, level: (b.level ?? 3) as 2 | 3, text: b.text })
+          : ({ kind: 'paragraph' as const, text: b.text })
+      );
     }
 
     return result;
