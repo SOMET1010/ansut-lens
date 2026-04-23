@@ -38,8 +38,7 @@ La plateforme répond à 5 objectifs majeurs :
 
 | Module | Route | Description |
 |--------|-------|-------------|
-| **Tableau de bord** | \`/radar\` | Vue d'ensemble avec KPIs et signaux faibles |
-| **Actualités** | \`/actualites\` | Fil d'actualités enrichi par IA avec clustering |
+| **Centre de Veille** | \`/radar\` | Synthèse + flux d'actualités complet (onglets) |
 | **Flux personnalisés** | \`/flux\` | Canaux de veille configurables par utilisateur |
 | **Personnalités** | \`/personnalites\` | Annuaire des acteurs avec score d'influence |
 | **Dossiers** | \`/dossiers\` | Notes stratégiques et briefings |
