@@ -38,18 +38,11 @@ import logoAnsut from '@/assets/logo-ansut.jpg';
 // Menu avec permissions associées
 const menuItems = [
   { 
-    title: 'Accueil', 
+    title: 'Centre de Veille', 
     url: '/radar', 
     icon: Radar,
-    description: 'Tableau de bord',
+    description: 'Synthèse, flux & alertes',
     permission: 'view_radar'
-  },
-  { 
-    title: 'Actualités & Veille', 
-    url: '/actualites', 
-    icon: Newspaper,
-    description: 'Revue de presse',
-    permission: 'view_actualites'
   },
   { 
     title: 'Mes Flux', 
