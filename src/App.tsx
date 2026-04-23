@@ -95,6 +95,7 @@ const App = () => (
                       {/* Redirections */}
                       <Route path="/" element={<Navigate to="/radar" replace />} />
                       <Route path="/medias" element={<Navigate to="/radar" replace />} />
+                      <Route path="/actualites" element={<Navigate to="/radar?tab=flux" replace />} />
                       <Route path="/personnalites" element={<Navigate to="/acteurs?tab=cartographie" replace />} />
                       <Route path="/presence-digitale" element={<Navigate to="/acteurs?tab=spdi" replace />} />
                       <Route path="/spdi-review" element={<Navigate to="/acteurs?tab=revue" replace />} />
