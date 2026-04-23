@@ -163,6 +163,7 @@ export default function RadarProximiteWidget() {
 
   const [copied, setCopied] = useState(false);
   const [qualityFilter, setQualityFilter] = useState<'all' | 'complete' | 'partial'>('all');
+  const [detailProjet, setDetailProjet] = useState<any | null>(null);
 
   // Pondérations ajustables (persistées en localStorage)
   const [weights, setWeights] = useState<PertinenceWeights>(() => {
