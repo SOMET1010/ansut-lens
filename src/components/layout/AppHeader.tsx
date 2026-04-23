@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Search, Moon, Sun, LogOut, User } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -55,11 +54,6 @@ export function AppHeader() {
         <SpotlightSearch open={spotlightOpen} onOpenChange={setSpotlightOpen} />
 
         <div className="flex items-center gap-2 ml-auto">
-          {/* Sync Status */}
-          <Badge variant="outline" className="gap-1.5 text-xs">
-            <span className="h-2 w-2 rounded-full bg-signal-positive animate-pulse" />
-            Sync OK
-          </Badge>
 
           {/* Theme Toggle */}
           <Button variant="ghost" size="icon" onClick={toggleTheme}>

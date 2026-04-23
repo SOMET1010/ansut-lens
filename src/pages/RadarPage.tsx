@@ -81,13 +81,7 @@ export default function RadarPage() {
         </TabsList>
       </Tabs>
 
-      {/* Visibilité Globale (ex Share of Voice) */}
-      <ShareOfVoiceWidget />
-
-      {/* Radar de Proximité */}
-      <RadarProximiteWidget />
-
-      {/* KPI Tiles */}
+      {/* Veille Web — KPIs en haut */}
       <RadarKpiTiles
         mentions={kpis?.mentions ?? 0}
         articles={kpis?.articles ?? 0}
@@ -98,6 +92,12 @@ export default function RadarPage() {
         isError={kpisError}
         onRetry={() => refetchKpis()}
       />
+
+      {/* Visibilité Globale (ex Share of Voice) */}
+      <ShareOfVoiceWidget />
+
+      {/* Radar de Proximité */}
+      <RadarProximiteWidget />
 
       {/* Daily Briefing */}
       <DailyBriefing />
