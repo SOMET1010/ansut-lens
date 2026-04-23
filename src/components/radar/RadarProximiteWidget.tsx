@@ -70,12 +70,25 @@ const scoreLabel = (score: number) => {
   return 'Faible similarité';
 };
 
+// Pertinence éditoriale (com institutionnelle) :
+// similarité brute − pénalité fraîcheur (1pt/jour, max 30) + bonus actionnabilité
+function computePertinence(p: any): number {
+  const sim = Number(p.similitude_score) || 0;
+  const detected = p.date_detection ? new Date(p.date_detection).getTime() : Date.now();
+  const ageDays = Math.max(0, (Date.now() - detected) / 86400000);
+  const freshnessPenalty = Math.min(30, ageDays);
+  const actionBonus = (p.recommandation_com ? 10 : 0) + (p.projet_ansut_equivalent ? 5 : 0);
+  return sim - freshnessPenalty + actionBonus;
+}
+
 export default function RadarProximiteWidget() {
   const { data: rawData, isLoading } = useRadarProximite();
   const detecter = useDetecterProximite();
 
-  // Filtrer strictement : pas de source vérifiable = pas d'affichage en une
-  const data = (rawData || []).filter((p: any) => isValidUrl(p.source_url));
+  // Filtrer (source vérifiable obligatoire) puis trier par pertinence éditoriale
+  const data = (rawData || [])
+    .filter((p: any) => isValidUrl(p.source_url))
+    .sort((a: any, b: any) => computePertinence(b) - computePertinence(a));
   const hiddenCount = (rawData?.length || 0) - data.length;
 
   if (isLoading) {
