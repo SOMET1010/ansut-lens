@@ -187,19 +187,107 @@ export default function RadarProximiteWidget() {
               Benchmark régional · Projets télécoms/numériques voisins comparables
             </CardDescription>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => detecter.mutate()}
-            disabled={detecter.isPending}
-            title="Relancer la détection"
-          >
-            {detecter.isPending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3.5 w-3.5" />
-            )}
-          </Button>
+          <div className="flex items-center gap-1">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  title="Régler les pondérations"
+                  className="relative"
+                >
+                  <Settings2 className="h-3.5 w-3.5" />
+                  {isCustomized && (
+                    <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-primary" />
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80 space-y-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold">Pondérations du tri</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      L'ordre se recalcule instantanément.
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-[11px]"
+                    onClick={() => setWeights(DEFAULT_WEIGHTS)}
+                    disabled={!isCustomized}
+                    title="Réinitialiser aux valeurs par défaut"
+                  >
+                    <RotateCcw className="h-3 w-3 mr-1" />
+                    Réinitialiser
+                  </Button>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Pénalité fraîcheur (pts/jour)</Label>
+                    <span className="text-xs font-mono text-muted-foreground">{weights.freshnessPerDay.toFixed(1)}</span>
+                  </div>
+                  <Slider
+                    value={[weights.freshnessPerDay]}
+                    min={0} max={5} step={0.1}
+                    onValueChange={([v]) => setWeights((w) => ({ ...w, freshnessPerDay: v }))}
+                  />
+                  <p className="text-[10px] text-muted-foreground">0 = fraîcheur ignorée. 5 = projets anciens fortement déclassés.</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Plafond pénalité fraîcheur</Label>
+                    <span className="text-xs font-mono text-muted-foreground">−{weights.freshnessMax}</span>
+                  </div>
+                  <Slider
+                    value={[weights.freshnessMax]}
+                    min={0} max={100} step={5}
+                    onValueChange={([v]) => setWeights((w) => ({ ...w, freshnessMax: v }))}
+                  />
+                  <p className="text-[10px] text-muted-foreground">Au-delà, l'âge n'est plus pénalisé davantage.</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Bonus recommandation com</Label>
+                    <span className="text-xs font-mono text-muted-foreground">+{weights.bonusReco}</span>
+                  </div>
+                  <Slider
+                    value={[weights.bonusReco]}
+                    min={0} max={50} step={1}
+                    onValueChange={([v]) => setWeights((w) => ({ ...w, bonusReco: v }))}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Bonus équivalent ANSUT</Label>
+                    <span className="text-xs font-mono text-muted-foreground">+{weights.bonusEquivalent}</span>
+                  </div>
+                  <Slider
+                    value={[weights.bonusEquivalent]}
+                    min={0} max={50} step={1}
+                    onValueChange={([v]) => setWeights((w) => ({ ...w, bonusEquivalent: v }))}
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => detecter.mutate()}
+              disabled={detecter.isPending}
+              title="Relancer la détection"
+            >
+              {detecter.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
