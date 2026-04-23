@@ -6,7 +6,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Radar, MapPin, RefreshCw, Loader2, ArrowRight, ExternalLink, HelpCircle, AlertTriangle, Info, CheckCircle2, CircleHelp, Settings2, RotateCcw, Copy, Check } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { Radar, MapPin, RefreshCw, Loader2, ArrowRight, ExternalLink, HelpCircle, AlertTriangle, Info, CheckCircle2, CircleHelp, Settings2, RotateCcw, Copy, Check, Sparkles } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
