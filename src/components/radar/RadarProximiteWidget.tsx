@@ -228,6 +228,7 @@ export default function RadarProximiteWidget() {
 
             {data.map((projet: any) => {
               const urlOk = true; // garanti par le filtre ci-dessus
+              const quality = getDataQuality(projet);
               return (
                 <div key={projet.id} className="rounded-lg border p-3 space-y-2">
                   <div className="flex items-start justify-between gap-2">
@@ -236,8 +237,30 @@ export default function RadarProximiteWidget() {
                         <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
                         <Badge variant="outline" className="text-[10px]">{projet.pays}</Badge>
                         <Badge className={`text-[10px] ${scoreColor(projet.similitude_score)}`}>
-                          {projet.similitude_score}% · {scoreLabel(projet.similitude_score)}
+                          {projet.similitude_score ?? '?'}% · {scoreLabel(projet.similitude_score)}
                         </Badge>
+                        {quality.isPartial && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-600 text-[10px] px-1.5 py-0 cursor-help">
+                                  <CircleHelp className="h-2.5 w-2.5" />
+                                  Pertinence indicative
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs text-xs space-y-1">
+                                <p className="font-semibold">Données partielles pour ce projet</p>
+                                {quality.missingSimilarity && (
+                                  <p>• <strong>Score de similarité manquant</strong> : impossible de mesurer la convergence avec un projet ANSUT. Le tri se fait alors uniquement sur la fraîcheur et l'actionnabilité.</p>
+                                )}
+                                {quality.missingDate && (
+                                  <p>• <strong>Date de détection manquante</strong> : la pénalité de fraîcheur ne peut pas s'appliquer (le projet est traité comme « récent » par défaut).</p>
+                                )}
+                                <p className="text-muted-foreground italic pt-1">Relancez une détection pour obtenir un score complet.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
                         {urlOk ? (
                           <Badge variant="outline" className="gap-1 border-emerald-500/40 text-emerald-600 text-[10px] px-1.5 py-0">
                             <CheckCircle2 className="h-2.5 w-2.5" />
