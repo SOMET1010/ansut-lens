@@ -11,9 +11,18 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
-  Newspaper, Send, Eye, Loader2, Zap, Target, MessageSquare,
+  Newspaper, Send, Eye, Loader2, Target, MessageSquare,
   CheckCircle2, XCircle, Clock, ArrowLeft, CalendarClock, Info,
+  FileText, ListChecks, Building2, AlertTriangle, Lightbulb, BarChart3, ExternalLink,
 } from 'lucide-react';
+
+const RUBRIQUE_LABELS: Record<string, string> = {
+  telecom_numerique: 'Télécom / Numérique',
+  economie_finance: 'Économie / Finance',
+  gouvernance_regulation: 'Gouvernance / Régulation',
+  international: 'International',
+};
+const RUBRIQUE_ORDER = ['telecom_numerique', 'economie_finance', 'gouvernance_regulation', 'international'];
 import { formatDistanceToNow, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useMatinalePreview, useMatinaleSend, useMatinaleHistory, type FreshnessWindow } from '@/hooks/useMatinale';
