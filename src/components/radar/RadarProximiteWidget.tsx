@@ -372,10 +372,22 @@ export default function RadarProximiteWidget() {
                 Pourquoi cet ordre ?
               </summary>
               <div className="mt-2 space-y-1.5 text-muted-foreground">
-                <p>
-                  Les projets sont classés par <strong className="text-foreground">pertinence éditoriale</strong>,
-                  pas seulement par similarité brute. Calcul :
-                </p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="flex-1">
+                    Les projets sont classés par <strong className="text-foreground">pertinence éditoriale</strong>,
+                    pas seulement par similarité brute. Calcul :
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyFormule}
+                    className="h-6 px-2 text-[10px] gap-1 shrink-0"
+                    title="Copier la formule + pondérations actuelles"
+                  >
+                    {copied ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                    {copied ? 'Copié' : 'Copier le calcul'}
+                  </Button>
+                </div>
                 <div className="font-mono text-[10px] bg-background/60 rounded px-2 py-1.5 leading-relaxed">
                   pertinence = <strong className="text-primary">similarité</strong> (0-100)
                   <br />
