@@ -71,8 +71,12 @@ const scoreLabel = (score: number) => {
 };
 
 export default function RadarProximiteWidget() {
-  const { data, isLoading } = useRadarProximite();
+  const { data: rawData, isLoading } = useRadarProximite();
   const detecter = useDetecterProximite();
+
+  // Filtrer strictement : pas de source vérifiable = pas d'affichage en une
+  const data = (rawData || []).filter((p: any) => isValidUrl(p.source_url));
+  const hiddenCount = (rawData?.length || 0) - data.length;
 
   if (isLoading) {
     return (
