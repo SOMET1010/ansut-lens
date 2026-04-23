@@ -440,6 +440,34 @@ export default function RadarProximiteWidget() {
                 </div>
               </PopoverContent>
             </Popover>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  title="Exporter le briefing pour audit"
+                  disabled={!sourcedSorted || sourcedSorted.length === 0}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel className="text-xs">Exporter briefing (audit)</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleExportJSON} className="text-xs">
+                  <Download className="h-3.5 w-3.5 mr-2" />
+                  JSON — calculs détaillés
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportCSV} className="text-xs">
+                  <Download className="h-3.5 w-3.5 mr-2" />
+                  CSV — tableau (Excel)
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <div className="px-2 py-1.5 text-[10px] text-muted-foreground">
+                  Inclut similarité, fraîcheur, bonus et pondérations en cours pour chaque projet.
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               variant="ghost"
               size="sm"
