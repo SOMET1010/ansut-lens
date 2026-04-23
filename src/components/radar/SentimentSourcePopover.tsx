@@ -304,11 +304,17 @@ function SentimentContent({
   onPageSizeChange: (n: PageSize) => void;
 }) {
   const [selectedArticle, setSelectedArticle] = useState<SentimentArticle | null>(null);
-  const { data, isLoading, isFetching } = useQuery({
+  const queryClient = useQueryClient();
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['sentiment-sources', sinceISO, limit],
     queryFn: () => fetchSentimentSources(sinceISO, limit),
     staleTime: 60_000,
   });
+
+  const handleManualRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['sentiment-sources', sinceISO], exact: false });
+    refetch();
+  };
 
   // Recalcul en cours = nouvelle période non encore mise en cache OU premier chargement
   const isRecomputing = isLoading || (isFetching && !data);
