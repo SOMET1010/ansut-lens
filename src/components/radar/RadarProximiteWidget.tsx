@@ -145,7 +145,9 @@ export default function RadarProximiteWidget() {
           <div className="text-center py-6">
             <Radar className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
             <p className="text-sm text-muted-foreground mb-3">
-              Aucun projet similaire détecté. Lancez une analyse pour comparer avec les pays voisins.
+              {hiddenCount > 0
+                ? `${hiddenCount} projet(s) écarté(s) faute de source vérifiable. Relancez une analyse pour obtenir des résultats sourcés.`
+                : 'Aucun projet similaire détecté. Lancez une analyse pour comparer avec les pays voisins.'}
             </p>
             <Button size="sm" onClick={() => detecter.mutate()} disabled={detecter.isPending}>
               Lancer l'analyse
@@ -153,8 +155,13 @@ export default function RadarProximiteWidget() {
           </div>
         ) : (
           <div className="space-y-3">
+            {hiddenCount > 0 && (
+              <p className="text-[11px] text-muted-foreground italic px-1">
+                {hiddenCount} projet(s) masqué(s) faute de source vérifiable.
+              </p>
+            )}
             {data.map((projet: any) => {
-              const urlOk = isValidUrl(projet.source_url);
+              const urlOk = true; // garanti par le filtre ci-dessus
               return (
                 <div key={projet.id} className="rounded-lg border p-3 space-y-2">
                   <div className="flex items-start justify-between gap-2">
