@@ -2,11 +2,35 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Megaphone, Newspaper, Users, AlertTriangle, TrendingUp, Lightbulb, RefreshCw } from 'lucide-react';
+import { Megaphone, Newspaper, Users, AlertTriangle, TrendingUp, Lightbulb, RefreshCw, HelpCircle, Info } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
 import { EvidencePopover } from './EvidencePopover';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+/** Petit composant utilitaire : icône d'aide avec infobulle accessible. */
+function InfoHint({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label={`Définition : ${label}`}
+            className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <HelpCircle className="h-3.5 w-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+          {children}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 interface VoiceData {
   pubAnsut: number;
@@ -110,6 +134,11 @@ export default function ShareOfVoiceWidget() {
         <CardTitle className="text-base flex items-center gap-2">
           <Megaphone className="h-4 w-4 text-primary" />
           Visibilité Globale — Ce mois
+          <InfoHint label="Visibilité Globale">
+            Vue d'ensemble de la présence de l'ANSUT ce mois-ci, répartie entre nos
+            propres publications (<em>owned</em>), la couverture presse obtenue
+            (<em>earned</em>) et les conversations sur les réseaux sociaux.
+          </InfoHint>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -124,6 +153,11 @@ export default function ShareOfVoiceWidget() {
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-primary" />
                   <span className="text-sm font-medium">Nos Publications</span>
+                  <InfoHint label="Nos Publications">
+                    Contenus diffusés directement par l'ANSUT ce mois (LinkedIn, X,
+                    Facebook, site web, communiqués). C'est le média « <em>owned</em> » :
+                    ce que nous maîtrisons.
+                  </InfoHint>
                 </div>
                 <span className="text-sm font-bold">{data.pubAnsut}</span>
               </div>
@@ -141,6 +175,11 @@ export default function ShareOfVoiceWidget() {
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-emerald-500" />
                   <span className="text-sm font-medium">Écho Médiatique</span>
+                  <InfoHint label="Écho Médiatique">
+                    Articles de presse en ligne mentionnant l'ANSUT ce mois. C'est le
+                    média « <em>earned</em> » : la visibilité gagnée auprès des
+                    journalistes, indépendamment de nos propres publications.
+                  </InfoHint>
                 </div>
                 <span className="text-sm font-bold">{data.articlesPresse}</span>
               </div>
@@ -158,6 +197,11 @@ export default function ShareOfVoiceWidget() {
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-blue-500" />
                   <span className="text-sm font-medium">Bruit Social</span>
+                  <InfoHint label="Bruit Social">
+                    Volume de mentions et de conversations détectées sur les réseaux
+                    sociaux (X, LinkedIn, Facebook) à propos de l'ANSUT ou de ses
+                    sujets prioritaires. Indicateur de notoriété spontanée.
+                  </InfoHint>
                 </div>
                 <span className="text-sm font-bold">{data.mentionsSocial}</span>
               </div>
@@ -174,9 +218,32 @@ export default function ShareOfVoiceWidget() {
             ) : (
               <TrendingUp className={`h-4 w-4 mt-0.5 ${gapColor}`} />
             )}
-            <div>
-              <p className={`text-sm font-medium ${gapColor}`}>
+            <div className="flex-1">
+              <p className={`text-sm font-medium ${gapColor} flex items-center gap-1.5`}>
                 Indice de Reprise : {data.ratio}
+                <InfoHint label="Indice de Reprise">
+                  <div className="space-y-1.5">
+                    <p>
+                      Rapport entre le nombre d'articles de presse mentionnant l'ANSUT
+                      et le nombre de nos propres publications ce mois.
+                    </p>
+                    <p>
+                      <strong>Formule :</strong> Écho Médiatique ÷ Nos Publications.
+                    </p>
+                    <p>
+                      <strong>Lecture :</strong>
+                      <br />• <strong>≥ 0,7</strong> : bonne reprise par les médias
+                      <br />• <strong>0,3 – 0,7</strong> : reprise modérée, à renforcer
+                      <br />• <strong>&lt; 0,3</strong> : faible écho, nos messages
+                      circulent peu hors de nos canaux
+                    </p>
+                    <p className="text-muted-foreground">
+                      Une valeur de <strong>0</strong> signifie qu'aucun article de
+                      presse n'a (encore) repris nos communications ce mois-ci, ou
+                      que nous n'avons pas publié.
+                    </p>
+                  </div>
+                </InfoHint>
               </p>
               {data.gap && (
                 <p className="text-xs text-muted-foreground mt-1">{data.gap}</p>
