@@ -434,9 +434,26 @@ export default function RadarProximiteWidget() {
             )}
 
             {data.length === 0 && qualityFilter !== 'all' && (
-              <p className="text-[11px] text-muted-foreground italic px-1 py-3 text-center">
-                Aucun projet ne correspond à ce filtre.
-              </p>
+              <div className="px-1 py-3 text-center space-y-2">
+                <p className="text-[11px] text-muted-foreground italic">
+                  Aucun projet ne correspond à ce filtre.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => detecter.mutate()}
+                  disabled={detecter.isPending}
+                  className="h-7 gap-1.5 text-[11px]"
+                  aria-label="Relancer la détection pour enrichir les données manquantes"
+                >
+                  {detecter.isPending ? (
+                    <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <RefreshCw className="h-3 w-3" aria-hidden="true" />
+                  )}
+                  {detecter.isPending ? 'Enrichissement…' : 'Relancer détection'}
+                </Button>
+              </div>
             )}
 
             {allPartial && (
