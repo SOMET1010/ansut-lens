@@ -425,6 +425,42 @@ export default function RadarProximiteWidget() {
                     </div>
                   </div>
 
+                  {/* Mini-score pédagogique : décomposition similarité / fraîcheur / actionnabilité */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="space-y-1 cursor-help">
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-muted-foreground">Pertinence</span>
+                            <span className="font-mono font-semibold text-foreground">
+                              {Math.round(bd.total)}
+                              <span className="text-muted-foreground font-normal ml-1">
+                                = {Math.round(bd.sim)} − {Math.round(bd.freshnessPenalty)} + {Math.round(bd.actionBonus)}
+                              </span>
+                            </span>
+                          </div>
+                          <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-muted">
+                            <div className="bg-primary" style={{ width: `${wSim}%` }} />
+                            <div className="bg-amber-500" style={{ width: `${wFresh}%` }} />
+                            <div className="bg-emerald-500" style={{ width: `${wAction}%` }} />
+                          </div>
+                          <div className="flex items-center gap-3 text-[9px] text-muted-foreground">
+                            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-primary" /> Similarité {Math.round(bd.sim)}</span>
+                            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Fraîcheur −{Math.round(bd.freshnessPenalty)}</span>
+                            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Action +{Math.round(bd.actionBonus)}</span>
+                          </div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs text-xs space-y-1">
+                        <p className="font-semibold">Décomposition du score</p>
+                        <p>• <strong>Similarité brute</strong> : {Math.round(bd.sim)}/100</p>
+                        <p>• <strong>Pénalité fraîcheur</strong> : −{bd.freshnessPenalty.toFixed(1)} pt ({Math.round(bd.ageDays)} j × {weights.freshnessPerDay}/j, plafond {weights.freshnessMax})</p>
+                        <p>• <strong>Bonus actionnabilité</strong> : +{bd.actionBonus} ({bd.bonusReco > 0 ? `reco com +${bd.bonusReco}` : 'pas de reco'}{bd.bonusEq > 0 ? `, équivalent ANSUT +${bd.bonusEq}` : ''})</p>
+                        <p className="pt-1 border-t font-semibold">Total : {Math.round(bd.total)}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+
                   {projet.projet_ansut_equivalent && (
                     <div className="flex items-start gap-2 text-xs text-muted-foreground">
                       <ArrowRight className="h-3 w-3 text-primary shrink-0 mt-0.5" />
