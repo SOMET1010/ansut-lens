@@ -71,6 +71,13 @@ const scoreLabel = (score: number) => {
   return 'Faible similarité';
 };
 
+// Détecte les données de qualité dégradée (similitude/date manquantes ou par défaut)
+function getDataQuality(p: any) {
+  const missingSimilarity = p.similitude_score == null || Number(p.similitude_score) === 0;
+  const missingDate = !p.date_detection;
+  return { missingSimilarity, missingDate, isPartial: missingSimilarity || missingDate };
+}
+
 // Pertinence éditoriale (com institutionnelle) :
 // similarité brute − pénalité fraîcheur (1pt/jour, max 30) + bonus actionnabilité
 function computePertinence(p: any): number {
@@ -91,6 +98,7 @@ export default function RadarProximiteWidget() {
     .filter((p: any) => isValidUrl(p.source_url))
     .sort((a: any, b: any) => computePertinence(b) - computePertinence(a));
   const hiddenCount = (rawData?.length || 0) - data.length;
+  const allPartial = data.length > 0 && data.every((p: any) => getDataQuality(p).isPartial);
 
   if (isLoading) {
     return (
