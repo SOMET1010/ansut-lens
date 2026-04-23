@@ -162,6 +162,31 @@ export default function RadarProximiteWidget() {
     );
   }
 
+  const formuleText =
+    `Pertinence éditoriale (Radar de Proximité ANSUT)\n` +
+    `\n` +
+    `pertinence = similarité (0-100)\n` +
+    `             − pénalité fraîcheur (${weights.freshnessPerDay} pt/jour, plafond ${weights.freshnessMax})\n` +
+    `             + bonus actionnabilité (+${weights.bonusReco} si recommandation com, +${weights.bonusEquivalent} si équivalent ANSUT)\n` +
+    `\n` +
+    `Pondérations actuelles :\n` +
+    `  • Pénalité fraîcheur : ${weights.freshnessPerDay} pt/jour (plafond −${weights.freshnessMax})\n` +
+    `  • Bonus recommandation com : +${weights.bonusReco}\n` +
+    `  • Bonus équivalent ANSUT : +${weights.bonusEquivalent}\n` +
+    `\n` +
+    `Lecture : un projet récent et actionnable peut dépasser un projet plus similaire mais ancien.`;
+
+  const handleCopyFormule = async () => {
+    try {
+      await navigator.clipboard.writeText(formuleText);
+      setCopied(true);
+      toast.success('Formule copiée — prête à coller dans le briefing DG');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Impossible de copier la formule');
+    }
+  };
+
   return (
     <Card className="glass border-primary/20">
       <CardHeader className="pb-3">
