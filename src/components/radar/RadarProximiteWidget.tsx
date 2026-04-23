@@ -125,6 +125,8 @@ export default function RadarProximiteWidget() {
   const { data: rawData, isLoading } = useRadarProximite();
   const detecter = useDetecterProximite();
 
+  const [copied, setCopied] = useState(false);
+
   // Pondérations ajustables (persistées en localStorage)
   const [weights, setWeights] = useState<PertinenceWeights>(() => {
     try {
