@@ -45,6 +45,23 @@ export default function FluxDetailPage() {
     );
   }
 
+  if (isErrorFlux) {
+    return (
+      <div className="space-y-6">
+        <Button variant="ghost" onClick={() => navigate('/flux')}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Retour aux flux
+        </Button>
+        <SectionEmptyState
+          variant="error"
+          title="Impossible de charger ce flux"
+          description={toErrorMessage(errorFlux)}
+          onRetry={() => refetchFlux()}
+        />
+      </div>
+    );
+  }
+
   if (!flux) {
     return (
       <div className="space-y-6">
