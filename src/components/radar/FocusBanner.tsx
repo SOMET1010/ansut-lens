@@ -2,11 +2,21 @@ import { Sparkles, X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
+const ORIGIN_LABELS: Record<string, string> = {
+  retenir: 'À retenir',
+  impact: 'Impact Service Universel',
+  recommandation: 'Recommandation ANSUT',
+};
+
 interface FocusBannerProps {
   /** Texte recherché venant du Daily Briefing */
   query: string;
   /** Section d'origine (À retenir / Impact SU / Recommandation ANSUT) */
   originLabel?: string;
+  /** Identifiant compact de l'origine (retenir | impact | recommandation) — résolu en label si fourni */
+  origin?: string;
+  /** Libellé exact de l'item cliqué dans le briefing */
+  itemLabel?: string;
   /** Nb de résultats correspondants après filtrage */
   matchCount?: number;
 }
@@ -14,16 +24,18 @@ interface FocusBannerProps {
 /**
  * Bandeau affiché en haut d'une page quand l'utilisateur arrive
  * depuis un lien "Voir le détail" du Daily Briefing.
- * Met en avant le contexte et propose de retirer le filtre.
+ * Met en avant le contexte (bloc + item) et propose de retirer le filtre.
  */
-export function FocusBanner({ query, originLabel, matchCount }: FocusBannerProps) {
+export function FocusBanner({ query, originLabel, origin, itemLabel, matchCount }: FocusBannerProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const resolvedOrigin = originLabel || (origin ? ORIGIN_LABELS[origin] : undefined);
+  const displayText = itemLabel || query;
+
   const clearFocus = () => {
     const params = new URLSearchParams(location.search);
-    params.delete('q');
-    params.delete('focus');
+    ['q', 'focus', 'from', 'item'].forEach(k => params.delete(k));
     const next = params.toString();
     navigate(`${location.pathname}${next ? `?${next}` : ''}`, { replace: true });
   };
@@ -39,12 +51,12 @@ export function FocusBanner({ query, originLabel, matchCount }: FocusBannerProps
             <span className="text-[11px] uppercase tracking-wider font-semibold text-primary">
               Vu depuis le Briefing du jour
             </span>
-            {originLabel && (
-              <span className="text-[11px] text-muted-foreground">· {originLabel}</span>
+            {resolvedOrigin && (
+              <span className="text-[11px] text-muted-foreground">· {resolvedOrigin}</span>
             )}
           </div>
           <p className="text-sm font-medium text-foreground mt-1 line-clamp-2">
-            « {query} »
+            « {displayText} »
           </p>
           {typeof matchCount === 'number' && (
             <p className="text-xs text-muted-foreground mt-1">

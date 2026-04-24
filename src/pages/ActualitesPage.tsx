@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Newspaper, Search, ExternalLink, TrendingUp, Clock, Filter, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,12 +15,16 @@ import { fr } from 'date-fns/locale';
 /**
  * Page dédiée /actualites — vue éditoriale orientée "informations clés + sources".
  * Lit ?q=... pour mettre en avant un sujet venant du Daily Briefing.
+ * ?from= et ?item= sont utilisés pour conserver le contexte du briefing.
  */
 export default function ActualitesPage() {
   const [searchParams] = useSearchParams();
   const focusQuery = searchParams.get('q') || '';
+  const focusFrom = searchParams.get('from') || undefined;
+  const focusItem = searchParams.get('item') || undefined;
   const [search, setSearch] = useState(focusQuery);
   const [period, setPeriod] = useState<'24h' | '72h' | '7j' | 'all'>('72h');
+  const focusRef = useRef<HTMLDivElement | null>(null);
 
   const maxAgeHours = period === '24h' ? 24 : period === '72h' ? 72 : period === '7j' ? 168 : undefined;
   const { data: actualites, isLoading, refetch, isFetching } = useActualites({ maxAgeHours });
@@ -66,6 +70,18 @@ export default function ActualitesPage() {
       .slice(0, 3);
   }, [actualites]);
 
+  // Premier article correspondant au focus → cible du scroll
+  const firstFocusId = focusMatches[0]?.id ?? null;
+
+  // Auto-scroll vers la première carte cible quand les données arrivent
+  useEffect(() => {
+    if (!firstFocusId) return;
+    const t = setTimeout(() => {
+      focusRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 250);
+    return () => clearTimeout(t);
+  }, [firstFocusId]);
+
   return (
     <div className="container max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
       {/* En-tête */}
@@ -90,10 +106,12 @@ export default function ActualitesPage() {
       </header>
 
       {/* Bandeau "Vu depuis Briefing" */}
-      {focusQuery && (
+      {(focusQuery || focusItem) && (
         <FocusBanner
           query={focusQuery}
-          originLabel="À retenir"
+          itemLabel={focusItem}
+          origin={focusFrom}
+          originLabel={!focusFrom ? 'À retenir' : undefined}
           matchCount={focusMatches.length}
         />
       )}
@@ -200,9 +218,12 @@ export default function ActualitesPage() {
               a.titre.toLowerCase().includes(focusQuery.toLowerCase()) ||
               a.resume?.toLowerCase().includes(focusQuery.toLowerCase())
             );
+            const isScrollTarget = a.id === firstFocusId;
             return (
               <Card
                 key={a.id}
+                ref={isScrollTarget ? focusRef : undefined}
+                data-focus-target={isScrollTarget ? 'true' : undefined}
                 className={cn(
                   'transition-all hover:border-primary/40',
                   isMatch && 'ring-2 ring-primary/50 border-primary/40 bg-primary/[0.03]'

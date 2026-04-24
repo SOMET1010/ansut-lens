@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { FileText, Edit3, Send, Mail, Users, AlertTriangle, TrendingUp, Eye, Sparkles, Calendar, Palette } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
@@ -39,6 +40,8 @@ type NewsletterView = 'list' | 'generate' | 'preview' | 'edit' | 'studio';
 export default function DossiersPage() {
   const [searchParams] = useSearchParams();
   const focusQuery = searchParams.get('q') || '';
+  const focusFrom = searchParams.get('from') || undefined;
+  const focusItem = searchParams.get('item') || undefined;
 
   const [selectedDossier, setSelectedDossier] = useState<Dossier | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -55,7 +58,17 @@ export default function DossiersPage() {
   const { data: newsletters, isLoading: isLoadingNewsletters } = useNewsletters();
   const { data: selectedNewsletter, refetch: refetchNewsletter } = useNewsletter(selectedNewsletterId || undefined);
 
-  // Compte des dossiers correspondant au focus venu du Daily Briefing
+  // Premier dossier correspondant au focus du briefing
+  const firstFocusDossier = useMemo(() => {
+    if (!focusQuery || !dossiers) return null;
+    const q = focusQuery.toLowerCase();
+    return dossiers.find(d =>
+      d.titre?.toLowerCase().includes(q) ||
+      d.resume?.toLowerCase().includes(q) ||
+      d.contenu?.toLowerCase().includes(q)
+    ) || null;
+  }, [dossiers, focusQuery]);
+
   const focusMatchCount = useMemo(() => {
     if (!focusQuery || !dossiers) return 0;
     const q = focusQuery.toLowerCase();
@@ -65,6 +78,16 @@ export default function DossiersPage() {
       d.contenu?.toLowerCase().includes(q)
     ).length;
   }, [dossiers, focusQuery]);
+
+  // Auto-scroll vers le dossier ciblé quand les données arrivent
+  useEffect(() => {
+    if (!firstFocusDossier) return;
+    const t = setTimeout(() => {
+      const el = document.getElementById(`dossier-${firstFocusDossier.id}`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 350);
+    return () => clearTimeout(t);
+  }, [firstFocusDossier]);
 
   // Filter dossiers by status
   const brouillons = dossiers?.filter(d => d.statut === 'brouillon') || [];
@@ -134,10 +157,12 @@ export default function DossiersPage() {
   return (
     <div className="w-full space-y-6 animate-fade-in">
       {/* Bandeau "Vu depuis Briefing" */}
-      {focusQuery && (
+      {(focusQuery || focusItem) && (
         <FocusBanner
           query={focusQuery}
-          originLabel="Recommandation ANSUT"
+          itemLabel={focusItem}
+          origin={focusFrom}
+          originLabel={!focusFrom ? 'Recommandation ANSUT' : undefined}
           matchCount={focusMatchCount}
         />
       )}
@@ -308,14 +333,29 @@ export default function DossiersPage() {
                       {/* CreateCard en premier pour fusion claire avec "Nouvelle note" */}
                       {isAdmin && <CreateCard onClick={handleNewDossier} />}
                       
-                      {brouillons.map(dossier => (
-                        <BriefingCard 
-                          key={dossier.id} 
-                          dossier={dossier} 
-                          onClick={() => setSelectedDossier(dossier)}
-                          onEdit={() => handleEditDossier(dossier)}
-                        />
-                      ))}
+                      {brouillons.map(dossier => {
+                        const q = focusQuery.toLowerCase();
+                        const isMatch = focusQuery && (
+                          dossier.titre?.toLowerCase().includes(q) ||
+                          dossier.resume?.toLowerCase().includes(q)
+                        );
+                        return (
+                          <div
+                            key={dossier.id}
+                            id={`dossier-${dossier.id}`}
+                            className={cn(
+                              'scroll-mt-4 rounded-xl transition-all',
+                              isMatch && 'ring-2 ring-primary/50 ring-offset-2 ring-offset-background'
+                            )}
+                          >
+                            <BriefingCard
+                              dossier={dossier}
+                              onClick={() => setSelectedDossier(dossier)}
+                              onEdit={() => handleEditDossier(dossier)}
+                            />
+                          </div>
+                        );
+                      })}
                       
                       {brouillons.length === 0 && !isAdmin && (
                         <div className="col-span-full text-center py-8 text-muted-foreground">
