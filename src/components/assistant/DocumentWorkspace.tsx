@@ -1,9 +1,13 @@
 import { useState } from 'react';
-import { FileText, Copy, RefreshCw, X, Download, ChevronRight, Loader2, Check, Save } from 'lucide-react';
+import { FileText, Copy, RefreshCw, X, Download, ChevronRight, Loader2, Check, Save, FileType2, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
+import jsPDF from 'jspdf';
+import { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType } from 'docx';
+import { saveAs } from 'file-saver';
 
 export interface GeneratedDocument {
   title: string;
