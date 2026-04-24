@@ -31,6 +31,7 @@ import {
   NewsletterScheduler
 } from '@/components/newsletter';
 import { NewsletterStudio } from '@/components/newsletter/studio';
+import { FocusBanner } from '@/components/radar';
 import type { Newsletter } from '@/types/newsletter';
 
 type NewsletterView = 'list' | 'generate' | 'preview' | 'edit' | 'studio';
