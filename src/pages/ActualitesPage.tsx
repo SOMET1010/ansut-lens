@@ -218,9 +218,12 @@ export default function ActualitesPage() {
               a.titre.toLowerCase().includes(focusQuery.toLowerCase()) ||
               a.resume?.toLowerCase().includes(focusQuery.toLowerCase())
             );
+            const isScrollTarget = a.id === firstFocusId;
             return (
               <Card
                 key={a.id}
+                ref={isScrollTarget ? focusRef : undefined}
+                data-focus-target={isScrollTarget ? 'true' : undefined}
                 className={cn(
                   'transition-all hover:border-primary/40',
                   isMatch && 'ring-2 ring-primary/50 border-primary/40 bg-primary/[0.03]'
