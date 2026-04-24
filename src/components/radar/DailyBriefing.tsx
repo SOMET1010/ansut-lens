@@ -158,11 +158,30 @@ function parseBriefing(text: string): ParsedBriefing {
   return out;
 }
 
-function CitedItem({ text, sourcesMap, dotClass }: { text: string; sourcesMap: Map<number, BriefingSource>; dotClass: string }) {
+function CitedItem({
+  text, sourcesMap, dotClass, detailHref, detailLabel,
+}: {
+  text: string;
+  sourcesMap: Map<number, BriefingSource>;
+  dotClass: string;
+  detailHref?: string;
+  detailLabel?: string;
+}) {
   return (
-    <li className="flex gap-2.5 text-sm leading-relaxed">
+    <li className="group flex gap-2.5 text-sm leading-relaxed">
       <span className={cn('mt-2 h-1.5 w-1.5 shrink-0 rounded-full', dotClass)} aria-hidden />
-      <span className="flex-1">{renderInline(text, sourcesMap)}</span>
+      <span className="flex-1">
+        {renderInline(text, sourcesMap)}
+        {detailHref && (
+          <Link
+            to={detailHref}
+            aria-label={detailLabel || 'Voir le détail'}
+            className="ml-1.5 inline-flex items-center gap-0.5 text-[11px] font-medium text-primary/80 hover:text-primary hover:underline underline-offset-2 align-baseline opacity-70 group-hover:opacity-100 transition-opacity"
+          >
+            Voir le détail<ChevronRight className="h-3 w-3" />
+          </Link>
+        )}
+      </span>
     </li>
   );
 }
