@@ -27,8 +27,8 @@ const quadrantLabels: Record<string, string> = {
 export default function FluxDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: flux, isLoading: isLoadingFlux } = useFluxById(id);
-  const { data: actualites, isLoading: isLoadingActus } = useFluxActualites(id);
+  const { data: flux, isLoading: isLoadingFlux, isError: isErrorFlux, error: errorFlux, refetch: refetchFlux } = useFluxById(id);
+  const { data: actualites, isLoading: isLoadingActus, isError: isErrorActus, error: errorActus, refetch: refetchActus } = useFluxActualites(id);
   const [editOpen, setEditOpen] = useState(false);
 
   if (isLoadingFlux) {
