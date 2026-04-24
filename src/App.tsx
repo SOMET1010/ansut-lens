@@ -13,6 +13,7 @@ import { ProtectedRoute, PermissionRoute } from "@/components/auth";
 import AuthPage from "@/pages/AuthPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import RadarPage from "@/pages/RadarPage";
+import ActualitesPage from "@/pages/ActualitesPage";
 
 import ActeursInfluencePage from "@/pages/ActeursInfluencePage";
 import DossiersPage from "@/pages/DossiersPage";
@@ -94,7 +95,7 @@ const App = () => (
                       {/* Redirections */}
                       <Route path="/" element={<Navigate to="/radar" replace />} />
                       <Route path="/medias" element={<Navigate to="/radar" replace />} />
-                      <Route path="/actualites" element={<Navigate to="/radar?tab=flux" replace />} />
+                      {/* /actualites est désormais une page dédiée (vue éditoriale) */}
                       <Route path="/personnalites" element={<Navigate to="/acteurs?tab=cartographie" replace />} />
                       <Route path="/presence-digitale" element={<Navigate to="/acteurs?tab=spdi" replace />} />
                       <Route path="/spdi-review" element={<Navigate to="/acteurs?tab=revue" replace />} />
