@@ -70,6 +70,18 @@ export default function ActualitesPage() {
       .slice(0, 3);
   }, [actualites]);
 
+  // Premier article correspondant au focus → cible du scroll
+  const firstFocusId = focusMatches[0]?.id ?? null;
+
+  // Auto-scroll vers la première carte cible quand les données arrivent
+  useEffect(() => {
+    if (!firstFocusId) return;
+    const t = setTimeout(() => {
+      focusRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 250);
+    return () => clearTimeout(t);
+  }, [firstFocusId]);
+
   return (
     <div className="container max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
       {/* En-tête */}
@@ -94,10 +106,12 @@ export default function ActualitesPage() {
       </header>
 
       {/* Bandeau "Vu depuis Briefing" */}
-      {focusQuery && (
+      {(focusQuery || focusItem) && (
         <FocusBanner
           query={focusQuery}
-          originLabel="À retenir"
+          itemLabel={focusItem}
+          origin={focusFrom}
+          originLabel={!focusFrom ? 'À retenir' : undefined}
           matchCount={focusMatches.length}
         />
       )}
