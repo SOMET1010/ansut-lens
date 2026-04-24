@@ -33,6 +33,8 @@ import {
 } from '@/components/newsletter';
 import { NewsletterStudio } from '@/components/newsletter/studio';
 import { FocusBanner } from '@/components/radar';
+import { SectionEmptyState } from '@/components/radar/SectionEmptyState';
+import { toErrorMessage } from '@/utils/errors';
 import type { Newsletter } from '@/types/newsletter';
 
 type NewsletterView = 'list' | 'generate' | 'preview' | 'edit' | 'studio';
@@ -54,8 +56,8 @@ export default function DossiersPage() {
   
   const { isAdmin } = useAuth();
   const { mode, setMode } = useViewMode();
-  const { data: dossiers, isLoading: isLoadingDossiers } = useDossiers();
-  const { data: newsletters, isLoading: isLoadingNewsletters } = useNewsletters();
+  const { data: dossiers, isLoading: isLoadingDossiers, isError: isErrorDossiers, error: errorDossiers, refetch: refetchDossiers } = useDossiers();
+  const { data: newsletters, isLoading: isLoadingNewsletters, isError: isErrorNewsletters, error: errorNewsletters, refetch: refetchNewsletters } = useNewsletters();
   const { data: selectedNewsletter, refetch: refetchNewsletter } = useNewsletter(selectedNewsletterId || undefined);
 
   // Premier dossier correspondant au focus du briefing
@@ -164,6 +166,24 @@ export default function DossiersPage() {
           origin={focusFrom}
           originLabel={!focusFrom ? 'Recommandation ANSUT' : undefined}
           matchCount={focusMatchCount}
+        />
+      )}
+
+      {/* Erreurs de chargement */}
+      {isErrorDossiers && (
+        <SectionEmptyState
+          variant="error"
+          title="Impossible de charger les dossiers"
+          description={toErrorMessage(errorDossiers)}
+          onRetry={() => refetchDossiers()}
+        />
+      )}
+      {isErrorNewsletters && (
+        <SectionEmptyState
+          variant="error"
+          title="Impossible de charger les newsletters"
+          description={toErrorMessage(errorNewsletters)}
+          onRetry={() => refetchNewsletters()}
         />
       )}
 

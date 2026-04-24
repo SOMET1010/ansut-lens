@@ -5,8 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, Bell, BellOff, Mail, Rss, ExternalLink, Settings } from 'lucide-react';
 import { useFluxById, useFluxActualites } from '@/hooks/useFluxVeille';
-import { calculateFreshness } from '@/hooks/useActualites';
 import { FreshnessIndicator } from '@/components/actualites/FreshnessIndicator';
+import { SectionEmptyState } from '@/components/radar/SectionEmptyState';
+import { toErrorMessage } from '@/utils/errors';
 import { useState } from 'react';
 import { FluxFormDialog } from '@/components/flux';
 
@@ -26,8 +27,8 @@ const quadrantLabels: Record<string, string> = {
 export default function FluxDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: flux, isLoading: isLoadingFlux } = useFluxById(id);
-  const { data: actualites, isLoading: isLoadingActus } = useFluxActualites(id);
+  const { data: flux, isLoading: isLoadingFlux, isError: isErrorFlux, error: errorFlux, refetch: refetchFlux } = useFluxById(id);
+  const { data: actualites, isLoading: isLoadingActus, isError: isErrorActus, error: errorActus, refetch: refetchActus } = useFluxActualites(id);
   const [editOpen, setEditOpen] = useState(false);
 
   if (isLoadingFlux) {
@@ -40,6 +41,23 @@ export default function FluxDetailPage() {
             <Skeleton key={i} className="h-24 w-full" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (isErrorFlux) {
+    return (
+      <div className="space-y-6">
+        <Button variant="ghost" onClick={() => navigate('/flux')}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Retour aux flux
+        </Button>
+        <SectionEmptyState
+          variant="error"
+          title="Impossible de charger ce flux"
+          description={toErrorMessage(errorFlux)}
+          onRetry={() => refetchFlux()}
+        />
       </div>
     );
   }
@@ -150,6 +168,13 @@ export default function FluxDetailPage() {
               </CardContent>
             </Card>
           ))
+        ) : isErrorActus ? (
+          <SectionEmptyState
+            variant="error"
+            title="Impossible de charger les actualités du flux"
+            description={toErrorMessage(errorActus)}
+            onRetry={() => refetchActus()}
+          />
         ) : actualites?.length === 0 ? (
           <Card className="glass">
             <CardContent className="py-12 text-center">

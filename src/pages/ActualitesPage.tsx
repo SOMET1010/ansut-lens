@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useActualites, calculateFreshness } from '@/hooks/useActualites';
 import { FocusBanner } from '@/components/radar';
+import { SectionEmptyState } from '@/components/radar/SectionEmptyState';
+import { toErrorMessage } from '@/utils/errors';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -27,7 +29,7 @@ export default function ActualitesPage() {
   const focusRef = useRef<HTMLDivElement | null>(null);
 
   const maxAgeHours = period === '24h' ? 24 : period === '72h' ? 72 : period === '7j' ? 168 : undefined;
-  const { data: actualites, isLoading, refetch, isFetching } = useActualites({ maxAgeHours });
+  const { data: actualites, isLoading, isError, error, refetch, isFetching } = useActualites({ maxAgeHours });
 
   const filtered = useMemo(() => {
     if (!actualites) return [];
@@ -204,7 +206,16 @@ export default function ActualitesPage() {
             </>
           )}
 
-          {!isLoading && filtered.length === 0 && (
+          {!isLoading && isError && (
+            <SectionEmptyState
+              variant="error"
+              title="Impossible de charger les actualités"
+              description={toErrorMessage(error)}
+              onRetry={() => refetch()}
+            />
+          )}
+
+          {!isLoading && !isError && filtered.length === 0 && (
             <Card>
               <CardContent className="p-8 text-center text-sm text-muted-foreground">
                 Aucune actualité ne correspond à votre recherche.
