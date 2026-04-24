@@ -109,8 +109,9 @@ export function DocumentWorkspace({
 
       // ===== CONTENT PAGES =====
       pdf.addPage();
-      let y = margin + 20;
-      pdf.setTextColor(15, 23, 42);
+      const contentTop = margin + 25;
+      const contentBottom = pageHeight - margin - 15;
+      let y = contentTop;
 
       // Header on content pages
       const drawHeader = () => {
@@ -121,44 +122,186 @@ export function DocumentWorkspace({
         pdf.text(headerTitle, margin, 30);
         pdf.text('ANSUT', pageWidth - margin, 30, { align: 'right' });
         pdf.setDrawColor(226, 232, 240);
+        pdf.setLineWidth(0.5);
         pdf.line(margin, 36, pageWidth - margin, 36);
       };
-      drawHeader();
 
+      const ensureSpace = (needed: number) => {
+        if (y + needed > contentBottom) {
+          pdf.addPage();
+          y = contentTop;
+          drawHeader();
+        }
+      };
+
+      // Render a run of text with bold segments (**...**) preserved
+      const renderRichLine = (text: string, x: number, lineHeight: number, indent: number) => {
+        const segments: { text: string; bold: boolean }[] = [];
+        const parts = text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
+        for (const p of parts) {
+          if (/^\*\*.+\*\*$/.test(p)) segments.push({ text: p.slice(2, -2), bold: true });
+          else segments.push({ text: p, bold: false });
+        }
+
+        // Manual word-wrap that respects bold boundaries
+        const availableWidth = maxWidth - indent;
+        let cursorX = x;
+        let firstLineIndent = 0;
+        const writeWord = (word: string, bold: boolean, space: string) => {
+          pdf.setFont('helvetica', bold ? 'bold' : 'normal');
+          const w = pdf.getTextWidth((cursorX === x ? '' : space) + word);
+          if (cursorX + w > x + availableWidth - firstLineIndent) {
+            y += lineHeight;
+            ensureSpace(lineHeight);
+            cursorX = x;
+            firstLineIndent = 0;
+            pdf.text(word, cursorX, y);
+            cursorX += pdf.getTextWidth(word);
+          } else {
+            const out = (cursorX === x ? '' : space) + word;
+            pdf.text(out, cursorX, y);
+            cursorX += w;
+          }
+        };
+
+        for (const seg of segments) {
+          const tokens = seg.text.split(/(\s+)/);
+          let pendingSpace = '';
+          for (const tok of tokens) {
+            if (!tok) continue;
+            if (/^\s+$/.test(tok)) { pendingSpace = tok; continue; }
+            writeWord(tok, seg.bold, pendingSpace || ' ');
+            pendingSpace = '';
+          }
+        }
+        y += lineHeight;
+      };
+
+      drawHeader();
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(11);
       pdf.setTextColor(15, 23, 42);
 
-      const lines = document.content.split('\n');
-      for (const raw of lines) {
-        if (y > pageHeight - margin - 20) {
-          pdf.addPage();
-          y = margin + 20;
-          drawHeader();
+      const rawLines = document.content.split('\n');
+      let inCodeBlock = false;
+
+      for (let idx = 0; idx < rawLines.length; idx++) {
+        const raw = rawLines[idx];
+        const line = raw.replace(/\s+$/, '');
+        const trimmed = line.trim();
+
+        // Code fences
+        if (/^```/.test(trimmed)) { inCodeBlock = !inCodeBlock; y += 4; continue; }
+
+        if (inCodeBlock) {
+          ensureSpace(13);
+          pdf.setFont('courier', 'normal');
+          pdf.setFontSize(9);
+          pdf.setTextColor(51, 65, 85);
+          const wrapped = pdf.splitTextToSize(line || ' ', maxWidth - 12);
+          pdf.setFillColor(241, 245, 249);
+          pdf.rect(margin, y - 9, maxWidth, wrapped.length * 12 + 4, 'F');
+          pdf.text(wrapped, margin + 6, y);
+          y += wrapped.length * 12 + 6;
           pdf.setFont('helvetica', 'normal');
           pdf.setFontSize(11);
           pdf.setTextColor(15, 23, 42);
-        }
-        const line = raw.trim();
-        if (!line) { y += 8; continue; }
-
-        const headingMatch = line.match(/^(#{1,3})\s+(.+)$/);
-        if (headingMatch) {
-          const level = headingMatch[1].length;
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(level === 1 ? 15 : level === 2 ? 13 : 11);
-          const wrapped = pdf.splitTextToSize(headingMatch[2], maxWidth);
-          pdf.text(wrapped, margin, y);
-          y += wrapped.length * 17 + 6;
-          pdf.setFont('helvetica', 'normal');
-          pdf.setFontSize(11);
           continue;
         }
 
-        const cleaned = line.replace(/\*\*(.+?)\*\*/g, '$1').replace(/^[-*]\s+/, '• ');
-        const wrapped = pdf.splitTextToSize(cleaned, maxWidth);
-        pdf.text(wrapped, margin, y);
-        y += wrapped.length * 14 + 2;
+        // Empty line = paragraph spacing
+        if (!trimmed) { y += 6; continue; }
+
+        // Horizontal rule
+        if (/^(-{3,}|_{3,}|\*{3,})$/.test(trimmed)) {
+          ensureSpace(14);
+          pdf.setDrawColor(226, 232, 240);
+          pdf.setLineWidth(0.5);
+          pdf.line(margin, y, pageWidth - margin, y);
+          y += 12;
+          continue;
+        }
+
+        // Headings (# / ## / ### / ####)
+        const headingMatch = trimmed.match(/^(#{1,4})\s+(.+)$/);
+        if (headingMatch) {
+          const level = headingMatch[1].length;
+          const text = headingMatch[2].replace(/\*\*/g, '');
+          const sizes = [18, 14, 12, 11];
+          const spaceBefore = [16, 14, 10, 8];
+          const spaceAfter = [10, 8, 6, 4];
+          const lineH = [22, 18, 16, 14];
+          const size = sizes[level - 1];
+          const lh = lineH[level - 1];
+
+          // Keep heading with at least 2 lines of next content
+          ensureSpace(spaceBefore[level - 1] + lh + 30);
+          y += spaceBefore[level - 1];
+
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(size);
+          pdf.setTextColor(level === 1 ? 15 : 30, level === 1 ? 23 : 41, level === 1 ? 42 : 59);
+          const wrapped = pdf.splitTextToSize(text, maxWidth);
+          pdf.text(wrapped, margin, y);
+          y += wrapped.length * lh;
+
+          // Underline for H1
+          if (level === 1) {
+            pdf.setDrawColor(59, 130, 246);
+            pdf.setLineWidth(1.2);
+            pdf.line(margin, y - 2, margin + 40, y - 2);
+          }
+          y += spaceAfter[level - 1];
+
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(11);
+          pdf.setTextColor(15, 23, 42);
+          continue;
+        }
+
+        // Blockquote
+        if (/^>\s?/.test(trimmed)) {
+          const quoteText = trimmed.replace(/^>\s?/, '');
+          ensureSpace(16);
+          const startY = y;
+          pdf.setFont('helvetica', 'italic');
+          pdf.setTextColor(71, 85, 105);
+          renderRichLine(quoteText, margin + 14, 14, 14);
+          // Left vertical bar
+          pdf.setDrawColor(59, 130, 246);
+          pdf.setLineWidth(2);
+          pdf.line(margin + 4, startY - 9, margin + 4, y - 4);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(15, 23, 42);
+          y += 2;
+          continue;
+        }
+
+        // Lists (bullet & numbered) with indentation level
+        const listMatch = line.match(/^(\s*)([-*•]|\d+\.)\s+(.+)$/);
+        if (listMatch) {
+          const indentSpaces = listMatch[1].length;
+          const level = Math.min(Math.floor(indentSpaces / 2), 3);
+          const indent = level * 14;
+          const isOrdered = /^\d+\./.test(listMatch[2]);
+          const marker = isOrdered ? listMatch[2] : (level === 0 ? '•' : level === 1 ? '◦' : '▪');
+          const itemText = listMatch[3];
+
+          ensureSpace(14);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(11);
+          pdf.setTextColor(level === 0 ? 15 : 71, level === 0 ? 23 : 85, level === 0 ? 42 : 105);
+          pdf.text(marker, margin + indent, y);
+          pdf.setTextColor(15, 23, 42);
+          renderRichLine(itemText, margin + indent + 14, 14, indent + 14);
+          y += 1;
+          continue;
+        }
+
+        // Default paragraph
+        ensureSpace(14);
+        renderRichLine(trimmed, margin, 14, 0);
+        y += 3;
       }
 
       // Page numbers (skip cover = page 1)
