@@ -46,7 +46,6 @@ import FluxPage from "@/pages/FluxPage";
 import FluxDetailPage from "@/pages/FluxDetailPage";
 import NotFound from "@/pages/NotFound";
 import AccessDeniedPage from "@/pages/AccessDeniedPage";
-import ReseauxSociauxPage from "@/pages/ReseauxSociauxPage";
 
 const queryClient = new QueryClient();
 
@@ -99,6 +98,7 @@ const App = () => (
                       <Route path="/personnalites" element={<Navigate to="/acteurs?tab=cartographie" replace />} />
                       <Route path="/presence-digitale" element={<Navigate to="/acteurs?tab=spdi" replace />} />
                       <Route path="/spdi-review" element={<Navigate to="/acteurs?tab=revue" replace />} />
+                      <Route path="/reseaux-sociaux" element={<Navigate to="/communication?tab=social" replace />} />
                       
                       {/* Routes protégées */}
                       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
@@ -119,7 +119,6 @@ const App = () => (
                         <Route element={<PermissionRoute permission="use_assistant" />}>
                           <Route path="/assistant" element={<AssistantPage />} />
                           <Route path="/communication" element={<CommunicationPage />} />
-                          <Route path="/reseaux-sociaux" element={<ReseauxSociauxPage />} />
                         </Route>
                         
                         <Route element={<PermissionRoute permission="receive_alerts" />}>
