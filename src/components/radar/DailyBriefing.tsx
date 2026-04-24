@@ -410,7 +410,14 @@ export function DailyBriefing() {
               </div>
               <ul className="space-y-2">
                 {parsed.recommandation.map((item, i) => (
-                  <CitedItem key={i} text={item} sourcesMap={sourcesMap} dotClass="bg-primary" />
+                  <CitedItem
+                    key={i}
+                    text={item}
+                    sourcesMap={sourcesMap}
+                    dotClass="bg-primary"
+                    detailHref={`/dossiers?q=${encodeURIComponent(item.replace(/\*\*/g, '').replace(/\[\d+\]/g, '').trim().slice(0, 80))}`}
+                    detailLabel="Ouvrir le dossier lié"
+                  />
                 ))}
               </ul>
             </div>
