@@ -362,9 +362,17 @@ export function DailyBriefing() {
                   <Activity className="h-3.5 w-3.5 text-primary" />
                   <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">À retenir</h3>
                 </div>
-                <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-muted-foreground hover:text-primary">
-                  <Link to="/actualites?from=retenir" aria-label="Voir le détail des actualités">
-                    Voir le détail <ChevronRight className="h-3 w-3 ml-0.5" />
+                <Button
+                  asChild
+                  variant={isCrise ? 'default' : 'ghost'}
+                  size="sm"
+                  className={cn(
+                    'h-7 px-2 text-[11px]',
+                    !isCrise && 'text-muted-foreground hover:text-primary'
+                  )}
+                >
+                  <Link to="/actualites?from=retenir" aria-label={`${sectionCta.retenir} des actualités`}>
+                    {sectionCta.retenir} <ChevronRight className="h-3 w-3 ml-0.5" />
                   </Link>
                 </Button>
               </div>
