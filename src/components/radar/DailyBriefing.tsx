@@ -200,6 +200,16 @@ export function DailyBriefing() {
     isLoading, isGenerating, error, regenerate,
   } = useDailyBriefing();
 
+  const { mode } = useViewMode();
+  const isCrise = mode === 'crise';
+
+  // Libellés et style adaptés au mode (Crise = action DG/CODIR prioritaire)
+  const sectionCta = {
+    retenir: isCrise ? 'Décider' : 'Voir le détail',
+    impact: isCrise ? 'Évaluer impact' : 'Voir le détail',
+    reco: isCrise ? 'Agir maintenant' : 'Voir le détail',
+  };
+
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reported, setReported] = useState(false);
