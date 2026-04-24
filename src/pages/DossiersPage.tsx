@@ -157,10 +157,12 @@ export default function DossiersPage() {
   return (
     <div className="w-full space-y-6 animate-fade-in">
       {/* Bandeau "Vu depuis Briefing" */}
-      {focusQuery && (
+      {(focusQuery || focusItem) && (
         <FocusBanner
           query={focusQuery}
-          originLabel="Recommandation ANSUT"
+          itemLabel={focusItem}
+          origin={focusFrom}
+          originLabel={!focusFrom ? 'Recommandation ANSUT' : undefined}
           matchCount={focusMatchCount}
         />
       )}
