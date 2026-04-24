@@ -114,6 +114,34 @@ export default function DossiersPage() {
     d.categorie === 'ia' || d.categorie === 'acteurs'
   ) || [];
 
+  // Liste filtrée pour la section "Recommandations & Dossiers thématiques"
+  const filteredDossiers = useMemo(() => {
+    if (!dossiers) return [] as Dossier[];
+    const q = search.trim().toLowerCase();
+    return dossiers.filter(d => {
+      if (filterCat !== 'all' && d.categorie !== filterCat) return false;
+      if (filterStatut !== 'all' && d.statut !== filterStatut) return false;
+      if (!q) return true;
+      return (
+        d.titre?.toLowerCase().includes(q) ||
+        d.resume?.toLowerCase().includes(q) ||
+        d.contenu?.toLowerCase().includes(q)
+      );
+    });
+  }, [dossiers, search, filterCat, filterStatut]);
+
+  // Compteur par catégorie pour les pastilles
+  const catCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    (dossiers || []).forEach(d => {
+      counts[d.categorie] = (counts[d.categorie] || 0) + 1;
+    });
+    return counts;
+  }, [dossiers]);
+
+  const hasActiveFilter = !!search.trim() || filterCat !== 'all' || filterStatut !== 'all';
+  const clearFilters = () => { setSearch(''); setFilterCat('all'); setFilterStatut('all'); };
+
   const handleEditDossier = (dossier: Dossier) => {
     setSelectedDossier(null);
     setEditingDossier(dossier);
