@@ -409,25 +409,22 @@ export function DailyBriefing() {
                     !isCrise && 'text-foreground/70 hover:text-foreground'
                   )}
                 >
-                  <Link to="/radar?from=impact" aria-label={`${sectionCta.impact} de l'impact Service Universel`}>
+                  <Link to={buildBriefingDetailHref({ section: 'impact', scope: 'section' })} aria-label={getBriefingCtaAriaLabel('impact', 'section', isCrise)}>
                     {sectionCta.impact} <ChevronRight className="h-3 w-3 ml-0.5" />
                   </Link>
                 </Button>
               </div>
               <ul className="space-y-2">
-                {parsed.impact.map((item, i) => {
-                  const clean = item.replace(/\*\*/g, '').replace(/\[\d+\]/g, '').trim();
-                  return (
-                    <CitedItem
-                      key={i}
-                      text={item}
-                      sourcesMap={sourcesMap}
-                      dotClass="bg-foreground/50"
-                      detailHref={`/radar?focus=${encodeURIComponent(clean.slice(0, 80))}&from=impact&item=${encodeURIComponent(clean.slice(0, 120))}`}
-                      detailLabel="Voir le détail sur le radar"
-                    />
-                  );
-                })}
+                {parsed.impact.map((item, i) => (
+                  <CitedItem
+                    key={i}
+                    text={item}
+                    sourcesMap={sourcesMap}
+                    dotClass="bg-foreground/50"
+                    detailHref={buildBriefingDetailHref({ section: 'impact', scope: 'item', itemText: item })}
+                    detailLabel={getBriefingCtaAriaLabel('impact', 'item', isCrise)}
+                  />
+                ))}
               </ul>
             </div>
           )}
