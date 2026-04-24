@@ -381,7 +381,14 @@ export function DailyBriefing() {
               </div>
               <ul className="space-y-2">
                 {parsed.impact.map((item, i) => (
-                  <CitedItem key={i} text={item} sourcesMap={sourcesMap} dotClass="bg-foreground/50" />
+                  <CitedItem
+                    key={i}
+                    text={item}
+                    sourcesMap={sourcesMap}
+                    dotClass="bg-foreground/50"
+                    detailHref={`/radar?focus=${encodeURIComponent(item.replace(/\*\*/g, '').replace(/\[\d+\]/g, '').trim().slice(0, 80))}`}
+                    detailLabel="Voir le détail sur le radar"
+                  />
                 ))}
               </ul>
             </div>
