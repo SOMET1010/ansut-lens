@@ -206,7 +206,16 @@ export default function ActualitesPage() {
             </>
           )}
 
-          {!isLoading && filtered.length === 0 && (
+          {!isLoading && isError && (
+            <SectionEmptyState
+              variant="error"
+              title="Impossible de charger les actualités"
+              description={toErrorMessage(error)}
+              onRetry={() => refetch()}
+            />
+          )}
+
+          {!isLoading && !isError && filtered.length === 0 && (
             <Card>
               <CardContent className="p-8 text-center text-sm text-muted-foreground">
                 Aucune actualité ne correspond à votre recherche.
