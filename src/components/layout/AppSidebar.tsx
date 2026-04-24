@@ -38,7 +38,7 @@ import logoAnsut from '@/assets/logo-ansut.jpg';
 // Menu avec permissions associées
 const menuItems = [
   { 
-    title: 'Centre de Veille', 
+    title: 'Accueil', 
     url: '/radar', 
     icon: Radar,
     description: 'Synthèse, flux & alertes',
