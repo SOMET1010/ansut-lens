@@ -92,10 +92,9 @@ export function DocumentWorkspace({
   const docTypeLabel = (t?: 'note' | 'briefing' | 'rapport') =>
     t === 'briefing' ? 'Briefing' : t === 'rapport' ? 'Rapport' : 'Note de synthèse';
 
-  const handleExportPDF = () => {
-    if (!document) return;
-    try {
-      const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+  const runExportPDF = () => {
+    if (!document) throw new Error('Aucun document à exporter');
+    const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 50;
@@ -351,19 +350,13 @@ export function DocumentWorkspace({
         pdf.text('ANSUT — Document confidentiel', margin, pageHeight - 25);
       }
 
-      pdf.save(`${baseTitle}.pdf`);
-      toast.success('PDF téléchargé (avec couverture)');
-    } catch (e) {
-      console.error(e);
-      toast.error('Erreur lors de l\'export PDF');
-    }
+    pdf.save(`${baseTitle}.pdf`);
   };
 
-  const handleExportDOCX = async () => {
-    if (!document) return;
-    try {
-      const cleanTitle = document.title.replace(/\.(docx|pdf|txt)$/i, '');
-      const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const runExportDOCX = async () => {
+    if (!document) throw new Error('Aucun document à exporter');
+    const cleanTitle = document.title.replace(/\.(docx|pdf|txt)$/i, '');
+    const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
       const children: Paragraph[] = [
         new Paragraph({
