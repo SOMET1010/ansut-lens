@@ -168,6 +168,13 @@ export default function FluxDetailPage() {
               </CardContent>
             </Card>
           ))
+        ) : isErrorActus ? (
+          <SectionEmptyState
+            variant="error"
+            title="Impossible de charger les actualités du flux"
+            description={toErrorMessage(errorActus)}
+            onRetry={() => refetchActus()}
+          />
         ) : actualites?.length === 0 ? (
           <Card className="glass">
             <CardContent className="py-12 text-center">
