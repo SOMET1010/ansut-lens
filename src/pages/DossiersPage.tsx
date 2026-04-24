@@ -10,7 +10,11 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   useDossiers, 
-  type Dossier 
+  CATEGORIE_LABELS,
+  STATUT_LABELS,
+  type Dossier,
+  type DossierCategorie,
+  type DossierStatut,
 } from '@/hooks/useDossiers';
 import { useNewsletters, useNewsletter } from '@/hooks/useNewsletters';
 import { useAuth } from '@/contexts/AuthContext';
