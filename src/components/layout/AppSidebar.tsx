@@ -14,6 +14,17 @@ import {
 import { NavLink, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import {
@@ -220,15 +231,30 @@ export function AppSidebar() {
               )}
             </NavLink>
             
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={signOut}
-              className="justify-start gap-2"
-            >
-              <LogOut className="h-4 w-4" />
-              {!collapsed && <span>Déconnexion</span>}
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="justify-start gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  {!collapsed && <span>Déconnexion</span>}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirmer la déconnexion ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Vous serez déconnecté de votre session. Vous devrez vous reconnecter pour accéder à nouveau à la plateforme.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={signOut}>Se déconnecter</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         )}
       </SidebarFooter>
