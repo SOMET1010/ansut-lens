@@ -402,9 +402,17 @@ export function DailyBriefing() {
                   <Target className="h-3.5 w-3.5 text-foreground/70" />
                   <h3 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">Impact Service Universel</h3>
                 </div>
-                <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-foreground/70 hover:text-foreground">
-                  <Link to="/radar?from=impact" aria-label="Voir le détail de l'impact Service Universel">
-                    Voir le détail <ChevronRight className="h-3 w-3 ml-0.5" />
+                <Button
+                  asChild
+                  variant={isCrise ? 'default' : 'ghost'}
+                  size="sm"
+                  className={cn(
+                    'h-7 px-2 text-[11px]',
+                    !isCrise && 'text-foreground/70 hover:text-foreground'
+                  )}
+                >
+                  <Link to="/radar?from=impact" aria-label={`${sectionCta.impact} de l'impact Service Universel`}>
+                    {sectionCta.impact} <ChevronRight className="h-3 w-3 ml-0.5" />
                   </Link>
                 </Button>
               </div>
