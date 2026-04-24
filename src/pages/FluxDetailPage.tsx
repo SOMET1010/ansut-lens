@@ -5,8 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, Bell, BellOff, Mail, Rss, ExternalLink, Settings } from 'lucide-react';
 import { useFluxById, useFluxActualites } from '@/hooks/useFluxVeille';
-import { calculateFreshness } from '@/hooks/useActualites';
 import { FreshnessIndicator } from '@/components/actualites/FreshnessIndicator';
+import { SectionEmptyState } from '@/components/radar/SectionEmptyState';
+import { toErrorMessage } from '@/utils/errors';
 import { useState } from 'react';
 import { FluxFormDialog } from '@/components/flux';
 
