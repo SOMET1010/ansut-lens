@@ -27,7 +27,7 @@ export default function ActualitesPage() {
   const focusRef = useRef<HTMLDivElement | null>(null);
 
   const maxAgeHours = period === '24h' ? 24 : period === '72h' ? 72 : period === '7j' ? 168 : undefined;
-  const { data: actualites, isLoading, refetch, isFetching } = useActualites({ maxAgeHours });
+  const { data: actualites, isLoading, isError, error, refetch, isFetching } = useActualites({ maxAgeHours });
 
   const filtered = useMemo(() => {
     if (!actualites) return [];
