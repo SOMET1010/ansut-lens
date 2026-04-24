@@ -11,6 +11,7 @@ import { RelativeTime } from '@/components/ui/relative-time';
 import { useDailyBriefing, type BriefingSource } from '@/hooks/useDailyBriefing';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { cn } from '@/lib/utils';
+import { buildBriefingDetailHref, getBriefingCtaAriaLabel } from './utils/briefingLinks';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
