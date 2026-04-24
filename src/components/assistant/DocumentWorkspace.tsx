@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
-import { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType } from 'docx';
+import { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType, Header, Footer, PageNumber, BorderStyle } from 'docx';
 import { saveAs } from 'file-saver';
 
 export interface GeneratedDocument {
@@ -53,6 +53,9 @@ export function DocumentWorkspace({
 
   const baseTitle = (document?.title || 'document').replace(/\.(docx|pdf|txt)$/i, '');
 
+  const docTypeLabel = (t?: 'note' | 'briefing' | 'rapport') =>
+    t === 'briefing' ? 'Briefing' : t === 'rapport' ? 'Rapport' : 'Note de synthèse';
+
   const handleExportPDF = () => {
     if (!document) return;
     try {
@@ -61,22 +64,80 @@ export function DocumentWorkspace({
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 50;
       const maxWidth = pageWidth - margin * 2;
-      let y = margin;
+      const cleanTitle = document.title.replace(/\.(docx|pdf|txt)$/i, '');
+      const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+      // ===== COVER PAGE =====
+      // Top accent bar
+      pdf.setFillColor(15, 23, 42); // slate-900
+      pdf.rect(0, 0, pageWidth, 6, 'F');
 
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(16);
-      const titleLines = pdf.splitTextToSize(document.title.replace(/\.(docx|pdf)$/i, ''), maxWidth);
-      pdf.text(titleLines, margin, y);
-      y += titleLines.length * 20 + 10;
+      pdf.setFontSize(10);
+      pdf.setTextColor(100, 116, 139);
+      pdf.text('ANSUT • RADAR STRATÉGIQUE', margin, 80);
+
+      pdf.setDrawColor(226, 232, 240);
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, 92, pageWidth - margin, 92);
+
+      // Document type
+      pdf.setFontSize(11);
+      pdf.setTextColor(59, 130, 246);
+      pdf.text(docTypeLabel(document.type).toUpperCase(), margin, 200);
+
+      // Title
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(26);
+      pdf.setTextColor(15, 23, 42);
+      const coverTitleLines = pdf.splitTextToSize(cleanTitle, maxWidth);
+      pdf.text(coverTitleLines, margin, 230);
+
+      // Meta block
+      const metaY = 230 + coverTitleLines.length * 32 + 40;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      pdf.setTextColor(71, 85, 105);
+      pdf.text(`Date d'édition : ${today}`, margin, metaY);
+      pdf.text('Auteur : Assistant SUTA — ANSUT', margin, metaY + 16);
+      pdf.text('Confidentialité : Usage interne', margin, metaY + 32);
+
+      // Footer cover
+      pdf.setFontSize(8);
+      pdf.setTextColor(148, 163, 184);
+      pdf.text('Document généré automatiquement — Vérifier avant diffusion', margin, pageHeight - 50);
+
+      // ===== CONTENT PAGES =====
+      pdf.addPage();
+      let y = margin + 20;
+      pdf.setTextColor(15, 23, 42);
+
+      // Header on content pages
+      const drawHeader = () => {
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.setTextColor(148, 163, 184);
+        const headerTitle = cleanTitle.length > 70 ? cleanTitle.slice(0, 70) + '…' : cleanTitle;
+        pdf.text(headerTitle, margin, 30);
+        pdf.text('ANSUT', pageWidth - margin, 30, { align: 'right' });
+        pdf.setDrawColor(226, 232, 240);
+        pdf.line(margin, 36, pageWidth - margin, 36);
+      };
+      drawHeader();
 
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(11);
+      pdf.setTextColor(15, 23, 42);
 
       const lines = document.content.split('\n');
       for (const raw of lines) {
-        if (y > pageHeight - margin) {
+        if (y > pageHeight - margin - 20) {
           pdf.addPage();
-          y = margin;
+          y = margin + 20;
+          drawHeader();
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(11);
+          pdf.setTextColor(15, 23, 42);
         }
         const line = raw.trim();
         if (!line) { y += 8; continue; }
@@ -85,10 +146,10 @@ export function DocumentWorkspace({
         if (headingMatch) {
           const level = headingMatch[1].length;
           pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(level === 1 ? 14 : level === 2 ? 12 : 11);
+          pdf.setFontSize(level === 1 ? 15 : level === 2 ? 13 : 11);
           const wrapped = pdf.splitTextToSize(headingMatch[2], maxWidth);
           pdf.text(wrapped, margin, y);
-          y += wrapped.length * 16 + 4;
+          y += wrapped.length * 17 + 6;
           pdf.setFont('helvetica', 'normal');
           pdf.setFontSize(11);
           continue;
@@ -100,8 +161,19 @@ export function DocumentWorkspace({
         y += wrapped.length * 14 + 2;
       }
 
+      // Page numbers (skip cover = page 1)
+      const totalPages = pdf.getNumberOfPages();
+      for (let i = 2; i <= totalPages; i++) {
+        pdf.setPage(i);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.setTextColor(148, 163, 184);
+        pdf.text(`Page ${i - 1} / ${totalPages - 1}`, pageWidth - margin, pageHeight - 25, { align: 'right' });
+        pdf.text('ANSUT — Document confidentiel', margin, pageHeight - 25);
+      }
+
       pdf.save(`${baseTitle}.pdf`);
-      toast.success('PDF téléchargé');
+      toast.success('PDF téléchargé (avec couverture)');
     } catch (e) {
       console.error(e);
       toast.error('Erreur lors de l\'export PDF');
@@ -111,11 +183,34 @@ export function DocumentWorkspace({
   const handleExportDOCX = async () => {
     if (!document) return;
     try {
+      const cleanTitle = document.title.replace(/\.(docx|pdf|txt)$/i, '');
+      const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+
       const children: Paragraph[] = [
         new Paragraph({
           alignment: AlignmentType.LEFT,
+          children: [new TextRun({ text: 'ANSUT • RADAR STRATÉGIQUE', bold: true, size: 18, color: '64748B' })],
+          border: { bottom: { color: 'E2E8F0', space: 4, style: BorderStyle.SINGLE, size: 6 } },
+          spacing: { after: 200 },
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: docTypeLabel(document.type).toUpperCase(), bold: true, size: 20, color: '3B82F6' })],
+          spacing: { after: 120 },
+        }),
+        new Paragraph({
           heading: HeadingLevel.TITLE,
-          children: [new TextRun({ text: document.title.replace(/\.(docx|pdf)$/i, ''), bold: true, size: 32 })],
+          children: [new TextRun({ text: cleanTitle, bold: true, size: 36 })],
+          spacing: { after: 200 },
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: `Date d'édition : ${today}`, size: 20, color: '475569' })],
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: 'Auteur : Assistant SUTA — ANSUT', size: 20, color: '475569' })],
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: 'Confidentialité : Usage interne', size: 20, color: '475569' })],
+          spacing: { after: 400 },
         }),
         new Paragraph({ text: '' }),
       ];
@@ -147,10 +242,35 @@ export function DocumentWorkspace({
         }));
       }
 
-      const doc = new Document({ sections: [{ children }] });
+      const doc = new Document({
+        sections: [{
+          headers: {
+            default: new Header({
+              children: [new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [new TextRun({ text: `${cleanTitle} — ANSUT`, size: 16, color: '94A3B8' })],
+              })],
+            }),
+          },
+          footers: {
+            default: new Footer({
+              children: [new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({ text: 'ANSUT — Document confidentiel  •  Page ', size: 16, color: '94A3B8' }),
+                  new TextRun({ children: [PageNumber.CURRENT], size: 16, color: '94A3B8' }),
+                  new TextRun({ text: ' / ', size: 16, color: '94A3B8' }),
+                  new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 16, color: '94A3B8' }),
+                ],
+              })],
+            }),
+          },
+          children,
+        }],
+      });
       const blob = await Packer.toBlob(doc);
       saveAs(blob, `${baseTitle}.docx`);
-      toast.success('DOCX téléchargé');
+      toast.success('DOCX téléchargé (avec pagination)');
     } catch (e) {
       console.error(e);
       toast.error('Erreur lors de l\'export DOCX');
