@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { FileText, Copy, RefreshCw, X, Download, ChevronRight, Loader2, Check, Save, FileType2, FileDown } from 'lucide-react';
+import { FileText, Copy, RefreshCw, X, Download, ChevronRight, Loader2, Check, Save, FileType2, FileDown, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -37,6 +38,41 @@ export function DocumentWorkspace({
   onSuggestionClick 
 }: DocumentWorkspaceProps) {
   const [copied, setCopied] = useState(false);
+  const [exportState, setExportState] = useState<{
+    status: 'idle' | 'loading' | 'error';
+    format?: 'pdf' | 'docx';
+    error?: string;
+  }>({ status: 'idle' });
+
+  const formatLabel = (f?: 'pdf' | 'docx') => f === 'docx' ? 'DOCX' : 'PDF';
+
+  const runExport = async (format: 'pdf' | 'docx') => {
+    if (!document) return;
+    setExportState({ status: 'loading', format });
+    try {
+      // Yield to the event loop so the loading UI paints before heavy sync work
+      await new Promise(resolve => setTimeout(resolve, 50));
+      if (format === 'pdf') {
+        runExportPDF();
+      } else {
+        await runExportDOCX();
+      }
+      setExportState({ status: 'idle' });
+      toast.success(`${formatLabel(format)} téléchargé`);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Erreur inconnue';
+      console.error(`[Export ${format}] échec:`, e);
+      setExportState({ status: 'error', format, error: message });
+      toast.error(`Échec de l'export ${formatLabel(format)}`, { description: message });
+    }
+  };
+
+  const handleExportPDF = () => { void runExport('pdf'); };
+  const handleExportDOCX = () => { void runExport('docx'); };
+  const handleRetryExport = () => {
+    if (exportState.format) void runExport(exportState.format);
+  };
+  const dismissError = () => setExportState({ status: 'idle' });
 
   const handleCopy = async () => {
     if (!document) return;
@@ -56,10 +92,9 @@ export function DocumentWorkspace({
   const docTypeLabel = (t?: 'note' | 'briefing' | 'rapport') =>
     t === 'briefing' ? 'Briefing' : t === 'rapport' ? 'Rapport' : 'Note de synthèse';
 
-  const handleExportPDF = () => {
-    if (!document) return;
-    try {
-      const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+  const runExportPDF = () => {
+    if (!document) throw new Error('Aucun document à exporter');
+    const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 50;
@@ -315,19 +350,13 @@ export function DocumentWorkspace({
         pdf.text('ANSUT — Document confidentiel', margin, pageHeight - 25);
       }
 
-      pdf.save(`${baseTitle}.pdf`);
-      toast.success('PDF téléchargé (avec couverture)');
-    } catch (e) {
-      console.error(e);
-      toast.error('Erreur lors de l\'export PDF');
-    }
+    pdf.save(`${baseTitle}.pdf`);
   };
 
-  const handleExportDOCX = async () => {
-    if (!document) return;
-    try {
-      const cleanTitle = document.title.replace(/\.(docx|pdf|txt)$/i, '');
-      const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const runExportDOCX = async () => {
+    if (!document) throw new Error('Aucun document à exporter');
+    const cleanTitle = document.title.replace(/\.(docx|pdf|txt)$/i, '');
+    const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
       const children: Paragraph[] = [
         new Paragraph({
@@ -411,13 +440,8 @@ export function DocumentWorkspace({
           children,
         }],
       });
-      const blob = await Packer.toBlob(doc);
-      saveAs(blob, `${baseTitle}.docx`);
-      toast.success('DOCX téléchargé (avec pagination)');
-    } catch (e) {
-      console.error(e);
-      toast.error('Erreur lors de l\'export DOCX');
-    }
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `${baseTitle}.docx`);
   };
 
   const handleSaveDraft = () => {
@@ -537,12 +561,44 @@ export function DocumentWorkspace({
         </div>
       </ScrollArea>
       
+      {/* Export error banner */}
+      {exportState.status === 'error' && (
+        <div className="px-4 pt-3 border-t">
+          <Alert variant="destructive" className="py-2">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle className="text-xs font-semibold flex items-center justify-between gap-2">
+              <span>Échec de l'export {formatLabel(exportState.format)}</span>
+              <button
+                onClick={dismissError}
+                className="text-xs font-normal opacity-70 hover:opacity-100"
+                aria-label="Fermer"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </AlertTitle>
+            <AlertDescription className="text-xs mt-1 space-y-2">
+              <p className="break-words">{exportState.error || 'Erreur inconnue'}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRetryExport}
+                className="h-7 text-xs"
+              >
+                <RefreshCw className="h-3 w-3 mr-1.5" />
+                Réessayer
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
       {/* Footer Actions */}
       <div className="p-4 border-t bg-muted/30 flex justify-end gap-3">
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={handleSaveDraft}
+          disabled={exportState.status === 'loading'}
           className="text-xs"
         >
           <Save className="h-3.5 w-3.5 mr-1.5" />
@@ -550,9 +606,18 @@ export function DocumentWorkspace({
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="sm" className="text-xs">
-              <Download className="h-3.5 w-3.5 mr-1.5" />
-              Exporter
+            <Button size="sm" disabled={exportState.status === 'loading'} className="text-xs min-w-[110px]">
+              {exportState.status === 'loading' ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  Export {formatLabel(exportState.format)}…
+                </>
+              ) : (
+                <>
+                  <Download className="h-3.5 w-3.5 mr-1.5" />
+                  Exporter
+                </>
+              )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
