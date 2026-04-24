@@ -133,6 +133,15 @@ export default function DossiersPage() {
 
   return (
     <div className="w-full space-y-6 animate-fade-in">
+      {/* Bandeau "Vu depuis Briefing" */}
+      {focusQuery && (
+        <FocusBanner
+          query={focusQuery}
+          originLabel="Recommandation ANSUT"
+          matchCount={focusMatchCount}
+        />
+      )}
+
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
