@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { FileText, Copy, RefreshCw, X, Download, ChevronRight, Loader2, Check, Save, FileType2, FileDown } from 'lucide-react';
+import { FileText, Copy, RefreshCw, X, Download, ChevronRight, Loader2, Check, Save, FileType2, FileDown, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
