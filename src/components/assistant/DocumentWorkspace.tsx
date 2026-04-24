@@ -440,13 +440,8 @@ export function DocumentWorkspace({
           children,
         }],
       });
-      const blob = await Packer.toBlob(doc);
-      saveAs(blob, `${baseTitle}.docx`);
-      toast.success('DOCX téléchargé (avec pagination)');
-    } catch (e) {
-      console.error(e);
-      toast.error('Erreur lors de l\'export DOCX');
-    }
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `${baseTitle}.docx`);
   };
 
   const handleSaveDraft = () => {
