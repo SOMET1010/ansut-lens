@@ -40,6 +40,8 @@ type NewsletterView = 'list' | 'generate' | 'preview' | 'edit' | 'studio';
 export default function DossiersPage() {
   const [searchParams] = useSearchParams();
   const focusQuery = searchParams.get('q') || '';
+  const focusFrom = searchParams.get('from') || undefined;
+  const focusItem = searchParams.get('item') || undefined;
 
   const [selectedDossier, setSelectedDossier] = useState<Dossier | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -56,7 +58,17 @@ export default function DossiersPage() {
   const { data: newsletters, isLoading: isLoadingNewsletters } = useNewsletters();
   const { data: selectedNewsletter, refetch: refetchNewsletter } = useNewsletter(selectedNewsletterId || undefined);
 
-  // Compte des dossiers correspondant au focus venu du Daily Briefing
+  // Premier dossier correspondant au focus du briefing
+  const firstFocusDossier = useMemo(() => {
+    if (!focusQuery || !dossiers) return null;
+    const q = focusQuery.toLowerCase();
+    return dossiers.find(d =>
+      d.titre?.toLowerCase().includes(q) ||
+      d.resume?.toLowerCase().includes(q) ||
+      d.contenu?.toLowerCase().includes(q)
+    ) || null;
+  }, [dossiers, focusQuery]);
+
   const focusMatchCount = useMemo(() => {
     if (!focusQuery || !dossiers) return 0;
     const q = focusQuery.toLowerCase();
@@ -66,6 +78,16 @@ export default function DossiersPage() {
       d.contenu?.toLowerCase().includes(q)
     ).length;
   }, [dossiers, focusQuery]);
+
+  // Auto-scroll vers le dossier ciblé quand les données arrivent
+  useEffect(() => {
+    if (!firstFocusDossier) return;
+    const t = setTimeout(() => {
+      const el = document.getElementById(`dossier-${firstFocusDossier.id}`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 350);
+    return () => clearTimeout(t);
+  }, [firstFocusDossier]);
 
   // Filter dossiers by status
   const brouillons = dossiers?.filter(d => d.statut === 'brouillon') || [];
