@@ -93,19 +93,22 @@ export default function DossiersPage() {
   // Mode-specific titles and descriptions
   const modeConfig = {
     dg: {
-      title: 'Tableau de Bord Stratégique',
-      subtitle: 'Vue synthétique pour la Direction Générale',
-      icon: TrendingUp
+      title: 'Vue Statistique',
+      subtitle: 'Synthèse chiffrée des productions et envois.',
+      icon: TrendingUp,
+      label: 'STATISTIQUE'
     },
     analyste: {
       title: 'Studio de Publication',
       subtitle: 'Centralisez la production de vos Notes Stratégiques et Newsletters.',
-      icon: FileText
+      icon: FileText,
+      label: 'PRODUCTION'
     },
     crise: {
       title: 'Centre de Crise',
       subtitle: 'Documents prioritaires et alertes en temps réel.',
-      icon: AlertTriangle
+      icon: AlertTriangle,
+      label: 'CRISE'
     }
   };
 
@@ -132,7 +135,7 @@ export default function DossiersPage() {
           className="uppercase text-xs tracking-wider"
         >
           <Eye className="h-3 w-3 mr-1" />
-          Mode {mode.toUpperCase()}
+          Mode {currentConfig.label}
         </Badge>
       </div>
 
@@ -143,14 +146,14 @@ export default function DossiersPage() {
           {publies.length === 0 && !isLoadingDossiers && (
             <Card className="p-12 text-center border-dashed border-2">
               <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-bold mb-2">Bienvenue dans le Studio de Publication</h3>
+              <h3 className="text-lg font-bold mb-2">Aucune statistique disponible</h3>
               <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-                Le tableau de bord stratégique affiche les documents validés. 
-                Passez en mode Analyste pour créer et publier du contenu.
+                La vue statistique affiche les documents validés et les indicateurs d'activité. 
+                Passez en mode Production pour créer et publier du contenu.
               </p>
               <Button onClick={() => setMode('analyste')}>
                 <FileText className="h-4 w-4 mr-2" />
-                Passer en mode Analyste
+                Passer en mode Production
               </Button>
             </Card>
           )}
@@ -240,7 +243,7 @@ export default function DossiersPage() {
             {activeTab === 'notes' && isAdmin && (
               <Button onClick={handleNewDossier} size="sm">
                 <FileText className="h-4 w-4 mr-2" />
-                Nouvelle Note
+                Nouvelle note
               </Button>
             )}
             
@@ -258,11 +261,14 @@ export default function DossiersPage() {
               {/* COLONNE GAUCHE : Notes & Briefings (65%) */}
               <div className="flex-1 space-y-8">
                 
-                {/* Section Brouillons */}
+                {/* Section unifiée Mes notes (brouillons + création) */}
                 <section>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2">
-                      <Edit3 className="h-4 w-4" /> Brouillons & En cours
+                      <Edit3 className="h-4 w-4" /> Mes notes en cours
+                      {brouillons.length > 0 && (
+                        <Badge variant="secondary" className="ml-1">{brouillons.length}</Badge>
+                      )}
                     </h2>
                   </div>
                   
@@ -274,6 +280,9 @@ export default function DossiersPage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {/* CreateCard en premier pour fusion claire avec "Nouvelle note" */}
+                      {isAdmin && <CreateCard onClick={handleNewDossier} />}
+                      
                       {brouillons.map(dossier => (
                         <BriefingCard 
                           key={dossier.id} 
@@ -283,12 +292,10 @@ export default function DossiersPage() {
                         />
                       ))}
                       
-                      {isAdmin && <CreateCard onClick={handleNewDossier} />}
-                      
                       {brouillons.length === 0 && !isAdmin && (
                         <div className="col-span-full text-center py-8 text-muted-foreground">
                           <Edit3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                          <p className="text-sm">Aucun brouillon en cours</p>
+                          <p className="text-sm">Aucune note en cours</p>
                         </div>
                       )}
                     </div>
