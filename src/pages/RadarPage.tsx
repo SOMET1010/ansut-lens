@@ -116,11 +116,13 @@ export default function RadarPage() {
 
   return (
     <div className="w-full space-y-5 animate-fade-in">
-      {/* Bandeau "Vu depuis Briefing" si on arrive via ?focus= */}
-      {searchParams.get('focus') && (
+      {/* Bandeau "Vu depuis Briefing" si on arrive via ?focus= ou ?from= */}
+      {(searchParams.get('focus') || searchParams.get('from')) && (
         <FocusBanner
           query={searchParams.get('focus') || ''}
-          originLabel="Impact Service Universel"
+          itemLabel={searchParams.get('item') || undefined}
+          origin={searchParams.get('from') || undefined}
+          originLabel={!searchParams.get('from') ? 'Impact Service Universel' : undefined}
         />
       )}
 
