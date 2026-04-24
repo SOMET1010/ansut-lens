@@ -50,6 +50,11 @@ export default function DossiersPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingDossier, setEditingDossier] = useState<Dossier | null>(null);
   const [activeTab, setActiveTab] = useState<'notes' | 'newsletters'>('notes');
+
+  // Recherche & filtres pour la section "Recommandations & Dossiers thématiques"
+  const [search, setSearch] = useState(focusQuery);
+  const [filterCat, setFilterCat] = useState<DossierCategorie | 'all'>('all');
+  const [filterStatut, setFilterStatut] = useState<DossierStatut | 'all'>('all');
   
   // Newsletter management states
   const [newsletterView, setNewsletterView] = useState<NewsletterView>('list');
