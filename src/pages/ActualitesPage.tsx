@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Newspaper, Search, ExternalLink, TrendingUp, Clock, Filter, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,12 +15,16 @@ import { fr } from 'date-fns/locale';
 /**
  * Page dédiée /actualites — vue éditoriale orientée "informations clés + sources".
  * Lit ?q=... pour mettre en avant un sujet venant du Daily Briefing.
+ * ?from= et ?item= sont utilisés pour conserver le contexte du briefing.
  */
 export default function ActualitesPage() {
   const [searchParams] = useSearchParams();
   const focusQuery = searchParams.get('q') || '';
+  const focusFrom = searchParams.get('from') || undefined;
+  const focusItem = searchParams.get('item') || undefined;
   const [search, setSearch] = useState(focusQuery);
   const [period, setPeriod] = useState<'24h' | '72h' | '7j' | 'all'>('72h');
+  const focusRef = useRef<HTMLDivElement | null>(null);
 
   const maxAgeHours = period === '24h' ? 24 : period === '72h' ? 72 : period === '7j' ? 168 : undefined;
   const { data: actualites, isLoading, refetch, isFetching } = useActualites({ maxAgeHours });
