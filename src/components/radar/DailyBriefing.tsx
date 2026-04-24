@@ -466,7 +466,8 @@ export function DailyBriefing() {
                       sourcesMap={sourcesMap}
                       dotClass="bg-primary"
                       detailHref={`/dossiers?q=${encodeURIComponent(clean.slice(0, 80))}&from=recommandation&item=${encodeURIComponent(clean.slice(0, 120))}`}
-                      detailLabel="Ouvrir le dossier lié"
+                      detailLabel={isCrise ? 'Agir maintenant sur ce dossier' : 'Ouvrir le dossier lié'}
+                      intensity={isCrise ? 'crise' : 'normal'}
                     />
                   );
                 })}
