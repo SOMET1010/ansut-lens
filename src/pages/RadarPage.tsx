@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Clock, RefreshCw, LayoutDashboard, Newspaper, Sparkles, TrendingUp, Loader2 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -114,6 +114,18 @@ export default function RadarPage() {
     setActiveFilters(prev => prev.filter(f => f !== filter));
   }, []);
 
+  // Auto-scroll vers le Briefing si on arrive depuis le Daily Briefing (Impact SU)
+  const briefingRef = useRef<HTMLDivElement | null>(null);
+  const focusParam = searchParams.get('focus');
+  const fromParam = searchParams.get('from');
+  useEffect(() => {
+    if (!focusParam && !fromParam) return;
+    const t = setTimeout(() => {
+      briefingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 350);
+    return () => clearTimeout(t);
+  }, [focusParam, fromParam]);
+
   return (
     <div className="w-full space-y-5 animate-fade-in">
       {/* Bandeau "Vu depuis Briefing" si on arrive via ?focus= ou ?from= */}
@@ -186,7 +198,9 @@ export default function RadarPage() {
 
           <ShareOfVoiceWidget />
           <RadarProximiteWidget />
-          <DailyBriefing />
+          <div ref={briefingRef} className="scroll-mt-4">
+            <DailyBriefing />
+          </div>
 
           {/* Aperçu du flux (top 20) avec invitation à voir tout */}
           <div className="space-y-3">
