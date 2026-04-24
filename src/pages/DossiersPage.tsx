@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FileText, Edit3, Send, Mail, Users, AlertTriangle, TrendingUp, Eye, Sparkles, Calendar, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,11 +31,15 @@ import {
   NewsletterScheduler
 } from '@/components/newsletter';
 import { NewsletterStudio } from '@/components/newsletter/studio';
+import { FocusBanner } from '@/components/radar';
 import type { Newsletter } from '@/types/newsletter';
 
 type NewsletterView = 'list' | 'generate' | 'preview' | 'edit' | 'studio';
 
 export default function DossiersPage() {
+  const [searchParams] = useSearchParams();
+  const focusQuery = searchParams.get('q') || '';
+
   const [selectedDossier, setSelectedDossier] = useState<Dossier | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingDossier, setEditingDossier] = useState<Dossier | null>(null);
@@ -49,6 +54,17 @@ export default function DossiersPage() {
   const { data: dossiers, isLoading: isLoadingDossiers } = useDossiers();
   const { data: newsletters, isLoading: isLoadingNewsletters } = useNewsletters();
   const { data: selectedNewsletter, refetch: refetchNewsletter } = useNewsletter(selectedNewsletterId || undefined);
+
+  // Compte des dossiers correspondant au focus venu du Daily Briefing
+  const focusMatchCount = useMemo(() => {
+    if (!focusQuery || !dossiers) return 0;
+    const q = focusQuery.toLowerCase();
+    return dossiers.filter(d =>
+      d.titre?.toLowerCase().includes(q) ||
+      d.resume?.toLowerCase().includes(q) ||
+      d.contenu?.toLowerCase().includes(q)
+    ).length;
+  }, [dossiers, focusQuery]);
 
   // Filter dossiers by status
   const brouillons = dossiers?.filter(d => d.statut === 'brouillon') || [];
@@ -117,6 +133,15 @@ export default function DossiersPage() {
 
   return (
     <div className="w-full space-y-6 animate-fade-in">
+      {/* Bandeau "Vu depuis Briefing" */}
+      {focusQuery && (
+        <FocusBanner
+          query={focusQuery}
+          originLabel="Recommandation ANSUT"
+          matchCount={focusMatchCount}
+        />
+      )}
+
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

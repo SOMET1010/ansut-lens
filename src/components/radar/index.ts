@@ -17,3 +17,4 @@ export { default as InfluenceursMetierWidget } from './InfluenceursMetierWidget'
 export { default as RadarProximiteWidget } from './RadarProximiteWidget';
 export { default as CriticalAlertsCard } from './CriticalAlertsCard';
 export { SectionEmptyState } from './SectionEmptyState';
+export { FocusBanner } from './FocusBanner';
