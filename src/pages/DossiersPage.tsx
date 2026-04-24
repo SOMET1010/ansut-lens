@@ -243,7 +243,7 @@ export default function DossiersPage() {
             {activeTab === 'notes' && isAdmin && (
               <Button onClick={handleNewDossier} size="sm">
                 <FileText className="h-4 w-4 mr-2" />
-                Nouvelle Note
+                Nouvelle note
               </Button>
             )}
             
@@ -261,11 +261,14 @@ export default function DossiersPage() {
               {/* COLONNE GAUCHE : Notes & Briefings (65%) */}
               <div className="flex-1 space-y-8">
                 
-                {/* Section Brouillons */}
+                {/* Section unifiée Mes notes (brouillons + création) */}
                 <section>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2">
-                      <Edit3 className="h-4 w-4" /> Brouillons & En cours
+                      <Edit3 className="h-4 w-4" /> Mes notes en cours
+                      {brouillons.length > 0 && (
+                        <Badge variant="secondary" className="ml-1">{brouillons.length}</Badge>
+                      )}
                     </h2>
                   </div>
                   
@@ -277,6 +280,9 @@ export default function DossiersPage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {/* CreateCard en premier pour fusion claire avec "Nouvelle note" */}
+                      {isAdmin && <CreateCard onClick={handleNewDossier} />}
+                      
                       {brouillons.map(dossier => (
                         <BriefingCard 
                           key={dossier.id} 
@@ -286,12 +292,10 @@ export default function DossiersPage() {
                         />
                       ))}
                       
-                      {isAdmin && <CreateCard onClick={handleNewDossier} />}
-                      
                       {brouillons.length === 0 && !isAdmin && (
                         <div className="col-span-full text-center py-8 text-muted-foreground">
                           <Edit3 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                          <p className="text-sm">Aucun brouillon en cours</p>
+                          <p className="text-sm">Aucune note en cours</p>
                         </div>
                       )}
                     </div>
