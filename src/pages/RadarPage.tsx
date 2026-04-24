@@ -23,6 +23,7 @@ import {
   RadarKpiTiles,
   ShareOfVoiceWidget,
   RadarProximiteWidget,
+  FocusBanner,
 } from '@/components/radar';
 import { useActualites, useTriggerCollecte, useEnrichActualite, useYesterdayArticles, useBatchSentiment } from '@/hooks/useActualites';
 import { useArticleClusters } from '@/hooks/useArticleClusters';
@@ -115,6 +116,14 @@ export default function RadarPage() {
 
   return (
     <div className="w-full space-y-5 animate-fade-in">
+      {/* Bandeau "Vu depuis Briefing" si on arrive via ?focus= */}
+      {searchParams.get('focus') && (
+        <FocusBanner
+          query={searchParams.get('focus') || ''}
+          originLabel="Impact Service Universel"
+        />
+      )}
+
       {/* Header global */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
