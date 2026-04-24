@@ -320,9 +320,16 @@ export function DailyBriefing() {
           {/* === 3. À RETENIR === */}
           {parsed.retenir.length > 0 && (
             <div>
-              <div className="flex items-center gap-2 mb-2.5">
-                <Activity className="h-3.5 w-3.5 text-primary" />
-                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">À retenir</h3>
+              <div className="flex items-center justify-between gap-2 mb-2.5">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-3.5 w-3.5 text-primary" />
+                  <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">À retenir</h3>
+                </div>
+                <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-muted-foreground hover:text-primary">
+                  <Link to="/actualites" aria-label="Voir le détail des actualités">
+                    Voir le détail <ChevronRight className="h-3 w-3 ml-0.5" />
+                  </Link>
+                </Button>
               </div>
               <ul className="space-y-2">
                 {parsed.retenir.map((item, i) => (
@@ -335,9 +342,16 @@ export function DailyBriefing() {
           {/* === 4. IMPACT SERVICE UNIVERSEL === */}
           {parsed.impact.length > 0 && (
             <div className="rounded-lg bg-muted/40 border border-border/50 p-4">
-              <div className="flex items-center gap-2 mb-2.5">
-                <Target className="h-3.5 w-3.5 text-foreground/70" />
-                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">Impact Service Universel</h3>
+              <div className="flex items-center justify-between gap-2 mb-2.5">
+                <div className="flex items-center gap-2">
+                  <Target className="h-3.5 w-3.5 text-foreground/70" />
+                  <h3 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">Impact Service Universel</h3>
+                </div>
+                <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-foreground/70 hover:text-foreground">
+                  <Link to="/radar" aria-label="Voir le détail de l'impact Service Universel">
+                    Voir le détail <ChevronRight className="h-3 w-3 ml-0.5" />
+                  </Link>
+                </Button>
               </div>
               <ul className="space-y-2">
                 {parsed.impact.map((item, i) => (
@@ -350,9 +364,16 @@ export function DailyBriefing() {
           {/* === 5. RECOMMANDATION ANSUT (zone décisionnelle forte) === */}
           {parsed.recommandation.length > 0 && (
             <div className="rounded-lg border-2 border-primary/30 bg-primary/[0.07] p-4">
-              <div className="flex items-center gap-2 mb-2.5">
-                <Lightbulb className="h-4 w-4 text-primary" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-primary">Recommandation ANSUT</h3>
+              <div className="flex items-center justify-between gap-2 mb-2.5">
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4 text-primary" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-primary">Recommandation ANSUT</h3>
+                </div>
+                <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-primary hover:bg-primary/10">
+                  <Link to="/dossiers" aria-label="Voir le détail des recommandations ANSUT">
+                    Voir le détail <ChevronRight className="h-3 w-3 ml-0.5" />
+                  </Link>
+                </Button>
               </div>
               <ul className="space-y-2">
                 {parsed.recommandation.map((item, i) => (
