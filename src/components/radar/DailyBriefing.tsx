@@ -11,6 +11,7 @@ import { RelativeTime } from '@/components/ui/relative-time';
 import { useDailyBriefing, type BriefingSource } from '@/hooks/useDailyBriefing';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { cn } from '@/lib/utils';
+import { buildBriefingDetailHref, getBriefingCtaAriaLabel } from './utils/briefingLinks';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -371,25 +372,22 @@ export function DailyBriefing() {
                     !isCrise && 'text-muted-foreground hover:text-primary'
                   )}
                 >
-                  <Link to="/actualites?from=retenir" aria-label={`${sectionCta.retenir} des actualités`}>
+                  <Link to={buildBriefingDetailHref({ section: 'retenir', scope: 'section' })} aria-label={getBriefingCtaAriaLabel('retenir', 'section', isCrise)}>
                     {sectionCta.retenir} <ChevronRight className="h-3 w-3 ml-0.5" />
                   </Link>
                 </Button>
               </div>
               <ul className="space-y-2">
-                {parsed.retenir.map((item, i) => {
-                  const clean = item.replace(/\*\*/g, '').replace(/\[\d+\]/g, '').trim();
-                  return (
-                    <CitedItem
-                      key={i}
-                      text={item}
-                      sourcesMap={sourcesMap}
-                      dotClass="bg-primary"
-                      detailHref={`/actualites?q=${encodeURIComponent(clean.slice(0, 80))}&from=retenir&item=${encodeURIComponent(clean.slice(0, 120))}`}
-                      detailLabel="Voir l'actualité liée"
-                    />
-                  );
-                })}
+                {parsed.retenir.map((item, i) => (
+                  <CitedItem
+                    key={i}
+                    text={item}
+                    sourcesMap={sourcesMap}
+                    dotClass="bg-primary"
+                    detailHref={buildBriefingDetailHref({ section: 'retenir', scope: 'item', itemText: item })}
+                    detailLabel={getBriefingCtaAriaLabel('retenir', 'item', isCrise)}
+                  />
+                ))}
               </ul>
             </div>
           )}
@@ -411,25 +409,22 @@ export function DailyBriefing() {
                     !isCrise && 'text-foreground/70 hover:text-foreground'
                   )}
                 >
-                  <Link to="/radar?from=impact" aria-label={`${sectionCta.impact} de l'impact Service Universel`}>
+                  <Link to={buildBriefingDetailHref({ section: 'impact', scope: 'section' })} aria-label={getBriefingCtaAriaLabel('impact', 'section', isCrise)}>
                     {sectionCta.impact} <ChevronRight className="h-3 w-3 ml-0.5" />
                   </Link>
                 </Button>
               </div>
               <ul className="space-y-2">
-                {parsed.impact.map((item, i) => {
-                  const clean = item.replace(/\*\*/g, '').replace(/\[\d+\]/g, '').trim();
-                  return (
-                    <CitedItem
-                      key={i}
-                      text={item}
-                      sourcesMap={sourcesMap}
-                      dotClass="bg-foreground/50"
-                      detailHref={`/radar?focus=${encodeURIComponent(clean.slice(0, 80))}&from=impact&item=${encodeURIComponent(clean.slice(0, 120))}`}
-                      detailLabel="Voir le détail sur le radar"
-                    />
-                  );
-                })}
+                {parsed.impact.map((item, i) => (
+                  <CitedItem
+                    key={i}
+                    text={item}
+                    sourcesMap={sourcesMap}
+                    dotClass="bg-foreground/50"
+                    detailHref={buildBriefingDetailHref({ section: 'impact', scope: 'item', itemText: item })}
+                    detailLabel={getBriefingCtaAriaLabel('impact', 'item', isCrise)}
+                  />
+                ))}
               </ul>
             </div>
           )}
@@ -451,26 +446,23 @@ export function DailyBriefing() {
                     !isCrise && 'text-primary hover:bg-primary/10'
                   )}
                 >
-                  <Link to="/dossiers?from=recommandation" aria-label={`${sectionCta.reco} sur les recommandations ANSUT`}>
+                  <Link to={buildBriefingDetailHref({ section: 'recommandation', scope: 'section' })} aria-label={getBriefingCtaAriaLabel('recommandation', 'section', isCrise)}>
                     {sectionCta.reco} <ChevronRight className="h-3 w-3 ml-0.5" />
                   </Link>
                 </Button>
               </div>
               <ul className="space-y-2">
-                {parsed.recommandation.map((item, i) => {
-                  const clean = item.replace(/\*\*/g, '').replace(/\[\d+\]/g, '').trim();
-                  return (
-                    <CitedItem
-                      key={i}
-                      text={item}
-                      sourcesMap={sourcesMap}
-                      dotClass="bg-primary"
-                      detailHref={`/dossiers?q=${encodeURIComponent(clean.slice(0, 80))}&from=recommandation&item=${encodeURIComponent(clean.slice(0, 120))}`}
-                      detailLabel={isCrise ? 'Agir maintenant sur ce dossier' : 'Ouvrir le dossier lié'}
-                      intensity={isCrise ? 'crise' : 'normal'}
-                    />
-                  );
-                })}
+                {parsed.recommandation.map((item, i) => (
+                  <CitedItem
+                    key={i}
+                    text={item}
+                    sourcesMap={sourcesMap}
+                    dotClass="bg-primary"
+                    detailHref={buildBriefingDetailHref({ section: 'recommandation', scope: 'item', itemText: item })}
+                    detailLabel={getBriefingCtaAriaLabel('recommandation', 'item', isCrise)}
+                    intensity={isCrise ? 'crise' : 'normal'}
+                  />
+                ))}
               </ul>
             </div>
           )}
