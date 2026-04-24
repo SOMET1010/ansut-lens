@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Wifi, WifiOff, Clock, RefreshCw, LayoutDashboard, Newspaper, Sparkles, TrendingUp, Loader2 } from 'lucide-react';
+import { Clock, RefreshCw, LayoutDashboard, Newspaper, Sparkles, TrendingUp, Loader2 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,7 +20,6 @@ import {
   DailyBriefing,
   IntelligenceFeed,
   CompactRadar,
-  SocialPulseWidget,
   RadarKpiTiles,
   ShareOfVoiceWidget,
   RadarProximiteWidget,
@@ -60,7 +59,6 @@ export default function RadarPage() {
   const { data: signaux, isLoading: signauxLoading, isError: signauxError, refetch: refetchSignaux } = useRadarSignaux();
   const { data: actualitesFeed, isLoading: actualitesFeedLoading, isError: actualitesError, refetch: refetchActualites } = useIntelligenceFeed(20);
   const { data: lastCollecte } = useLastCollecteTime();
-  const isConnected = !kpisLoading && kpis !== undefined;
 
   // === Flux complet data ===
   const [searchTerm, setSearchTerm] = useState('');
@@ -120,19 +118,12 @@ export default function RadarPage() {
       {/* Header global */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Centre de Veille</h1>
+          <h1 className="text-2xl font-bold">Accueil</h1>
           <p className="text-sm text-muted-foreground">
             {format(new Date(), 'EEEE d MMMM yyyy', { locale: fr })}
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {isConnected ? (
-              <Wifi className="h-4 w-4 text-signal-positive" />
-            ) : (
-              <WifiOff className="h-4 w-4 text-signal-critical" />
-            )}
-          </div>
           {lastCollecte && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Clock className="h-4 w-4" />
@@ -185,7 +176,6 @@ export default function RadarPage() {
           <ShareOfVoiceWidget />
           <RadarProximiteWidget />
           <DailyBriefing />
-          <SocialPulseWidget />
 
           {/* Aperçu du flux (top 20) avec invitation à voir tout */}
           <div className="space-y-3">

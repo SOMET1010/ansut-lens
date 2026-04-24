@@ -11,6 +11,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useTheme } from 'next-themes';
 import { NotificationCenter } from '@/components/notifications';
@@ -23,6 +33,7 @@ import logoAnsut from '@/assets/logo-ansut.jpg';
 export function AppHeader() {
   const { theme, setTheme } = useTheme();
   const [spotlightOpen, setSpotlightOpen] = useState(false);
+  const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { profile } = useUserProfile();
 
@@ -97,7 +108,7 @@ export function AppHeader() {
                   </NavLink>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut} className="cursor-pointer">
+                <DropdownMenuItem onClick={() => setConfirmLogoutOpen(true)} className="cursor-pointer">
                   <LogOut className="h-4 w-4 mr-2" />
                   Déconnexion
                 </DropdownMenuItem>
@@ -113,6 +124,21 @@ export function AppHeader() {
           />
         </div>
       </div>
+
+      <AlertDialog open={confirmLogoutOpen} onOpenChange={setConfirmLogoutOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la déconnexion ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vous serez déconnecté de votre session. Vous devrez vous reconnecter pour accéder à nouveau à la plateforme.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={signOut}>Se déconnecter</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }
