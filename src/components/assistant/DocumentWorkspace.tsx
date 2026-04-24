@@ -285,14 +285,24 @@ export function DocumentWorkspace({
           <Save className="h-3.5 w-3.5 mr-1.5" />
           Enregistrer
         </Button>
-        <Button 
-          size="sm" 
-          onClick={handleExportPDF}
-          className="text-xs"
-        >
-          <Download className="h-3.5 w-3.5 mr-1.5" />
-          Exporter
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" className="text-xs">
+              <Download className="h-3.5 w-3.5 mr-1.5" />
+              Exporter
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleExportPDF} className="cursor-pointer">
+              <FileType2 className="h-4 w-4 mr-2" />
+              Exporter en PDF
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportDOCX} className="cursor-pointer">
+              <FileDown className="h-4 w-4 mr-2" />
+              Exporter en DOCX
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
