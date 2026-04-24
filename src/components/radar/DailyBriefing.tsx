@@ -158,11 +158,30 @@ function parseBriefing(text: string): ParsedBriefing {
   return out;
 }
 
-function CitedItem({ text, sourcesMap, dotClass }: { text: string; sourcesMap: Map<number, BriefingSource>; dotClass: string }) {
+function CitedItem({
+  text, sourcesMap, dotClass, detailHref, detailLabel,
+}: {
+  text: string;
+  sourcesMap: Map<number, BriefingSource>;
+  dotClass: string;
+  detailHref?: string;
+  detailLabel?: string;
+}) {
   return (
-    <li className="flex gap-2.5 text-sm leading-relaxed">
+    <li className="group flex gap-2.5 text-sm leading-relaxed">
       <span className={cn('mt-2 h-1.5 w-1.5 shrink-0 rounded-full', dotClass)} aria-hidden />
-      <span className="flex-1">{renderInline(text, sourcesMap)}</span>
+      <span className="flex-1">
+        {renderInline(text, sourcesMap)}
+        {detailHref && (
+          <Link
+            to={detailHref}
+            aria-label={detailLabel || 'Voir le détail'}
+            className="ml-1.5 inline-flex items-center gap-0.5 text-[11px] font-medium text-primary/80 hover:text-primary hover:underline underline-offset-2 align-baseline opacity-70 group-hover:opacity-100 transition-opacity"
+          >
+            Voir le détail<ChevronRight className="h-3 w-3" />
+          </Link>
+        )}
+      </span>
     </li>
   );
 }
@@ -333,7 +352,14 @@ export function DailyBriefing() {
               </div>
               <ul className="space-y-2">
                 {parsed.retenir.map((item, i) => (
-                  <CitedItem key={i} text={item} sourcesMap={sourcesMap} dotClass="bg-primary" />
+                  <CitedItem
+                    key={i}
+                    text={item}
+                    sourcesMap={sourcesMap}
+                    dotClass="bg-primary"
+                    detailHref={`/actualites?q=${encodeURIComponent(item.replace(/\*\*/g, '').replace(/\[\d+\]/g, '').trim().slice(0, 80))}`}
+                    detailLabel="Voir l'actualité liée"
+                  />
                 ))}
               </ul>
             </div>
@@ -355,7 +381,14 @@ export function DailyBriefing() {
               </div>
               <ul className="space-y-2">
                 {parsed.impact.map((item, i) => (
-                  <CitedItem key={i} text={item} sourcesMap={sourcesMap} dotClass="bg-foreground/50" />
+                  <CitedItem
+                    key={i}
+                    text={item}
+                    sourcesMap={sourcesMap}
+                    dotClass="bg-foreground/50"
+                    detailHref={`/radar?focus=${encodeURIComponent(item.replace(/\*\*/g, '').replace(/\[\d+\]/g, '').trim().slice(0, 80))}`}
+                    detailLabel="Voir le détail sur le radar"
+                  />
                 ))}
               </ul>
             </div>
@@ -377,7 +410,14 @@ export function DailyBriefing() {
               </div>
               <ul className="space-y-2">
                 {parsed.recommandation.map((item, i) => (
-                  <CitedItem key={i} text={item} sourcesMap={sourcesMap} dotClass="bg-primary" />
+                  <CitedItem
+                    key={i}
+                    text={item}
+                    sourcesMap={sourcesMap}
+                    dotClass="bg-primary"
+                    detailHref={`/dossiers?q=${encodeURIComponent(item.replace(/\*\*/g, '').replace(/\[\d+\]/g, '').trim().slice(0, 80))}`}
+                    detailLabel="Ouvrir le dossier lié"
+                  />
                 ))}
               </ul>
             </div>
