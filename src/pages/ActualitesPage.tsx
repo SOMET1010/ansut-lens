@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useActualites, calculateFreshness } from '@/hooks/useActualites';
 import { FocusBanner } from '@/components/radar';
+import { SectionEmptyState } from '@/components/radar/SectionEmptyState';
+import { toErrorMessage } from '@/utils/errors';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
