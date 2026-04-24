@@ -308,14 +308,29 @@ export default function DossiersPage() {
                       {/* CreateCard en premier pour fusion claire avec "Nouvelle note" */}
                       {isAdmin && <CreateCard onClick={handleNewDossier} />}
                       
-                      {brouillons.map(dossier => (
-                        <BriefingCard 
-                          key={dossier.id} 
-                          dossier={dossier} 
-                          onClick={() => setSelectedDossier(dossier)}
-                          onEdit={() => handleEditDossier(dossier)}
-                        />
-                      ))}
+                      {brouillons.map(dossier => {
+                        const q = focusQuery.toLowerCase();
+                        const isMatch = focusQuery && (
+                          dossier.titre?.toLowerCase().includes(q) ||
+                          dossier.resume?.toLowerCase().includes(q)
+                        );
+                        return (
+                          <div
+                            key={dossier.id}
+                            id={`dossier-${dossier.id}`}
+                            className={cn(
+                              'scroll-mt-4 rounded-xl transition-all',
+                              isMatch && 'ring-2 ring-primary/50 ring-offset-2 ring-offset-background'
+                            )}
+                          >
+                            <BriefingCard
+                              dossier={dossier}
+                              onClick={() => setSelectedDossier(dossier)}
+                              onEdit={() => handleEditDossier(dossier)}
+                            />
+                          </div>
+                        );
+                      })}
                       
                       {brouillons.length === 0 && !isAdmin && (
                         <div className="col-span-full text-center py-8 text-muted-foreground">
