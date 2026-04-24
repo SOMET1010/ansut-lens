@@ -442,9 +442,17 @@ export function DailyBriefing() {
                   <Lightbulb className="h-4 w-4 text-primary" />
                   <h3 className="text-xs font-bold uppercase tracking-wider text-primary">Recommandation ANSUT</h3>
                 </div>
-                <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-primary hover:bg-primary/10">
-                  <Link to="/dossiers?from=recommandation" aria-label="Voir le détail des recommandations ANSUT">
-                    Voir le détail <ChevronRight className="h-3 w-3 ml-0.5" />
+                <Button
+                  asChild
+                  variant={isCrise ? 'destructive' : 'ghost'}
+                  size="sm"
+                  className={cn(
+                    'h-7 px-2 text-[11px] font-semibold',
+                    !isCrise && 'text-primary hover:bg-primary/10'
+                  )}
+                >
+                  <Link to="/dossiers?from=recommandation" aria-label={`${sectionCta.reco} sur les recommandations ANSUT`}>
+                    {sectionCta.reco} <ChevronRight className="h-3 w-3 ml-0.5" />
                   </Link>
                 </Button>
               </div>
