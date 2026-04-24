@@ -54,8 +54,8 @@ export default function DossiersPage() {
   
   const { isAdmin } = useAuth();
   const { mode, setMode } = useViewMode();
-  const { data: dossiers, isLoading: isLoadingDossiers } = useDossiers();
-  const { data: newsletters, isLoading: isLoadingNewsletters } = useNewsletters();
+  const { data: dossiers, isLoading: isLoadingDossiers, isError: isErrorDossiers, error: errorDossiers, refetch: refetchDossiers } = useDossiers();
+  const { data: newsletters, isLoading: isLoadingNewsletters, isError: isErrorNewsletters, error: errorNewsletters, refetch: refetchNewsletters } = useNewsletters();
   const { data: selectedNewsletter, refetch: refetchNewsletter } = useNewsletter(selectedNewsletterId || undefined);
 
   // Premier dossier correspondant au focus du briefing
