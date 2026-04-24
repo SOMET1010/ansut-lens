@@ -345,22 +345,25 @@ export function DailyBriefing() {
                   <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">À retenir</h3>
                 </div>
                 <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-muted-foreground hover:text-primary">
-                  <Link to="/actualites" aria-label="Voir le détail des actualités">
+                  <Link to="/actualites?from=retenir" aria-label="Voir le détail des actualités">
                     Voir le détail <ChevronRight className="h-3 w-3 ml-0.5" />
                   </Link>
                 </Button>
               </div>
               <ul className="space-y-2">
-                {parsed.retenir.map((item, i) => (
-                  <CitedItem
-                    key={i}
-                    text={item}
-                    sourcesMap={sourcesMap}
-                    dotClass="bg-primary"
-                    detailHref={`/actualites?q=${encodeURIComponent(item.replace(/\*\*/g, '').replace(/\[\d+\]/g, '').trim().slice(0, 80))}`}
-                    detailLabel="Voir l'actualité liée"
-                  />
-                ))}
+                {parsed.retenir.map((item, i) => {
+                  const clean = item.replace(/\*\*/g, '').replace(/\[\d+\]/g, '').trim();
+                  return (
+                    <CitedItem
+                      key={i}
+                      text={item}
+                      sourcesMap={sourcesMap}
+                      dotClass="bg-primary"
+                      detailHref={`/actualites?q=${encodeURIComponent(clean.slice(0, 80))}&from=retenir&item=${encodeURIComponent(clean.slice(0, 120))}`}
+                      detailLabel="Voir l'actualité liée"
+                    />
+                  );
+                })}
               </ul>
             </div>
           )}
@@ -374,22 +377,25 @@ export function DailyBriefing() {
                   <h3 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">Impact Service Universel</h3>
                 </div>
                 <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-foreground/70 hover:text-foreground">
-                  <Link to="/radar" aria-label="Voir le détail de l'impact Service Universel">
+                  <Link to="/radar?from=impact" aria-label="Voir le détail de l'impact Service Universel">
                     Voir le détail <ChevronRight className="h-3 w-3 ml-0.5" />
                   </Link>
                 </Button>
               </div>
               <ul className="space-y-2">
-                {parsed.impact.map((item, i) => (
-                  <CitedItem
-                    key={i}
-                    text={item}
-                    sourcesMap={sourcesMap}
-                    dotClass="bg-foreground/50"
-                    detailHref={`/radar?focus=${encodeURIComponent(item.replace(/\*\*/g, '').replace(/\[\d+\]/g, '').trim().slice(0, 80))}`}
-                    detailLabel="Voir le détail sur le radar"
-                  />
-                ))}
+                {parsed.impact.map((item, i) => {
+                  const clean = item.replace(/\*\*/g, '').replace(/\[\d+\]/g, '').trim();
+                  return (
+                    <CitedItem
+                      key={i}
+                      text={item}
+                      sourcesMap={sourcesMap}
+                      dotClass="bg-foreground/50"
+                      detailHref={`/radar?focus=${encodeURIComponent(clean.slice(0, 80))}&from=impact&item=${encodeURIComponent(clean.slice(0, 120))}`}
+                      detailLabel="Voir le détail sur le radar"
+                    />
+                  );
+                })}
               </ul>
             </div>
           )}
@@ -403,22 +409,25 @@ export function DailyBriefing() {
                   <h3 className="text-xs font-bold uppercase tracking-wider text-primary">Recommandation ANSUT</h3>
                 </div>
                 <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-primary hover:bg-primary/10">
-                  <Link to="/dossiers" aria-label="Voir le détail des recommandations ANSUT">
+                  <Link to="/dossiers?from=recommandation" aria-label="Voir le détail des recommandations ANSUT">
                     Voir le détail <ChevronRight className="h-3 w-3 ml-0.5" />
                   </Link>
                 </Button>
               </div>
               <ul className="space-y-2">
-                {parsed.recommandation.map((item, i) => (
-                  <CitedItem
-                    key={i}
-                    text={item}
-                    sourcesMap={sourcesMap}
-                    dotClass="bg-primary"
-                    detailHref={`/dossiers?q=${encodeURIComponent(item.replace(/\*\*/g, '').replace(/\[\d+\]/g, '').trim().slice(0, 80))}`}
-                    detailLabel="Ouvrir le dossier lié"
-                  />
-                ))}
+                {parsed.recommandation.map((item, i) => {
+                  const clean = item.replace(/\*\*/g, '').replace(/\[\d+\]/g, '').trim();
+                  return (
+                    <CitedItem
+                      key={i}
+                      text={item}
+                      sourcesMap={sourcesMap}
+                      dotClass="bg-primary"
+                      detailHref={`/dossiers?q=${encodeURIComponent(clean.slice(0, 80))}&from=recommandation&item=${encodeURIComponent(clean.slice(0, 120))}`}
+                      detailLabel="Ouvrir le dossier lié"
+                    />
+                  );
+                })}
               </ul>
             </div>
           )}
