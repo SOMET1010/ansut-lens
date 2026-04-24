@@ -160,13 +160,14 @@ function parseBriefing(text: string): ParsedBriefing {
 }
 
 function CitedItem({
-  text, sourcesMap, dotClass, detailHref, detailLabel,
+  text, sourcesMap, dotClass, detailHref, detailLabel, intensity = 'normal',
 }: {
   text: string;
   sourcesMap: Map<number, BriefingSource>;
   dotClass: string;
   detailHref?: string;
   detailLabel?: string;
+  intensity?: 'normal' | 'crise';
 }) {
   return (
     <li className="group flex gap-2.5 text-sm leading-relaxed">
@@ -176,10 +177,16 @@ function CitedItem({
         {detailHref && (
           <Link
             to={detailHref}
-            aria-label={detailLabel || 'Voir le détail'}
-            className="ml-1.5 inline-flex items-center gap-0.5 text-[11px] font-medium text-primary/80 hover:text-primary hover:underline underline-offset-2 align-baseline opacity-70 group-hover:opacity-100 transition-opacity"
+            aria-label={detailLabel || (intensity === 'crise' ? 'Agir maintenant' : 'Voir le détail')}
+            className={cn(
+              'ml-1.5 inline-flex items-center gap-0.5 align-baseline underline-offset-2 transition-opacity',
+              intensity === 'crise'
+                ? 'text-[11px] font-semibold text-destructive hover:text-destructive hover:underline opacity-100'
+                : 'text-[11px] font-medium text-primary/80 hover:text-primary hover:underline opacity-70 group-hover:opacity-100'
+            )}
           >
-            Voir le détail<ChevronRight className="h-3 w-3" />
+            {intensity === 'crise' ? 'Agir' : 'Voir le détail'}
+            <ChevronRight className="h-3 w-3" />
           </Link>
         )}
       </span>
