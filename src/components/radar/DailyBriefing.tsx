@@ -352,7 +352,14 @@ export function DailyBriefing() {
               </div>
               <ul className="space-y-2">
                 {parsed.retenir.map((item, i) => (
-                  <CitedItem key={i} text={item} sourcesMap={sourcesMap} dotClass="bg-primary" />
+                  <CitedItem
+                    key={i}
+                    text={item}
+                    sourcesMap={sourcesMap}
+                    dotClass="bg-primary"
+                    detailHref={`/actualites?q=${encodeURIComponent(item.replace(/\*\*/g, '').replace(/\[\d+\]/g, '').trim().slice(0, 80))}`}
+                    detailLabel="Voir l'actualité liée"
+                  />
                 ))}
               </ul>
             </div>
