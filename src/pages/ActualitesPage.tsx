@@ -1,14 +1,19 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Newspaper, Search, ExternalLink, TrendingUp, Clock, Filter, RefreshCw } from 'lucide-react';
+import {
+  Newspaper, Search, ExternalLink, TrendingUp, Clock, Filter, RefreshCw,
+  FolderOpen, Sparkles, ChevronDown, ChevronUp, Quote,
+} from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useActualites, calculateFreshness } from '@/hooks/useActualites';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useActualites, calculateFreshness, type Actualite } from '@/hooks/useActualites';
 import { FocusBanner } from '@/components/radar';
 import { SectionEmptyState } from '@/components/radar/SectionEmptyState';
+import { TitrologieWidget } from '@/components/actualites/TitrologieWidget';
 import { toErrorMessage } from '@/utils/errors';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -16,8 +21,11 @@ import { fr } from 'date-fns/locale';
 
 /**
  * Page dédiée /actualites — vue éditoriale orientée "informations clés + sources".
- * Lit ?q=... pour mettre en avant un sujet venant du Daily Briefing.
- * ?from= et ?item= sont utilisés pour conserver le contexte du briefing.
+ * - Titrologie en tête (revue de presse ivoirienne)
+ * - Dossiers thématiques (regroupement par catégorie)
+ * - Fiche article enrichie (résumé, pourquoi important, sources)
+ * - Cohérence visuelle avec les cartes du Daily Briefing
+ * Lit ?q=, ?from=, ?item= pour conserver le contexte du briefing.
  */
 export default function ActualitesPage() {
   const [searchParams] = useSearchParams();
@@ -26,6 +34,8 @@ export default function ActualitesPage() {
   const focusItem = searchParams.get('item') || undefined;
   const [search, setSearch] = useState(focusQuery);
   const [period, setPeriod] = useState<'24h' | '72h' | '7j' | 'all'>('72h');
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const focusRef = useRef<HTMLDivElement | null>(null);
 
   const maxAgeHours = period === '24h' ? 24 : period === '72h' ? 72 : period === '7j' ? 168 : undefined;
@@ -34,14 +44,20 @@ export default function ActualitesPage() {
   const filtered = useMemo(() => {
     if (!actualites) return [];
     const q = search.trim().toLowerCase();
-    if (!q) return actualites;
-    return actualites.filter(a =>
-      a.titre.toLowerCase().includes(q) ||
-      a.resume?.toLowerCase().includes(q) ||
-      a.source_nom?.toLowerCase().includes(q) ||
-      a.tags?.some(t => t.toLowerCase().includes(q))
-    );
-  }, [actualites, search]);
+    let list = actualites;
+    if (q) {
+      list = list.filter(a =>
+        a.titre.toLowerCase().includes(q) ||
+        a.resume?.toLowerCase().includes(q) ||
+        a.source_nom?.toLowerCase().includes(q) ||
+        a.tags?.some(t => t.toLowerCase().includes(q))
+      );
+    }
+    if (activeCategory) {
+      list = list.filter(a => (a.categorie || 'Autres') === activeCategory);
+    }
+    return list;
+  }, [actualites, search, activeCategory]);
 
   const focusMatches = useMemo(() => {
     if (!focusQuery || !actualites) return [];
@@ -51,7 +67,24 @@ export default function ActualitesPage() {
       .slice(0, 3);
   }, [actualites, focusQuery]);
 
-  // Top sources for "sources mises en avant"
+  // Dossiers thématiques (regroupement par catégorie)
+  const dossiersThematiques = useMemo(() => {
+    if (!actualites) return [] as { categorie: string; count: number; sample: Actualite }[];
+    const grouped = new Map<string, Actualite[]>();
+    actualites.forEach(a => {
+      const cat = a.categorie || 'Autres';
+      if (!grouped.has(cat)) grouped.set(cat, []);
+      grouped.get(cat)!.push(a);
+    });
+    return Array.from(grouped.entries())
+      .map(([categorie, items]) => ({
+        categorie,
+        count: items.length,
+        sample: items.sort((a, b) => (b.importance ?? 0) - (a.importance ?? 0))[0],
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [actualites]);
+
   const topSources = useMemo(() => {
     if (!actualites) return [];
     const counts = new Map<string, { name: string; count: number; lastUrl: string | null }>();
@@ -67,15 +100,11 @@ export default function ActualitesPage() {
 
   const highlights = useMemo(() => {
     if (!actualites) return [];
-    return [...actualites]
-      .filter(a => (a.importance ?? 0) >= 4)
-      .slice(0, 3);
+    return [...actualites].filter(a => (a.importance ?? 0) >= 4).slice(0, 3);
   }, [actualites]);
 
-  // Premier article correspondant au focus → cible du scroll
   const firstFocusId = focusMatches[0]?.id ?? null;
 
-  // Auto-scroll vers la première carte cible quand les données arrivent
   useEffect(() => {
     if (!firstFocusId) return;
     const t = setTimeout(() => {
@@ -83,6 +112,15 @@ export default function ActualitesPage() {
     }, 250);
     return () => clearTimeout(t);
   }, [firstFocusId]);
+
+  const toggleExpanded = (id: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   return (
     <div className="container max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
@@ -94,14 +132,12 @@ export default function ActualitesPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold leading-tight">Actualités</h1>
-            <p className="text-sm text-muted-foreground">Informations clés et sources de référence</p>
+            <p className="text-sm text-muted-foreground">
+              Titrologie, dossiers thématiques et sources de référence
+            </p>
           </div>
         </div>
-        <Button
-          variant="outline" size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-        >
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
           <RefreshCw className={cn('h-4 w-4 mr-2', isFetching && 'animate-spin')} />
           Rafraîchir
         </Button>
@@ -117,6 +153,9 @@ export default function ActualitesPage() {
           matchCount={focusMatches.length}
         />
       )}
+
+      {/* Titrologie du jour */}
+      <TitrologieWidget />
 
       {/* Highlights mis en avant */}
       {highlights.length > 0 && (
@@ -170,6 +209,55 @@ export default function ActualitesPage() {
         </section>
       )}
 
+      {/* Dossiers thématiques */}
+      {dossiersThematiques.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <FolderOpen className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Dossiers thématiques
+              </h2>
+            </div>
+            {activeCategory && (
+              <Button
+                variant="ghost" size="sm"
+                onClick={() => setActiveCategory(null)}
+                className="h-7 text-xs"
+              >
+                Effacer le filtre
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {dossiersThematiques.map(d => {
+              const isActive = activeCategory === d.categorie;
+              return (
+                <button
+                  key={d.categorie}
+                  onClick={() => setActiveCategory(isActive ? null : d.categorie)}
+                  className={cn(
+                    'group flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition-all',
+                    isActive
+                      ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                      : 'bg-card hover:bg-accent border-border text-foreground/80'
+                  )}
+                  aria-pressed={isActive}
+                >
+                  <span>{d.categorie}</span>
+                  <Badge
+                    variant={isActive ? 'secondary' : 'outline'}
+                    className="text-[10px] h-4 px-1.5 leading-none"
+                  >
+                    {d.count}
+                  </Badge>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* Filtres + recherche */}
       <div className="flex items-center gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
@@ -198,7 +286,7 @@ export default function ActualitesPage() {
       </div>
 
       <div className="grid lg:grid-cols-[1fr_280px] gap-6">
-        {/* Liste principale */}
+        {/* Liste principale — fiches enrichies */}
         <div className="space-y-3">
           {isLoading && (
             <>
@@ -230,6 +318,9 @@ export default function ActualitesPage() {
               a.resume?.toLowerCase().includes(focusQuery.toLowerCase())
             );
             const isScrollTarget = a.id === firstFocusId;
+            const isOpen = expanded.has(a.id);
+            const hasDetails = !!(a.pourquoi_important || a.impact_ansut || a.contenu);
+
             return (
               <Card
                 key={a.id}
@@ -241,10 +332,13 @@ export default function ActualitesPage() {
                 )}
               >
                 <CardContent className="p-4 space-y-2">
+                  {/* Métadonnées harmonisées avec Daily Briefing */}
                   <div className="flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground">
                     {a.categorie && <Badge variant="secondary" className="text-[10px]">{a.categorie}</Badge>}
                     {a.importance != null && a.importance >= 4 && (
-                      <Badge className="text-[10px] bg-signal-warning/20 text-signal-warning border-signal-warning/30">Important</Badge>
+                      <Badge className="text-[10px] bg-signal-warning/20 text-signal-warning border-signal-warning/30">
+                        Important
+                      </Badge>
                     )}
                     <span className={fresh.color}>{fresh.label}</span>
                     {a.date_publication && (
@@ -253,24 +347,122 @@ export default function ActualitesPage() {
                       </span>
                     )}
                   </div>
+
+                  {/* Titre */}
                   <h3 className="text-base font-semibold leading-snug">{a.titre}</h3>
+
+                  {/* Résumé */}
                   {a.resume && (
                     <p className="text-sm text-muted-foreground leading-relaxed">{a.resume}</p>
                   )}
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      <strong className="font-medium text-foreground/80">{a.source_nom || 'Source inconnue'}</strong>
-                    </span>
-                    {a.source_url && (
-                      <a
-                        href={a.source_url} target="_blank" rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline inline-flex items-center gap-1"
-                      >
-                        Lire la source <ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
-                  </div>
+
+                  {/* Tags */}
+                  {a.tags && a.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-0.5">
+                      {a.tags.slice(0, 4).map(t => (
+                        <Badge key={t} variant="outline" className="text-[10px] h-5 px-1.5 font-normal">
+                          {t}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Détails enrichis (collapsible) */}
+                  {hasDetails && (
+                    <Collapsible open={isOpen} onOpenChange={() => toggleExpanded(a.id)}>
+                      <CollapsibleContent className="space-y-3 pt-2 mt-2 border-t border-border/60">
+                        {a.pourquoi_important && (
+                          <div className="rounded-lg bg-primary/5 border border-primary/15 p-3">
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <Sparkles className="h-3.5 w-3.5 text-primary" />
+                              <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+                                Pourquoi c'est important
+                              </span>
+                            </div>
+                            <p className="text-sm text-foreground/90 leading-relaxed">
+                              {a.pourquoi_important}
+                            </p>
+                          </div>
+                        )}
+
+                        {a.impact_ansut && (
+                          <div className="rounded-lg bg-signal-warning/5 border border-signal-warning/20 p-3">
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <TrendingUp className="h-3.5 w-3.5 text-signal-warning" />
+                              <span className="text-[11px] font-semibold uppercase tracking-wider text-signal-warning">
+                                Impact ANSUT
+                              </span>
+                            </div>
+                            <p className="text-sm text-foreground/90 leading-relaxed">
+                              {a.impact_ansut}
+                            </p>
+                          </div>
+                        )}
+
+                        {a.contenu && a.contenu !== a.resume && (
+                          <div className="rounded-lg bg-muted/40 p-3">
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <Quote className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                Extrait
+                              </span>
+                            </div>
+                            <p className="text-sm text-foreground/80 leading-relaxed line-clamp-6">
+                              {a.contenu}
+                            </p>
+                          </div>
+                        )}
+                      </CollapsibleContent>
+
+                      <div className="flex items-center justify-between pt-1.5">
+                        <span className="text-xs text-muted-foreground inline-flex items-center gap-1 min-w-0">
+                          <Clock className="h-3 w-3 shrink-0" />
+                          <strong className="font-medium text-foreground/80 truncate">
+                            {a.source_nom || 'Source inconnue'}
+                          </strong>
+                        </span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-7 px-2 text-[11px]">
+                              {isOpen ? (
+                                <>Réduire <ChevronUp className="h-3 w-3 ml-0.5" /></>
+                              ) : (
+                                <>Détails <ChevronDown className="h-3 w-3 ml-0.5" /></>
+                              )}
+                            </Button>
+                          </CollapsibleTrigger>
+                          {a.source_url && (
+                            <a
+                              href={a.source_url} target="_blank" rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                            >
+                              Lire la source <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </Collapsible>
+                  )}
+
+                  {/* Footer simple si pas de détails */}
+                  {!hasDetails && (
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-xs text-muted-foreground inline-flex items-center gap-1 min-w-0">
+                        <Clock className="h-3 w-3 shrink-0" />
+                        <strong className="font-medium text-foreground/80 truncate">
+                          {a.source_nom || 'Source inconnue'}
+                        </strong>
+                      </span>
+                      {a.source_url && (
+                        <a
+                          href={a.source_url} target="_blank" rel="noopener noreferrer"
+                          className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                        >
+                          Lire la source <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );

@@ -16,6 +16,8 @@ export interface Actualite {
   categorie: string | null;
   tags: string[] | null;
   analyse_ia: string | null;
+  pourquoi_important: string | null;
+  impact_ansut: string | null;
   created_at: string;
 }
 
