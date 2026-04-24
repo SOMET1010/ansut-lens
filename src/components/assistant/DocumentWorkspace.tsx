@@ -38,6 +38,41 @@ export function DocumentWorkspace({
   onSuggestionClick 
 }: DocumentWorkspaceProps) {
   const [copied, setCopied] = useState(false);
+  const [exportState, setExportState] = useState<{
+    status: 'idle' | 'loading' | 'error';
+    format?: 'pdf' | 'docx';
+    error?: string;
+  }>({ status: 'idle' });
+
+  const formatLabel = (f?: 'pdf' | 'docx') => f === 'docx' ? 'DOCX' : 'PDF';
+
+  const runExport = async (format: 'pdf' | 'docx') => {
+    if (!document) return;
+    setExportState({ status: 'loading', format });
+    try {
+      // Yield to the event loop so the loading UI paints before heavy sync work
+      await new Promise(resolve => setTimeout(resolve, 50));
+      if (format === 'pdf') {
+        runExportPDF();
+      } else {
+        await runExportDOCX();
+      }
+      setExportState({ status: 'idle' });
+      toast.success(`${formatLabel(format)} téléchargé`);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Erreur inconnue';
+      console.error(`[Export ${format}] échec:`, e);
+      setExportState({ status: 'error', format, error: message });
+      toast.error(`Échec de l'export ${formatLabel(format)}`, { description: message });
+    }
+  };
+
+  const handleExportPDF = () => { void runExport('pdf'); };
+  const handleExportDOCX = () => { void runExport('docx'); };
+  const handleRetryExport = () => {
+    if (exportState.format) void runExport(exportState.format);
+  };
+  const dismissError = () => setExportState({ status: 'idle' });
 
   const handleCopy = async () => {
     if (!document) return;
