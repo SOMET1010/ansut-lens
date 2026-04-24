@@ -439,71 +439,89 @@ function QuickToolsSection() {
 }
 
 // --- Main Page ---
+import { useSearchParams } from 'react-router-dom';
+import ReseauxSociauxPage from '@/pages/ReseauxSociauxPage';
+
 export default function CommunicationPage() {
   const sujetSetterRef = useRef<((text: string) => void) | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') === 'social' ? 'social' : 'cockpit';
 
   const handleGeneratePost = useCallback((text: string) => {
     sujetSetterRef.current?.(text);
-    // Scroll to kit section
     document.getElementById('kit-communication')?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
+  const handleTabChange = (value: string) => {
+    setSearchParams(value === 'cockpit' ? {} : { tab: value });
+  };
+
   return (
-    <div className="w-full space-y-8">
+    <div className="w-full space-y-6">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Megaphone className="h-6 w-6 text-primary" />
-          Espace Communication
+          Communication 360°
         </h1>
         <p className="text-muted-foreground">
-          Votre bureau quotidien : briefing, génération de contenus et outils rapides
+          Cockpit unifié : briefing quotidien, génération de contenus & suivi des réseaux sociaux ANSUT
         </p>
       </div>
 
-      {/* E-Réputation & Médias Sociaux */}
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Globe className="h-5 w-5 text-primary" />
-            E-Réputation & Médias Sociaux
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Suivi quotidien de votre présence en ligne et couverture médiatique
-          </p>
-        </div>
-        <AnsutAccountsActivityWidget />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <MediaImpactWidget />
-          <SocialPulseWidget />
-          <ShareOfVoiceWidget />
-          <EchoResonanceWidget />
-        </div>
-      </div>
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="cockpit" className="gap-2">
+            <Megaphone className="h-4 w-4" />
+            Cockpit Communication
+          </TabsTrigger>
+          <TabsTrigger value="social" className="gap-2">
+            <Globe className="h-4 w-4" />
+            Réseaux Sociaux
+          </TabsTrigger>
+        </TabsList>
 
-      <Separator />
+        <TabsContent value="cockpit" className="space-y-8 mt-0">
+          {/* E-Réputation & Médias Sociaux */}
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Globe className="h-5 w-5 text-primary" />
+                E-Réputation & Médias Sociaux
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Suivi quotidien de votre présence en ligne et couverture médiatique
+              </p>
+            </div>
+            <AnsutAccountsActivityWidget />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <MediaImpactWidget />
+              <SocialPulseWidget />
+              <ShareOfVoiceWidget />
+              <EchoResonanceWidget />
+            </div>
+          </div>
 
-      {/* Analyseur de Réactions */}
-      <ReactionAnalyzerSection />
+          <Separator />
+          <ReactionAnalyzerSection />
+          <Separator />
+          <SujetsValorisationSection onGeneratePost={handleGeneratePost} />
+          <Separator />
+          <PostsAmplifierSection onPrepareResponse={handleGeneratePost} />
+          <Separator />
+          <MatinaleBriefingSection />
+          <MatinaleHistoryWidget />
+          <Separator />
+          <div id="kit-communication">
+            <ContentGeneratorSection sujetRef={sujetSetterRef} />
+          </div>
+          <Separator />
+          <QuickToolsSection />
+        </TabsContent>
 
-      <Separator />
-
-      {/* Sujets à Valoriser */}
-      <SujetsValorisationSection onGeneratePost={handleGeneratePost} />
-
-      <Separator />
-
-      {/* Posts à Amplifier */}
-      <PostsAmplifierSection onPrepareResponse={handleGeneratePost} />
-
-      <Separator />
-      <MatinaleBriefingSection />
-      <MatinaleHistoryWidget />
-      <Separator />
-      <div id="kit-communication">
-        <ContentGeneratorSection sujetRef={sujetSetterRef} />
-      </div>
-      <Separator />
-      <QuickToolsSection />
+        <TabsContent value="social" className="mt-0">
+          <ReseauxSociauxPage />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -1,9 +1,13 @@
 import { useState } from 'react';
-import { FileText, Copy, RefreshCw, X, Download, ChevronRight, Loader2, Check, Save } from 'lucide-react';
+import { FileText, Copy, RefreshCw, X, Download, ChevronRight, Loader2, Check, Save, FileType2, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
+import jsPDF from 'jspdf';
+import { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType } from 'docx';
+import { saveAs } from 'file-saver';
 
 export interface GeneratedDocument {
   title: string;
@@ -47,21 +51,110 @@ export function DocumentWorkspace({
     }
   };
 
+  const baseTitle = (document?.title || 'document').replace(/\.(docx|pdf|txt)$/i, '');
+
   const handleExportPDF = () => {
-    // For now, we'll just download as a text file
-    // PDF export would require additional library
     if (!document) return;
-    
-    const blob = new Blob([document.content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = window.document.createElement('a');
-    a.href = url;
-    a.download = document.title.replace('.docx', '.txt');
-    window.document.body.appendChild(a);
-    a.click();
-    window.document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success('Document téléchargé');
+    try {
+      const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 50;
+      const maxWidth = pageWidth - margin * 2;
+      let y = margin;
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(16);
+      const titleLines = pdf.splitTextToSize(document.title.replace(/\.(docx|pdf)$/i, ''), maxWidth);
+      pdf.text(titleLines, margin, y);
+      y += titleLines.length * 20 + 10;
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(11);
+
+      const lines = document.content.split('\n');
+      for (const raw of lines) {
+        if (y > pageHeight - margin) {
+          pdf.addPage();
+          y = margin;
+        }
+        const line = raw.trim();
+        if (!line) { y += 8; continue; }
+
+        const headingMatch = line.match(/^(#{1,3})\s+(.+)$/);
+        if (headingMatch) {
+          const level = headingMatch[1].length;
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(level === 1 ? 14 : level === 2 ? 12 : 11);
+          const wrapped = pdf.splitTextToSize(headingMatch[2], maxWidth);
+          pdf.text(wrapped, margin, y);
+          y += wrapped.length * 16 + 4;
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(11);
+          continue;
+        }
+
+        const cleaned = line.replace(/\*\*(.+?)\*\*/g, '$1').replace(/^[-*]\s+/, '• ');
+        const wrapped = pdf.splitTextToSize(cleaned, maxWidth);
+        pdf.text(wrapped, margin, y);
+        y += wrapped.length * 14 + 2;
+      }
+
+      pdf.save(`${baseTitle}.pdf`);
+      toast.success('PDF téléchargé');
+    } catch (e) {
+      console.error(e);
+      toast.error('Erreur lors de l\'export PDF');
+    }
+  };
+
+  const handleExportDOCX = async () => {
+    if (!document) return;
+    try {
+      const children: Paragraph[] = [
+        new Paragraph({
+          alignment: AlignmentType.LEFT,
+          heading: HeadingLevel.TITLE,
+          children: [new TextRun({ text: document.title.replace(/\.(docx|pdf)$/i, ''), bold: true, size: 32 })],
+        }),
+        new Paragraph({ text: '' }),
+      ];
+
+      const lines = document.content.split('\n');
+      for (const raw of lines) {
+        const line = raw.trim();
+        if (!line) { children.push(new Paragraph({ text: '' })); continue; }
+
+        const headingMatch = line.match(/^(#{1,3})\s+(.+)$/);
+        if (headingMatch) {
+          const level = headingMatch[1].length;
+          const headingLevel = level === 1 ? HeadingLevel.HEADING_1 : level === 2 ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_3;
+          children.push(new Paragraph({ heading: headingLevel, children: [new TextRun({ text: headingMatch[2], bold: true })] }));
+          continue;
+        }
+
+        const isList = /^[-*]\s+/.test(line);
+        const text = line.replace(/^[-*]\s+/, '');
+        const segments = text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
+        const runs = segments.map(seg => {
+          const bold = /^\*\*.+\*\*$/.test(seg);
+          return new TextRun({ text: bold ? seg.slice(2, -2) : seg, bold });
+        });
+
+        children.push(new Paragraph({
+          children: runs,
+          bullet: isList ? { level: 0 } : undefined,
+        }));
+      }
+
+      const doc = new Document({ sections: [{ children }] });
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, `${baseTitle}.docx`);
+      toast.success('DOCX téléchargé');
+    } catch (e) {
+      console.error(e);
+      toast.error('Erreur lors de l\'export DOCX');
+    }
   };
 
   const handleSaveDraft = () => {
@@ -192,14 +285,24 @@ export function DocumentWorkspace({
           <Save className="h-3.5 w-3.5 mr-1.5" />
           Enregistrer
         </Button>
-        <Button 
-          size="sm" 
-          onClick={handleExportPDF}
-          className="text-xs"
-        >
-          <Download className="h-3.5 w-3.5 mr-1.5" />
-          Exporter
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" className="text-xs">
+              <Download className="h-3.5 w-3.5 mr-1.5" />
+              Exporter
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleExportPDF} className="cursor-pointer">
+              <FileType2 className="h-4 w-4 mr-2" />
+              Exporter en PDF
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportDOCX} className="cursor-pointer">
+              <FileDown className="h-4 w-4 mr-2" />
+              Exporter en DOCX
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
