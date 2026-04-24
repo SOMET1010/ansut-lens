@@ -445,7 +445,36 @@ import ReseauxSociauxPage from '@/pages/ReseauxSociauxPage';
 export default function CommunicationPage() {
   const sujetSetterRef = useRef<((text: string) => void) | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') === 'social' ? 'social' : 'cockpit';
+  const VALID_TABS = ['cockpit', 'social'] as const;
+  type TabValue = typeof VALID_TABS[number];
+
+  const tabFromUrl = searchParams.get('tab');
+  const tabFromStorage = typeof window !== 'undefined' ? window.localStorage.getItem('communication.activeTab') : null;
+  const initialTab: TabValue = (VALID_TABS.includes(tabFromUrl as TabValue) ? tabFromUrl : VALID_TABS.includes(tabFromStorage as TabValue) ? tabFromStorage : 'cockpit') as TabValue;
+  const [activeTab, setActiveTab] = useState<TabValue>(initialTab);
+
+  // Sync URL → state (back/forward navigation)
+  React.useEffect(() => {
+    const urlTab = searchParams.get('tab');
+    if (VALID_TABS.includes(urlTab as TabValue) && urlTab !== activeTab) {
+      setActiveTab(urlTab as TabValue);
+    }
+  }, [searchParams]);
+
+  // Ensure URL reflects initial tab (so reload preserves it even if loaded from localStorage)
+  React.useEffect(() => {
+    const urlTab = searchParams.get('tab');
+    if (activeTab !== 'cockpit' && urlTab !== activeTab) {
+      const next = new URLSearchParams(searchParams);
+      next.set('tab', activeTab);
+      setSearchParams(next, { replace: true });
+    } else if (activeTab === 'cockpit' && urlTab) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('tab');
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const handleGeneratePost = useCallback((text: string) => {
     sujetSetterRef.current?.(text);
@@ -453,7 +482,11 @@ export default function CommunicationPage() {
   }, []);
 
   const handleTabChange = (value: string) => {
-    setSearchParams(value === 'cockpit' ? {} : { tab: value });
+    if (!VALID_TABS.includes(value as TabValue)) return;
+    setActiveTab(value as TabValue);
+    try {
+      window.localStorage.setItem('communication.activeTab', value);
+    } catch {}
   };
 
   return (
