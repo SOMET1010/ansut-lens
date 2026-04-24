@@ -372,25 +372,22 @@ export function DailyBriefing() {
                     !isCrise && 'text-muted-foreground hover:text-primary'
                   )}
                 >
-                  <Link to="/actualites?from=retenir" aria-label={`${sectionCta.retenir} des actualités`}>
+                  <Link to={buildBriefingDetailHref({ section: 'retenir', scope: 'section' })} aria-label={getBriefingCtaAriaLabel('retenir', 'section', isCrise)}>
                     {sectionCta.retenir} <ChevronRight className="h-3 w-3 ml-0.5" />
                   </Link>
                 </Button>
               </div>
               <ul className="space-y-2">
-                {parsed.retenir.map((item, i) => {
-                  const clean = item.replace(/\*\*/g, '').replace(/\[\d+\]/g, '').trim();
-                  return (
-                    <CitedItem
-                      key={i}
-                      text={item}
-                      sourcesMap={sourcesMap}
-                      dotClass="bg-primary"
-                      detailHref={`/actualites?q=${encodeURIComponent(clean.slice(0, 80))}&from=retenir&item=${encodeURIComponent(clean.slice(0, 120))}`}
-                      detailLabel="Voir l'actualité liée"
-                    />
-                  );
-                })}
+                {parsed.retenir.map((item, i) => (
+                  <CitedItem
+                    key={i}
+                    text={item}
+                    sourcesMap={sourcesMap}
+                    dotClass="bg-primary"
+                    detailHref={buildBriefingDetailHref({ section: 'retenir', scope: 'item', itemText: item })}
+                    detailLabel={getBriefingCtaAriaLabel('retenir', 'item', isCrise)}
+                  />
+                ))}
               </ul>
             </div>
           )}
