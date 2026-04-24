@@ -37,6 +37,9 @@ import type { Newsletter } from '@/types/newsletter';
 type NewsletterView = 'list' | 'generate' | 'preview' | 'edit' | 'studio';
 
 export default function DossiersPage() {
+  const [searchParams] = useSearchParams();
+  const focusQuery = searchParams.get('q') || '';
+
   const [selectedDossier, setSelectedDossier] = useState<Dossier | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingDossier, setEditingDossier] = useState<Dossier | null>(null);
@@ -51,6 +54,17 @@ export default function DossiersPage() {
   const { data: dossiers, isLoading: isLoadingDossiers } = useDossiers();
   const { data: newsletters, isLoading: isLoadingNewsletters } = useNewsletters();
   const { data: selectedNewsletter, refetch: refetchNewsletter } = useNewsletter(selectedNewsletterId || undefined);
+
+  // Compte des dossiers correspondant au focus venu du Daily Briefing
+  const focusMatchCount = useMemo(() => {
+    if (!focusQuery || !dossiers) return 0;
+    const q = focusQuery.toLowerCase();
+    return dossiers.filter(d =>
+      d.titre?.toLowerCase().includes(q) ||
+      d.resume?.toLowerCase().includes(q) ||
+      d.contenu?.toLowerCase().includes(q)
+    ).length;
+  }, [dossiers, focusQuery]);
 
   // Filter dossiers by status
   const brouillons = dossiers?.filter(d => d.statut === 'brouillon') || [];
