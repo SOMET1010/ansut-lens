@@ -169,6 +169,24 @@ export default function DossiersPage() {
         />
       )}
 
+      {/* Erreurs de chargement */}
+      {isErrorDossiers && (
+        <SectionEmptyState
+          variant="error"
+          title="Impossible de charger les dossiers"
+          description={toErrorMessage(errorDossiers)}
+          onRetry={() => refetchDossiers()}
+        />
+      )}
+      {isErrorNewsletters && (
+        <SectionEmptyState
+          variant="error"
+          title="Impossible de charger les newsletters"
+          description={toErrorMessage(errorNewsletters)}
+          onRetry={() => refetchNewsletters()}
+        />
+      )}
+
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
