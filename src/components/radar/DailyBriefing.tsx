@@ -404,25 +404,22 @@ export function DailyBriefing() {
                   <h3 className="text-xs font-bold uppercase tracking-wider text-primary">Recommandation ANSUT</h3>
                 </div>
                 <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-primary hover:bg-primary/10">
-                  <Link to="/dossiers?from=recommandation" aria-label="Voir le détail des recommandations ANSUT">
+                  <Link to={buildBriefingDetailHref({ section: 'recommandation', scope: 'section' })} aria-label={getBriefingCtaAriaLabel('recommandation', 'section', false)}>
                     Voir le détail <ChevronRight className="h-3 w-3 ml-0.5" />
                   </Link>
                 </Button>
               </div>
               <ul className="space-y-2">
-                {parsed.recommandation.map((item, i) => {
-                  const clean = item.replace(/\*\*/g, '').replace(/\[\d+\]/g, '').trim();
-                  return (
-                    <CitedItem
-                      key={i}
-                      text={item}
-                      sourcesMap={sourcesMap}
-                      dotClass="bg-primary"
-                      detailHref={`/dossiers?q=${encodeURIComponent(clean.slice(0, 80))}&from=recommandation&item=${encodeURIComponent(clean.slice(0, 120))}`}
-                      detailLabel="Ouvrir le dossier lié"
-                    />
-                  );
-                })}
+                {parsed.recommandation.map((item, i) => (
+                  <CitedItem
+                    key={i}
+                    text={item}
+                    sourcesMap={sourcesMap}
+                    dotClass="bg-primary"
+                    detailHref={buildBriefingDetailHref({ section: 'recommandation', scope: 'item', itemText: item })}
+                    detailLabel={getBriefingCtaAriaLabel('recommandation', 'item', false)}
+                  />
+                ))}
               </ul>
             </div>
           )}
