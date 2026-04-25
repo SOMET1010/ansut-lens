@@ -9,9 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { useDailyBriefing, type BriefingSource } from '@/hooks/useDailyBriefing';
-import { useViewMode } from '@/contexts/ViewModeContext';
+import { buildBriefingDetailHref, getBriefingCtaAriaLabel } from '@/components/radar/utils/briefingLinks';
 import { cn } from '@/lib/utils';
-import { buildBriefingDetailHref, getBriefingCtaAriaLabel } from './utils/briefingLinks';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -161,14 +160,13 @@ function parseBriefing(text: string): ParsedBriefing {
 }
 
 function CitedItem({
-  text, sourcesMap, dotClass, detailHref, detailLabel, intensity = 'normal',
+  text, sourcesMap, dotClass, detailHref, detailLabel,
 }: {
   text: string;
   sourcesMap: Map<number, BriefingSource>;
   dotClass: string;
   detailHref?: string;
   detailLabel?: string;
-  intensity?: 'normal' | 'crise';
 }) {
   return (
     <li className="group flex gap-2.5 text-sm leading-relaxed">
@@ -178,16 +176,10 @@ function CitedItem({
         {detailHref && (
           <Link
             to={detailHref}
-            aria-label={detailLabel || (intensity === 'crise' ? 'Agir maintenant' : 'Voir le détail')}
-            className={cn(
-              'ml-1.5 inline-flex items-center gap-0.5 align-baseline underline-offset-2 transition-opacity',
-              intensity === 'crise'
-                ? 'text-[11px] font-semibold text-destructive hover:text-destructive hover:underline opacity-100'
-                : 'text-[11px] font-medium text-primary/80 hover:text-primary hover:underline opacity-70 group-hover:opacity-100'
-            )}
+            aria-label={detailLabel || 'Voir le détail'}
+            className="ml-1.5 inline-flex items-center gap-0.5 text-[11px] font-medium text-primary/80 hover:text-primary hover:underline underline-offset-2 align-baseline opacity-70 group-hover:opacity-100 transition-opacity"
           >
-            {intensity === 'crise' ? 'Agir' : 'Voir le détail'}
-            <ChevronRight className="h-3 w-3" />
+            Voir le détail<ChevronRight className="h-3 w-3" />
           </Link>
         )}
       </span>
@@ -200,16 +192,6 @@ export function DailyBriefing() {
     briefing, generatedAt, alertsCount, sources,
     isLoading, isGenerating, error, regenerate,
   } = useDailyBriefing();
-
-  const { mode } = useViewMode();
-  const isCrise = mode === 'crise';
-
-  // Libellés et style adaptés au mode (Crise = action DG/CODIR prioritaire)
-  const sectionCta = {
-    retenir: isCrise ? 'Décider' : 'Voir le détail',
-    impact: isCrise ? 'Évaluer impact' : 'Voir le détail',
-    reco: isCrise ? 'Agir maintenant' : 'Voir le détail',
-  };
 
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
@@ -363,17 +345,9 @@ export function DailyBriefing() {
                   <Activity className="h-3.5 w-3.5 text-primary" />
                   <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">À retenir</h3>
                 </div>
-                <Button
-                  asChild
-                  variant={isCrise ? 'default' : 'ghost'}
-                  size="sm"
-                  className={cn(
-                    'h-7 px-2 text-[11px]',
-                    !isCrise && 'text-muted-foreground hover:text-primary'
-                  )}
-                >
-                  <Link to={buildBriefingDetailHref({ section: 'retenir', scope: 'section' })} aria-label={getBriefingCtaAriaLabel('retenir', 'section', isCrise)}>
-                    {sectionCta.retenir} <ChevronRight className="h-3 w-3 ml-0.5" />
+                <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-muted-foreground hover:text-primary">
+                  <Link to={buildBriefingDetailHref({ section: 'retenir', scope: 'section' })} aria-label={getBriefingCtaAriaLabel('retenir', 'section', false)}>
+                    Voir le détail <ChevronRight className="h-3 w-3 ml-0.5" />
                   </Link>
                 </Button>
               </div>
@@ -385,7 +359,7 @@ export function DailyBriefing() {
                     sourcesMap={sourcesMap}
                     dotClass="bg-primary"
                     detailHref={buildBriefingDetailHref({ section: 'retenir', scope: 'item', itemText: item })}
-                    detailLabel={getBriefingCtaAriaLabel('retenir', 'item', isCrise)}
+                    detailLabel={getBriefingCtaAriaLabel('retenir', 'item', false)}
                   />
                 ))}
               </ul>
@@ -400,17 +374,9 @@ export function DailyBriefing() {
                   <Target className="h-3.5 w-3.5 text-foreground/70" />
                   <h3 className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80">Impact Service Universel</h3>
                 </div>
-                <Button
-                  asChild
-                  variant={isCrise ? 'default' : 'ghost'}
-                  size="sm"
-                  className={cn(
-                    'h-7 px-2 text-[11px]',
-                    !isCrise && 'text-foreground/70 hover:text-foreground'
-                  )}
-                >
-                  <Link to={buildBriefingDetailHref({ section: 'impact', scope: 'section' })} aria-label={getBriefingCtaAriaLabel('impact', 'section', isCrise)}>
-                    {sectionCta.impact} <ChevronRight className="h-3 w-3 ml-0.5" />
+                <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-foreground/70 hover:text-foreground">
+                  <Link to={buildBriefingDetailHref({ section: 'impact', scope: 'section' })} aria-label={getBriefingCtaAriaLabel('impact', 'section', false)}>
+                    Voir le détail <ChevronRight className="h-3 w-3 ml-0.5" />
                   </Link>
                 </Button>
               </div>
@@ -422,7 +388,7 @@ export function DailyBriefing() {
                     sourcesMap={sourcesMap}
                     dotClass="bg-foreground/50"
                     detailHref={buildBriefingDetailHref({ section: 'impact', scope: 'item', itemText: item })}
-                    detailLabel={getBriefingCtaAriaLabel('impact', 'item', isCrise)}
+                    detailLabel={getBriefingCtaAriaLabel('impact', 'item', false)}
                   />
                 ))}
               </ul>
@@ -437,17 +403,9 @@ export function DailyBriefing() {
                   <Lightbulb className="h-4 w-4 text-primary" />
                   <h3 className="text-xs font-bold uppercase tracking-wider text-primary">Recommandation ANSUT</h3>
                 </div>
-                <Button
-                  asChild
-                  variant={isCrise ? 'destructive' : 'ghost'}
-                  size="sm"
-                  className={cn(
-                    'h-7 px-2 text-[11px] font-semibold',
-                    !isCrise && 'text-primary hover:bg-primary/10'
-                  )}
-                >
-                  <Link to={buildBriefingDetailHref({ section: 'recommandation', scope: 'section' })} aria-label={getBriefingCtaAriaLabel('recommandation', 'section', isCrise)}>
-                    {sectionCta.reco} <ChevronRight className="h-3 w-3 ml-0.5" />
+                <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-primary hover:bg-primary/10">
+                  <Link to={buildBriefingDetailHref({ section: 'recommandation', scope: 'section' })} aria-label={getBriefingCtaAriaLabel('recommandation', 'section', false)}>
+                    Voir le détail <ChevronRight className="h-3 w-3 ml-0.5" />
                   </Link>
                 </Button>
               </div>
@@ -459,8 +417,7 @@ export function DailyBriefing() {
                     sourcesMap={sourcesMap}
                     dotClass="bg-primary"
                     detailHref={buildBriefingDetailHref({ section: 'recommandation', scope: 'item', itemText: item })}
-                    detailLabel={getBriefingCtaAriaLabel('recommandation', 'item', isCrise)}
-                    intensity={isCrise ? 'crise' : 'normal'}
+                    detailLabel={getBriefingCtaAriaLabel('recommandation', 'item', false)}
                   />
                 ))}
               </ul>
