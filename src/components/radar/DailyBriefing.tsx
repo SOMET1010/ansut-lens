@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { useDailyBriefing, type BriefingSource } from '@/hooks/useDailyBriefing';
+import { buildBriefingDetailHref, getBriefingCtaAriaLabel } from '@/components/radar/utils/briefingLinks';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
