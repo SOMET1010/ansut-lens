@@ -23,6 +23,7 @@ import {
   INTERPRETATION_LABELS,
 } from '@/hooks/usePresenceDigitale';
 import { SPDIDashboardCompact } from '@/components/spdi';
+import { ActeurStrategicIntelligence } from './ActeurStrategicIntelligence';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Personnalite, CercleStrategique, Tendance } from '@/types';
 import { cn } from '@/lib/utils';
