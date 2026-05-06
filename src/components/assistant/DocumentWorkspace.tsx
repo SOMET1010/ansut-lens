@@ -241,16 +241,21 @@ export function DocumentWorkspace({
       };
 
       const drawCitationBadge = (label: string, variant: 'actu' | 'dossier' | 'num', id: string, cursorX: number, baselineY: number) => {
-        // Colors per variant
-        const palette = variant === 'actu'
-          ? { bg: [219, 234, 254], fg: [29, 78, 216], border: [191, 219, 254] } // blue
-          : variant === 'dossier'
-            ? { bg: [243, 232, 255], fg: [126, 34, 206], border: [221, 214, 254] } // purple
-            : { bg: [241, 245, 249], fg: [51, 65, 85], border: [203, 213, 225] }; // slate
+        const url = citationUrl(variant, id);
+        const broken = !url;
+        // Colors per variant — broken state uses muted/warning palette
+        const palette = broken
+          ? { bg: [254, 243, 199], fg: [146, 64, 14], border: [253, 224, 71] } // amber (lien manquant)
+          : variant === 'actu'
+            ? { bg: [219, 234, 254], fg: [29, 78, 216], border: [191, 219, 254] } // blue
+            : variant === 'dossier'
+              ? { bg: [243, 232, 255], fg: [126, 34, 206], border: [221, 214, 254] } // purple
+              : { bg: [241, 245, 249], fg: [51, 65, 85], border: [203, 213, 225] }; // slate
 
-        const prefix = variant === 'actu' ? '◆ ' : variant === 'dossier' ? '■ ' : '';
+        const prefix = broken ? '⚠ ' : variant === 'actu' ? '◆ ' : variant === 'dossier' ? '■ ' : '';
         const display = variant === 'num' ? label : (label.length > 40 ? label.slice(0, 39) + '…' : label);
-        const fullText = prefix + display;
+        const suffix = broken ? ' · lien manquant' : '';
+        const fullText = prefix + display + suffix;
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(variant === 'num' ? 8 : 9);
         const tw = pdf.getTextWidth(fullText);
@@ -261,11 +266,17 @@ export function DocumentWorkspace({
         pdf.setFillColor(palette.bg[0], palette.bg[1], palette.bg[2]);
         pdf.setDrawColor(palette.border[0], palette.border[1], palette.border[2]);
         pdf.setLineWidth(0.4);
+        // Dashed border for broken badges to mark non-clickable state
+        if (broken && typeof (pdf as any).setLineDashPattern === 'function') {
+          try { (pdf as any).setLineDashPattern([1.2, 1.2], 0); } catch { /* noop */ }
+        }
         pdf.roundedRect(cursorX, boxY, w, h, 2, 2, 'FD');
+        if (broken && typeof (pdf as any).setLineDashPattern === 'function') {
+          try { (pdf as any).setLineDashPattern([], 0); } catch { /* noop */ }
+        }
         pdf.setTextColor(palette.fg[0], palette.fg[1], palette.fg[2]);
         pdf.text(fullText, cursorX + padX, baselineY - 1);
-        // Clickable hyperlink area over the badge
-        const url = citationUrl(variant, id);
+        // Clickable hyperlink area only when URL exists
         if (url) {
           try { pdf.link(cursorX, boxY, w, h, { url }); } catch { /* noop */ }
         }
