@@ -325,6 +325,37 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Charger les règles de scoring configurables (admin/scoring)
+    const SCORING_DEFAULTS = {
+      threshold_rouge: 80,
+      threshold_orange: 60,
+      threshold_vert: 40,
+      pertinence_min: 30,
+      min_signaux_total: 8,
+      min_actions_immediates: 3,
+      min_signaux_faibles: 3,
+      min_synthese_60s: 2,
+      min_impact_projets: 2,
+      weight_press: 1,
+      weight_synthese: 1,
+      weight_pilier: 1,
+      weight_signaux_faibles: 1,
+    };
+    const scoring = { ...SCORING_DEFAULTS };
+    try {
+      const { data: scoringRows } = await supabase
+        .from('config_seuils')
+        .select('cle, valeur')
+        .like('cle', 'scoring_%');
+      for (const r of scoringRows || []) {
+        const k = (r.cle as string).replace(/^scoring_/, '');
+        if (k in scoring && typeof r.valeur === 'number') (scoring as any)[k] = r.valeur;
+      }
+    } catch (e) {
+      console.warn('[Matinale/Scoring] fallback defaults:', (e as Error).message);
+    }
+    console.log('[Matinale/Scoring] config:', scoring);
+
     // Fetch real-time news + titrologie from Perplexity (runs in parallel with DB queries)
     const perplexityPromise = fetchPerplexityNews();
     const titrologiePromise = fetchTitrologie();
@@ -854,8 +885,8 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
       };
     }
 
-    // 2) ACTIONS IMMÉDIATES — au moins 3 actions concrètes
-    if (!Array.isArray(matinale.actions_immediates) || matinale.actions_immediates.length < 3) {
+    // 2) ACTIONS IMMÉDIATES — minimum configurable
+    if (!Array.isArray(matinale.actions_immediates) || matinale.actions_immediates.length < scoring.min_actions_immediates) {
       const base = Array.isArray(matinale.actions_immediates) ? [...matinale.actions_immediates] : [];
       const fallbackActions = [
         { action: 'Cartographier les acteurs et positions sur le sujet du jour', responsable: 'Cellule Veille', delai: '24h' },
@@ -863,15 +894,16 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
         { action: 'Briefer la communication sur la posture publique ANSUT', responsable: 'Direction Communication', delai: '24h' },
         { action: 'Planifier un point de coordination interpiliers', responsable: 'Cabinet DG', delai: '72h' },
       ];
+      const target = Math.max(scoring.min_actions_immediates, base.length);
       for (const a of fallbackActions) {
-        if (base.length >= 4) break;
+        if (base.length >= Math.max(target, scoring.min_actions_immediates)) break;
         if (!base.some((x: any) => (x?.action || '').toLowerCase() === a.action.toLowerCase())) base.push(a);
       }
       matinale.actions_immediates = base.slice(0, 5);
     }
 
-    // 3) SIGNAUX FAIBLES — au moins 3 signaux sectoriels
-    if (!Array.isArray(matinale.signaux_faibles) || matinale.signaux_faibles.length < 3) {
+    // 3) SIGNAUX FAIBLES — minimum configurable
+    if (!Array.isArray(matinale.signaux_faibles) || matinale.signaux_faibles.length < scoring.min_signaux_faibles) {
       const base = Array.isArray(matinale.signaux_faibles) ? [...matinale.signaux_faibles] : [];
       const fallbackSignaux = [
         'Accélération régionale (UEMOA/CEDEAO) sur la mutualisation des infrastructures télécoms à surveiller.',
@@ -881,31 +913,34 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
         'Émergence de cadres réglementaires africains sur la cybersécurité et la protection des données.',
       ];
       for (const s of fallbackSignaux) {
-        if (base.length >= 5) break;
+        if (base.length >= Math.max(scoring.min_signaux_faibles + 2, 5)) break;
         if (!base.some((x: string) => (x || '').toLowerCase().includes(s.slice(0, 30).toLowerCase()))) base.push(s);
       }
       matinale.signaux_faibles = base.slice(0, 6);
     }
 
-    // 4) SYNTHÈSE 60S — au moins 2 entrées
-    if (!Array.isArray(matinale.synthese_60s) || matinale.synthese_60s.length < 2) {
+    // 4) SYNTHÈSE 60S — minimum configurable
+    if (!Array.isArray(matinale.synthese_60s) || matinale.synthese_60s.length < scoring.min_synthese_60s) {
       const base = Array.isArray(matinale.synthese_60s) ? [...matinale.synthese_60s] : [];
       if (base.length === 0) {
         base.push({ sujet: matinale.priorite_executive.titre, impact_ansut: (matinale.priorite_executive.impacts?.[0] || ''), niveau: matinale.priorite_executive.niveau || 'ORANGE' });
       }
-      base.push({ sujet: 'Dynamique sectorielle télécoms/numérique en Afrique de l\'Ouest', impact_ansut: 'À monitorer pour ajuster la feuille de route Service Universel.', niveau: 'BLEU' });
+      while (base.length < scoring.min_synthese_60s) {
+        base.push({ sujet: 'Dynamique sectorielle télécoms/numérique en Afrique de l\'Ouest', impact_ansut: 'À monitorer pour ajuster la feuille de route Service Universel.', niveau: 'BLEU' });
+      }
       matinale.synthese_60s = base.slice(0, 5);
     }
 
-    // 5) IMPACT PROJETS ANSUT — au moins 2 entrées
-    if (!Array.isArray(matinale.impact_projets_ansut) || matinale.impact_projets_ansut.length < 2) {
+    // 5) IMPACT PROJETS ANSUT — minimum configurable
+    if (!Array.isArray(matinale.impact_projets_ansut) || matinale.impact_projets_ansut.length < scoring.min_impact_projets) {
       const base = Array.isArray(matinale.impact_projets_ansut) ? [...matinale.impact_projets_ansut] : [];
       const fallbackImpacts = [
         { domaine: 'Connectivité & couverture zones blanches', impact: 'MOYEN', commentaire: 'Veille à instruire au regard de la trajectoire SUTA.' },
         { domaine: 'Inclusion numérique & usages', impact: 'FAIBLE', commentaire: 'Signaux faibles à consolider pour la prochaine revue.' },
+        { domaine: 'Régulation & souveraineté numérique', impact: 'MOYEN', commentaire: 'Cadre normatif régional à intégrer aux feuilles de route.' },
       ];
       for (const i of fallbackImpacts) {
-        if (base.length >= 3) break;
+        if (base.length >= Math.max(scoring.min_impact_projets + 1, 3)) break;
         base.push(i);
       }
       matinale.impact_projets_ansut = base.slice(0, 6);
@@ -1025,14 +1060,18 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     };
 
     const allUrlsTraceability = revue.map(r => r.url).filter(Boolean);
-    // Indicateur qualité = volume total de signaux exploités (presse + analyses + veille sectorielle)
-    const totalSignaux = revue.length
-      + (synthese?.length || 0)
-      + Object.values(veille || {}).reduce((s, arr: any) => s + (arr?.length || 0), 0)
-      + (signaux?.length || 0)
+    // Indicateur qualité pondéré (poids configurables via /admin/scoring)
+    const piliersCount = Object.values(veille || {}).reduce((s, arr: any) => s + (arr?.length || 0), 0);
+    const totalSignaux = Math.round(
+      revue.length * scoring.weight_press
+      + (synthese?.length || 0) * scoring.weight_synthese
+      + piliersCount * scoring.weight_pilier
+      + (signaux?.length || 0) * scoring.weight_signaux_faibles
       + (actions?.length || 0)
-      + (impactProjets?.length || 0);
-    const qualiteScore = totalSignaux >= 15 ? 'Bonne' : totalSignaux >= 8 ? 'Moyenne' : 'Faible';
+      + (impactProjets?.length || 0)
+    );
+    const seuilBonne = Math.max(scoring.min_signaux_total + 5, scoring.min_signaux_total * 1.6);
+    const qualiteScore = totalSignaux >= seuilBonne ? 'Bonne' : totalSignaux >= scoring.min_signaux_total ? 'Moyenne' : 'Faible';
     const qualiteColor = qualiteScore === 'Bonne' ? '#10b981' : qualiteScore === 'Moyenne' ? '#f59e0b' : '#ef4444';
     const prioColor = NIV_COLORS[prio?.niveau || 'BLEU'];
 

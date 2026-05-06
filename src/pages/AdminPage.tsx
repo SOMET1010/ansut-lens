@@ -1,4 +1,4 @@
-import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode, Radio, Activity, Newspaper, CalendarDays, Eye, FileText, Radar, Megaphone } from 'lucide-react';
+import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode, Radio, Activity, Newspaper, CalendarDays, Eye, FileText, Radar, Megaphone, Sliders } from 'lucide-react';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { SystemHealthWidget } from '@/components/admin/SystemHealthWidget';
 import { AdminNavCard } from '@/components/admin/AdminNavCard';
@@ -233,6 +233,16 @@ export default function AdminPage() {
               badgeVariant="info"
               subtitle="Pédagogie created_at vs date_publication, métriques de filtrage et paramètres."
               to="/admin/freshness"
+              loading={isLoading}
+            />
+            <AdminNavCard
+              color="orange"
+              icon={<Sliders size={24} />}
+              title="Règles de scoring"
+              badge="Intelligence exécutive"
+              badgeVariant="info"
+              subtitle="Seuils ROUGE/ORANGE/VERT/BLEU, pertinence min et volumes minimaux des livrables."
+              to="/admin/scoring"
               loading={isLoading}
             />
           </PermissionGate>
