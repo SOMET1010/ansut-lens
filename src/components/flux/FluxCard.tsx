@@ -89,25 +89,12 @@ export function FluxCard({ flux, actualitesCount = 0, newCount = 0, onEdit, onDe
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Query preview (style code) */}
-        <div className="bg-muted/50 rounded-lg p-3 font-mono text-xs border border-border/50 overflow-hidden">
-          <span className="text-muted-foreground select-none font-bold">QUERY: </span>
-          <span className="text-foreground break-all">{buildQueryString(flux)}</span>
-        </div>
-
         {/* Stats */}
         <div className="flex items-center gap-4 text-sm">
           <span className="flex items-center gap-1.5 text-muted-foreground">
             <Activity className="h-4 w-4" />
             <span className="font-bold text-foreground">{actualitesCount}</span> actus
           </span>
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            <Globe className="h-4 w-4" />
-            {flux.quadrants.length > 0 ? flux.quadrants.length : 'Tous'} quadrants
-          </span>
-          {flux.importance_min > 0 && (
-            <Badge variant="outline" className="text-xs">≥{flux.importance_min}%</Badge>
-          )}
         </div>
 
         {/* Keywords preview (compact) */}
@@ -134,7 +121,7 @@ export function FluxCard({ flux, actualitesCount = 0, newCount = 0, onEdit, onDe
             onClick={() => navigate(`/flux/${flux.id}`)}
           >
             <Eye className="h-4 w-4 mr-2" />
-            Voir le flux
+            Voir le résultat
           </Button>
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <Button 
