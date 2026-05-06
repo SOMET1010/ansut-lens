@@ -255,25 +255,48 @@ export function SocialCredentialsDialog({
     onSaved?.();
   };
 
+  const openRotateDialog = () => {
+    setRotateAction('rotate');
+    setRotateReason('');
+    setRotateDialogOpen(true);
+  };
+
   const handleRotate = async () => {
-    if (!confirm(`Confirmer la rotation de TOUS les secrets stockés pour ${connectorName} ?\n\nCela les supprimera et exigera une nouvelle saisie. Une trace est conservée dans le journal d'audit.`)) {
+    const reason = rotateReason.trim();
+    if (reason.length < 5) {
+      toast.error('Indiquez un motif (au moins 5 caractères) pour tracer cette action.');
       return;
     }
     const storedNames = Object.keys(stored).filter((n) => stored[n]);
+    setRotating(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const actionLabel = rotateAction === 'revoke' ? 'Révocation' : 'Rotation';
+    const noteText = `${actionLabel} — ${reason}`;
+
     if (storedNames.length === 0) {
-      toast.info('Aucun secret stocké à révoquer.');
-      setRotationMode(true);
+      // No stored secrets — log a single audit entry to track the intent
+      await supabase.from('social_api_audit_log').insert([{
+        connector: connectorId,
+        secret_name: '(aucun)',
+        action: rotateAction,
+        performed_by: user?.id ?? null,
+        notes: noteText,
+      }]);
+      setRotating(false);
+      setRotateDialogOpen(false);
+      setRotationMode(rotateAction === 'rotate');
+      toast.info('Aucun secret stocké — action consignée dans le journal.');
+      onSaved?.();
       return;
     }
-    const { data: { user } } = await supabase.auth.getUser();
-    // Insert audit entries first (action=rotate) for each stored secret
+
     await supabase.from('social_api_audit_log').insert(
       storedNames.map((name) => ({
         connector: connectorId,
         secret_name: name,
-        action: 'rotate' as const,
+        action: rotateAction,
         performed_by: user?.id ?? null,
-        notes: 'Révocation manuelle — nouvelle valeur attendue',
+        notes: noteText,
       })),
     );
     const { error } = await supabase
@@ -281,8 +304,9 @@ export function SocialCredentialsDialog({
       .delete()
       .eq('connector', connectorId)
       .in('secret_name', storedNames);
+    setRotating(false);
     if (error) {
-      toast.error('Rotation impossible : ' + error.message);
+      toast.error(`${actionLabel} impossible : ` + error.message);
       return;
     }
     const cleared: Record<string, boolean> = {};
@@ -291,8 +315,13 @@ export function SocialCredentialsDialog({
     const clearedVals: Record<string, string> = {};
     storedNames.forEach((n) => (clearedVals[n] = ''));
     setValues((p) => ({ ...p, ...clearedVals }));
-    setRotationMode(true);
-    toast.success(`${storedNames.length} secret(s) révoqué(s). Saisissez les nouvelles valeurs.`);
+    setRotationMode(rotateAction === 'rotate');
+    setRotateDialogOpen(false);
+    toast.success(
+      rotateAction === 'rotate'
+        ? `${storedNames.length} secret(s) révoqué(s). Saisissez les nouvelles valeurs.`
+        : `${storedNames.length} secret(s) révoqué(s) définitivement.`,
+    );
     onSaved?.();
   };
 
