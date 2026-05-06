@@ -633,6 +633,7 @@ export function SocialCredentialsDialog({
               </div>
             )}
           </div>
+        </div>
 
         <DialogFooter>
           <Button
