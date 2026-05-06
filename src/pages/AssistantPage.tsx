@@ -19,6 +19,8 @@ import { DocumentWorkspace, detectDocument, type GeneratedDocument } from '@/com
 import { FrameworkPanel } from '@/components/assistant/FrameworkPanel';
 import { WelcomeScreen } from '@/components/assistant/WelcomeScreen';
 import { useAuth } from '@/contexts/AuthContext';
+import { useResizableWidth } from '@/hooks/useResizableWidth';
+import { GripVertical } from 'lucide-react';
 
 const WELCOME_MESSAGE: ConversationMessage = {
   role: 'assistant',
