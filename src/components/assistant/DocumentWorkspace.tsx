@@ -537,7 +537,7 @@ export function DocumentWorkspace({
     const cleanTitle = document.title.replace(/\.(docx|pdf|txt)$/i, '');
     const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
-      const children: Paragraph[] = [
+      const children: (Paragraph | TableOfContents)[] = [
         new Paragraph({
           alignment: AlignmentType.LEFT,
           children: [new TextRun({ text: 'ANSUT • RADAR STRATÉGIQUE', bold: true, size: 18, color: '64748B' })],
