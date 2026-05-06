@@ -980,7 +980,6 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     };
 
     const groupedRevue: Record<string, typeof revue> = {};
-    const groupedRevue: Record<string, typeof revue> = {};
     for (const r of revue) { (groupedRevue[r.rubrique] ||= []).push(r); }
     const buildRubriqueBlock = (key: string) => {
       const items = groupedRevue[key];
