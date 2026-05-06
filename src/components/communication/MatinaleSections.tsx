@@ -507,6 +507,19 @@ export function MatinaleSections({ data, freshnessHours = 24 }: { data: any; fre
           </CardContent>
         </Card>
       )}
+
+      {drill && (
+        <MatinaleDrillDownModal
+          open={!!drill}
+          onOpenChange={(o) => !o && setDrill(null)}
+          title={drill.title}
+          description={drill.description}
+          keywords={drill.keywords}
+          highlightedTitles={drill.highlightedTitles}
+          analyzedItems={drill.analyzedItems}
+          freshnessHours={freshnessHours}
+        />
+      )}
     </div>
   );
 }
