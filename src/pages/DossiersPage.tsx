@@ -91,18 +91,18 @@ export default function DossiersPage() {
     return () => clearTimeout(t);
   }, [firstFocusDossier]);
 
+  // Garde-fou : le mode "crise" est définitivement désactivé sur cette page.
+  // Si le contexte global est en "crise", on force l'affichage en mode analyste.
+  const safeMode: 'dg' | 'analyste' = mode === 'dg' ? 'dg' : 'analyste';
+
   // Filter dossiers by status
   const brouillons = dossiers?.filter(d => d.statut === 'brouillon') || [];
   const publies = dossiers?.filter(d => d.statut === 'publie') || [];
-  
+
   // Get recent newsletters (both sent and drafts)
   const recentSentNewsletters = newsletters?.filter(n => n.statut === 'envoye').slice(0, 3) || [];
   const recentDraftNewsletters = newsletters?.filter(n => n.statut === 'brouillon' || n.statut === 'en_revision').slice(0, 2) || [];
 
-  // Filter for "Crise" mode - show only high-priority items (IA or acteurs categories as proxy for urgency)
-  const urgentDossiers = dossiers?.filter(d => 
-    d.categorie === 'ia' || d.categorie === 'acteurs'
-  ) || [];
 
   const handleEditDossier = (dossier: Dossier) => {
     setSelectedDossier(null);
@@ -131,7 +131,7 @@ export default function DossiersPage() {
     setNewsletterView('list');
   };
 
-  // Mode-specific titles and descriptions
+  // Mode-specific titles and descriptions (mode "crise" exclu de cette page)
   const modeConfig = {
     dg: {
       title: 'Statistiques',
@@ -145,16 +145,11 @@ export default function DossiersPage() {
       icon: FileText,
       label: 'PRODUCTION'
     },
-    crise: {
-      title: 'Studio Publication',
-      subtitle: 'Centralisez la production de vos Notes Stratégiques et Newsletters.',
-      icon: FileText,
-      label: 'PRODUCTION'
-    }
-  };
+  } as const;
 
-  const currentConfig = modeConfig[mode];
+  const currentConfig = modeConfig[safeMode];
   const ModeIcon = currentConfig.icon;
+
 
   return (
     <div className="w-full space-y-6 animate-fade-in">
@@ -191,7 +186,7 @@ export default function DossiersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3">
-            <ModeIcon className={`h-7 w-7 ${mode === 'crise' ? 'text-destructive' : 'text-primary'}`} />
+            <ModeIcon className="h-7 w-7 text-primary" />
             {currentConfig.title}
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -200,8 +195,8 @@ export default function DossiersPage() {
         </div>
         
         {/* Mode indicator badge */}
-        <Badge 
-          variant={mode === 'crise' ? 'destructive' : 'secondary'}
+        <Badge
+          variant="secondary"
           className="uppercase text-xs tracking-wider"
         >
           <Eye className="h-3 w-3 mr-1" />
@@ -210,7 +205,7 @@ export default function DossiersPage() {
       </div>
 
       {/* MODE: DG - Vue synthétique */}
-      {mode === 'dg' && (
+      {safeMode === 'dg' && (
         <div className="space-y-6">
           {/* Empty State when no published content */}
           {publies.length === 0 && !isLoadingDossiers && (
@@ -281,7 +276,7 @@ export default function DossiersPage() {
       )}
 
       {/* MODE: ANALYSTE - Vue complète avec onglets */}
-      {mode === 'analyste' && (
+      {safeMode === 'analyste' && (
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'notes' | 'newsletters')} className="space-y-6">
           <div className="flex items-center justify-between">
             <TabsList>
