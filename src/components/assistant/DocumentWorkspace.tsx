@@ -563,8 +563,22 @@ export function DocumentWorkspace({
           children: [new TextRun({ text: 'Confidentialité : Usage interne', size: 20, color: '475569' })],
           spacing: { after: 400 },
         }),
-        new Paragraph({ text: '' }),
-      ];
+        new Paragraph({ children: [new PageBreak()] }),
+        // Table of Contents (auto-built by Word from Heading 1-3)
+        new Paragraph({
+          children: [new TextRun({ text: 'Sommaire', bold: true, size: 32, color: '0F172A' })],
+          spacing: { after: 200 },
+          border: { bottom: { color: '3B82F6', space: 4, style: BorderStyle.SINGLE, size: 12 } },
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: 'Mettez à jour le sommaire dans Word (clic droit → Mettre à jour les champs).', italics: true, size: 16, color: '94A3B8' })],
+          spacing: { after: 200 },
+        }),
+        new TableOfContents('Sommaire', {
+          hyperlink: true,
+          headingStyleRange: '1-3',
+        }),
+        new Paragraph({ children: [new PageBreak()] }),
 
       const APP_BASE = 'https://ansut-lens.lovable.app';
       // Parse numeric reference URLs once for the whole document
