@@ -14,6 +14,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { SocialCredentialsDialog } from '@/components/admin/SocialCredentialsDialog';
+import { SocialApiAuditLog } from '@/components/admin/SocialApiAuditLog';
 import {
   Card,
   CardContent,
@@ -295,6 +296,8 @@ export default function ConnecteursSociauxPage() {
         </div>
       )}
 
+      <SocialApiAuditLog refreshKey={generatedAt ? new Date(generatedAt).getTime() : 0} />
+
       <Card className="bg-muted/30 border-dashed">
         <CardHeader>
           <CardTitle className="text-base">🔐 Gouvernance des accès</CardTitle>
@@ -302,11 +305,8 @@ export default function ConnecteursSociauxPage() {
         <CardContent className="text-sm text-muted-foreground space-y-1">
           <p>• Jamais de mot de passe partagé d'un compte institutionnel.</p>
           <p>• Toujours via OAuth ou Bearer token applicatif.</p>
-          <p>• Rotation des secrets recommandée tous les 90 jours.</p>
-          <p>
-            • Tout ajout/rotation se fait depuis <strong>Lovable Cloud → Secrets</strong>,
-            jamais en clair dans le code.
-          </p>
+          <p>• Rotation des secrets recommandée tous les 90 jours (bouton « Régénérer / révoquer » dans chaque connecteur).</p>
+          <p>• Toute action est tracée dans le journal d'audit ci-dessus (jamais la valeur en clair).</p>
         </CardContent>
       </Card>
 

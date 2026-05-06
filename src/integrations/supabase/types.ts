@@ -1703,6 +1703,45 @@ export type Database = {
           },
         ]
       }
+      social_api_audit_log: {
+        Row: {
+          action: string
+          connector: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          notes: string | null
+          performed_by: string | null
+          performed_by_email: string | null
+          secret_name: string
+          value_preview: string | null
+        }
+        Insert: {
+          action: string
+          connector: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          notes?: string | null
+          performed_by?: string | null
+          performed_by_email?: string | null
+          secret_name: string
+          value_preview?: string | null
+        }
+        Update: {
+          action?: string
+          connector?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          notes?: string | null
+          performed_by?: string | null
+          performed_by_email?: string | null
+          secret_name?: string
+          value_preview?: string | null
+        }
+        Relationships: []
+      }
       social_api_config: {
         Row: {
           config: Json | null

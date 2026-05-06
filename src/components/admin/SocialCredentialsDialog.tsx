@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, KeyRound, Eye, EyeOff, Save, Trash2, Info, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, KeyRound, Eye, EyeOff, Save, Trash2, Info, AlertCircle, CheckCircle2, RotateCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import {
@@ -150,6 +150,7 @@ export function SocialCredentialsDialog({
   const [reveal, setReveal] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [rotationMode, setRotationMode] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -248,6 +249,47 @@ export function SocialCredentialsDialog({
     onSaved?.();
   };
 
+  const handleRotate = async () => {
+    if (!confirm(`Confirmer la rotation de TOUS les secrets stockés pour ${connectorName} ?\n\nCela les supprimera et exigera une nouvelle saisie. Une trace est conservée dans le journal d'audit.`)) {
+      return;
+    }
+    const storedNames = Object.keys(stored).filter((n) => stored[n]);
+    if (storedNames.length === 0) {
+      toast.info('Aucun secret stocké à révoquer.');
+      setRotationMode(true);
+      return;
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    // Insert audit entries first (action=rotate) for each stored secret
+    await supabase.from('social_api_audit_log').insert(
+      storedNames.map((name) => ({
+        connector: connectorId,
+        secret_name: name,
+        action: 'rotate' as const,
+        performed_by: user?.id ?? null,
+        notes: 'Révocation manuelle — nouvelle valeur attendue',
+      })),
+    );
+    const { error } = await supabase
+      .from('social_api_credentials')
+      .delete()
+      .eq('connector', connectorId)
+      .in('secret_name', storedNames);
+    if (error) {
+      toast.error('Rotation impossible : ' + error.message);
+      return;
+    }
+    const cleared: Record<string, boolean> = {};
+    storedNames.forEach((n) => (cleared[n] = false));
+    setStored((p) => ({ ...p, ...cleared }));
+    const clearedVals: Record<string, string> = {};
+    storedNames.forEach((n) => (clearedVals[n] = ''));
+    setValues((p) => ({ ...p, ...clearedVals }));
+    setRotationMode(true);
+    toast.success(`${storedNames.length} secret(s) révoqué(s). Saisissez les nouvelles valeurs.`);
+    onSaved?.();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
@@ -271,6 +313,31 @@ export function SocialCredentialsDialog({
             <div>Si une valeur ne passe pas la validation, c'est qu'elle a probablement été tronquée à la copie. Recopiez-la depuis le portail développeur.</div>
           </div>
         </div>
+
+        {Object.values(stored).some(Boolean) && (
+          <div className="flex items-center justify-between rounded-md border border-purple-200 bg-purple-50 px-3 py-2 text-xs text-purple-900">
+            <div className="flex items-center gap-2">
+              <RotateCw className="h-4 w-4" />
+              <span>Rotation périodique recommandée tous les 90 jours.</span>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs border-purple-300"
+              onClick={handleRotate}
+            >
+              <RotateCw className="h-3 w-3 mr-1" />
+              Régénérer / révoquer
+            </Button>
+          </div>
+        )}
+
+        {rotationMode && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            🔄 Mode rotation actif — saisissez les <strong>nouvelles</strong> valeurs ci-dessous puis cliquez sur Enregistrer.
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-8">
