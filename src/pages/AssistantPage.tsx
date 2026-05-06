@@ -17,11 +17,12 @@ import { ChatMessage } from '@/components/assistant/ChatMessage';
 import { ModeSelector, type AssistantMode } from '@/components/assistant/ModeSelector';
 import { DocumentWorkspace, detectDocument, type GeneratedDocument } from '@/components/assistant/DocumentWorkspace';
 import { FrameworkPanel } from '@/components/assistant/FrameworkPanel';
+import { WelcomeScreen } from '@/components/assistant/WelcomeScreen';
 import { useAuth } from '@/contexts/AuthContext';
 
-const WELCOME_MESSAGE: ConversationMessage = { 
-  role: 'assistant', 
-  content: 'Bonjour ! Je suis **SUTA**, votre assistant IA spécialisé dans l\'analyse télécom. J\'ai accès aux actualités récentes et dossiers stratégiques.\n\nChoisissez un mode ci-dessus selon votre besoin :\n- **Recherche** : trouver rapidement des informations\n- **Rédaction** : générer des notes et briefings\n- **Analyse** : obtenir des analyses chiffrées' 
+const WELCOME_MESSAGE: ConversationMessage = {
+  role: 'assistant',
+  content: '__WELCOME__',
 };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/assistant-ia`;
