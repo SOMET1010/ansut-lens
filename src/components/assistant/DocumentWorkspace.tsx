@@ -698,34 +698,58 @@ export function DocumentWorkspace({
         }));
       }
 
+      const marginMm = opts.margin === 'narrow' ? 12.5 : opts.margin === 'wide' ? 35 : 25;
+      const marginTwip = convertMillimetersToTwip(marginMm);
+      const pageSize = opts.pageFormat === 'letter'
+        ? { width: 12240, height: 15840 }
+        : { width: 11906, height: 16838 };
+      const customHeader = opts.headerText.trim();
+      const customFooter = opts.footerText.trim();
+
+      const footerRuns: TextRun[] = [];
+      if (customFooter) footerRuns.push(new TextRun({ text: customFooter, size: 16, color: '94A3B8' }));
+      if (opts.showPageNumbers) {
+        footerRuns.push(new TextRun({ text: customFooter ? '  •  Page ' : 'Page ', size: 16, color: '94A3B8' }));
+        footerRuns.push(new TextRun({ children: [PageNumber.CURRENT], size: 16, color: '94A3B8' }));
+        footerRuns.push(new TextRun({ text: ' / ', size: 16, color: '94A3B8' }));
+        footerRuns.push(new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 16, color: '94A3B8' }));
+      }
+
+      if (opts.watermarkEnabled && opts.watermarkText.trim()) {
+        children.unshift(new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({ text: opts.watermarkText.toUpperCase(), bold: true, size: 144, color: 'E2E8F0' })],
+          spacing: { after: 200 },
+        }));
+      }
+
       const doc = new Document({
         sections: [{
+          properties: {
+            page: {
+              size: pageSize,
+              margin: { top: marginTwip, right: marginTwip, bottom: marginTwip, left: marginTwip },
+            },
+          },
           headers: {
             default: new Header({
               children: [new Paragraph({
                 alignment: AlignmentType.RIGHT,
-                children: [new TextRun({ text: `${cleanTitle} — ANSUT`, size: 16, color: '94A3B8' })],
+                children: [new TextRun({ text: customHeader || `${cleanTitle} — ANSUT`, size: 16, color: '94A3B8' })],
               })],
             }),
           },
           footers: {
             default: new Footer({
-              children: [new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                  new TextRun({ text: 'ANSUT — Document confidentiel  •  Page ', size: 16, color: '94A3B8' }),
-                  new TextRun({ children: [PageNumber.CURRENT], size: 16, color: '94A3B8' }),
-                  new TextRun({ text: ' / ', size: 16, color: '94A3B8' }),
-                  new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 16, color: '94A3B8' }),
-                ],
-              })],
+              children: [new Paragraph({ alignment: AlignmentType.CENTER, children: footerRuns })],
             }),
           },
           children,
         }],
       });
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, `${baseTitle}.docx`);
+    const safeName = (opts.filename || baseTitle).replace(/\.(pdf|docx|txt)$/i, '').trim() || baseTitle;
+    saveAs(blob, `${safeName}.docx`);
   };
 
   const handleSaveDraft = () => {
