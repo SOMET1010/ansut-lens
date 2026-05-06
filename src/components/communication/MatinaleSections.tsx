@@ -169,7 +169,10 @@ export function MatinaleSections({ data, freshnessHours = 24, loading = false, e
         onRetry={onRetry}
         emptyHint="Aucun sujet n'a passé le seuil de pertinence sur la fenêtre sélectionnée."
         headerExtras={synthese.length > 0 && (
-          <Badge variant="secondary" className="ml-auto text-xs">{synthese.length} sujets</Badge>
+          <div className="ml-auto flex items-center gap-1.5">
+            <Badge variant="secondary" className="text-xs">{synthese.length} sujets</Badge>
+            <SourceCountBadge data={safe} section="synthese_60s" freshnessHours={freshnessHours} enabled={synthese.length > 0} />
+          </div>
         )}
         rightActions={synthese.length > 0 ? drillBtn({
           title: 'Synthèse 60 secondes',
