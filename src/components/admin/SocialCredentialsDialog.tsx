@@ -318,7 +318,11 @@ export function SocialCredentialsDialog({
       setRotating(false);
       setRotateDialogOpen(false);
       setRotationMode(rotateAction === 'rotate');
-      toast.info('Aucun secret stocké — action consignée dans le journal.');
+      setRotateReason('');
+      toast.info('Aucun secret stocké — action consignée dans le journal.', {
+        description: `Motif enregistré : « ${reason} »`,
+        duration: 8000,
+      });
       onSaved?.();
       return;
     }
