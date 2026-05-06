@@ -780,6 +780,73 @@ export function DocumentWorkspace({
         }));
       }
 
+      // ===== APPENDIX: Liens manquants =====
+      const docxCitations = collectCitations(document.content);
+      if (docxCitations.length > 0) {
+        children.push(new Paragraph({ children: [new PageBreak()] }));
+        children.push(new Paragraph({
+          heading: HeadingLevel.HEADING_1,
+          children: [new TextRun({ text: 'Annexe — Sources citées', bold: true })],
+        }));
+
+        const brokenDocx = docxCitations.filter((c) => c.kind === 'num' && !c.url);
+        const validDocx = docxCitations.filter((c) => !(c.kind === 'num' && !c.url));
+
+        const renderRow = (c: typeof docxCitations[number]) => {
+          const isBroken = c.kind === 'num' && !c.url;
+          const tagText = c.kind === 'actu'
+            ? 'ACTU'
+            : c.kind === 'dossier'
+              ? 'DOSSIER'
+              : `[${(c as { num: string }).num}]`;
+          const tagColor = c.kind === 'actu' ? '1D4ED8' : c.kind === 'dossier' ? '7E22CE' : isBroken ? '92400E' : '334155';
+
+          children.push(new Paragraph({
+            spacing: { before: 80, after: 20 },
+            children: [
+              new TextRun({ text: `${tagText}  `, bold: true, color: tagColor, size: 18 }),
+              new TextRun({ text: c.label, size: 20 }),
+            ],
+          }));
+          if ('url' in c && c.url) {
+            children.push(new Paragraph({
+              spacing: { after: 80 },
+              children: [
+                new ExternalHyperlink({
+                  link: c.url,
+                  children: [new TextRun({ text: c.url, style: 'Hyperlink', size: 16 })],
+                }),
+              ],
+            }));
+          } else {
+            children.push(new Paragraph({
+              spacing: { after: 80 },
+              children: [new TextRun({
+                text: '⚠ Lien manquant — source à compléter',
+                italics: true,
+                color: '92400E',
+                size: 16,
+              })],
+            }));
+          }
+        };
+
+        if (brokenDocx.length > 0) {
+          children.push(new Paragraph({
+            heading: HeadingLevel.HEADING_2,
+            children: [new TextRun({ text: `Liens manquants (${brokenDocx.length})`, bold: true, color: '92400E' })],
+          }));
+          for (const c of brokenDocx) renderRow(c);
+        }
+        if (validDocx.length > 0) {
+          children.push(new Paragraph({
+            heading: HeadingLevel.HEADING_2,
+            children: [new TextRun({ text: `Sources référencées (${validDocx.length})`, bold: true })],
+          }));
+          for (const c of validDocx) renderRow(c);
+        }
+      }
+
       const marginMm = opts.margin === 'narrow' ? 12.5 : opts.margin === 'wide' ? 35 : 25;
       const marginTwip = convertMillimetersToTwip(marginMm);
       const pageSize = opts.pageFormat === 'letter'
