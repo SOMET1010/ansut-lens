@@ -577,13 +577,14 @@ export function SocialCredentialsDialog({
 
           <div className="space-y-1.5">
             <Label htmlFor="rotate-reason" className="text-sm">
-              Motif <span className="text-red-600">*</span>
+              {REASON_MESSAGES.fieldLabel}{' '}
+              <span className="text-red-600">{REASON_MESSAGES.fieldRequiredMark}</span>
             </Label>
             <Textarea
               id="rotate-reason"
               value={rotateReason}
               onChange={(e) => setRotateReason(e.target.value.slice(0, 500))}
-              placeholder="Ex : Token compromis, rotation périodique trimestrielle, départ d'un agent…"
+              placeholder={REASON_MESSAGES.placeholder}
               rows={3}
               maxLength={500}
               className={
@@ -596,13 +597,11 @@ export function SocialCredentialsDialog({
             />
             <div className="flex items-center justify-between gap-2 text-[11px]">
               <span className={reasonError ? 'text-red-700' : 'text-muted-foreground'}>
-                {reasonError ??
-                  'Min. 10 caractères, texte explicatif. Espaces et caractères de contrôle nettoyés avant enregistrement.'}
+                {reasonError ?? REASON_MESSAGES.helper}
               </span>
               <span className="text-muted-foreground tabular-nums shrink-0">
                 {cleanedReasonPreview.length}/500
               </span>
-            </div>
             </div>
 
             {/* Live preview of the cleaned reason that will actually be saved */}
@@ -617,20 +616,18 @@ export function SocialCredentialsDialog({
               >
                 <div className="flex items-center gap-1 font-medium">
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  Version qui sera enregistrée dans le journal d'audit
+                  {REASON_MESSAGES.previewTitle}
                 </div>
                 {cleanedReasonPreview.length > 0 ? (
                   <div className="font-mono break-words whitespace-pre-wrap">
                     « {cleanedReasonPreview} »
                   </div>
                 ) : (
-                  <div className="italic">
-                    (vide après nettoyage — saisissez un texte explicatif)
-                  </div>
+                  <div className="italic">{REASON_MESSAGES.previewEmpty}</div>
                 )}
                 {cleanedReasonPreview !== rotateReason && (
                   <div className="text-[10px] opacity-80">
-                    Espaces multiples, sauts de ligne et caractères de contrôle ont été nettoyés.
+                    {REASON_MESSAGES.previewCleanedNote}
                   </div>
                 )}
               </div>
