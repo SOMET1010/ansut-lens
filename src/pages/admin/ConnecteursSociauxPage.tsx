@@ -296,7 +296,7 @@ export default function ConnecteursSociauxPage() {
         </div>
       )}
 
-      <SocialApiAuditLog refreshKey={generatedAt ?? ''} />
+      <SocialApiAuditLog refreshKey={generatedAt ? new Date(generatedAt).getTime() : 0} />
 
       <Card className="bg-muted/30 border-dashed">
         <CardHeader>
