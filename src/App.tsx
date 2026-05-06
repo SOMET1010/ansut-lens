@@ -156,6 +156,7 @@ const App = () => (
                           <Route element={<PermissionRoute permission="manage_cron_jobs" />}>
                             <Route path="/admin/cron-jobs" element={<CronJobsPage />} />
                             <Route path="/admin/spdi-status" element={<SpdiStatusPage />} />
+                            <Route path="/admin/connecteurs-sociaux" element={<ConnecteursSociauxPage />} />
                           </Route>
                           
                           <Route element={<PermissionRoute permission="manage_newsletters" />}>
