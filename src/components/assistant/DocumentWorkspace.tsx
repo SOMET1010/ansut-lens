@@ -95,12 +95,15 @@ export function DocumentWorkspace({
   const docTypeLabel = (t?: 'note' | 'briefing' | 'rapport') =>
     t === 'briefing' ? 'Briefing' : t === 'rapport' ? 'Rapport' : 'Note de synthèse';
 
-  const runExportPDF = () => {
+  const runExportPDF = (opts: ExportOptions) => {
     if (!document) throw new Error('Aucun document à exporter');
-    const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pdf = new jsPDF({ unit: 'pt', format: opts.pageFormat === 'letter' ? 'letter' : 'a4' });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 50;
+      const marginByPreset = { narrow: 36, normal: 50, wide: 72 };
+      const margin = marginByPreset[opts.margin];
+      const customHeader = opts.headerText.trim();
+      const customFooter = opts.footerText.trim();
       const maxWidth = pageWidth - margin * 2;
       const cleanTitle = document.title.replace(/\.(docx|pdf|txt)$/i, '');
       const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
