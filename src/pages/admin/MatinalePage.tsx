@@ -51,7 +51,7 @@ export default function MatinalePage() {
   const send = useMatinaleSend();
   const { data: history, isLoading: historyLoading } = useMatinaleHistory();
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
-  const [matinaleData, setMatinaleData] = useState<any>(null);
+  const [matinaleData, setMatinaleData] = useState<import('@/types/matinale').MatinaleData | null>(null);
   const [freshnessMeta, setFreshnessMeta] = useState<any>(null);
   const [freshness, setFreshness] = useState<FreshnessWindow>(24);
 
