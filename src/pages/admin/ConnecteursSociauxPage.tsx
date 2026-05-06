@@ -9,9 +9,11 @@ import {
   Loader2,
   RefreshCw,
   ShieldCheck,
+  KeyRound,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { SocialCredentialsDialog } from '@/components/admin/SocialCredentialsDialog';
 import {
   Card,
   CardContent,
@@ -69,6 +71,7 @@ export default function ConnecteursSociauxPage() {
   const [report, setReport] = useState<ConnectorReport[]>([]);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<ConnectorReport | null>(null);
 
   const load = async () => {
     setError(null);
@@ -268,6 +271,16 @@ export default function ConnecteursSociauxPage() {
                       </span>
                     )}
                   </div>
+
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="w-full"
+                    onClick={() => setEditing(c)}
+                  >
+                    <KeyRound className="h-3.5 w-3.5 mr-2" />
+                    Configurer les secrets
+                  </Button>
                 </CardContent>
               </Card>
             );
@@ -289,6 +302,21 @@ export default function ConnecteursSociauxPage() {
           </p>
         </CardContent>
       </Card>
+
+      {editing && (
+        <SocialCredentialsDialog
+          open={!!editing}
+          onOpenChange={(v) => !v && setEditing(null)}
+          connectorId={editing.id}
+          connectorName={editing.name}
+          secrets={editing.secrets.map((s) => ({
+            name: s.name,
+            label: s.label,
+            required: s.required,
+          }))}
+          onSaved={load}
+        />
+      )}
     </div>
   );
 }

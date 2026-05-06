@@ -1739,6 +1739,39 @@ export type Database = {
         }
         Relationships: []
       }
+      social_api_credentials: {
+        Row: {
+          connector: string
+          created_at: string
+          description: string | null
+          id: string
+          secret_name: string
+          secret_value: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          connector: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          secret_name: string
+          secret_value: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          connector?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          secret_name?: string
+          secret_value?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       social_insights: {
         Row: {
           alerte_generee: boolean | null
