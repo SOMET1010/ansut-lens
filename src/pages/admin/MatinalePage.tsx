@@ -13,8 +13,10 @@ import {
 import {
   Newspaper, Send, Eye, Loader2, Target, MessageSquare,
   CheckCircle2, XCircle, Clock, ArrowLeft, CalendarClock, Info,
-  FileText, ListChecks, Building2, AlertTriangle, Lightbulb, BarChart3, ExternalLink,
+  FileText, ListChecks, Building2, AlertTriangle, Lightbulb, BarChart3, ExternalLink, Download,
 } from 'lucide-react';
+import { exportMatinalePDF } from '@/utils/exportMatinalePDF';
+import { toast } from 'sonner';
 
 const RUBRIQUE_LABELS: Record<string, string> = {
   telecom_numerique: 'Télécom / Numérique',
@@ -66,6 +68,16 @@ export default function MatinalePage() {
     await send.mutateAsync({ freshnessHours: freshness });
   };
 
+  const handleExportPDF = () => {
+    if (!matinaleData) return;
+    try {
+      exportMatinalePDF(matinaleData, freshness);
+      toast.success('PDF exporté');
+    } catch (e: any) {
+      toast.error(`Erreur export PDF : ${e?.message || e}`);
+    }
+  };
+
   const freshnessLabel = freshness === 24 ? '24 dernières heures' : freshness === 48 ? '48 dernières heures' : '7 derniers jours';
 
   return (
@@ -92,6 +104,15 @@ export default function MatinalePage() {
           >
             {preview.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Eye className="h-4 w-4 mr-2" />}
             Prévisualiser
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleExportPDF}
+            disabled={!matinaleData}
+            title={!matinaleData ? 'Générez d\'abord un aperçu' : 'Exporter le briefing en PDF'}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Exporter PDF
           </Button>
           <Button
             onClick={handleSend}
