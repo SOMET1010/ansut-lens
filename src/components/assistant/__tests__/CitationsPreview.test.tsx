@@ -61,14 +61,55 @@ describe('CitationsPreview — broken badges stay non-clickable', () => {
   }
 
   it('marks broken badges with aria-disabled and a tooltip', () => {
-    render(<CitationsPreview content="Référence orpheline [99]." />);
+    const { container } = render(<CitationsPreview content="Référence orpheline [99]." />);
     fireEvent.click(screen.getByRole("button", { name: /aperçu des liens/i }));
-    const broken = screen
-      .getAllByText((_, el) => !!el && /lien manquant/i.test(el.textContent || ''))
-      .find((el) => el.tagName.toLowerCase() !== 'span' || el.textContent?.includes('[99]'));
+    const broken = container.querySelector('[data-broken-citation="99"]') as HTMLElement | null;
     expect(broken).toBeTruthy();
-    // The container badge should not be inside an anchor.
+    expect(broken!.getAttribute('aria-disabled')).toBe('true');
+    expect(broken!.getAttribute('title')).toMatch(/lien manquant/i);
+    expect(broken!.className).toMatch(/cursor-not-allowed/);
     expect(broken!.closest('a')).toBeNull();
+  });
+
+  it('clicking a broken badge does not trigger navigation or anchor activation', () => {
+    const { container } = render(<CitationsPreview content="Source absente [42]." />);
+    fireEvent.click(screen.getByRole("button", { name: /aperçu des liens/i }));
+    const broken = container.querySelector('[data-broken-citation="42"]') as HTMLElement;
+    expect(broken).toBeTruthy();
+
+    const navSpy = vi.fn();
+    const origOpen = window.open;
+    window.open = navSpy as any;
+
+    const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true });
+    broken.dispatchEvent(clickEvent);
+
+    expect(navSpy).not.toHaveBeenCalled();
+    expect(broken.closest('a')).toBeNull();
+    expect(window.location.href).not.toMatch(/^https?:\/\//);
+
+    window.open = origOpen;
+  });
+
+  it('snapshot: broken vs valid badge markup differs (no <a> for broken)', () => {
+    const { container } = render(
+      <CitationsPreview content="Valide [[ACTU:abc|Titre|https://ansut.ci/x]] vs cassée [77]." />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /aperçu des liens/i }));
+
+    const broken = container.querySelector('[data-broken-citation="77"]') as HTMLElement;
+    expect(broken).toBeTruthy();
+    expect(broken.tagName.toLowerCase()).not.toBe('a');
+    expect(broken.closest('a')).toBeNull();
+    expect(broken.getAttribute('aria-disabled')).toBe('true');
+
+    const validAnchors = Array.from(container.querySelectorAll('a'));
+    expect(validAnchors.length).toBeGreaterThan(0);
+    validAnchors.forEach((a) => {
+      expect(a.getAttribute('href')).toMatch(/^https:\/\//);
+      expect(a.getAttribute('aria-disabled')).toBeNull();
+      expect(a.querySelector('[data-broken-citation]')).toBeNull();
+    });
   });
 });
 
