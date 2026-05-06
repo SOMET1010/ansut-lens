@@ -1,4 +1,4 @@
-import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode, Radio, Activity, Newspaper, CalendarDays, Eye, FileText, Radar, Megaphone, Sliders } from 'lucide-react';
+import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode, Radio, Activity, Newspaper, CalendarDays, Eye, FileText, Radar, Megaphone, Sliders, ShieldCheck } from 'lucide-react';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { SystemHealthWidget } from '@/components/admin/SystemHealthWidget';
 import { AdminNavCard } from '@/components/admin/AdminNavCard';
@@ -324,6 +324,18 @@ export default function AdminPage() {
               badgeVariant="info"
               subtitle="Suivi du calcul automatique quotidien du SPDI."
               to="/admin/spdi-status"
+              loading={isLoading}
+            />
+          </PermissionGate>
+          <PermissionGate permission="manage_cron_jobs">
+            <AdminNavCard
+              color="blue"
+              icon={<ShieldCheck size={24} />}
+              title="Connecteurs sociaux"
+              badge="Sécurité"
+              badgeVariant="info"
+              subtitle="État des secrets et autorisations pour X, LinkedIn, Facebook, Telegram, YouTube, TikTok."
+              to="/admin/connecteurs-sociaux"
               loading={isLoading}
             />
           </PermissionGate>

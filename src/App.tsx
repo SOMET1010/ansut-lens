@@ -41,6 +41,7 @@ import CoffreContenuPage from "@/pages/admin/CoffreContenuPage";
 import VeilleSemantiquePage from "@/pages/admin/VeilleSemantiquePage";
 import AutoVeillePage from "@/pages/admin/AutoVeillePage";
 import CredibilitePDFPage from "@/pages/admin/CredibilitePDFPage";
+import ConnecteursSociauxPage from "@/pages/admin/ConnecteursSociauxPage";
 import AlertesHistoryPage from "@/pages/AlertesHistoryPage";
 import PresentationPage from "@/pages/PresentationPage";
 import ProfilePage from "@/pages/ProfilePage";
@@ -155,6 +156,7 @@ const App = () => (
                           <Route element={<PermissionRoute permission="manage_cron_jobs" />}>
                             <Route path="/admin/cron-jobs" element={<CronJobsPage />} />
                             <Route path="/admin/spdi-status" element={<SpdiStatusPage />} />
+                            <Route path="/admin/connecteurs-sociaux" element={<ConnecteursSociauxPage />} />
                           </Route>
                           
                           <Route element={<PermissionRoute permission="manage_newsletters" />}>
