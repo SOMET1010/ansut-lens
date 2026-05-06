@@ -444,14 +444,88 @@ export function DocumentWorkspace({
         y += 3;
       }
 
-      // Page numbers (skip cover = page 1)
+      // ===== TABLE OF CONTENTS (inserted as page 2, after cover) =====
+      if (tocEntries.length > 0) {
+        pdf.insertPage(2);
+        pdf.setPage(2);
+        // Header
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.setTextColor(148, 163, 184);
+        pdf.text(cleanTitle.length > 70 ? cleanTitle.slice(0, 70) + '…' : cleanTitle, margin, 30);
+        pdf.text('ANSUT', pageWidth - margin, 30, { align: 'right' });
+        pdf.setDrawColor(226, 232, 240);
+        pdf.setLineWidth(0.5);
+        pdf.line(margin, 36, pageWidth - margin, 36);
+
+        // Title
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(20);
+        pdf.setTextColor(15, 23, 42);
+        pdf.text('Sommaire', margin, contentTop + 10);
+        pdf.setDrawColor(59, 130, 246);
+        pdf.setLineWidth(1.2);
+        pdf.line(margin, contentTop + 14, margin + 50, contentTop + 14);
+
+        let ty = contentTop + 44;
+        const tocBottom = pageHeight - margin - 30;
+        for (const entry of tocEntries) {
+          if (ty > tocBottom) break; // simple single-page TOC
+          const indent = (entry.level - 1) * 16;
+          const isH1 = entry.level === 1;
+          pdf.setFont('helvetica', isH1 ? 'bold' : 'normal');
+          pdf.setFontSize(isH1 ? 11 : 10);
+          pdf.setTextColor(isH1 ? 15 : 71, isH1 ? 23 : 85, isH1 ? 42 : 105);
+
+          const targetPage = entry.page + 1; // shifted by inserted TOC
+          const pageStr = String(targetPage - 2); // logical page number (content)
+          const pageW = pdf.getTextWidth(pageStr);
+          const titleMaxW = maxWidth - indent - pageW - 20;
+          const titleText = pdf.splitTextToSize(entry.text, titleMaxW)[0];
+          const titleW = pdf.getTextWidth(titleText);
+
+          pdf.text(titleText, margin + indent, ty);
+          // Dot leader
+          pdf.setTextColor(203, 213, 225);
+          const dotsStartX = margin + indent + titleW + 4;
+          const dotsEndX = pageWidth - margin - pageW - 4;
+          if (dotsEndX > dotsStartX) {
+            const dotW = pdf.getTextWidth('.');
+            const dotCount = Math.max(0, Math.floor((dotsEndX - dotsStartX) / dotW));
+            pdf.text('.'.repeat(dotCount), dotsStartX, ty);
+          }
+          // Page number
+          pdf.setTextColor(isH1 ? 15 : 71, isH1 ? 23 : 85, isH1 ? 42 : 105);
+          pdf.text(pageStr, pageWidth - margin, ty, { align: 'right' });
+
+          // Clickable link to target page
+          try {
+            pdf.link(margin + indent, ty - 10, maxWidth - indent, 14, { pageNumber: targetPage });
+          } catch { /* noop */ }
+
+          ty += isH1 ? 20 : 16;
+        }
+      }
+
+      // Page numbers (cover = 1, TOC = 2 if present, content starts after)
       const totalPages = pdf.getNumberOfPages();
-      for (let i = 2; i <= totalPages; i++) {
+      const contentStart = tocEntries.length > 0 ? 3 : 2;
+      const contentTotal = totalPages - (contentStart - 1);
+      for (let i = contentStart; i <= totalPages; i++) {
         pdf.setPage(i);
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(8);
         pdf.setTextColor(148, 163, 184);
-        pdf.text(`Page ${i - 1} / ${totalPages - 1}`, pageWidth - margin, pageHeight - 25, { align: 'right' });
+        pdf.text(`Page ${i - contentStart + 1} / ${contentTotal}`, pageWidth - margin, pageHeight - 25, { align: 'right' });
+        pdf.text('ANSUT — Document confidentiel', margin, pageHeight - 25);
+      }
+      // Footer for TOC page
+      if (tocEntries.length > 0) {
+        pdf.setPage(2);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.setTextColor(148, 163, 184);
+        pdf.text('Sommaire', pageWidth - margin, pageHeight - 25, { align: 'right' });
         pdf.text('ANSUT — Document confidentiel', margin, pageHeight - 25);
       }
 
