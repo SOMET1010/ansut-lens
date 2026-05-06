@@ -64,3 +64,62 @@ export function extractNumericReferenceUrls(content: string): Record<string, str
 
   return map;
 }
+
+export type CitationRef =
+  | { kind: 'actu' | 'dossier'; id: string; label: string; url: string }
+  | { kind: 'num'; num: string; label: string; url: string | null };
+
+const APP_BASE = 'https://ansut-lens.lovable.app';
+
+/**
+ * Returns the unique set of citation badges referenced in the document body,
+ * with their resolved URL (or `null` for numeric refs without an associated
+ * source URL). Used by the export pipeline to render a "Liens manquants"
+ * section and by the in-app preview.
+ */
+export function collectCitations(content: string): CitationRef[] {
+  if (!content) return [];
+  const numUrls = extractNumericReferenceUrls(content);
+  const out: CitationRef[] = [];
+  const seen = new Set<string>();
+  const re = /(\[\[(ACTU|DOSSIER):([^|\]]+)\|([^\]]+)\]\])|(\[(\d{1,3})\])/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(content)) !== null) {
+    if (m[1]) {
+      const isActu = m[2] === 'ACTU';
+      const id = m[3];
+      const label = m[4];
+      const key = `${m[2]}:${id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({
+        kind: isActu ? 'actu' : 'dossier',
+        id,
+        label,
+        url: isActu
+          ? `${APP_BASE}/radar?tab=flux&id=${encodeURIComponent(id)}`
+          : `${APP_BASE}/dossiers?id=${encodeURIComponent(id)}`,
+      });
+    } else if (m[5]) {
+      const num = m[6];
+      const key = `NUM:${num}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      // Try to recover a label for [n]: snippet after the numeric anchor in the
+      // references section, e.g. "[1] Titre de la source — https://..."
+      let label = `Référence ${num}`;
+      const labelRe = new RegExp(
+        `(?:^|\\n)\\s*\\[${num}\\]:?\\s*([^\\n]+)`,
+        'i',
+      );
+      const lm = content.match(labelRe);
+      if (lm && lm[1]) {
+        label = lm[1].replace(/https?:\/\/\S+/gi, '').replace(/[—\-–:]+\s*$/, '').trim() || label;
+        if (label.length > 90) label = label.slice(0, 89) + '…';
+      }
+      out.push({ kind: 'num', num, label, url: numUrls[num] || null });
+    }
+  }
+  return out;
+}
+
