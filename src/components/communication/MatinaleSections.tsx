@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
   AlertTriangle, Zap, Layers, Scale, Target, ListChecks,
   Shield, Radar, FileText, Building2, ExternalLink, Clock,
-  CheckCircle2, XCircle, Lightbulb, MessageSquare, BarChart3,
+  CheckCircle2, XCircle, Lightbulb, MessageSquare, BarChart3, Search,
 } from 'lucide-react';
+import { MatinaleDrillDownModal } from './MatinaleDrillDownModal';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
