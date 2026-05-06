@@ -380,6 +380,8 @@ export function DocumentWorkspace({
           pdf.setFontSize(size);
           pdf.setTextColor(level === 1 ? 15 : 30, level === 1 ? 23 : 41, level === 1 ? 42 : 59);
           const wrapped = pdf.splitTextToSize(text, maxWidth);
+          // Record heading position (current page number, before drawing)
+          if (level <= 3) tocEntries.push({ level, text, page: pdf.getNumberOfPages() });
           pdf.text(wrapped, margin, y);
           y += wrapped.length * lh;
 
