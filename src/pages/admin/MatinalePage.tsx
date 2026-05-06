@@ -44,6 +44,7 @@ function formatRevueDate(d?: string): string {
 import { formatDistanceToNow, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useMatinalePreview, useMatinaleSend, useMatinaleHistory, type FreshnessWindow } from '@/hooks/useMatinale';
+import { MatinaleSections } from '@/components/communication/MatinaleSections';
 
 export default function MatinalePage() {
   const preview = useMatinalePreview();
