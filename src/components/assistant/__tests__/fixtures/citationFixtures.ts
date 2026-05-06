@@ -89,7 +89,7 @@ export const FIXTURES: CitationFixture[] = [
     id: 'mixed-many-formats',
     description: 'formats variés (Réf n:, Voir [n], n. URL) + un orphelin',
     content: [
-      'Voir [1] pour le contexte, cf [2] et la réf 3.',
+      'Voir [1] pour le contexte, cf [2] et la référence [3].',
       'Le point [9] reste sans source.',
       '',
       '[1] https://one.example.com',
