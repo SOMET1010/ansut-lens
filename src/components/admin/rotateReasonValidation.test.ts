@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sanitizeReason, validateReason } from './rotateReasonValidation';
+import { sanitizeReason, validateReason, REASON_MESSAGES } from './rotateReasonValidation';
 
 describe('sanitizeReason', () => {
   it('trims surrounding whitespace', () => {
@@ -29,11 +29,11 @@ describe('sanitizeReason', () => {
 });
 
 describe('validateReason', () => {
-  const TOO_SHORT = 'Motif trop court — décrivez la raison en au moins 10 caractères.';
-  const TOO_LONG = 'Motif trop long (500 caractères maximum).';
-  const NEEDS_LETTERS = 'Le motif doit contenir au moins 5 lettres (texte explicatif requis).';
-  const REPEATED = 'Motif invalide (caractère répété).';
-  const ONLY_SYMBOLS = 'Le motif ne peut pas contenir uniquement des symboles.';
+  const TOO_SHORT = REASON_MESSAGES.tooShort;
+  const TOO_LONG = REASON_MESSAGES.tooLong;
+  const NEEDS_LETTERS = REASON_MESSAGES.needsLetters;
+  const REPEATED = REASON_MESSAGES.repeated;
+  const ONLY_SYMBOLS = REASON_MESSAGES.onlySymbols;
 
   it('rejects empty string', () => {
     expect(validateReason('')).toBe(TOO_SHORT);
