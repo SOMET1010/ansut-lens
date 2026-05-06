@@ -17,11 +17,12 @@ import { ChatMessage } from '@/components/assistant/ChatMessage';
 import { ModeSelector, type AssistantMode } from '@/components/assistant/ModeSelector';
 import { DocumentWorkspace, detectDocument, type GeneratedDocument } from '@/components/assistant/DocumentWorkspace';
 import { FrameworkPanel } from '@/components/assistant/FrameworkPanel';
+import { WelcomeScreen } from '@/components/assistant/WelcomeScreen';
 import { useAuth } from '@/contexts/AuthContext';
 
-const WELCOME_MESSAGE: ConversationMessage = { 
-  role: 'assistant', 
-  content: 'Bonjour ! Je suis **SUTA**, votre assistant IA spécialisé dans l\'analyse télécom. J\'ai accès aux actualités récentes et dossiers stratégiques.\n\nChoisissez un mode ci-dessus selon votre besoin :\n- **Recherche** : trouver rapidement des informations\n- **Rédaction** : générer des notes et briefings\n- **Analyse** : obtenir des analyses chiffrées' 
+const WELCOME_MESSAGE: ConversationMessage = {
+  role: 'assistant',
+  content: '__WELCOME__',
 };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/assistant-ia`;
@@ -404,40 +405,24 @@ export default function AssistantPage() {
     }
   };
 
+  // Hide welcome placeholder when there are real messages
+  const realMessages = messages.filter(m => m.content !== '__WELCOME__');
+  const showWelcome = realMessages.length === 0;
+
   return (
     <TooltipProvider>
-      <div className="w-full h-[calc(100vh-6rem)] flex gap-6 p-6 animate-fade-in">
-        
-        {/* History Sidebar - Desktop */}
-        <div className="w-96 bg-card rounded-2xl border shadow-sm hidden xl:flex xl:flex-col overflow-hidden">
-          <div className="px-5 py-4 border-b bg-muted/30">
-            <h3 className="text-sm font-bold flex items-center gap-2">
-              <History className="h-4 w-4" />
-              Historique
-            </h3>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <ConversationHistory
-              conversations={conversations}
-              isLoading={loadingConversations}
-              currentConversationId={currentConversationId}
-              onSelectConversation={handleSelectConversation}
-              onNewConversation={handleNewConversation}
-              onDeleteConversation={handleDeleteConversation}
-            />
-          </div>
-        </div>
+      <div className="w-full h-[calc(100vh-6rem)] flex gap-4 p-4 lg:p-6 animate-fade-in">
 
-        {/* MAIN CHAT ZONE (60%) */}
-        <div className="flex-1 flex flex-col bg-card rounded-2xl border shadow-sm overflow-hidden">
-          
+        {/* MAIN CHAT ZONE — flexible width */}
+        <div className="flex-1 min-w-0 flex flex-col bg-card rounded-2xl border shadow-sm overflow-hidden">
+
           {/* Header with Mode Selector */}
-          <div className="px-4 lg:px-6 py-4 border-b bg-muted/30 flex flex-wrap gap-3 justify-between items-center">
-            <div className="flex items-center gap-3">
-              {/* Mobile History Button */}
+          <div className="px-4 lg:px-6 py-3 border-b bg-muted/30 flex flex-wrap gap-3 justify-between items-center">
+            <div className="flex items-center gap-3 min-w-0">
+              {/* History Button (always visible) */}
               <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="xl:hidden h-9 w-9">
+                  <Button variant="ghost" size="icon" className="h-9 w-9" title="Historique des conversations">
                     <History className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
@@ -461,14 +446,14 @@ export default function AssistantPage() {
                 </SheetContent>
               </Sheet>
 
-              <div className="bg-primary text-primary-foreground p-2 rounded-lg">
+              <div className="bg-primary text-primary-foreground p-2 rounded-lg shrink-0">
                 <Sparkles className="h-4 w-4" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h2 className="font-bold text-sm">Assistant SUTA</h2>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  En ligne • Base documentaire
+                  En ligne • {contextStats.actualites + contextStats.dossiers} sources
                 </div>
               </div>
             </div>
@@ -559,26 +544,34 @@ export default function AssistantPage() {
 
           {/* Messages Area */}
           <ScrollArea className="flex-1 p-4 lg:p-6" ref={scrollRef}>
-            <div className="space-y-2">
-              {messages.map((msg, i) => (
-                <ChatMessage
-                  key={i}
-                  role={msg.role}
-                  content={msg.content}
-                  isStreaming={isLoading && i === messages.length - 1 && msg.role === 'assistant'}
-                />
-              ))}
-              {isLoading && messages[messages.length - 1]?.role === 'user' && (
-                <div className="flex gap-4 mb-6">
-                  <div className="shrink-0 h-10 w-10 rounded-full flex items-center justify-center bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm">
-                    <Bot className="h-5 w-5" />
+            {showWelcome ? (
+              <WelcomeScreen
+                mode={mode}
+                onPromptClick={(p) => { setInput(p); }}
+                contextStats={{ actualites: contextStats.actualites, dossiers: contextStats.dossiers }}
+              />
+            ) : (
+              <div className="space-y-2 max-w-4xl mx-auto">
+                {realMessages.map((msg, i) => (
+                  <ChatMessage
+                    key={i}
+                    role={msg.role}
+                    content={msg.content}
+                    isStreaming={isLoading && i === realMessages.length - 1 && msg.role === 'assistant'}
+                  />
+                ))}
+                {isLoading && realMessages[realMessages.length - 1]?.role === 'user' && (
+                  <div className="flex gap-4 mb-6">
+                    <div className="shrink-0 h-10 w-10 rounded-full flex items-center justify-center bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm">
+                      <Bot className="h-5 w-5" />
+                    </div>
+                    <div className="bg-card border rounded-2xl rounded-tl-none p-5">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    </div>
                   </div>
-                  <div className="bg-card border rounded-2xl rounded-tl-none p-5">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </ScrollArea>
           
           {/* Input Area */}
@@ -622,8 +615,8 @@ export default function AssistantPage() {
           </div>
         </div>
         
-        {/* RIGHT COLUMN (40%) - Desktop only : Workspace + Framework Panel */}
-        <div className="hidden lg:flex lg:flex-col gap-4 w-[400px]">
+        {/* RIGHT COLUMN — Workspace + Framework Panel (xl+ only) */}
+        <div className="hidden xl:flex xl:flex-col gap-4 w-[360px] shrink-0">
           <div className="flex-1 min-h-0">
             <DocumentWorkspace
               document={generatedDocument}
@@ -632,10 +625,10 @@ export default function AssistantPage() {
               onSuggestionClick={handleSuggestionClick}
             />
           </div>
-          <div className="h-[340px] shrink-0">
+          <div className="h-[300px] shrink-0">
             <FrameworkPanel
-              query={[...messages].reverse().find(m => m.role === 'user')?.content ?? ''}
-              response={[...messages].reverse().find(m => m.role === 'assistant' && m.content !== WELCOME_MESSAGE.content)?.content ?? ''}
+              query={[...realMessages].reverse().find(m => m.role === 'user')?.content ?? ''}
+              response={[...realMessages].reverse().find(m => m.role === 'assistant')?.content ?? ''}
               contextActuIds={Array.from(selectedActualites)}
               contextDossierIds={Array.from(selectedDossiers)}
               contextActuTitles={Object.fromEntries(availableActualites.map(a => [a.id, a.titre]))}
