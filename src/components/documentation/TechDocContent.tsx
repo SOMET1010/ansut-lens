@@ -38,7 +38,7 @@ La plateforme répond à 5 objectifs majeurs :
 
 | Module | Route | Description |
 |--------|-------|-------------|
-| **Centre de Veille** | \`/radar\` | Synthèse + flux d'actualités complet (onglets) |
+| **Accueil** | \`/radar\` | Synthèse + flux d'actualités complet (onglets) |
 | **Flux personnalisés** | \`/flux\` | Canaux de veille configurables par utilisateur |
 | **Personnalités** | \`/personnalites\` | Annuaire des acteurs avec score d'influence |
 | **Dossiers** | \`/dossiers\` | Notes stratégiques et briefings |

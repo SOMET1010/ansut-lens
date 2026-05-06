@@ -204,7 +204,7 @@ export default function RadarPage() {
                 Veille web
               </h2>
               <Button variant="link" size="sm" onClick={() => handleTabChange('flux')}>
-                Voir le flux complet →
+                Voir le résultat complet →
               </Button>
             </div>
             <IntelligenceFeed
