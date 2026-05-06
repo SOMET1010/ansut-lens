@@ -320,6 +320,11 @@ export function MatinaleSections({ data, freshnessHours = 24 }: { data: any; fre
             <CardTitle className="text-base flex items-center gap-2">
               <ListChecks className="h-4 w-4 text-amber-600" />
               Actions immédiates
+              <DrillBtn payload={{
+                title: 'Actions immédiates',
+                keywords: actions.flatMap((a: any) => (a.action || '').split(/\s+/)).filter((w: string) => w.length > 4),
+                analyzedItems: actions.map((a: any, i: number) => ({ label: `${i + 1}. ${a.action}`, value: [a.responsable, a.delai].filter(Boolean).join(' · ') })),
+              }} />
             </CardTitle>
           </CardHeader>
           <CardContent>
