@@ -979,11 +979,7 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
       return `<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;color:#fff;background:${map[lvl] || '#9ca3af'};">${lvl}</span>`;
     };
 
-    const RUBRIQUE_LABELS: Record<string, string> = {
-      telecom_numerique: 'Télécom / Numérique', economie_finance: 'Économie / Finance',
-      gouvernance_regulation: 'Gouvernance / Régulation', international: 'International',
-    };
-    const RUBRIQUE_ORDER = ['telecom_numerique', 'economie_finance', 'gouvernance_regulation', 'international'];
+    const groupedRevue: Record<string, typeof revue> = {};
     const groupedRevue: Record<string, typeof revue> = {};
     for (const r of revue) { (groupedRevue[r.rubrique] ||= []).push(r); }
     const buildRubriqueBlock = (key: string) => {
