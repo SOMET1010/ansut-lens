@@ -472,78 +472,13 @@ export function DocumentWorkspace({
       }
 
       // ===== APPENDIX: Liens manquants =====
-      const allCitations = collectCitations(document.content);
-      if (allCitations.length > 0) {
-        ensureSpace(40);
-        y += 18;
-        // Section title
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(13);
-        pdf.setTextColor(15, 23, 42);
-        pdf.text('Annexe — Sources citées', margin, y);
-        pdf.setDrawColor(59, 130, 246);
-        pdf.setLineWidth(1.2);
-        pdf.line(margin, y + 4, margin + 60, y + 4);
-        y += 18;
-        tocEntries.push({ level: 2, text: 'Annexe — Sources citées', page: pdf.getNumberOfPages() });
-
-        const broken = allCitations.filter((c) => c.kind === 'num' && !c.url);
-        const valid = allCitations.filter((c) => !(c.kind === 'num' && !c.url));
-
-        const renderCitationRow = (c: typeof allCitations[number]) => {
-          ensureSpace(16);
-          // Type tag
-          const tag = c.kind === 'actu' ? 'ACTU' : c.kind === 'dossier' ? 'DOSSIER' : `[${(c as { num: string }).num}]`;
-          const tagColor = c.kind === 'actu' ? [29, 78, 216] : c.kind === 'dossier' ? [126, 34, 206] : [51, 65, 85];
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(8);
-          pdf.setTextColor(tagColor[0], tagColor[1], tagColor[2]);
-          pdf.text(tag, margin, y);
-          // Label
-          pdf.setFont('helvetica', 'normal');
-          pdf.setFontSize(10);
-          pdf.setTextColor(15, 23, 42);
-          const labelText = c.kind === 'num' ? c.label : c.label;
-          const wrapped = pdf.splitTextToSize(labelText, maxWidth - 70);
-          pdf.text(wrapped, margin + 60, y);
-          // URL or "lien manquant"
-          const urlY = y + wrapped.length * 12;
-          pdf.setFontSize(8);
-          if ('url' in c && c.url) {
-            pdf.setTextColor(29, 78, 216);
-            const urlLines = pdf.splitTextToSize(c.url, maxWidth - 60);
-            pdf.text(urlLines, margin + 60, urlY);
-            try { pdf.link(margin + 60, urlY - 8, maxWidth - 60, urlLines.length * 10, { url: c.url }); } catch { /* noop */ }
-            y = urlY + urlLines.length * 10 + 4;
-          } else {
-            pdf.setTextColor(146, 64, 14);
-            pdf.text('⚠ Lien manquant — source à compléter', margin + 60, urlY);
-            y = urlY + 12;
-          }
-          pdf.setTextColor(15, 23, 42);
-          pdf.setFontSize(11);
-        };
-
-        if (broken.length > 0) {
-          ensureSpace(14);
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(10);
-          pdf.setTextColor(146, 64, 14);
-          pdf.text(`Liens manquants (${broken.length})`, margin, y);
-          y += 14;
-          for (const c of broken) renderCitationRow(c);
-          y += 6;
-        }
-        if (valid.length > 0) {
-          ensureSpace(14);
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(10);
-          pdf.setTextColor(15, 23, 42);
-          pdf.text(`Sources référencées (${valid.length})`, margin, y);
-          y += 14;
-          for (const c of valid) renderCitationRow(c);
-        }
-      }
+      y = renderPdfCitationAppendix(pdf, collectCitations(document.content), {
+        margin,
+        maxWidth,
+        y,
+        ensureSpace,
+        onTocEntry: (e) => tocEntries.push(e),
+      });
 
       // ===== TABLE OF CONTENTS (inserted as page 2, after cover) =====
       if (tocEntries.length > 0) {
