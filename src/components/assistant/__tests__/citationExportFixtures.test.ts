@@ -105,18 +105,16 @@ describe('DOCX export — fixtures replay', () => {
       // Strip XML tags to inspect the visible text content.
       const visibleText = xml.replace(/<[^>]+>/g, ' ');
 
-      for (const ref of validRefs) {
-        if (ref.kind === 'num') {
-          // Numeric label must appear in the appendix text.
-          expect(visibleText).toContain(`[${(ref as any).num}]`);
-        }
-        const url = (ref as any).url as string | null | undefined;
-        if (url && /^https?:\/\//.test(url)) {
-          // External URLs must appear either as anchor target or visible text.
-          const inAnchor = xml.includes(`Target="${url}"`) || xml.includes(`>${url}<`);
-          const inText = visibleText.includes(url);
-          expect(inAnchor || inText).toBe(true);
-        }
+      // For numeric refs, both label AND URL must be embedded in the DOCX.
+      const validNum = validRefs.filter((r) => r.kind === 'num') as Array<{
+        num: string;
+        url: string;
+      }>;
+      for (const ref of validNum) {
+        expect(visibleText).toContain(`[${ref.num}]`);
+        const inAnchor = xml.includes(`Target="${ref.url}"`) || xml.includes(`>${ref.url}<`);
+        const inText = visibleText.includes(ref.url);
+        expect(inAnchor || inText).toBe(true);
       }
 
       // Broken numeric refs must still appear in the body text (just not clickable).
