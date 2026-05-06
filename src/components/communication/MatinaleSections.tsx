@@ -176,6 +176,15 @@ export function MatinaleSections({ data, freshnessHours = 24 }: { data: any; fre
             <CardTitle className="text-base flex items-center gap-2">
               <Layers className="h-4 w-4 text-primary" />
               Veille par pilier ANSUT
+              <DrillBtn payload={{
+                title: 'Veille par pilier ANSUT',
+                description: 'Articles sources tous piliers',
+                keywords: Object.values(veille).flat().flatMap((it: any) => (it.titre || '').split(/\s+/)).filter((w: string) => w.length > 4),
+                highlightedTitles: Object.values(veille).flat().map((it: any) => it.titre).filter(Boolean),
+                analyzedItems: Object.entries(veille).flatMap(([k, items]: any) =>
+                  (items as any[]).map((it: any) => ({ label: `[${PILIER_META[k]?.label || k}] ${it.titre}`, value: it.niveau }))
+                ),
+              }} />
             </CardTitle>
             <CardDescription>Connectivité · Usages · Régulation · Concurrence</CardDescription>
           </CardHeader>
