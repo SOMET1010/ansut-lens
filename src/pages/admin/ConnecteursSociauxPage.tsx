@@ -14,6 +14,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { SocialCredentialsDialog } from '@/components/admin/SocialCredentialsDialog';
+import { SocialApiAuditLog } from '@/components/admin/SocialApiAuditLog';
 import {
   Card,
   CardContent,
