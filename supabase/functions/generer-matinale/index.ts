@@ -838,113 +838,104 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     }
 
 
-    // Normaliser les nouveaux blocs intelligence exécutive
+    // ====== INTÉGRITÉ DES SOURCES (anti-biais) ======
+    // Règle d'or : aucune donnée non sourcée. Si un item ne peut être rattaché à un article/URL
+    // du contexte, il est rejeté plutôt qu'imaginé. Les sections deviennent simplement vides ;
+    // l'UI affiche un état "empty" explicite plutôt que du contenu fabriqué.
+
+    // Index lexical du contexte pour vérifier l'ancrage textuel
+    const norm = (s: string) => (s || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    const contextCorpus: string[] = [];
+    const contextTitles: string[] = [];
+    for (const a of (articles || [])) {
+      contextCorpus.push(norm(`${a.titre} ${a.resume || ''}`));
+      contextTitles.push(norm(a.titre || ''));
+    }
+    for (const m of (mentions || [])) contextCorpus.push(norm(m.contenu || ''));
+    for (const p of perplexityNews.articles) {
+      contextCorpus.push(norm(`${p.titre} ${(p as any).resume || ''}`));
+      contextTitles.push(norm(p.titre || ''));
+    }
+
+    const isAnchored = (text: string, minTokens = 2): boolean => {
+      const t = norm(text);
+      if (!t || t.length < 8) return false;
+      if (contextTitles.some((ct) => ct && ct.length > 8 && (ct.includes(t.slice(0, 40)) || t.includes(ct.slice(0, 40))))) return true;
+      const tokens = t.split(/[^a-z0-9]+/g).filter((w) => w.length > 4);
+      let hits = 0;
+      for (const tok of tokens) {
+        if (contextCorpus.some((c) => c.includes(tok))) hits++;
+        if (hits >= minTokens) return true;
+      }
+      return false;
+    };
+
+    // Cap sizes
     matinale.synthese_60s = Array.isArray(matinale.synthese_60s) ? matinale.synthese_60s.slice(0, 5) : [];
     matinale.signaux_faibles = Array.isArray(matinale.signaux_faibles) ? matinale.signaux_faibles.slice(0, 6) : [];
     matinale.actions_immediates = Array.isArray(matinale.actions_immediates) ? matinale.actions_immediates.slice(0, 5) : [];
     matinale.impact_projets_ansut = Array.isArray(matinale.impact_projets_ansut) ? matinale.impact_projets_ansut.slice(0, 6) : [];
     matinale.lecture_strategique = Array.isArray(matinale.lecture_strategique) ? matinale.lecture_strategique.slice(0, 2) : [];
+
+    // Veille par pilier : URL OBLIGATOIREMENT validée par le contexte
     if (!matinale.veille_par_pilier || typeof matinale.veille_par_pilier !== 'object') {
       matinale.veille_par_pilier = { connectivite: [], usages_services: [], regulation_souverainete: [], concurrence_marche: [] };
     }
     for (const k of ['connectivite', 'usages_services', 'regulation_souverainete', 'concurrence_marche']) {
       if (!Array.isArray(matinale.veille_par_pilier[k])) matinale.veille_par_pilier[k] = [];
-      matinale.veille_par_pilier[k] = matinale.veille_par_pilier[k].map((it: any) => ({
-        ...it,
-        url: it?.url ? (validUrls.has(normalizeUrl(it.url)) ? normalizeUrl(it.url) : '') : '',
-      })).slice(0, 5);
+      matinale.veille_par_pilier[k] = matinale.veille_par_pilier[k]
+        .map((it: any) => {
+          const u = it?.url ? normalizeUrl(it.url) : '';
+          return u && validUrls.has(u) ? { ...it, url: u } : null;
+        })
+        .filter(Boolean)
+        .slice(0, 5);
     }
+
+    // Synthèse 60s, lecture stratégique, impact projets : sujet ancré dans le corpus
+    matinale.synthese_60s = matinale.synthese_60s.filter((s: any) => isAnchored(s?.sujet || ''));
+    matinale.lecture_strategique = matinale.lecture_strategique.filter((s: any) => isAnchored(s?.sujet || ''));
+    matinale.impact_projets_ansut = matinale.impact_projets_ansut.filter((p: any) => isAnchored(p?.domaine || '', 1));
+
+    // Signaux faibles : phrase ancrée (rejette les généralités sectorielles non sourcées)
+    matinale.signaux_faibles = matinale.signaux_faibles.filter((s: string) => typeof s === 'string' && isAnchored(s, 2));
+
+    // Réputation : seuls les éléments ancrés sont conservés
     if (!matinale.reputation_ansut || typeof matinale.reputation_ansut !== 'object') {
       matinale.reputation_ansut = { positif: [], negatif: [], confusion_role: null, niveau_risque: 'VERT' };
+    } else {
+      matinale.reputation_ansut.positif = (matinale.reputation_ansut.positif || []).filter((p: string) => isAnchored(p, 1));
+      matinale.reputation_ansut.negatif = (matinale.reputation_ansut.negatif || []).filter((n: string) => isAnchored(n, 1));
+      if (matinale.reputation_ansut.confusion_role && !isAnchored(matinale.reputation_ansut.confusion_role, 1)) {
+        matinale.reputation_ansut.confusion_role = null;
+      }
     }
 
-    // ====== GARANTIES MINIMALES (jamais de rapport vide) ======
-    // 1) PRIORITÉ EXÉCUTIVE — toujours présente avec contenu substantiel
-    const hasValidPrio = matinale.priorite_executive
+    // Priorité exécutive : conservée UNIQUEMENT si ancrée. Pas d'invention de "seed" générique.
+    const prioAnchored = !!matinale.priorite_executive
       && typeof matinale.priorite_executive === 'object'
       && typeof matinale.priorite_executive.titre === 'string'
-      && matinale.priorite_executive.titre.trim().length > 5;
-    if (!hasValidPrio) {
-      // Inférer la priorité depuis le 1er signal disponible
-      const firstSynth = matinale.synthese_60s?.[0];
-      const firstPilier = Object.values(matinale.veille_par_pilier || {})
-        .flat()
-        .find((x: any) => x?.titre) as any;
-      const seed = firstSynth?.sujet || firstPilier?.titre || 'Consolidation de la veille stratégique numérique';
-      matinale.priorite_executive = {
-        titre: `Arbitrage requis : ${seed}`,
-        impacts: [
-          firstSynth?.impact_ansut || firstPilier?.lecture_ansut || 'Signal stratégique à qualifier sur le périmètre du Service Universel.',
-          'Risque de désalignement entre l\'agenda public et la trajectoire ANSUT si non instruit sous 48h.',
-        ],
-        recommandation: [
-          'Désigner un référent CODIR pour cadrer le sujet sous 24h.',
-          'Lancer une note d\'instruction (cadrage, parties prenantes, options).',
-        ],
-        niveau: firstSynth?.niveau || firstPilier?.niveau || 'ORANGE',
-      };
+      && isAnchored(matinale.priorite_executive.titre, 1);
+    if (!prioAnchored) {
+      matinale.priorite_executive = null;
+      // Sans priorité ancrée, les actions immédiates n'ont plus d'objet : on vide
+      matinale.actions_immediates = [];
+    } else {
+      // Filtrer aussi les actions individuelles (au cas où l'IA en glisserait une hors-sujet)
+      matinale.actions_immediates = matinale.actions_immediates.filter((a: any) => !!a?.action && a.action.length > 5);
     }
 
-    // 2) ACTIONS IMMÉDIATES — minimum configurable
-    if (!Array.isArray(matinale.actions_immediates) || matinale.actions_immediates.length < scoring.min_actions_immediates) {
-      const base = Array.isArray(matinale.actions_immediates) ? [...matinale.actions_immediates] : [];
-      const fallbackActions = [
-        { action: 'Cartographier les acteurs et positions sur le sujet du jour', responsable: 'Cellule Veille', delai: '24h' },
-        { action: 'Préparer une note de cadrage stratégique pour le DG', responsable: 'Direction Stratégie', delai: '48h' },
-        { action: 'Briefer la communication sur la posture publique ANSUT', responsable: 'Direction Communication', delai: '24h' },
-        { action: 'Planifier un point de coordination interpiliers', responsable: 'Cabinet DG', delai: '72h' },
-      ];
-      const target = Math.max(scoring.min_actions_immediates, base.length);
-      for (const a of fallbackActions) {
-        if (base.length >= Math.max(target, scoring.min_actions_immediates)) break;
-        if (!base.some((x: any) => (x?.action || '').toLowerCase() === a.action.toLowerCase())) base.push(a);
-      }
-      matinale.actions_immediates = base.slice(0, 5);
-    }
+    // Métadonnées d'intégrité — exposées pour traçabilité front
+    matinale._integrity = {
+      sources_indexed: validUrls.size,
+      context_articles: (articles || []).length,
+      perplexity_articles: perplexityNews.articles.length,
+      mode: 'strict_no_fallback',
+    };
 
-    // 3) SIGNAUX FAIBLES — minimum configurable
-    if (!Array.isArray(matinale.signaux_faibles) || matinale.signaux_faibles.length < scoring.min_signaux_faibles) {
-      const base = Array.isArray(matinale.signaux_faibles) ? [...matinale.signaux_faibles] : [];
-      const fallbackSignaux = [
-        'Accélération régionale (UEMOA/CEDEAO) sur la mutualisation des infrastructures télécoms à surveiller.',
-        'Montée des usages mobile money et IA générative — impact sur le périmètre Service Universel.',
-        'Pression sur la souveraineté numérique : data centers, cloud souverain, identité numérique.',
-        'Rotation des opérateurs satellitaires (LEO/MEO) modifiant l\'équation coût/couverture des zones blanches.',
-        'Émergence de cadres réglementaires africains sur la cybersécurité et la protection des données.',
-      ];
-      for (const s of fallbackSignaux) {
-        if (base.length >= Math.max(scoring.min_signaux_faibles + 2, 5)) break;
-        if (!base.some((x: string) => (x || '').toLowerCase().includes(s.slice(0, 30).toLowerCase()))) base.push(s);
-      }
-      matinale.signaux_faibles = base.slice(0, 6);
-    }
-
-    // 4) SYNTHÈSE 60S — minimum configurable
-    if (!Array.isArray(matinale.synthese_60s) || matinale.synthese_60s.length < scoring.min_synthese_60s) {
-      const base = Array.isArray(matinale.synthese_60s) ? [...matinale.synthese_60s] : [];
-      if (base.length === 0) {
-        base.push({ sujet: matinale.priorite_executive.titre, impact_ansut: (matinale.priorite_executive.impacts?.[0] || ''), niveau: matinale.priorite_executive.niveau || 'ORANGE' });
-      }
-      while (base.length < scoring.min_synthese_60s) {
-        base.push({ sujet: 'Dynamique sectorielle télécoms/numérique en Afrique de l\'Ouest', impact_ansut: 'À monitorer pour ajuster la feuille de route Service Universel.', niveau: 'BLEU' });
-      }
-      matinale.synthese_60s = base.slice(0, 5);
-    }
-
-    // 5) IMPACT PROJETS ANSUT — minimum configurable
-    if (!Array.isArray(matinale.impact_projets_ansut) || matinale.impact_projets_ansut.length < scoring.min_impact_projets) {
-      const base = Array.isArray(matinale.impact_projets_ansut) ? [...matinale.impact_projets_ansut] : [];
-      const fallbackImpacts = [
-        { domaine: 'Connectivité & couverture zones blanches', impact: 'MOYEN', commentaire: 'Veille à instruire au regard de la trajectoire SUTA.' },
-        { domaine: 'Inclusion numérique & usages', impact: 'FAIBLE', commentaire: 'Signaux faibles à consolider pour la prochaine revue.' },
-        { domaine: 'Régulation & souveraineté numérique', impact: 'MOYEN', commentaire: 'Cadre normatif régional à intégrer aux feuilles de route.' },
-      ];
-      for (const i of fallbackImpacts) {
-        if (base.length >= Math.max(scoring.min_impact_projets + 1, 3)) break;
-        base.push(i);
-      }
-      matinale.impact_projets_ansut = base.slice(0, 6);
-    }
 
     // Forcer activite_ansut à utiliser les vraies métriques (jamais l'IA)
     matinale.activite_ansut = {
