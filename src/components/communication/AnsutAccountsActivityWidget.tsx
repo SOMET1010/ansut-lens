@@ -187,10 +187,14 @@ export function AnsutAccountsActivityWidget() {
               {data.totalPubs} pub/24h ({data.variationGlobale >= 0 ? '+' : ''}{data.variationGlobale}% vs veille) · {data.totalPubs7j} pub/7j · {data.accounts.length} comptes suivis · {data.inactiveCount} dormant{data.inactiveCount > 1 ? 's' : ''}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={handleCollect} disabled={collecting} className="gap-1.5">
               <RefreshCw className={`h-3.5 w-3.5 ${collecting ? 'animate-spin' : ''}`} />
               Collecter
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleDiagnostic} disabled={diagLoading} className="gap-1.5">
+              <Activity className={`h-3.5 w-3.5 ${diagLoading ? 'animate-pulse' : ''}`} />
+              {diagLoading ? 'Diagnostic…' : 'Diagnostic'}
             </Button>
             <Button size="sm" onClick={handleAnalyze} disabled={analyzing} className="gap-1.5">
               <Sparkles className={`h-3.5 w-3.5 ${analyzing ? 'animate-pulse' : ''}`} />
