@@ -72,6 +72,8 @@ export default function ConnecteursSociauxPage() {
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<ConnectorReport | null>(null);
+
+  const load = async () => {
     setError(null);
     const { data, error: fnError } = await supabase.functions.invoke(
       'check-social-connectors',
