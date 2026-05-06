@@ -144,6 +144,13 @@ export function MatinaleSections({ data, freshnessHours = 24 }: { data: any; fre
               <Clock className="h-4 w-4 text-primary" />
               Synthèse 60 secondes
               <Badge variant="secondary" className="ml-auto text-xs">{synthese.length} sujets</Badge>
+              <DrillBtn payload={{
+                title: 'Synthèse 60 secondes',
+                description: 'Articles sources des sujets de la synthèse',
+                keywords: synthese.flatMap((s: any) => (s.sujet || '').split(/\s+/)).filter((w: string) => w.length > 4),
+                highlightedTitles: synthese.map((s: any) => s.sujet).filter(Boolean),
+                analyzedItems: synthese.map((s: any) => ({ label: s.sujet, value: s.niveau })),
+              }} />
             </CardTitle>
           </CardHeader>
           <CardContent>
