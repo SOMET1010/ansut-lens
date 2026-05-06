@@ -204,6 +204,9 @@ export function MatinaleSections({ data, freshnessHours = 24, loading = false, e
         errorMessage={error || undefined}
         onRetry={onRetry}
         emptyHint="Aucun signal classé par pilier sur la fenêtre. Vérifiez les capteurs stratégiques."
+        headerExtras={Object.keys(veille).length > 0 && (
+          <SourceCountBadge data={safe} section="veille_par_pilier" freshnessHours={freshnessHours} enabled={true} />
+        )}
         rightActions={Object.keys(veille).length > 0 ? drillBtn({
           title: 'Veille par pilier ANSUT',
           description: 'Articles sources tous piliers',
