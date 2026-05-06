@@ -912,34 +912,28 @@ export function DocumentWorkspace({
           <Save className="h-3.5 w-3.5 mr-1.5" />
           Enregistrer
         </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" disabled={exportState.status === 'loading'} className="text-xs min-w-[110px]">
-              {exportState.status === 'loading' ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                  Export {formatLabel(exportState.format)}…
-                </>
-              ) : (
-                <>
-                  <Download className="h-3.5 w-3.5 mr-1.5" />
-                  Exporter
-                </>
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleExportPDF} className="cursor-pointer">
-              <FileType2 className="h-4 w-4 mr-2" />
-              Exporter en PDF
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleExportDOCX} className="cursor-pointer">
-              <FileDown className="h-4 w-4 mr-2" />
-              Exporter en DOCX
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button size="sm" onClick={handleOpenSettings} disabled={exportState.status === 'loading'} className="text-xs min-w-[140px]">
+          {exportState.status === 'loading' ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              Export {formatLabel(exportState.format)}…
+            </>
+          ) : (
+            <>
+              <Settings2 className="h-3.5 w-3.5 mr-1.5" />
+              Exporter…
+            </>
+          )}
+        </Button>
       </div>
+
+      <ExportSettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        baseTitle={baseTitle}
+        onExport={(o) => void runExport(o)}
+        isExporting={exportState.status === 'loading'}
+      />
     </div>
   );
 }
