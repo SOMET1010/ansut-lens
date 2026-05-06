@@ -13,6 +13,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
 
 type SecretField = {
@@ -151,6 +153,10 @@ export function SocialCredentialsDialog({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [rotationMode, setRotationMode] = useState(false);
+  const [rotateDialogOpen, setRotateDialogOpen] = useState(false);
+  const [rotateAction, setRotateAction] = useState<'rotate' | 'revoke'>('rotate');
+  const [rotateReason, setRotateReason] = useState('');
+  const [rotating, setRotating] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -249,25 +255,48 @@ export function SocialCredentialsDialog({
     onSaved?.();
   };
 
+  const openRotateDialog = () => {
+    setRotateAction('rotate');
+    setRotateReason('');
+    setRotateDialogOpen(true);
+  };
+
   const handleRotate = async () => {
-    if (!confirm(`Confirmer la rotation de TOUS les secrets stockés pour ${connectorName} ?\n\nCela les supprimera et exigera une nouvelle saisie. Une trace est conservée dans le journal d'audit.`)) {
+    const reason = rotateReason.trim();
+    if (reason.length < 5) {
+      toast.error('Indiquez un motif (au moins 5 caractères) pour tracer cette action.');
       return;
     }
     const storedNames = Object.keys(stored).filter((n) => stored[n]);
+    setRotating(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const actionLabel = rotateAction === 'revoke' ? 'Révocation' : 'Rotation';
+    const noteText = `${actionLabel} — ${reason}`;
+
     if (storedNames.length === 0) {
-      toast.info('Aucun secret stocké à révoquer.');
-      setRotationMode(true);
+      // No stored secrets — log a single audit entry to track the intent
+      await supabase.from('social_api_audit_log').insert([{
+        connector: connectorId,
+        secret_name: '(aucun)',
+        action: rotateAction,
+        performed_by: user?.id ?? null,
+        notes: noteText,
+      }]);
+      setRotating(false);
+      setRotateDialogOpen(false);
+      setRotationMode(rotateAction === 'rotate');
+      toast.info('Aucun secret stocké — action consignée dans le journal.');
+      onSaved?.();
       return;
     }
-    const { data: { user } } = await supabase.auth.getUser();
-    // Insert audit entries first (action=rotate) for each stored secret
+
     await supabase.from('social_api_audit_log').insert(
       storedNames.map((name) => ({
         connector: connectorId,
         secret_name: name,
-        action: 'rotate' as const,
+        action: rotateAction,
         performed_by: user?.id ?? null,
-        notes: 'Révocation manuelle — nouvelle valeur attendue',
+        notes: noteText,
       })),
     );
     const { error } = await supabase
@@ -275,8 +304,9 @@ export function SocialCredentialsDialog({
       .delete()
       .eq('connector', connectorId)
       .in('secret_name', storedNames);
+    setRotating(false);
     if (error) {
-      toast.error('Rotation impossible : ' + error.message);
+      toast.error(`${actionLabel} impossible : ` + error.message);
       return;
     }
     const cleared: Record<string, boolean> = {};
@@ -285,12 +315,18 @@ export function SocialCredentialsDialog({
     const clearedVals: Record<string, string> = {};
     storedNames.forEach((n) => (clearedVals[n] = ''));
     setValues((p) => ({ ...p, ...clearedVals }));
-    setRotationMode(true);
-    toast.success(`${storedNames.length} secret(s) révoqué(s). Saisissez les nouvelles valeurs.`);
+    setRotationMode(rotateAction === 'rotate');
+    setRotateDialogOpen(false);
+    toast.success(
+      rotateAction === 'rotate'
+        ? `${storedNames.length} secret(s) révoqué(s). Saisissez les nouvelles valeurs.`
+        : `${storedNames.length} secret(s) révoqué(s) définitivement.`,
+    );
     onSaved?.();
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
@@ -325,7 +361,7 @@ export function SocialCredentialsDialog({
               size="sm"
               variant="outline"
               className="h-7 text-xs border-purple-300"
-              onClick={handleRotate}
+              onClick={openRotateDialog}
             >
               <RotateCw className="h-3 w-3 mr-1" />
               Régénérer / révoquer
@@ -472,5 +508,92 @@ export function SocialCredentialsDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <Dialog open={rotateDialogOpen} onOpenChange={(v) => !rotating && setRotateDialogOpen(v)}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <RotateCw className="h-5 w-5 text-purple-600" />
+            Confirmer l'action sur {connectorName}
+          </DialogTitle>
+          <DialogDescription>
+            Cette action supprime les secrets actuellement stockés et est <strong>tracée
+            dans le journal d'audit</strong> avec votre identité, l'horodatage et le motif
+            ci-dessous.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-sm">Type d'action</Label>
+            <RadioGroup
+              value={rotateAction}
+              onValueChange={(v) => setRotateAction(v as 'rotate' | 'revoke')}
+              className="space-y-1"
+            >
+              <div className="flex items-start gap-2 rounded-md border px-3 py-2">
+                <RadioGroupItem value="rotate" id="rot-rotate" className="mt-0.5" />
+                <Label htmlFor="rot-rotate" className="font-normal cursor-pointer flex-1">
+                  <div className="text-sm font-medium">Régénérer (rotation)</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    Supprime les valeurs actuelles. Vous saisirez ensuite les nouvelles.
+                  </div>
+                </Label>
+              </div>
+              <div className="flex items-start gap-2 rounded-md border px-3 py-2">
+                <RadioGroupItem value="revoke" id="rot-revoke" className="mt-0.5" />
+                <Label htmlFor="rot-revoke" className="font-normal cursor-pointer flex-1">
+                  <div className="text-sm font-medium">Révoquer (sans remplacement)</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    Supprime les valeurs sans nouvelle saisie immédiate. Le connecteur
+                    sera désactivé.
+                  </div>
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="rotate-reason" className="text-sm">
+              Motif <span className="text-red-600">*</span>
+            </Label>
+            <Textarea
+              id="rotate-reason"
+              value={rotateReason}
+              onChange={(e) => setRotateReason(e.target.value)}
+              placeholder="Ex : Token compromis, rotation périodique trimestrielle, départ d'un agent…"
+              rows={3}
+              className="text-sm"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Au moins 5 caractères. Ce motif sera enregistré dans le journal d'audit.
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => setRotateDialogOpen(false)}
+            disabled={rotating}
+          >
+            Annuler
+          </Button>
+          <Button
+            onClick={handleRotate}
+            disabled={rotating || rotateReason.trim().length < 5}
+            className="bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            {rotating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RotateCw className="h-4 w-4 mr-2" />
+            )}
+            Confirmer
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
