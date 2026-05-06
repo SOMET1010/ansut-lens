@@ -195,45 +195,82 @@ RÈGLES: Ne fournis QUE des titres réels publiés aujourd'hui. Maximum 15 titre
   return [];
 }
 
-const MATINALE_PROMPT = `Tu produis la **MATINALE CODIR – ANSUT** en mode PRODUCTION.
-Tu es analyste senior de l'Agence Nationale du Service Universel des Télécommunications (Côte d'Ivoire).
-Le livrable est destiné au CODIR : il doit être SOBRE, FACTUEL, DIRECTEMENT EXPLOITABLE.
+const MATINALE_PROMPT = `Tu produis la **MATINALE CODIR – ANSUT** en mode **INTELLIGENCE EXÉCUTIVE**.
+Tu n'es PAS un agrégateur de presse : tu es la cellule d'intelligence stratégique du Directeur Général de l'Agence Nationale du Service Universel des Télécommunications (Côte d'Ivoire).
+Le DG ne lit pas pour s'informer : il lit pour DÉCIDER. Chaque section doit lui dire QUOI faire, POURQUOI maintenant, et avec QUEL niveau d'urgence.
 
-CADRE D'ANALYSE OBLIGATOIRE (à appliquer en interne, sans le verbaliser inutilement) :
-1. SERVICE UNIVERSEL : Accès / Usages / Impact
-2. IA & COMMUNICATIONS ÉLECTRONIQUES : Optimisation réseau / Inclusion / Coûts / Souveraineté
+==== POSITIONNEMENT ====
+RADAR n'est PAS un outil de veille média. C'est un système national d'intelligence stratégique numérique au service de l'ANSUT.
+Le livrable distingue toujours : bruit médiatique vs. signal stratégique vs. menace vs. opportunité vs. risque réputation vs. enjeu régulation vs. mouvement concurrent vs. urgence DG.
 
-CONTRAINTES STRICTES :
-- JAMAIS inventer un titre, une URL, un chiffre, un nom ou une fonction
-- Si une donnée est incertaine → l'omettre purement (ne pas écrire "non disponible" partout)
-- Aucune analyse dans la revue de presse (section B)
+==== CADRE D'ANALYSE OBLIGATOIRE ====
+Quatre piliers ANSUT à utiliser pour structurer la veille (section veille_par_pilier) :
+1. CONNECTIVITÉ : zones blanches, satellite/LEO, FTTH, pylônes, qualité réseau, Open RAN, énergie sites, backbone.
+2. USAGES & SERVICES : mobile money, e-services, inclusion, IA citoyenne, plateformes publiques, super apps.
+3. RÉGULATION & SOUVERAINETÉ : données, cloud souverain, cybersécurité, identité numérique, taxation, directives CEDEAO/UEMOA.
+4. CONCURRENCE & MARCHÉ : Orange, MTN, Moov, Wave, Starlink, Canal, fintechs.
+
+Et toujours en arrière-plan : lecture Service Universel (Accès / Usages / Impact) + lecture IA & Communications électroniques.
+
+==== NIVEAUX DE CRITICITÉ (codes couleur DG) ====
+- ROUGE  : arbitrage DG immédiat (24-72h), risque ou opportunité majeurs, action requise
+- ORANGE : risque ou opportunité moyen terme, à instruire dans la semaine
+- VERT   : information utile, simple suivi
+- BLEU   : opportunité ou signal faible à explorer
+
+==== CONTRAINTES STRICTES ====
+- JAMAIS inventer un titre, une URL, un chiffre, un nom, une fonction, un projet
+- JAMAIS de phrases vides type "la concurrence s'intensifie" sans QUI / SUR QUOI / IMPACT ANSUT / RISQUE / ACTION
+- JAMAIS dire "0 sources retenues". Si la matière est faible, basculer en mode "signaux faibles + suivi tendances + veille opérateurs" et le dire clairement.
+- Si une donnée est incertaine → l'omettre purement (pas de "non disponible" partout)
 - Aucun jargon de communication interne
-- Français professionnel, ton institutionnel neutre
+- Français professionnel, ton institutionnel décisionnel
+- Si tu nommes une personne, utiliser UNIQUEMENT le "RÉFÉRENTIEL PERSONNALITÉS VÉRIFIÉES". Sinon : ne pas nommer.
+- URLs : copier EXACTEMENT depuis le contexte. Aucune URL inventée. Si pas d'URL fiable, exclure le titre.
 
-STRUCTURE DE SORTIE OBLIGATOIRE (JSON via tool call) :
+==== STRUCTURE DE SORTIE OBLIGATOIRE (JSON via tool call) ====
 
-B. revue_de_presse (8 à 15 titres MAX, sinon réduire) :
-   Tableau d'objets {titre exact, source, date (AAAA-MM-JJ), url valide, rubrique}.
-   Rubriques autorisées : "telecom_numerique", "economie_finance", "gouvernance_regulation", "international".
-   Tri par rubrique. Aucune analyse.
+1. priorite_executive : LE sujet du jour qui exige une décision/arbitrage du DG.
+   Toujours présent. Si rien d'urgent : prendre le signal stratégique le plus structurant et l'expliquer comme tel.
+   { titre, impacts: [3 puces max, factuelles, ANSUT-centric], recommandation: [2-4 actions concrètes], niveau: "ROUGE|ORANGE|VERT|BLEU" }
 
-C. a_retenir (max 3 phrases) :
-   Tableau de 1 à 3 phrases courtes, factuelles, sans interprétation excessive.
+2. synthese_60s : 3 à 5 lignes ultra-condensées pour lire la journée en 60 secondes.
+   Chaque ligne : { sujet (court), impact_ansut (1 phrase), niveau: "ROUGE|ORANGE|VERT|BLEU" }
 
-D. retour_ansut :
-   - lecture_service_universel : { acces, usages, impact } — chaque champ : 1 phrase ou null si non applicable (ne pas écrire "RAS" inutilement, mettre null).
-   - implication_ansut : 2 lignes MAX. Si aucune implication réelle : null.
-   - niveau_attention : "Faible" | "Moyen" | "Élevé"
-   - action_suggeree : 1 phrase actionnable, ou null si rien d'utile à proposer.
+3. veille_par_pilier : la veille structurée PAR PILIER ANSUT (pas par actualité).
+   { connectivite: [items], usages_services: [items], regulation_souverainete: [items], concurrence_marche: [items] }
+   Chaque item : { titre, lecture_ansut (1-2 phrases : ce que ça veut dire pour l'ANSUT), niveau: "ROUGE|ORANGE|VERT|BLEU", url (depuis contexte), source }
+   Distribuer intelligemment les actualités du contexte. Vide ([]) autorisé pour un pilier sans matière.
 
-E. focus_du_jour : { titre, contenu (5 lignes max) } UNIQUEMENT si un sujet domine clairement la journée. Sinon : null.
+4. lecture_strategique : 1 à 2 sujets approfondis avec vraie analyse.
+   { sujet, opportunites: [puces], risques: [puces], scores: { acces, usage, gouvernance, souverainete } (chaque score 0-10) }
 
-F. activite_ansut :
-   - publications_count : nombre (fourni dans le contexte)
-   - visibilite : "Faible" | "Moyen" | "Fort" (fourni dans le contexte, ne pas recalculer)
+5. impact_projets_ansut : impact direct sur les projets connus de l'ANSUT.
+   Liste d'objets { domaine (ex: "Zones blanches", "RNHD", "Cockpit DG", "Identité numérique"), impact: "ÉLEVÉ|MOYEN|FAIBLE|AUCUN", commentaire (1 phrase) }
+   3 à 6 entrées. Si aucun projet impacté de façon connue : tableau vide.
 
-ANTI-HALLUCINATION NOMS : si tu mentionnes une personne, utiliser UNIQUEMENT le "RÉFÉRENTIEL PERSONNALITÉS VÉRIFIÉES". Sinon : ne pas nommer.
-URLS : copier EXACTEMENT depuis le contexte. Aucune URL inventée. Si pas d'URL fiable, exclure le titre.`;
+6. actions_immediates : ce que le DG/CODIR doit déclencher.
+   Liste d'objets { action (verbe d'action), responsable (ex: "DTDI", "DSIS", "CT", "DG"), delai (ex: "72h", "5 jours", "1 semaine") }
+   2 à 5 actions concrètes. Vide [] si vraiment rien.
+
+7. reputation_ansut : lecture critique de la perception ANSUT.
+   { positif: [puces courtes], negatif: [puces courtes], confusion_role: (string|null, ex: "ANSUT/ARTCI"), niveau_risque: "ROUGE|ORANGE|VERT|BLEU" }
+
+8. signaux_faibles : tendances émergentes / signaux à surveiller (régional, technologique, sociétal).
+   Liste de 3 à 6 strings courtes et précises (pas de génériques creux).
+
+9. revue_de_presse : 6 à 12 titres MAX, triés par rubrique, sans analyse.
+   Items { titre exact, source, date (AAAA-MM-JJ), url valide, rubrique: "telecom_numerique|economie_finance|gouvernance_regulation|international" }
+
+10. activite_ansut : { publications_count (fourni dans contexte), visibilite (fourni dans contexte) } — ne PAS recalculer.
+
+==== ANTI-FAIBLESSE ====
+Si le contexte est pauvre :
+- TOUJOURS produire priorite_executive en s'appuyant sur le signal le plus structurant disponible (mention, signal faible, tendance régionale)
+- TOUJOURS produire au moins 3 signaux_faibles (issus de la connaissance du secteur télécom/numérique africain)
+- TOUJOURS produire au moins 2 actions_immediates (ne serait-ce que "instruire", "cartographier", "préparer note")
+- Ne JAMAIS écrire "Aucune actualité disponible" comme contenu utile`;
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -521,35 +558,115 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
                     required: ['titre', 'source', 'date', 'url', 'rubrique'],
                   },
                 },
-                a_retenir: {
-                  type: 'array',
-                  description: 'Maximum 3 phrases courtes factuelles',
-                  items: { type: 'string' },
-                },
-                retour_ansut: {
+                priorite_executive: {
                   type: 'object',
-                  properties: {
-                    lecture_service_universel: {
-                      type: 'object',
-                      properties: {
-                        acces: { type: ['string', 'null'] },
-                        usages: { type: ['string', 'null'] },
-                        impact: { type: ['string', 'null'] },
-                      },
-                      required: ['acces', 'usages', 'impact'],
-                    },
-                    implication_ansut: { type: ['string', 'null'], description: '2 lignes max ou null' },
-                    niveau_attention: { type: 'string', enum: ['Faible', 'Moyen', 'Élevé'] },
-                    action_suggeree: { type: ['string', 'null'] },
-                  },
-                  required: ['lecture_service_universel', 'implication_ansut', 'niveau_attention', 'action_suggeree'],
-                },
-                focus_du_jour: {
-                  type: ['object', 'null'],
-                  description: 'UNIQUEMENT si un sujet domine clairement, sinon null',
+                  description: 'LE sujet du jour qui exige une décision/arbitrage. Toujours présent.',
                   properties: {
                     titre: { type: 'string' },
-                    contenu: { type: 'string', description: '5 lignes max' },
+                    impacts: { type: 'array', items: { type: 'string' }, description: '3 puces max, ANSUT-centric' },
+                    recommandation: { type: 'array', items: { type: 'string' }, description: '2 à 4 actions' },
+                    niveau: { type: 'string', enum: ['ROUGE', 'ORANGE', 'VERT', 'BLEU'] },
+                  },
+                  required: ['titre', 'impacts', 'recommandation', 'niveau'],
+                },
+                synthese_60s: {
+                  type: 'array',
+                  description: '3 à 5 lignes ultra-condensées',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      sujet: { type: 'string' },
+                      impact_ansut: { type: 'string' },
+                      niveau: { type: 'string', enum: ['ROUGE', 'ORANGE', 'VERT', 'BLEU'] },
+                    },
+                    required: ['sujet', 'impact_ansut', 'niveau'],
+                  },
+                },
+                veille_par_pilier: {
+                  type: 'object',
+                  properties: {
+                    connectivite: { type: 'array', items: { type: 'object', properties: { titre: { type: 'string' }, lecture_ansut: { type: 'string' }, niveau: { type: 'string', enum: ['ROUGE', 'ORANGE', 'VERT', 'BLEU'] }, url: { type: 'string' }, source: { type: 'string' } }, required: ['titre', 'lecture_ansut', 'niveau'] } },
+                    usages_services: { type: 'array', items: { type: 'object', properties: { titre: { type: 'string' }, lecture_ansut: { type: 'string' }, niveau: { type: 'string', enum: ['ROUGE', 'ORANGE', 'VERT', 'BLEU'] }, url: { type: 'string' }, source: { type: 'string' } }, required: ['titre', 'lecture_ansut', 'niveau'] } },
+                    regulation_souverainete: { type: 'array', items: { type: 'object', properties: { titre: { type: 'string' }, lecture_ansut: { type: 'string' }, niveau: { type: 'string', enum: ['ROUGE', 'ORANGE', 'VERT', 'BLEU'] }, url: { type: 'string' }, source: { type: 'string' } }, required: ['titre', 'lecture_ansut', 'niveau'] } },
+                    concurrence_marche: { type: 'array', items: { type: 'object', properties: { titre: { type: 'string' }, lecture_ansut: { type: 'string' }, niveau: { type: 'string', enum: ['ROUGE', 'ORANGE', 'VERT', 'BLEU'] }, url: { type: 'string' }, source: { type: 'string' } }, required: ['titre', 'lecture_ansut', 'niveau'] } },
+                  },
+                  required: ['connectivite', 'usages_services', 'regulation_souverainete', 'concurrence_marche'],
+                },
+                lecture_strategique: {
+                  type: 'array',
+                  description: '1 à 2 sujets approfondis avec scores stratégiques',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      sujet: { type: 'string' },
+                      opportunites: { type: 'array', items: { type: 'string' } },
+                      risques: { type: 'array', items: { type: 'string' } },
+                      scores: {
+                        type: 'object',
+                        properties: {
+                          acces: { type: 'number' },
+                          usage: { type: 'number' },
+                          gouvernance: { type: 'number' },
+                          souverainete: { type: 'number' },
+                        },
+                        required: ['acces', 'usage', 'gouvernance', 'souverainete'],
+                      },
+                    },
+                    required: ['sujet', 'opportunites', 'risques', 'scores'],
+                  },
+                },
+                impact_projets_ansut: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      domaine: { type: 'string' },
+                      impact: { type: 'string', enum: ['ÉLEVÉ', 'MOYEN', 'FAIBLE', 'AUCUN'] },
+                      commentaire: { type: 'string' },
+                    },
+                    required: ['domaine', 'impact', 'commentaire'],
+                  },
+                },
+                actions_immediates: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      action: { type: 'string' },
+                      responsable: { type: 'string' },
+                      delai: { type: 'string' },
+                    },
+                    required: ['action', 'responsable', 'delai'],
+                  },
+                },
+                reputation_ansut: {
+                  type: 'object',
+                  properties: {
+                    positif: { type: 'array', items: { type: 'string' } },
+                    negatif: { type: 'array', items: { type: 'string' } },
+                    confusion_role: { type: ['string', 'null'] },
+                    niveau_risque: { type: 'string', enum: ['ROUGE', 'ORANGE', 'VERT', 'BLEU'] },
+                  },
+                  required: ['positif', 'negatif', 'confusion_role', 'niveau_risque'],
+                },
+                signaux_faibles: {
+                  type: 'array',
+                  description: '3 à 6 signaux émergents précis',
+                  items: { type: 'string' },
+                },
+                revue_de_presse: {
+                  type: 'array',
+                  description: '6 à 12 titres MAX, triés par rubrique, sans analyse',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      titre: { type: 'string' },
+                      source: { type: 'string' },
+                      date: { type: 'string', description: 'AAAA-MM-JJ' },
+                      url: { type: 'string', description: 'URL EXACTE depuis le contexte' },
+                      rubrique: { type: 'string', enum: ['telecom_numerique', 'economie_finance', 'gouvernance_regulation', 'international'] },
+                    },
+                    required: ['titre', 'source', 'date', 'url', 'rubrique'],
                   },
                 },
                 activite_ansut: {
@@ -561,7 +678,8 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
                   required: ['publications_count', 'visibilite'],
                 },
               },
-              required: ['revue_de_presse', 'a_retenir', 'retour_ansut', 'activite_ansut'],
+              required: ['priorite_executive', 'synthese_60s', 'veille_par_pilier', 'lecture_strategique', 'impact_projets_ansut', 'actions_immediates', 'reputation_ansut', 'signaux_faibles', 'revue_de_presse', 'activite_ansut'],
+
             },
           },
         }],
@@ -665,11 +783,33 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     }
 
 
-    // Cap "à retenir" à 3 items
-    if (Array.isArray(matinale.a_retenir)) {
-      matinale.a_retenir = matinale.a_retenir.slice(0, 3);
-    } else {
-      matinale.a_retenir = [];
+    // Normaliser les nouveaux blocs intelligence exécutive
+    matinale.synthese_60s = Array.isArray(matinale.synthese_60s) ? matinale.synthese_60s.slice(0, 5) : [];
+    matinale.signaux_faibles = Array.isArray(matinale.signaux_faibles) ? matinale.signaux_faibles.slice(0, 6) : [];
+    matinale.actions_immediates = Array.isArray(matinale.actions_immediates) ? matinale.actions_immediates.slice(0, 5) : [];
+    matinale.impact_projets_ansut = Array.isArray(matinale.impact_projets_ansut) ? matinale.impact_projets_ansut.slice(0, 6) : [];
+    matinale.lecture_strategique = Array.isArray(matinale.lecture_strategique) ? matinale.lecture_strategique.slice(0, 2) : [];
+    if (!matinale.veille_par_pilier || typeof matinale.veille_par_pilier !== 'object') {
+      matinale.veille_par_pilier = { connectivite: [], usages_services: [], regulation_souverainete: [], concurrence_marche: [] };
+    }
+    for (const k of ['connectivite', 'usages_services', 'regulation_souverainete', 'concurrence_marche']) {
+      if (!Array.isArray(matinale.veille_par_pilier[k])) matinale.veille_par_pilier[k] = [];
+      // Normaliser les URLs des items pilier (et garder même sans URL valide — c'est de la lecture, pas de la presse)
+      matinale.veille_par_pilier[k] = matinale.veille_par_pilier[k].map((it: any) => ({
+        ...it,
+        url: it?.url ? (validUrls.has(normalizeUrl(it.url)) ? normalizeUrl(it.url) : '') : '',
+      })).slice(0, 5);
+    }
+    if (!matinale.reputation_ansut || typeof matinale.reputation_ansut !== 'object') {
+      matinale.reputation_ansut = { positif: [], negatif: [], confusion_role: null, niveau_risque: 'VERT' };
+    }
+    if (!matinale.priorite_executive || typeof matinale.priorite_executive !== 'object') {
+      matinale.priorite_executive = {
+        titre: 'Veille en attente de consolidation',
+        impacts: ['Faible volume d\'actualités vérifiées sur la fenêtre.'],
+        recommandation: ['Renforcer la collecte sur les piliers Connectivité et Concurrence.'],
+        niveau: 'BLEU',
+      };
     }
 
     // Forcer activite_ansut à utiliser les vraies métriques (jamais l'IA)
@@ -737,152 +877,190 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     };
     const RUBRIQUE_ORDER = ['telecom_numerique', 'economie_finance', 'gouvernance_regulation', 'international'];
 
-    const revue = matinale.revue_de_presse as Array<{ titre: string; source: string; date: string; url: string; rubrique: string }>;
-    const aRetenir = matinale.a_retenir as string[];
-    const ra = matinale.retour_ansut;
-    const focus = matinale.focus_du_jour;
+    const revue = (matinale.revue_de_presse || []) as Array<{ titre: string; source: string; date: string; url: string; rubrique: string }>;
     const act = matinale.activite_ansut;
+    const prio = matinale.priorite_executive;
+    const synthese = (matinale.synthese_60s || []) as Array<{ sujet: string; impact_ansut: string; niveau: string }>;
+    const veille = matinale.veille_par_pilier as Record<string, Array<{ titre: string; lecture_ansut: string; niveau: string; url?: string; source?: string }>>;
+    const lectureStrat = (matinale.lecture_strategique || []) as Array<{ sujet: string; opportunites: string[]; risques: string[]; scores: { acces: number; usage: number; gouvernance: number; souverainete: number } }>;
+    const impactProjets = (matinale.impact_projets_ansut || []) as Array<{ domaine: string; impact: string; commentaire: string }>;
+    const actions = (matinale.actions_immediates || []) as Array<{ action: string; responsable: string; delai: string }>;
+    const reput = matinale.reputation_ansut as { positif: string[]; negatif: string[]; confusion_role: string | null; niveau_risque: string };
+    const signaux = (matinale.signaux_faibles || []) as string[];
 
-    const niveauColor = ra?.niveau_attention === 'Élevé' ? '#ef4444'
-      : ra?.niveau_attention === 'Moyen' ? '#f59e0b' : '#10b981';
+    // Couleurs par niveau de criticité
+    const NIV_COLORS: Record<string, { bg: string; fg: string; border: string }> = {
+      ROUGE:  { bg: '#fef2f2', fg: '#991b1b', border: '#dc2626' },
+      ORANGE: { bg: '#fff7ed', fg: '#9a3412', border: '#ea580c' },
+      VERT:   { bg: '#f0fdf4', fg: '#166534', border: '#16a34a' },
+      BLEU:   { bg: '#eff6ff', fg: '#1e40af', border: '#2563eb' },
+    };
+    const nivBadge = (niv: string) => {
+      const c = NIV_COLORS[niv] || NIV_COLORS.BLEU;
+      return `<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;color:#fff;background:${c.border};letter-spacing:0.5px;">${niv}</span>`;
+    };
+    const impactBadge = (lvl: string) => {
+      const map: Record<string, string> = { 'ÉLEVÉ': '#dc2626', 'MOYEN': '#ea580c', 'FAIBLE': '#16a34a', 'AUCUN': '#9ca3af' };
+      return `<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;color:#fff;background:${map[lvl] || '#9ca3af'};">${lvl}</span>`;
+    };
 
-    // Indicateur qualité (G)
-    const qualiteScore = revue.length >= 8 ? 'Bonne' : revue.length >= 4 ? 'Moyenne' : 'Faible';
-    const qualiteColor = qualiteScore === 'Bonne' ? '#10b981' : qualiteScore === 'Moyenne' ? '#f59e0b' : '#ef4444';
-
-    // Group revue by rubrique
+    const RUBRIQUE_LABELS: Record<string, string> = {
+      telecom_numerique: 'Télécom / Numérique', economie_finance: 'Économie / Finance',
+      gouvernance_regulation: 'Gouvernance / Régulation', international: 'International',
+    };
+    const RUBRIQUE_ORDER = ['telecom_numerique', 'economie_finance', 'gouvernance_regulation', 'international'];
     const groupedRevue: Record<string, typeof revue> = {};
-    for (const r of revue) {
-      if (!groupedRevue[r.rubrique]) groupedRevue[r.rubrique] = [];
-      groupedRevue[r.rubrique].push(r);
-    }
-
+    for (const r of revue) { (groupedRevue[r.rubrique] ||= []).push(r); }
     const buildRubriqueBlock = (key: string) => {
       const items = groupedRevue[key];
       if (!items || items.length === 0) return '';
-      return `
-      <div style="margin-bottom:14px;">
-        <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#1e3a5f;text-transform:uppercase;letter-spacing:0.5px;">${RUBRIQUE_LABELS[key]}</p>
-        ${items.map(it => `
-        <div style="margin-bottom:6px;padding:8px 10px;background:#ffffff;border-radius:6px;border-left:3px solid #2563eb;">
-          <p style="margin:0 0 2px;font-size:13px;color:#1e3a5f;line-height:1.4;"><strong>${it.titre}</strong></p>
-          <p style="margin:0;font-size:11px;color:#6b7280;">${it.source} (${it.date}) — <a href="${it.url}" style="color:#2563eb;text-decoration:underline;" target="_blank">URL →</a></p>
-        </div>`).join('')}
-      </div>`;
+      return `<div style="margin-bottom:12px;"><p style="margin:0 0 6px;font-size:11px;font-weight:bold;color:#1e3a5f;text-transform:uppercase;letter-spacing:0.5px;">${RUBRIQUE_LABELS[key]}</p>${items.map(it => `<div style="margin-bottom:6px;padding:8px 10px;background:#ffffff;border-radius:6px;border-left:3px solid #2563eb;"><p style="margin:0 0 2px;font-size:13px;color:#1e3a5f;line-height:1.4;"><strong>${it.titre}</strong></p><p style="margin:0;font-size:11px;color:#6b7280;">${it.source} (${it.date})${it.url ? ` — <a href="${it.url}" style="color:#2563eb;" target="_blank">URL →</a>` : ''}</p></div>`).join('')}</div>`;
+    };
+
+    const PILIER_LABELS: Record<string, { label: string; color: string }> = {
+      connectivite: { label: '📡 Connectivité', color: '#2563eb' },
+      usages_services: { label: '💳 Usages & Services', color: '#7c3aed' },
+      regulation_souverainete: { label: '⚖️ Régulation & Souveraineté', color: '#0891b2' },
+      concurrence_marche: { label: '🏁 Concurrence & Marché', color: '#dc2626' },
+    };
+    const buildPilierBlock = (key: string) => {
+      const items = (veille?.[key] || []);
+      const cfg = PILIER_LABELS[key];
+      if (!items.length) return `<div style="margin-bottom:10px;padding:10px;background:#f9fafb;border-radius:6px;border-left:3px solid ${cfg.color};"><p style="margin:0;font-size:12px;font-weight:700;color:${cfg.color};">${cfg.label}</p><p style="margin:4px 0 0;font-size:11px;color:#9ca3af;font-style:italic;">Pas de signal sur la fenêtre.</p></div>`;
+      return `<div style="margin-bottom:14px;"><p style="margin:0 0 6px;font-size:13px;font-weight:700;color:${cfg.color};">${cfg.label}</p>${items.map(it => `<div style="margin-bottom:6px;padding:10px;background:#ffffff;border-radius:6px;border:1px solid #e5e7eb;border-left:3px solid ${cfg.color};"><table width="100%" cellpadding="0" cellspacing="0"><tr><td style="font-size:12px;color:#1e3a5f;"><strong>${it.titre}</strong></td><td style="text-align:right;width:70px;">${nivBadge(it.niveau)}</td></tr></table><p style="margin:6px 0 0;font-size:12px;color:#374151;line-height:1.5;">→ ${it.lecture_ansut}</p>${it.url ? `<p style="margin:4px 0 0;font-size:10px;color:#6b7280;"><a href="${it.url}" style="color:${cfg.color};" target="_blank">${it.source || 'source'} ↗</a></p>` : ''}</div>`).join('')}</div>`;
     };
 
     const allUrlsTraceability = revue.map(r => r.url).filter(Boolean);
+    // Indicateur qualité = volume de signaux exploitables (pas seulement la presse)
+    const totalSignaux = revue.length + (synthese?.length || 0) + Object.values(veille || {}).reduce((s, arr: any) => s + (arr?.length || 0), 0);
+    const qualiteScore = totalSignaux >= 12 ? 'Bonne' : totalSignaux >= 6 ? 'Moyenne' : 'Faible';
+    const qualiteColor = qualiteScore === 'Bonne' ? '#10b981' : qualiteScore === 'Moyenne' ? '#f59e0b' : '#ef4444';
+    const prioColor = NIV_COLORS[prio?.niveau || 'BLEU'];
 
     const htmlEmail = `<!DOCTYPE html>
-<html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:20px 0;">
-<tr><td align="center">
-<table width="640" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:20px 0;"><tr><td align="center">
+<table width="680" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
 
-<!-- A. EN-TÊTE -->
-<tr><td style="background:linear-gradient(135deg,#1e3a5f,#2563eb);padding:28px 30px;">
-  <h1 style="color:#ffffff;margin:0;font-size:22px;letter-spacing:0.3px;">Matinale CODIR – ANSUT</h1>
+<!-- EN-TÊTE -->
+<tr><td style="background:linear-gradient(135deg,#0f172a,#1e3a5f);padding:28px 30px;">
+  <p style="margin:0;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;">Système d'intelligence stratégique numérique</p>
+  <h1 style="color:#ffffff;margin:6px 0 0;font-size:24px;letter-spacing:0.3px;">Matinale CODIR – ANSUT</h1>
   <p style="color:#bfdbfe;margin:6px 0 0;font-size:13px;">${dateStr}</p>
-  <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;">
-    <tr>
-      <td style="font-size:11px;color:#dbeafe;">Génération (UTC) : <strong>${generatedAtUtc}</strong></td>
-      <td style="font-size:11px;color:#dbeafe;text-align:right;">Fenêtre : <strong>${freshnessHours}h</strong></td>
-    </tr>
-    <tr>
-      <td colspan="2" style="font-size:11px;color:#dbeafe;padding-top:4px;">Sources retenues : <strong>${revue.length}</strong> / Articles analysés : <strong>${articlesRaw?.length || 0}</strong></td>
-    </tr>
+  <p style="color:#94a3b8;margin:10px 0 0;font-size:11px;">Génération ${generatedAtUtc} · Fenêtre ${freshnessHours}h · ${totalSignaux} signaux exploités</p>
+</td></tr>
+
+<!-- 1. PRIORITÉ EXÉCUTIVE -->
+<tr><td style="padding:24px 24px 16px;">
+  <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:#dc2626;letter-spacing:1.5px;">🚨 PRIORITÉ EXÉCUTIVE</p>
+  <div style="padding:18px;background:${prioColor.bg};border-radius:10px;border-left:5px solid ${prioColor.border};">
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td style="font-size:16px;font-weight:700;color:${prioColor.fg};">${prio?.titre || ''}</td>
+      <td style="text-align:right;width:90px;">${nivBadge(prio?.niveau || 'BLEU')}</td>
+    </tr></table>
+    ${(prio?.impacts || []).length ? `<p style="margin:14px 0 4px;font-size:11px;font-weight:700;color:${prioColor.fg};text-transform:uppercase;letter-spacing:0.5px;">Impact potentiel</p><ul style="margin:0;padding-left:18px;">${prio.impacts.map((i: string) => `<li style="font-size:13px;color:#1e3a5f;line-height:1.5;margin-bottom:3px;">${i}</li>`).join('')}</ul>` : ''}
+    ${(prio?.recommandation || []).length ? `<p style="margin:12px 0 4px;font-size:11px;font-weight:700;color:${prioColor.fg};text-transform:uppercase;letter-spacing:0.5px;">Recommandation IA</p><ul style="margin:0;padding-left:18px;">${prio.recommandation.map((i: string) => `<li style="font-size:13px;color:#1e3a5f;line-height:1.5;margin-bottom:3px;">${i}</li>`).join('')}</ul>` : ''}
+  </div>
+</td></tr>
+
+<!-- 2. SYNTHÈSE 60s -->
+${synthese.length ? `<tr><td style="padding:0 24px 20px;">
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 10px;border-bottom:2px solid #6366f1;padding-bottom:6px;">⏱️ Synthèse 60 secondes</h2>
+  <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+    <tr style="background:#f1f5f9;"><th style="padding:8px;text-align:left;font-size:11px;color:#475569;text-transform:uppercase;">Sujet</th><th style="padding:8px;text-align:left;font-size:11px;color:#475569;text-transform:uppercase;">Impact ANSUT</th><th style="padding:8px;text-align:center;font-size:11px;color:#475569;text-transform:uppercase;width:80px;">Niveau</th></tr>
+    ${synthese.map(s => `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:8px;font-size:13px;color:#1e3a5f;font-weight:600;">${s.sujet}</td><td style="padding:8px;font-size:12px;color:#374151;">${s.impact_ansut}</td><td style="padding:8px;text-align:center;">${nivBadge(s.niveau)}</td></tr>`).join('')}
   </table>
-</td></tr>
-
-<!-- B. REVUE DE PRESSE -->
-<tr><td style="padding:24px;">
-  <h2 style="color:#1e3a5f;font-size:16px;margin:0 0 14px;border-bottom:2px solid #2563eb;padding-bottom:6px;">B. Revue de presse</h2>
-  ${revue.length === 0 ? '<p style="font-size:13px;color:#6b7280;font-style:italic;">Aucun titre vérifié sur la fenêtre de veille.</p>' :
-    RUBRIQUE_ORDER.map(buildRubriqueBlock).join('')}
-</td></tr>
-
-<!-- C. À RETENIR -->
-<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:16px;margin:0 0 12px;border-bottom:2px solid #6366f1;padding-bottom:6px;">C. À retenir aujourd'hui</h2>
-  ${aRetenir.length === 0 ? '<p style="font-size:13px;color:#6b7280;font-style:italic;">—</p>' : `
-  <ul style="margin:0;padding-left:20px;">
-    ${aRetenir.map(p => `<li style="margin:0 0 6px;font-size:13px;color:#1e3a5f;line-height:1.5;">${p}</li>`).join('')}
-  </ul>`}
-</td></tr>
-
-<!-- D. RETOUR ANSUT -->
-<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:16px;margin:0 0 12px;border-bottom:2px solid #8b5cf6;padding-bottom:6px;">D. Retour ANSUT</h2>
-  <div style="padding:14px;background-color:#faf5ff;border-radius:8px;">
-
-    ${(ra?.lecture_service_universel?.acces || ra?.lecture_service_universel?.usages || ra?.lecture_service_universel?.impact) ? `
-    <p style="margin:0 0 6px;font-size:12px;font-weight:bold;color:#6b21a8;">D1. Lecture Service Universel</p>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;">
-      ${ra.lecture_service_universel.acces ? `<tr><td style="font-size:12px;color:#6b7280;width:70px;padding:2px 0;"><strong>Accès :</strong></td><td style="font-size:13px;color:#1e3a5f;padding:2px 0;">${ra.lecture_service_universel.acces}</td></tr>` : ''}
-      ${ra.lecture_service_universel.usages ? `<tr><td style="font-size:12px;color:#6b7280;width:70px;padding:2px 0;"><strong>Usages :</strong></td><td style="font-size:13px;color:#1e3a5f;padding:2px 0;">${ra.lecture_service_universel.usages}</td></tr>` : ''}
-      ${ra.lecture_service_universel.impact ? `<tr><td style="font-size:12px;color:#6b7280;width:70px;padding:2px 0;"><strong>Impact :</strong></td><td style="font-size:13px;color:#1e3a5f;padding:2px 0;">${ra.lecture_service_universel.impact}</td></tr>` : ''}
-    </table>` : ''}
-
-    ${ra?.implication_ansut ? `
-    <p style="margin:8px 0 4px;font-size:12px;font-weight:bold;color:#6b21a8;">D2. Implication ANSUT</p>
-    <p style="margin:0 0 10px;font-size:13px;color:#1e3a5f;line-height:1.5;">${ra.implication_ansut}</p>` : ''}
-
-    <p style="margin:8px 0 4px;font-size:12px;font-weight:bold;color:#6b21a8;">D3. Niveau d'attention</p>
-    <p style="margin:0 0 10px;"><span style="display:inline-block;padding:4px 12px;border-radius:14px;font-size:12px;font-weight:700;color:#ffffff;background:${niveauColor};">${ra?.niveau_attention || 'Faible'}</span></p>
-
-    ${ra?.action_suggeree ? `
-    <p style="margin:8px 0 4px;font-size:12px;font-weight:bold;color:#6b21a8;">D4. Action suggérée</p>
-    <p style="margin:0;font-size:13px;color:#1e3a5f;line-height:1.5;">${ra.action_suggeree}</p>` : ''}
-
-  </div>
-</td></tr>
-
-<!-- E. FOCUS DU JOUR (optionnel) -->
-${focus && focus.titre ? `
-<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:16px;margin:0 0 12px;border-bottom:2px solid #f59e0b;padding-bottom:6px;">E. Focus du jour</h2>
-  <div style="padding:14px;background-color:#fffbeb;border-radius:8px;border-left:4px solid #f59e0b;">
-    <p style="margin:0 0 6px;font-size:14px;font-weight:bold;color:#92400e;">${focus.titre}</p>
-    <p style="margin:0;font-size:13px;color:#78350f;line-height:1.5;white-space:pre-line;">${focus.contenu}</p>
-  </div>
 </td></tr>` : ''}
+
+<!-- 3. VEILLE STRATÉGIQUE PAR PILIER -->
+<tr><td style="padding:0 24px 20px;">
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #2563eb;padding-bottom:6px;">🎯 Veille stratégique par pilier ANSUT</h2>
+  ${['connectivite','usages_services','regulation_souverainete','concurrence_marche'].map(buildPilierBlock).join('')}
+</td></tr>
+
+<!-- 4. LECTURE STRATÉGIQUE -->
+${lectureStrat.length ? `<tr><td style="padding:0 24px 20px;">
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #8b5cf6;padding-bottom:6px;">🧠 Lecture stratégique ANSUT</h2>
+  ${lectureStrat.map(l => `<div style="margin-bottom:14px;padding:14px;background:#faf5ff;border-radius:8px;border-left:4px solid #8b5cf6;">
+    <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#6b21a8;">${l.sujet}</p>
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td style="vertical-align:top;width:50%;padding-right:8px;"><p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#16a34a;text-transform:uppercase;">Opportunités</p><ul style="margin:0;padding-left:16px;">${(l.opportunites||[]).map(o=>`<li style="font-size:12px;color:#1e3a5f;line-height:1.5;">${o}</li>`).join('')}</ul></td>
+      <td style="vertical-align:top;width:50%;padding-left:8px;border-left:1px solid #e9d5ff;"><p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#dc2626;text-transform:uppercase;">Risques</p><ul style="margin:0;padding-left:16px;">${(l.risques||[]).map(r=>`<li style="font-size:12px;color:#1e3a5f;line-height:1.5;">${r}</li>`).join('')}</ul></td>
+    </tr></table>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;background:#fff;border-radius:6px;"><tr>
+      <td style="padding:6px;text-align:center;font-size:11px;color:#6b7280;border-right:1px solid #e5e7eb;"><strong style="display:block;color:#6b21a8;font-size:14px;">${l.scores?.acces ?? '–'}/10</strong>Accès</td>
+      <td style="padding:6px;text-align:center;font-size:11px;color:#6b7280;border-right:1px solid #e5e7eb;"><strong style="display:block;color:#6b21a8;font-size:14px;">${l.scores?.usage ?? '–'}/10</strong>Usage</td>
+      <td style="padding:6px;text-align:center;font-size:11px;color:#6b7280;border-right:1px solid #e5e7eb;"><strong style="display:block;color:#6b21a8;font-size:14px;">${l.scores?.gouvernance ?? '–'}/10</strong>Gouvernance</td>
+      <td style="padding:6px;text-align:center;font-size:11px;color:#6b7280;"><strong style="display:block;color:#6b21a8;font-size:14px;">${l.scores?.souverainete ?? '–'}/10</strong>Souveraineté</td>
+    </tr></table>
+  </div>`).join('')}
+</td></tr>` : ''}
+
+<!-- 5. IMPACT PROJETS ANSUT -->
+${impactProjets.length ? `<tr><td style="padding:0 24px 20px;">
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #f59e0b;padding-bottom:6px;">🎯 Impact direct projets ANSUT</h2>
+  <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+    <tr style="background:#fffbeb;"><th style="padding:8px;text-align:left;font-size:11px;color:#92400e;text-transform:uppercase;">Domaine / Projet</th><th style="padding:8px;text-align:center;font-size:11px;color:#92400e;text-transform:uppercase;width:90px;">Impact</th><th style="padding:8px;text-align:left;font-size:11px;color:#92400e;text-transform:uppercase;">Lecture</th></tr>
+    ${impactProjets.map(p => `<tr style="border-bottom:1px solid #fde68a;"><td style="padding:8px;font-size:13px;font-weight:600;color:#1e3a5f;">${p.domaine}</td><td style="padding:8px;text-align:center;">${impactBadge(p.impact)}</td><td style="padding:8px;font-size:12px;color:#374151;">${p.commentaire}</td></tr>`).join('')}
+  </table>
+</td></tr>` : ''}
+
+<!-- 6. ACTIONS IMMÉDIATES -->
+${actions.length ? `<tr><td style="padding:0 24px 20px;">
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #dc2626;padding-bottom:6px;">⚡ Actions immédiates</h2>
+  <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#fef2f2;border-radius:8px;overflow:hidden;">
+    <tr style="background:#fee2e2;"><th style="padding:10px;text-align:left;font-size:11px;color:#991b1b;text-transform:uppercase;">Action</th><th style="padding:10px;text-align:center;font-size:11px;color:#991b1b;text-transform:uppercase;width:120px;">Responsable</th><th style="padding:10px;text-align:center;font-size:11px;color:#991b1b;text-transform:uppercase;width:90px;">Délai</th></tr>
+    ${actions.map(a => `<tr style="border-bottom:1px solid #fecaca;"><td style="padding:10px;font-size:13px;color:#1e3a5f;">${a.action}</td><td style="padding:10px;text-align:center;font-size:12px;font-weight:700;color:#991b1b;">${a.responsable}</td><td style="padding:10px;text-align:center;font-size:12px;font-weight:700;color:#991b1b;">${a.delai}</td></tr>`).join('')}
+  </table>
+</td></tr>` : ''}
+
+<!-- 7. RÉPUTATION ANSUT -->
+<tr><td style="padding:0 24px 20px;">
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #0891b2;padding-bottom:6px;">🛡️ Réputation & visibilité ANSUT</h2>
+  <div style="padding:14px;background:#ecfeff;border-radius:8px;">
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td style="vertical-align:top;width:50%;padding-right:8px;"><p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#16a34a;text-transform:uppercase;">✅ Positif</p>${(reput?.positif||[]).length ? `<ul style="margin:0;padding-left:16px;">${reput.positif.map(p=>`<li style="font-size:12px;color:#1e3a5f;line-height:1.5;">${p}</li>`).join('')}</ul>` : '<p style="margin:0;font-size:11px;color:#9ca3af;font-style:italic;">—</p>'}</td>
+      <td style="vertical-align:top;width:50%;padding-left:8px;border-left:1px solid #cffafe;"><p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#dc2626;text-transform:uppercase;">⚠️ Négatif</p>${(reput?.negatif||[]).length ? `<ul style="margin:0;padding-left:16px;">${reput.negatif.map(n=>`<li style="font-size:12px;color:#1e3a5f;line-height:1.5;">${n}</li>`).join('')}</ul>` : '<p style="margin:0;font-size:11px;color:#9ca3af;font-style:italic;">—</p>'}</td>
+    </tr></table>
+    ${reput?.confusion_role ? `<p style="margin:10px 0 0;font-size:12px;color:#9a3412;background:#fff7ed;padding:6px 10px;border-radius:6px;">🔁 Confusion de rôle détectée : <strong>${reput.confusion_role}</strong></p>` : ''}
+    <p style="margin:10px 0 0;font-size:12px;color:#1e3a5f;">Risque réputation : ${nivBadge(reput?.niveau_risque || 'VERT')}</p>
+  </div>
+</td></tr>
+
+<!-- 8. SIGNAUX FAIBLES -->
+${signaux.length ? `<tr><td style="padding:0 24px 20px;">
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #6366f1;padding-bottom:6px;">📡 Signaux faibles & tendances émergentes</h2>
+  <div style="padding:12px;background:#eef2ff;border-radius:8px;"><ul style="margin:0;padding-left:18px;">${signaux.map(s=>`<li style="font-size:12px;color:#3730a3;line-height:1.6;margin-bottom:3px;">${s}</li>`).join('')}</ul></div>
+</td></tr>` : ''}
+
+<!-- 9. REVUE DE PRESSE (sources) -->
+<tr><td style="padding:0 24px 20px;">
+  <h2 style="color:#475569;font-size:14px;margin:0 0 10px;border-bottom:1px dashed #cbd5e1;padding-bottom:4px;">📰 Sources consultées (revue de presse)</h2>
+  ${revue.length === 0 ? '<p style="font-size:12px;color:#9ca3af;font-style:italic;">Pas de presse vérifiée sur la fenêtre — analyse fondée sur signaux internes et tendances sectorielles.</p>' : RUBRIQUE_ORDER.map(buildRubriqueBlock).join('')}
+</td></tr>
 
 <!-- F. ACTIVITÉ ANSUT -->
 <tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:16px;margin:0 0 12px;border-bottom:2px solid #10b981;padding-bottom:6px;">F. Activité ANSUT</h2>
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border-radius:8px;">
-    <tr>
-      <td style="padding:12px;font-size:13px;color:#1e3a5f;"><strong>Publications :</strong> ${act.publications_count}</td>
-      <td style="padding:12px;font-size:13px;color:#1e3a5f;text-align:right;"><strong>Visibilité :</strong> <span style="color:${act.visibilite === 'Fort' ? '#10b981' : act.visibilite === 'Moyen' ? '#f59e0b' : '#ef4444'};font-weight:700;">${act.visibilite}</span></td>
-    </tr>
-  </table>
+  <h2 style="color:#1e3a5f;font-size:14px;margin:0 0 10px;border-bottom:1px dashed #cbd5e1;padding-bottom:4px;">📣 Activité ANSUT (24h)</h2>
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border-radius:6px;"><tr>
+    <td style="padding:10px;font-size:12px;color:#1e3a5f;"><strong>Publications :</strong> ${act?.publications_count ?? 0}</td>
+    <td style="padding:10px;font-size:12px;color:#1e3a5f;text-align:right;"><strong>Visibilité :</strong> <span style="color:${act?.visibilite === 'Fort' ? '#10b981' : act?.visibilite === 'Moyen' ? '#f59e0b' : '#ef4444'};font-weight:700;">${act?.visibilite || 'Faible'}</span></td>
+  </tr></table>
 </td></tr>
 
-<!-- G. TRAÇABILITÉ -->
+<!-- TRAÇABILITÉ -->
 <tr><td style="padding:0 24px 24px;">
-  <h2 style="color:#1e3a5f;font-size:16px;margin:0 0 12px;border-bottom:2px solid #6b7280;padding-bottom:6px;">G. Traçabilité</h2>
-  <div style="padding:12px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
-    <p style="margin:0 0 6px;font-size:11px;color:#6b7280;"><strong>Timestamp collecte :</strong> ${generatedAtUtc}</p>
-    <p style="margin:0 0 6px;font-size:11px;color:#6b7280;"><strong>Indicateur qualité :</strong> <span style="color:${qualiteColor};font-weight:700;">${qualiteScore}</span> (${revue.length} sources retenues sur ${articlesRaw?.length || 0} analysées)</p>
-    ${allUrlsTraceability.length > 0 ? `
-    <p style="margin:8px 0 4px;font-size:11px;font-weight:bold;color:#374151;">URLs utilisées :</p>
-    <ol style="margin:0;padding-left:18px;">
-      ${allUrlsTraceability.map(u => `<li style="font-size:10px;color:#6b7280;line-height:1.4;word-break:break-all;"><a href="${u}" style="color:#2563eb;text-decoration:none;" target="_blank">${u}</a></li>`).join('')}
-    </ol>` : ''}
+  <div style="padding:10px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb;">
+    <p style="margin:0;font-size:10px;color:#6b7280;"><strong>Qualité du livrable :</strong> <span style="color:${qualiteColor};font-weight:700;">${qualiteScore}</span> · ${totalSignaux} signaux exploités · ${revue.length} sources presse · ${articlesRaw?.length || 0} articles analysés</p>
+    ${allUrlsTraceability.length > 0 ? `<details style="margin-top:6px;"><summary style="font-size:10px;color:#374151;cursor:pointer;">URLs sources (${allUrlsTraceability.length})</summary><ol style="margin:6px 0 0;padding-left:16px;">${allUrlsTraceability.map(u => `<li style="font-size:9px;color:#6b7280;line-height:1.4;word-break:break-all;"><a href="${u}" style="color:#2563eb;text-decoration:none;" target="_blank">${u}</a></li>`).join('')}</ol></details>` : ''}
   </div>
 </td></tr>
 
-<tr><td style="background-color:#f8fafc;padding:16px;text-align:center;border-top:1px solid #e5e7eb;">
-  <p style="margin:0;color:#9ca3af;font-size:10px;">ANSUT RADAR — Matinale CODIR — Document interne</p>
-</td></tr>
+<tr><td style="background-color:#0f172a;padding:14px;text-align:center;"><p style="margin:0;color:#64748b;font-size:10px;letter-spacing:0.5px;">ANSUT RADAR · Système d'intelligence stratégique numérique · Document interne</p></td></tr>
 
-</table>
-</td></tr>
-</table>
-</body>
-</html>`;
+</table></td></tr></table></body></html>`;
+
 
 
     // Compute freshness metadata for UI transparency
