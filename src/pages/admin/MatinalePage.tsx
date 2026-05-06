@@ -68,6 +68,16 @@ export default function MatinalePage() {
     await send.mutateAsync({ freshnessHours: freshness });
   };
 
+  const handleExportPDF = () => {
+    if (!matinaleData) return;
+    try {
+      exportMatinalePDF(matinaleData, freshness);
+      toast.success('PDF exporté');
+    } catch (e: any) {
+      toast.error(`Erreur export PDF : ${e?.message || e}`);
+    }
+  };
+
   const freshnessLabel = freshness === 24 ? '24 dernières heures' : freshness === 48 ? '48 dernières heures' : '7 derniers jours';
 
   return (
