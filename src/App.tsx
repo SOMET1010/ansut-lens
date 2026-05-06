@@ -169,6 +169,7 @@ const App = () => (
                           <Route element={<PermissionRoute permission="manage_newsletters" />}>
                             <Route path="/admin/matinale" element={<MatinalePage />} />
                             <Route path="/admin/freshness" element={<FreshnessPage />} />
+                            <Route path="/admin/scoring" element={<ScoringPage />} />
                           </Route>
                           
                           <Route element={<PermissionRoute permission="manage_keywords" />}>
