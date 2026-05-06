@@ -327,6 +327,18 @@ export default function AdminPage() {
               loading={isLoading}
             />
           </PermissionGate>
+          <PermissionGate permission="manage_cron_jobs">
+            <AdminNavCard
+              color="blue"
+              icon={<ShieldCheck size={24} />}
+              title="Connecteurs sociaux"
+              badge="Sécurité"
+              badgeVariant="info"
+              subtitle="État des secrets et autorisations pour X, LinkedIn, Facebook, Telegram, YouTube, TikTok."
+              to="/admin/connecteurs-sociaux"
+              loading={isLoading}
+            />
+          </PermissionGate>
         </div>
       </section>
 
