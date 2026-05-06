@@ -394,3 +394,127 @@ function Section({ icon: Icon, title, items, color }: { icon: React.ElementType;
     </div>
   );
 }
+
+function DiagnosticPanel({ diag, loading, onRun }: { diag: DiagResponse | null; loading: boolean; onRun: () => void }) {
+  if (loading && !diag) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    );
+  }
+  if (!diag) {
+    return (
+      <div className="text-center py-8 border border-dashed rounded-lg">
+        <Activity className="h-8 w-8 mx-auto mb-2 text-primary" />
+        <p className="text-sm text-muted-foreground max-w-md mx-auto">
+          Lancez un diagnostic réel : test d'accès URL, scraping, API officielle et données présentes en base, par compte.
+        </p>
+        <Button onClick={onRun} className="mt-3 gap-1.5" size="sm">
+          <Activity className="h-3.5 w-3.5" /> Lancer le diagnostic
+        </Button>
+      </div>
+    );
+  }
+
+  const s = diag.summary;
+  const statusBadge = (g: DiagAccount['globalStatus']) => {
+    const map = {
+      healthy: { c: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30', l: 'Opérationnel' },
+      degraded: { c: 'bg-amber-500/15 text-amber-700 border-amber-500/30', l: 'Dégradé' },
+      blocked: { c: 'bg-red-500/15 text-red-700 border-red-500/30', l: 'Bloqué' },
+      no_data: { c: 'bg-slate-500/15 text-slate-700 border-slate-500/30', l: 'Sans données' },
+    } as const;
+    return <Badge variant="outline" className={`${map[g].c} border`}>{map[g].l}</Badge>;
+  };
+
+  const checkIcon = (st: DiagCheck['status']) => {
+    if (st === 'ok') return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />;
+    if (st === 'warn') return <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />;
+    if (st === 'fail') return <ShieldAlert className="h-3.5 w-3.5 text-red-600 shrink-0" />;
+    return <Activity className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="p-2 rounded-md border bg-muted/30 text-center">
+          <p className="text-lg font-bold">{s.total}</p><p className="text-[10px] text-muted-foreground">Comptes testés</p>
+        </div>
+        <div className="p-2 rounded-md border bg-emerald-500/10 text-center">
+          <p className="text-lg font-bold text-emerald-700">{s.healthy}</p><p className="text-[10px] text-muted-foreground">Opérationnels</p>
+        </div>
+        <div className="p-2 rounded-md border bg-red-500/10 text-center">
+          <p className="text-lg font-bold text-red-700">{s.blocked}</p><p className="text-[10px] text-muted-foreground">Bloqués</p>
+        </div>
+        <div className="p-2 rounded-md border bg-slate-500/10 text-center">
+          <p className="text-lg font-bold text-slate-700">{s.no_data}</p><p className="text-[10px] text-muted-foreground">Sans données</p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 text-[11px]">
+        <Badge variant="outline" className={s.firecrawl_configured ? 'border-emerald-500 text-emerald-700' : 'border-red-500 text-red-700'}>
+          Firecrawl : {s.firecrawl_configured ? 'configuré' : 'absent'}
+        </Badge>
+        <Badge variant="outline" className={s.twitter_api_configured ? 'border-emerald-500 text-emerald-700' : 'border-red-500 text-red-700'}>
+          API X : {s.twitter_api_configured ? 'configurée' : 'absente'}
+        </Badge>
+        <Badge variant="outline" className={s.linkedin_oauth_configured ? 'border-emerald-500 text-emerald-700' : 'border-red-500 text-red-700'}>
+          LinkedIn OAuth : {s.linkedin_oauth_configured ? 'configuré' : 'absent'}
+        </Badge>
+        <Button variant="ghost" size="sm" className="h-6 ml-auto gap-1.5" onClick={onRun} disabled={loading}>
+          <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} /> Relancer
+        </Button>
+      </div>
+
+      <div className="space-y-3">
+        {diag.results.map((r) => {
+          const Icon = platformIcons[r.plateforme] || Globe;
+          return (
+            <div key={r.id} className="border rounded-lg p-3 space-y-2 bg-card">
+              <div className="flex items-start gap-2 flex-wrap">
+                <Icon className="h-4 w-4 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-sm font-semibold">{r.nom}</p>
+                    <span className="text-xs text-muted-foreground">@{r.identifiant} · {r.plateforme}</span>
+                    {statusBadge(r.globalStatus)}
+                  </div>
+                  {r.url_profil && (
+                    <a href={r.url_profil} target="_blank" rel="noopener noreferrer" className="text-[11px] text-primary hover:underline inline-flex items-center gap-1">
+                      {r.url_profil} <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-xs p-2 rounded-md bg-muted/40 border">
+                <p><span className="font-semibold">Diagnostic : </span>{r.diagnosis}</p>
+                <p className="mt-1"><span className="font-semibold text-primary">Action : </span>{r.recommendation}</p>
+              </div>
+
+              <div className="space-y-1">
+                {r.checks.map((c, i) => (
+                  <div key={i} className="flex items-start gap-2 text-xs">
+                    {checkIcon(c.status)}
+                    <span className="font-medium w-36 shrink-0">{c.step}</span>
+                    <span className="flex-1 text-muted-foreground break-words">{c.detail}</span>
+                    {typeof c.durationMs === 'number' && (
+                      <span className="text-[10px] text-muted-foreground">{c.durationMs}ms</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="text-[10px] text-muted-foreground text-right">
+        Diagnostic généré le {new Date(diag.generated_at).toLocaleString('fr-FR')}
+      </p>
+    </div>
+  );
+}
