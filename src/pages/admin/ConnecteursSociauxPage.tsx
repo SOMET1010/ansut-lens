@@ -302,6 +302,21 @@ export default function ConnecteursSociauxPage() {
           </p>
         </CardContent>
       </Card>
+
+      {editing && (
+        <SocialCredentialsDialog
+          open={!!editing}
+          onOpenChange={(v) => !v && setEditing(null)}
+          connectorId={editing.id}
+          connectorName={editing.name}
+          secrets={editing.secrets.map((s) => ({
+            name: s.name,
+            label: s.label,
+            required: s.required,
+          }))}
+          onSaved={load}
+        />
+      )}
     </div>
   );
 }
