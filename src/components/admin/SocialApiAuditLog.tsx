@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
-import { Loader2, History, RotateCw, Plus, Pencil, Trash2, CalendarIcon, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, History, RotateCw, Plus, Pencil, Trash2, CalendarIcon, X, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -134,17 +135,114 @@ export function SocialApiAuditLog({ refreshKey = 0 }: { refreshKey?: number }) {
     setDateTo(undefined);
   };
 
+  const [exporting, setExporting] = useState(false);
+  const handleExportCsv = async () => {
+    setExporting(true);
+    try {
+      let q = supabase
+        .from('social_api_audit_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1000);
+      if (connectorFilter !== 'all') q = q.eq('connector', connectorFilter);
+      if (actionFilter !== 'all') q = q.eq('action', actionFilter);
+      if (dateFrom) {
+        const d = new Date(dateFrom); d.setHours(0, 0, 0, 0);
+        q = q.gte('created_at', d.toISOString());
+      }
+      if (dateTo) {
+        const d = new Date(dateTo); d.setHours(23, 59, 59, 999);
+        q = q.lte('created_at', d.toISOString());
+      }
+      if (search.trim()) {
+        const s = search.trim().replace(/[%,]/g, '');
+        q = q.or(`secret_name.ilike.%${s}%,connector.ilike.%${s}%,notes.ilike.%${s}%`);
+      }
+      const { data, error } = await q;
+      if (error) throw error;
+      const list = (data || []) as AuditRow[];
+
+      // Hydrate missing performer names
+      const ids = Array.from(new Set(list.map((r) => r.performed_by).filter(Boolean) as string[]));
+      const missing = ids.filter((id) => !(id in profiles));
+      let nameMap = { ...profiles };
+      if (missing.length) {
+        const { data: profs } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', missing);
+        (profs || []).forEach((p: any) => {
+          nameMap[p.id] = p.full_name || p.id.slice(0, 8);
+        });
+      }
+
+      const escape = (v: any) => {
+        const s = v == null ? '' : String(v);
+        return /[",;\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const headers = [
+        'date_iso',
+        'date_locale',
+        'connector',
+        'secret_name',
+        'action',
+        'performer_id',
+        'performer_name',
+        'value_preview',
+        'notes',
+      ];
+      const lines = [headers.join(',')];
+      list.forEach((r) => {
+        const performer = r.performed_by ? nameMap[r.performed_by] || r.performed_by : 'Système';
+        lines.push(
+          [
+            r.created_at,
+            new Date(r.created_at).toLocaleString('fr-FR'),
+            r.connector,
+            r.secret_name,
+            r.action,
+            r.performed_by || '',
+            performer,
+            r.value_preview || '',
+            r.notes || '',
+          ].map(escape).join(','),
+        );
+      });
+      const csv = '\uFEFF' + lines.join('\n'); // BOM for Excel UTF-8
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit-api-sociaux-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success(`${list.length} ligne(s) exportée(s)`);
+    } catch (e: any) {
+      toast.error('Export impossible : ' + (e?.message || 'erreur'));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <History className="h-5 w-5 text-primary" />
-          Journal d'audit — paramètres API sociaux
-        </CardTitle>
-        <CardDescription>
-          Toute modification (création, mise à jour, rotation, suppression) est enregistrée.
-          Les valeurs des secrets ne sont jamais affichées en clair (uniquement les 4 derniers caractères).
-        </CardDescription>
+      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+        <div>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <History className="h-5 w-5 text-primary" />
+            Journal d'audit — paramètres API sociaux
+          </CardTitle>
+          <CardDescription>
+            Toute modification (création, mise à jour, rotation, suppression) est enregistrée.
+            Les valeurs des secrets ne sont jamais affichées en clair (uniquement les 4 derniers caractères).
+          </CardDescription>
+        </div>
+        <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={exporting} className="shrink-0">
+          {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+          Exporter CSV
+        </Button>
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Filter bar */}
