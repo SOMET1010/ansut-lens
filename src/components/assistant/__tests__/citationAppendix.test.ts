@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import jsPDF from 'jspdf';
 import { Document, Packer } from 'docx';
+import JSZip from 'jszip';
 import {
   renderPdfCitationAppendix,
   buildDocxCitationAppendix,
