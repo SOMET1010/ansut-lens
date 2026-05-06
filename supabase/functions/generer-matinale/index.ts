@@ -508,8 +508,11 @@ Deno.serve(async (req) => {
         }).join('\n')
       : 'Aucune personnalité enregistrée.';
 
-    const context = `=== ACTUALITÉS CONSOLIDÉES (${consolidated.length} faits uniques, ${dupGroups} doublon(s) fusionné(s)) ===
-Une seule référence [N] par fait, toutes les sources listées par groupe.
+    const context = `=== SIGNAUX CONSOLIDÉS (${consolidated.length} faits uniques après fusion ; ${fusionnesCount} doublons fusionnés sur ${allItems.length} items bruts) ===
+RÈGLE DE CONSOLIDATION : chaque entrée [N] représente UN signal unique, déjà fusionné depuis plusieurs sources.
+- Ne JAMAIS recréer un item par source. Un signal = une entrée, même s'il apparaît 5 fois dans la presse.
+- Quand un signal est marqué [SIGNAL CONSOLIDÉ ×N], cela renforce sa pertinence stratégique (à hiérarchiser plus haut).
+- Présenter les sources groupées (ex: "selon Reuters, Jeune Afrique et APA") plutôt que dupliquer le sujet.
 ${consolidatedList}
 
 === MENTIONS DIRECTES ANSUT (articles citant l'ANSUT) ===
