@@ -401,6 +401,12 @@ export function MatinaleSections({ data, freshnessHours = 24 }: { data: any; fre
               <Radar className="h-4 w-4 text-blue-600" />
               Signaux faibles
               <Badge variant="secondary" className="ml-auto text-xs">{signaux.length}</Badge>
+              <DrillBtn payload={{
+                title: 'Signaux faibles',
+                description: 'Tendances émergentes à surveiller',
+                keywords: signaux.flatMap((s: string) => s.split(/\s+/)).filter((w: string) => w.length > 4),
+                analyzedItems: signaux.map((s: string) => ({ label: s })),
+              }} />
             </CardTitle>
             <CardDescription>Tendances émergentes à surveiller</CardDescription>
           </CardHeader>
