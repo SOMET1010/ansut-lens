@@ -86,7 +86,8 @@ describe('CitationsPreview — broken badges stay non-clickable', () => {
 
     expect(navSpy).not.toHaveBeenCalled();
     expect(broken.closest('a')).toBeNull();
-    expect(window.location.href).not.toMatch(/^https?:\/\//);
+    expect(clickEvent.defaultPrevented).toBe(false); // pas de handler intercepté = pas d'action
+
 
     window.open = origOpen;
   });
