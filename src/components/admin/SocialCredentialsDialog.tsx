@@ -153,6 +153,10 @@ export function SocialCredentialsDialog({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [rotationMode, setRotationMode] = useState(false);
+  const [rotateDialogOpen, setRotateDialogOpen] = useState(false);
+  const [rotateAction, setRotateAction] = useState<'rotate' | 'revoke'>('rotate');
+  const [rotateReason, setRotateReason] = useState('');
+  const [rotating, setRotating] = useState(false);
 
   useEffect(() => {
     if (!open) return;
