@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sanitizeReason, validateReason } from './rotateReasonValidation';
+import { sanitizeReason, validateReason, REASON_MESSAGES } from './rotateReasonValidation';
 
 describe('sanitizeReason', () => {
   it('trims surrounding whitespace', () => {
