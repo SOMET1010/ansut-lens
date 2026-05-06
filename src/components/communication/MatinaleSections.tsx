@@ -231,6 +231,17 @@ export function MatinaleSections({ data, freshnessHours = 24 }: { data: any; fre
             <CardTitle className="text-base flex items-center gap-2">
               <Target className="h-4 w-4 text-violet-600" />
               Lecture stratégique
+              <DrillBtn payload={{
+                title: 'Lecture stratégique',
+                keywords: lectureStrat.flatMap((s: any) => (s.sujet || '').split(/\s+/)).filter((w: string) => w.length > 4),
+                highlightedTitles: lectureStrat.map((s: any) => s.sujet).filter(Boolean),
+                analyzedItems: lectureStrat.flatMap((s: any) => [
+                  { label: `Sujet : ${s.sujet}` },
+                  ...(s.opportunites || []).map((o: string) => ({ label: `Opportunité : ${o}` })),
+                  ...(s.risques || []).map((r: string) => ({ label: `Risque : ${r}` })),
+                  ...(s.scores ? [{ label: 'Scores SU', value: `accès ${s.scores.acces ?? 0}/10 · usage ${s.scores.usage ?? 0}/10 · gouv ${s.scores.gouvernance ?? 0}/10 · souv ${s.scores.souverainete ?? 0}/10` }] : []),
+                ]),
+              }} />
             </CardTitle>
             <CardDescription>Sujets approfondis avec scores Service Universel</CardDescription>
           </CardHeader>
