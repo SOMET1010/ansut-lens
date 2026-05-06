@@ -603,8 +603,39 @@ export function SocialCredentialsDialog({
                 {cleanedReasonPreview.length}/500
               </span>
             </div>
+            </div>
+
+            {/* Live preview of the cleaned reason that will actually be saved */}
+            {rotateReason.length > 0 && (
+              <div
+                className={
+                  'rounded-md border px-3 py-2 text-[11px] space-y-1 ' +
+                  (reasonError
+                    ? 'border-red-200 bg-red-50 text-red-900'
+                    : 'border-emerald-200 bg-emerald-50 text-emerald-900')
+                }
+              >
+                <div className="flex items-center gap-1 font-medium">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Version qui sera enregistrée dans le journal d'audit
+                </div>
+                {cleanedReasonPreview.length > 0 ? (
+                  <div className="font-mono break-words whitespace-pre-wrap">
+                    « {cleanedReasonPreview} »
+                  </div>
+                ) : (
+                  <div className="italic">
+                    (vide après nettoyage — saisissez un texte explicatif)
+                  </div>
+                )}
+                {cleanedReasonPreview !== rotateReason && (
+                  <div className="text-[10px] opacity-80">
+                    Espaces multiples, sauts de ligne et caractères de contrôle ont été nettoyés.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </div>
 
         <DialogFooter>
           <Button
