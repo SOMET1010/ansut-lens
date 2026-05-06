@@ -360,7 +360,7 @@ export function SocialCredentialsDialog({
               size="sm"
               variant="outline"
               className="h-7 text-xs border-purple-300"
-              onClick={handleRotate}
+              onClick={openRotateDialog}
             >
               <RotateCw className="h-3 w-3 mr-1" />
               Régénérer / révoquer
