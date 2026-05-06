@@ -85,11 +85,27 @@ function AccountRow({ account }: { account: AccountActivity }) {
   );
 }
 
+type DiagCheck = { step: string; status: 'ok' | 'warn' | 'fail' | 'skip'; detail: string; durationMs?: number };
+type DiagAccount = {
+  id: string; nom: string; plateforme: string; identifiant: string; url_profil: string | null;
+  globalStatus: 'healthy' | 'degraded' | 'blocked' | 'no_data';
+  diagnosis: string; recommendation: string;
+  checks: DiagCheck[];
+  publications_24h: number; publications_7j: number; derniere_publication: string | null;
+};
+type DiagResponse = {
+  summary: { total: number; healthy: number; blocked: number; no_data: number; degraded: number;
+    firecrawl_configured: boolean; twitter_api_configured: boolean; linkedin_oauth_configured: boolean; };
+  results: DiagAccount[]; generated_at: string;
+};
+
 export function AnsutAccountsActivityWidget() {
   const { data, isLoading, refetch } = useAnsutAccountsActivity();
   const [collecting, setCollecting] = React.useState(false);
   const [analyzing, setAnalyzing] = React.useState(false);
   const [analysis, setAnalysis] = React.useState<any>(null);
+  const [diag, setDiag] = React.useState<DiagResponse | null>(null);
+  const [diagLoading, setDiagLoading] = React.useState(false);
 
   const handleCollect = async () => {
     setCollecting(true);
@@ -101,6 +117,18 @@ export function AnsutAccountsActivityWidget() {
     } catch (err: any) {
       toast.error(err.message || 'Erreur collecte');
     } finally { setCollecting(false); }
+  };
+
+  const handleDiagnostic = async () => {
+    setDiagLoading(true);
+    try {
+      const { data: res, error } = await supabase.functions.invoke('diagnostic-comptes-ansut');
+      if (error) throw error;
+      setDiag(res as DiagResponse);
+      toast.success('Diagnostic terminé');
+    } catch (err: any) {
+      toast.error(err.message || 'Erreur diagnostic');
+    } finally { setDiagLoading(false); }
   };
 
   const handleAnalyze = async () => {
