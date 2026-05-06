@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
   AlertTriangle, Zap, Layers, Scale, Target, ListChecks,
   Shield, Radar, FileText, Building2, ExternalLink, Clock,
-  CheckCircle2, XCircle, Lightbulb, MessageSquare, BarChart3,
+  CheckCircle2, XCircle, Lightbulb, MessageSquare, BarChart3, Search,
 } from 'lucide-react';
+import { MatinaleDrillDownModal } from './MatinaleDrillDownModal';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -51,7 +54,7 @@ function formatDate(d?: string): string {
   return format(p, 'dd MMM yyyy', { locale: fr });
 }
 
-export function MatinaleSections({ data }: { data: any }) {
+export function MatinaleSections({ data, freshnessHours = 24 }: { data: any; freshnessHours?: number }) {
   const prio = data.priorite_executive;
   const synthese = data.synthese_60s || [];
   const veille = data.veille_par_pilier || {};
@@ -63,8 +66,29 @@ export function MatinaleSections({ data }: { data: any }) {
   const revue = data.revue_de_presse || [];
   const activite = data.activite_ansut;
 
+  const [drill, setDrill] = useState<null | {
+    title: string;
+    description?: string;
+    keywords: string[];
+    highlightedTitles?: string[];
+    analyzedItems?: { label: string; value?: string | number }[];
+  }>(null);
+
+  const DrillBtn = ({ payload }: { payload: NonNullable<typeof drill> }) => (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      className="h-7 px-2 text-xs gap-1 ml-auto"
+      onClick={() => setDrill(payload)}
+    >
+      <Search className="h-3 w-3" /> Détail
+    </Button>
+  );
+
   return (
     <div className="space-y-4">
+
       {/* 1. PRIORITÉ EXÉCUTIVE */}
       {prio && (
         <Card className="glass border-2 border-primary/40 bg-gradient-to-br from-primary/5 to-transparent">
@@ -74,6 +98,16 @@ export function MatinaleSections({ data }: { data: any }) {
               Priorité Exécutive
               <NiveauBadge niveau={prio.niveau} />
               <Badge variant="secondary" className="ml-auto text-xs">Arbitrage DG</Badge>
+              <DrillBtn payload={{
+                title: 'Priorité Exécutive',
+                description: prio.titre,
+                keywords: [prio.titre, ...(prio.impacts || [])].flatMap((s: string) => (s || '').split(/\s+/)).filter((w: string) => w.length > 4),
+                highlightedTitles: [prio.titre].filter(Boolean),
+                analyzedItems: [
+                  ...(prio.impacts || []).map((i: string) => ({ label: `Impact : ${i}` })),
+                  ...(prio.recommandation || []).map((r: string) => ({ label: `Reco : ${r}` })),
+                ],
+              }} />
             </CardTitle>
             <CardDescription className="text-base font-semibold text-foreground mt-1">
               {prio.titre}
@@ -110,6 +144,13 @@ export function MatinaleSections({ data }: { data: any }) {
               <Clock className="h-4 w-4 text-primary" />
               Synthèse 60 secondes
               <Badge variant="secondary" className="ml-auto text-xs">{synthese.length} sujets</Badge>
+              <DrillBtn payload={{
+                title: 'Synthèse 60 secondes',
+                description: 'Articles sources des sujets de la synthèse',
+                keywords: synthese.flatMap((s: any) => (s.sujet || '').split(/\s+/)).filter((w: string) => w.length > 4),
+                highlightedTitles: synthese.map((s: any) => s.sujet).filter(Boolean),
+                analyzedItems: synthese.map((s: any) => ({ label: s.sujet, value: s.niveau })),
+              }} />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -135,6 +176,15 @@ export function MatinaleSections({ data }: { data: any }) {
             <CardTitle className="text-base flex items-center gap-2">
               <Layers className="h-4 w-4 text-primary" />
               Veille par pilier ANSUT
+              <DrillBtn payload={{
+                title: 'Veille par pilier ANSUT',
+                description: 'Articles sources tous piliers',
+                keywords: Object.values(veille).flat().flatMap((it: any) => (it.titre || '').split(/\s+/)).filter((w: string) => w.length > 4),
+                highlightedTitles: Object.values(veille).flat().map((it: any) => it.titre).filter(Boolean),
+                analyzedItems: Object.entries(veille).flatMap(([k, items]: any) =>
+                  (items as any[]).map((it: any) => ({ label: `[${PILIER_META[k]?.label || k}] ${it.titre}`, value: it.niveau }))
+                ),
+              }} />
             </CardTitle>
             <CardDescription>Connectivité · Usages · Régulation · Concurrence</CardDescription>
           </CardHeader>
@@ -181,6 +231,17 @@ export function MatinaleSections({ data }: { data: any }) {
             <CardTitle className="text-base flex items-center gap-2">
               <Target className="h-4 w-4 text-violet-600" />
               Lecture stratégique
+              <DrillBtn payload={{
+                title: 'Lecture stratégique',
+                keywords: lectureStrat.flatMap((s: any) => (s.sujet || '').split(/\s+/)).filter((w: string) => w.length > 4),
+                highlightedTitles: lectureStrat.map((s: any) => s.sujet).filter(Boolean),
+                analyzedItems: lectureStrat.flatMap((s: any) => [
+                  { label: `Sujet : ${s.sujet}` },
+                  ...(s.opportunites || []).map((o: string) => ({ label: `Opportunité : ${o}` })),
+                  ...(s.risques || []).map((r: string) => ({ label: `Risque : ${r}` })),
+                  ...(s.scores ? [{ label: 'Scores SU', value: `accès ${s.scores.acces ?? 0}/10 · usage ${s.scores.usage ?? 0}/10 · gouv ${s.scores.gouvernance ?? 0}/10 · souv ${s.scores.souverainete ?? 0}/10` }] : []),
+                ]),
+              }} />
             </CardTitle>
             <CardDescription>Sujets approfondis avec scores Service Universel</CardDescription>
           </CardHeader>
@@ -228,6 +289,12 @@ export function MatinaleSections({ data }: { data: any }) {
             <CardTitle className="text-base flex items-center gap-2">
               <Building2 className="h-4 w-4 text-primary" />
               Impact projets ANSUT
+              <DrillBtn payload={{
+                title: 'Impact projets ANSUT',
+                keywords: impactProjets.flatMap((p: any) => (p.domaine || '').split(/\s+/)).filter((w: string) => w.length > 3),
+                highlightedTitles: impactProjets.map((p: any) => p.domaine).filter(Boolean),
+                analyzedItems: impactProjets.map((p: any) => ({ label: `${p.domaine} — ${p.commentaire}`, value: p.impact })),
+              }} />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -253,6 +320,11 @@ export function MatinaleSections({ data }: { data: any }) {
             <CardTitle className="text-base flex items-center gap-2">
               <ListChecks className="h-4 w-4 text-amber-600" />
               Actions immédiates
+              <DrillBtn payload={{
+                title: 'Actions immédiates',
+                keywords: actions.flatMap((a: any) => (a.action || '').split(/\s+/)).filter((w: string) => w.length > 4),
+                analyzedItems: actions.map((a: any, i: number) => ({ label: `${i + 1}. ${a.action}`, value: [a.responsable, a.delai].filter(Boolean).join(' · ') })),
+              }} />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -282,6 +354,15 @@ export function MatinaleSections({ data }: { data: any }) {
               <Shield className="h-4 w-4 text-primary" />
               Réputation ANSUT
               <NiveauBadge niveau={reput.niveau_risque} />
+              <DrillBtn payload={{
+                title: 'Réputation ANSUT',
+                keywords: ['ANSUT', 'Service Universel'],
+                analyzedItems: [
+                  ...(reput.positif || []).map((p: string) => ({ label: `Positif : ${p}` })),
+                  ...(reput.negatif || []).map((n: string) => ({ label: `Négatif : ${n}` })),
+                  ...(reput.confusion_role ? [{ label: `Confusion de rôle : ${reput.confusion_role}` }] : []),
+                ],
+              }} />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
@@ -320,6 +401,12 @@ export function MatinaleSections({ data }: { data: any }) {
               <Radar className="h-4 w-4 text-blue-600" />
               Signaux faibles
               <Badge variant="secondary" className="ml-auto text-xs">{signaux.length}</Badge>
+              <DrillBtn payload={{
+                title: 'Signaux faibles',
+                description: 'Tendances émergentes à surveiller',
+                keywords: signaux.flatMap((s: string) => s.split(/\s+/)).filter((w: string) => w.length > 4),
+                analyzedItems: signaux.map((s: string) => ({ label: s })),
+              }} />
             </CardTitle>
             <CardDescription>Tendances émergentes à surveiller</CardDescription>
           </CardHeader>
@@ -344,6 +431,13 @@ export function MatinaleSections({ data }: { data: any }) {
               <FileText className="h-4 w-4 text-primary" />
               Revue de presse
               <Badge variant="secondary" className="ml-auto text-xs">{revue.length} titres</Badge>
+              <DrillBtn payload={{
+                title: 'Revue de presse',
+                description: 'Sources consultées',
+                keywords: revue.flatMap((r: any) => (r.titre || '').split(/\s+/)).filter((w: string) => w.length > 4),
+                highlightedTitles: revue.map((r: any) => r.titre).filter(Boolean),
+                analyzedItems: revue.map((r: any) => ({ label: `[${r.rubrique || '—'}] ${r.titre}`, value: r.source })),
+              }} />
             </CardTitle>
             <CardDescription>Sources consultées — sans analyse</CardDescription>
           </CardHeader>
@@ -412,6 +506,19 @@ export function MatinaleSections({ data }: { data: any }) {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {drill && (
+        <MatinaleDrillDownModal
+          open={!!drill}
+          onOpenChange={(o) => !o && setDrill(null)}
+          title={drill.title}
+          description={drill.description}
+          keywords={drill.keywords}
+          highlightedTitles={drill.highlightedTitles}
+          analyzedItems={drill.analyzedItems}
+          freshnessHours={freshnessHours}
+        />
       )}
     </div>
   );

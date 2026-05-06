@@ -195,7 +195,7 @@ export default function MatinalePage() {
           )}
 
           {matinaleData && (
-            <MatinaleSections data={matinaleData} />
+            <MatinaleSections data={matinaleData} freshnessHours={freshness} />
           )}
         </TabsContent>
 
