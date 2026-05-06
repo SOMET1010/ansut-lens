@@ -99,7 +99,7 @@ export default function FluxDetailPage() {
         </div>
         <Button variant="outline" onClick={() => setEditOpen(true)}>
           <Settings className="h-4 w-4 mr-2" />
-          Paramètres
+          Modifier
         </Button>
       </div>
 
@@ -116,26 +116,12 @@ export default function FluxDetailPage() {
               </div>
             )}
 
-            {/* Quadrants */}
-            {flux.quadrants.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {flux.quadrants.map((q) => (
-                  <Badge key={q} variant="outline">{quadrantLabels[q] || q}</Badge>
-                ))}
-              </div>
-            )}
-
-            {/* Importance */}
-            {flux.importance_min > 0 && (
-              <Badge variant="outline">≥{flux.importance_min}% importance</Badge>
-            )}
-
             {/* Notifications */}
             <div className="flex items-center gap-2 text-muted-foreground ml-auto">
               {flux.alerte_push ? (
                 <span className="flex items-center gap-1">
                   <Bell className="h-4 w-4" />
-                  {frequenceLabels[flux.frequence_digest]}
+                  Notifications actives
                 </span>
               ) : (
                 <span className="flex items-center gap-1">
@@ -209,9 +195,6 @@ export default function FluxDetailPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <FreshnessIndicator datePublication={actu.date_publication} />
-                        <Badge variant="outline" className="text-xs">
-                          Score: {item.score_match}
-                        </Badge>
                       </div>
                       {actu.source_url ? (
                         <a 
@@ -229,9 +212,6 @@ export default function FluxDetailPage() {
                         <CardTitle className="text-lg leading-tight">{actu.titre}</CardTitle>
                       )}
                     </div>
-                    <Badge variant={actu.importance && actu.importance > 70 ? 'default' : 'secondary'}>
-                      {actu.importance || 50}%
-                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>

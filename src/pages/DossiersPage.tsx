@@ -134,22 +134,22 @@ export default function DossiersPage() {
   // Mode-specific titles and descriptions
   const modeConfig = {
     dg: {
-      title: 'Vue Statistique',
+      title: 'Statistiques',
       subtitle: 'Synthèse chiffrée des productions et envois.',
       icon: TrendingUp,
-      label: 'STATISTIQUE'
+      label: 'STATISTIQUES'
     },
     analyste: {
-      title: 'Studio de Publication',
+      title: 'Studio Publication',
       subtitle: 'Centralisez la production de vos Notes Stratégiques et Newsletters.',
       icon: FileText,
       label: 'PRODUCTION'
     },
     crise: {
-      title: 'Centre de Crise',
-      subtitle: 'Documents prioritaires et alertes en temps réel.',
-      icon: AlertTriangle,
-      label: 'CRISE'
+      title: 'Studio Publication',
+      subtitle: 'Centralisez la production de vos Notes Stratégiques et Newsletters.',
+      icon: FileText,
+      label: 'PRODUCTION'
     }
   };
 
@@ -275,21 +275,6 @@ export default function DossiersPage() {
                 </Card>
               </div>
 
-              {/* Recent published documents only */}
-              <section>
-                <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2 mb-4">
-                  <Send className="h-4 w-4" /> Derniers documents validés
-                </h2>
-                
-                {isLoadingDossiers ? (
-                  <Skeleton className="h-[200px]" />
-                ) : (
-                  <RecentSendsTable 
-                    dossiers={publies} 
-                    onSelect={setSelectedDossier} 
-                  />
-                )}
-              </section>
             </>
           )}
         </div>
@@ -387,21 +372,6 @@ export default function DossiersPage() {
                   )}
                 </section>
                 
-                {/* Section Derniers envois */}
-                <section>
-                  <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2 mb-4">
-                    <Send className="h-4 w-4" /> Derniers envois au Conseil
-                  </h2>
-                  
-                  {isLoadingDossiers ? (
-                    <Skeleton className="h-[200px]" />
-                  ) : (
-                    <RecentSendsTable 
-                      dossiers={publies} 
-                      onSelect={setSelectedDossier} 
-                    />
-                  )}
-                </section>
               </div>
               
               {/* COLONNE DROITE : Newsletter Quick View (35%) */}
@@ -548,75 +518,7 @@ export default function DossiersPage() {
         </Tabs>
       )}
 
-      {/* MODE: CRISE - Vue alertes */}
-      {mode === 'crise' && (
-        <div className="space-y-6">
-          {/* Alert Banner */}
-          <Card className="border-destructive/50 bg-destructive/5">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 bg-destructive/10 rounded-full flex items-center justify-center shrink-0">
-                  <AlertTriangle className="h-6 w-6 text-destructive" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg">Mode Crise Activé</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Affichage des documents prioritaires (IA et Acteurs Clés) nécessitant une attention immédiate.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Urgent Documents */}
-          <section>
-            <h2 className="text-sm font-bold uppercase text-destructive flex items-center gap-2 mb-4">
-              <AlertTriangle className="h-4 w-4" /> Documents Prioritaires ({urgentDossiers.length})
-            </h2>
-            
-            {isLoadingDossiers ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[1, 2, 3].map(i => (
-                  <Skeleton key={i} className="h-[180px]" />
-                ))}
-              </div>
-            ) : urgentDossiers.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {urgentDossiers.map(dossier => (
-                  <BriefingCard 
-                    key={dossier.id} 
-                    dossier={dossier} 
-                    onClick={() => setSelectedDossier(dossier)}
-                    onEdit={() => handleEditDossier(dossier)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <Card className="p-8 text-center">
-                <AlertTriangle className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
-                <p className="text-sm text-muted-foreground">
-                  Aucun document prioritaire en attente.
-                </p>
-              </Card>
-            )}
-          </section>
-
-          {/* Quick action for crisis response */}
-          {isAdmin && (
-            <div className="flex justify-center">
-              <Button 
-                variant="destructive" 
-                size="lg"
-                onClick={handleNewDossier}
-                className="gap-2"
-              >
-                <AlertTriangle className="h-5 w-5" />
-                Rédiger une alerte urgente
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Mode "crise" supprimé sur demande de l'audit */}
 
       {/* Dialogs */}
       <DossierFormDialog

@@ -320,7 +320,7 @@ export default function ActualitesPage() {
               </h3>
               <div className="flex flex-col gap-1.5">
                 <Button asChild variant="ghost" size="sm" className="justify-start h-8">
-                  <Link to="/radar">← Retour au Centre de Veille</Link>
+                  <Link to="/radar">← Retour à l'Accueil</Link>
                 </Button>
                 <Button asChild variant="ghost" size="sm" className="justify-start h-8">
                   <Link to="/dossiers">Voir les dossiers stratégiques</Link>
