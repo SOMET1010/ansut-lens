@@ -124,14 +124,21 @@ export default function ConnecteursSociauxPage() {
             Aucune valeur de secret n'est exposée — uniquement leur présence.
           </p>
         </div>
-        <Button onClick={handleRefresh} disabled={refreshing} variant="outline">
-          {refreshing ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4 mr-2" />
-          )}
-          Actualiser
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <Link to="/admin/guide-com-api">
+              📄 Guide Com (imprimable)
+            </Link>
+          </Button>
+          <Button onClick={handleRefresh} disabled={refreshing} variant="outline">
+            {refreshing ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            Actualiser
+          </Button>
+        </div>
       </div>
 
       {/* KPI strip */}
