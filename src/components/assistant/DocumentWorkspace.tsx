@@ -337,7 +337,7 @@ export function DocumentWorkspace({
               pendingSpace = '';
             }
           } else {
-            const bw = measureCitation(seg.label, seg.variant);
+            const bw = measureCitation(seg.label, seg.variant, seg.id);
             const sep = cursorX === x ? 0 : pdf.getTextWidth(' ');
             if (cursorX + sep + bw > x + availableWidth) newLine();
             else cursorX += sep > 0 ? (pdf.text(' ', cursorX, y), sep) : 0;
