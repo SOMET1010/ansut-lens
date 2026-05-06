@@ -169,14 +169,35 @@ export function DocumentWorkspace({
         }
       };
 
+      // App base for actu/dossier deep links
+      const APP_BASE = 'https://ansut-lens.lovable.app';
+
+      // Build a map of numeric references → URL by scanning for footnote-style lines
+      // Accepts: "[1] https://..." | "[1]: https://..." | "1. https://..." | "1) https://..."
+      const numRefUrls: Record<string, string> = {};
+      {
+        const refRe = /(?:^|\n)\s*(?:\[(\d{1,3})\]:?|(\d{1,3})[.)])\s*(https?:\/\/\S+)/g;
+        let rm: RegExpExecArray | null;
+        while ((rm = refRe.exec(document.content)) !== null) {
+          const n = rm[1] || rm[2];
+          if (n && !numRefUrls[n]) numRefUrls[n] = rm[3].replace(/[.,;)\]]+$/, '');
+        }
+      }
+
+      const citationUrl = (variant: 'actu' | 'dossier' | 'num', idOrNum: string): string | null => {
+        if (variant === 'actu') return `${APP_BASE}/radar?tab=flux&id=${encodeURIComponent(idOrNum)}`;
+        if (variant === 'dossier') return `${APP_BASE}/dossiers?id=${encodeURIComponent(idOrNum)}`;
+        return numRefUrls[idOrNum] || null;
+      };
+
       // Tokenize a line into text/bold/citation segments
       type Seg =
         | { kind: 'text'; text: string; bold: boolean }
-        | { kind: 'cite'; variant: 'actu' | 'dossier' | 'num'; label: string };
+        | { kind: 'cite'; variant: 'actu' | 'dossier' | 'num'; label: string; id: string };
 
       const tokenizeLine = (text: string): Seg[] => {
         // Combined regex: bold | [[ACTU|DOSSIER:id|title]] | [n]
-        const re = /(\*\*[^*]+\*\*)|(\[\[(ACTU|DOSSIER):[^|\]]+\|([^\]]+)\]\])|(\[(\d{1,3})\])/g;
+        const re = /(\*\*[^*]+\*\*)|(\[\[(ACTU|DOSSIER):([^|\]]+)\|([^\]]+)\]\])|(\[(\d{1,3})\])/g;
         const segs: Seg[] = [];
         let last = 0;
         let m: RegExpExecArray | null;
@@ -185,9 +206,9 @@ export function DocumentWorkspace({
           if (m[1]) {
             segs.push({ kind: 'text', text: m[1].slice(2, -2), bold: true });
           } else if (m[2]) {
-            segs.push({ kind: 'cite', variant: m[3] === 'ACTU' ? 'actu' : 'dossier', label: m[4] });
-          } else if (m[5]) {
-            segs.push({ kind: 'cite', variant: 'num', label: m[6] });
+            segs.push({ kind: 'cite', variant: m[3] === 'ACTU' ? 'actu' : 'dossier', id: m[4], label: m[5] });
+          } else if (m[6]) {
+            segs.push({ kind: 'cite', variant: 'num', id: m[7], label: m[7] });
           }
           last = m.index + m[0].length;
         }
@@ -195,7 +216,7 @@ export function DocumentWorkspace({
         return segs;
       };
 
-      const drawCitationBadge = (label: string, variant: 'actu' | 'dossier' | 'num', cursorX: number, baselineY: number) => {
+      const drawCitationBadge = (label: string, variant: 'actu' | 'dossier' | 'num', id: string, cursorX: number, baselineY: number) => {
         // Colors per variant
         const palette = variant === 'actu'
           ? { bg: [219, 234, 254], fg: [29, 78, 216], border: [191, 219, 254] } // blue
@@ -219,6 +240,11 @@ export function DocumentWorkspace({
         pdf.roundedRect(cursorX, boxY, w, h, 2, 2, 'FD');
         pdf.setTextColor(palette.fg[0], palette.fg[1], palette.fg[2]);
         pdf.text(fullText, cursorX + padX, baselineY - 1);
+        // Clickable hyperlink area over the badge
+        const url = citationUrl(variant, id);
+        if (url) {
+          try { pdf.link(cursorX, boxY, w, h, { url }); } catch { /* noop */ }
+        }
         // restore default
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(11);
