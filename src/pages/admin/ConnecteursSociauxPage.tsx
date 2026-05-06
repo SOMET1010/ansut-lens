@@ -9,9 +9,11 @@ import {
   Loader2,
   RefreshCw,
   ShieldCheck,
+  KeyRound,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { SocialCredentialsDialog } from '@/components/admin/SocialCredentialsDialog';
 import {
   Card,
   CardContent,
