@@ -318,7 +318,11 @@ export function SocialCredentialsDialog({
       setRotating(false);
       setRotateDialogOpen(false);
       setRotationMode(rotateAction === 'rotate');
-      toast.info('Aucun secret stocké — action consignée dans le journal.');
+      setRotateReason('');
+      toast.info('Aucun secret stocké — action consignée dans le journal.', {
+        description: `Motif enregistré : « ${reason} »`,
+        duration: 8000,
+      });
       onSaved?.();
       return;
     }
@@ -350,11 +354,15 @@ export function SocialCredentialsDialog({
     setValues((p) => ({ ...p, ...clearedVals }));
     setRotationMode(rotateAction === 'rotate');
     setRotateDialogOpen(false);
-    toast.success(
+    setRotateReason('');
+    const baseMsg =
       rotateAction === 'rotate'
         ? `${storedNames.length} secret(s) révoqué(s). Saisissez les nouvelles valeurs.`
-        : `${storedNames.length} secret(s) révoqué(s) définitivement.`,
-    );
+        : `${storedNames.length} secret(s) révoqué(s) définitivement.`;
+    toast.success(baseMsg, {
+      description: `Motif enregistré : « ${reason} »`,
+      duration: 8000,
+    });
     onSaved?.();
   };
 
