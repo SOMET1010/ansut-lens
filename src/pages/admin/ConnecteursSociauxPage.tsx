@@ -271,6 +271,16 @@ export default function ConnecteursSociauxPage() {
                       </span>
                     )}
                   </div>
+
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="w-full"
+                    onClick={() => setEditing(c)}
+                  >
+                    <KeyRound className="h-3.5 w-3.5 mr-2" />
+                    Configurer les secrets
+                  </Button>
                 </CardContent>
               </Card>
             );
