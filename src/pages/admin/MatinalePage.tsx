@@ -171,7 +171,7 @@ export default function MatinalePage() {
         </TabsList>
 
         <TabsContent value="preview" className="space-y-4">
-          {!matinaleData && !preview.isPending && (
+          {!matinaleData && !preview.isPending && !preview.isError && (
             <Card className="glass">
               <CardContent className="py-12 text-center">
                 <Newspaper className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -186,16 +186,14 @@ export default function MatinalePage() {
             </Card>
           )}
 
-          {preview.isPending && (
-            <div className="space-y-4">
-              <Skeleton className="h-32" />
-              <Skeleton className="h-24" />
-              <Skeleton className="h-40" />
-            </div>
-          )}
-
-          {matinaleData && (
-            <MatinaleSections data={matinaleData} freshnessHours={freshness} />
+          {(matinaleData || preview.isPending || preview.isError) && (
+            <MatinaleSections
+              data={matinaleData || {}}
+              freshnessHours={freshness}
+              loading={preview.isPending}
+              error={preview.isError ? (preview.error as Error)?.message || 'Erreur de génération' : null}
+              onRetry={handlePreview}
+            />
           )}
         </TabsContent>
 
