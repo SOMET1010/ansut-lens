@@ -15,7 +15,7 @@ interface SearchResults {
 const emptyResults: SearchResults = { actualites: [], personnalites: [], sources: [], dossiers: [] };
 
 const quickActions = [
-  { label: 'Centre de Veille', icon: Radar, path: '/radar' },
+  { label: 'Accueil', icon: Radar, path: '/radar' },
   { label: 'Flux d\'actualités', icon: Newspaper, path: '/radar?tab=flux' },
   { label: 'Acteurs & Influence', icon: Users, path: '/acteurs' },
   { label: 'Dossiers', icon: FolderOpen, path: '/dossiers' },
