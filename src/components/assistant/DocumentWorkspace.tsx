@@ -527,32 +527,41 @@ export function DocumentWorkspace({
         }
       }
 
-      // Page numbers (cover = 1, TOC = 2 if present, content starts after)
+      // Page numbers + watermark (cover = 1, TOC = 2 if present, content starts after)
       const totalPages = pdf.getNumberOfPages();
       const contentStart = tocEntries.length > 0 ? 3 : 2;
       const contentTotal = totalPages - (contentStart - 1);
+      const footerLabel = customFooter;
       for (let i = contentStart; i <= totalPages; i++) {
         pdf.setPage(i);
+        drawWatermark();
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(8);
         pdf.setTextColor(148, 163, 184);
-        pdf.text(`Page ${i - contentStart + 1} / ${contentTotal}`, pageWidth - margin, pageHeight - 25, { align: 'right' });
-        pdf.text('ANSUT — Document confidentiel', margin, pageHeight - 25);
+        if (opts.showPageNumbers) {
+          pdf.text(`Page ${i - contentStart + 1} / ${contentTotal}`, pageWidth - margin, pageHeight - 25, { align: 'right' });
+        }
+        if (footerLabel) pdf.text(footerLabel, margin, pageHeight - 25);
       }
       // Footer for TOC page
       if (tocEntries.length > 0) {
         pdf.setPage(2);
+        drawWatermark();
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(8);
         pdf.setTextColor(148, 163, 184);
         pdf.text('Sommaire', pageWidth - margin, pageHeight - 25, { align: 'right' });
-        pdf.text('ANSUT — Document confidentiel', margin, pageHeight - 25);
+        if (footerLabel) pdf.text(footerLabel, margin, pageHeight - 25);
       }
+      // Watermark on cover
+      pdf.setPage(1);
+      drawWatermark();
 
-    pdf.save(`${baseTitle}.pdf`);
+    const safeName = (opts.filename || baseTitle).replace(/\.(pdf|docx|txt)$/i, '').trim() || baseTitle;
+    pdf.save(`${safeName}.pdf`);
   };
 
-  const runExportDOCX = async () => {
+  const runExportDOCX = async (opts: ExportOptions) => {
     if (!document) throw new Error('Aucun document à exporter');
     const cleanTitle = document.title.replace(/\.(docx|pdf|txt)$/i, '');
     const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
