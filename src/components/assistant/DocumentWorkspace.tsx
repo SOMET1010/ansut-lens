@@ -165,10 +165,24 @@ export function DocumentWorkspace({
         pdf.setTextColor(148, 163, 184);
         const headerTitle = cleanTitle.length > 70 ? cleanTitle.slice(0, 70) + '…' : cleanTitle;
         pdf.text(headerTitle, margin, 30);
-        pdf.text('ANSUT', pageWidth - margin, 30, { align: 'right' });
+        if (customHeader) pdf.text(customHeader, pageWidth - margin, 30, { align: 'right' });
         pdf.setDrawColor(226, 232, 240);
         pdf.setLineWidth(0.5);
         pdf.line(margin, 36, pageWidth - margin, 36);
+      };
+
+      const drawWatermark = () => {
+        if (!opts.watermarkEnabled || !opts.watermarkText.trim()) return;
+        pdf.saveGraphicsState();
+        // @ts-expect-error - jsPDF GState typing is loose
+        pdf.setGState(pdf.GState({ opacity: 0.08 }));
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(90);
+        pdf.setTextColor(15, 23, 42);
+        pdf.text(opts.watermarkText.toUpperCase(), pageWidth / 2, pageHeight / 2, {
+          align: 'center', baseline: 'middle', angle: 35,
+        });
+        pdf.restoreGraphicsState();
       };
 
       const ensureSpace = (needed: number) => {
