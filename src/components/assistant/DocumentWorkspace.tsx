@@ -148,6 +148,10 @@ export function DocumentWorkspace({
       const contentBottom = pageHeight - margin - 15;
       let y = contentTop;
 
+      // Track headings encountered during render for the TOC
+      type TocEntry = { level: number; text: string; page: number };
+      const tocEntries: TocEntry[] = [];
+
       // Header on content pages
       const drawHeader = () => {
         pdf.setFont('helvetica', 'normal');
