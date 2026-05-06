@@ -9,6 +9,7 @@ import jsPDF from 'jspdf';
 import { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType, Header, Footer, PageNumber, BorderStyle, ShadingType, ExternalHyperlink, TableOfContents, PageBreak, convertMillimetersToTwip } from 'docx';
 import { saveAs } from 'file-saver';
 import { ExportSettingsDialog, type ExportOptions, loadExportOptions } from './ExportSettingsDialog';
+import { CitationsPreview } from './CitationsPreview';
 
 export interface GeneratedDocument {
   title: string;
