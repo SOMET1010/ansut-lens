@@ -289,6 +289,12 @@ export function MatinaleSections({ data, freshnessHours = 24 }: { data: any; fre
             <CardTitle className="text-base flex items-center gap-2">
               <Building2 className="h-4 w-4 text-primary" />
               Impact projets ANSUT
+              <DrillBtn payload={{
+                title: 'Impact projets ANSUT',
+                keywords: impactProjets.flatMap((p: any) => (p.domaine || '').split(/\s+/)).filter((w: string) => w.length > 3),
+                highlightedTitles: impactProjets.map((p: any) => p.domaine).filter(Boolean),
+                analyzedItems: impactProjets.map((p: any) => ({ label: `${p.domaine} — ${p.commentaire}`, value: p.impact })),
+              }} />
             </CardTitle>
           </CardHeader>
           <CardContent>
