@@ -11,6 +11,7 @@ import { saveAs } from 'file-saver';
 import { ExportSettingsDialog, type ExportOptions, loadExportOptions } from './ExportSettingsDialog';
 import { CitationsPreview } from './CitationsPreview';
 import { extractNumericReferenceUrls, collectCitations } from './citationRefs';
+import { renderPdfCitationAppendix, buildDocxCitationAppendix } from './citationAppendix';
 
 export interface GeneratedDocument {
   title: string;
