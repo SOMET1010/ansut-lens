@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, KeyRound, Eye, EyeOff, Save, Trash2, Info, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, KeyRound, Eye, EyeOff, Save, Trash2, Info, AlertCircle, CheckCircle2, RotateCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import {
