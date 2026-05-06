@@ -113,14 +113,44 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run all citation-related Vitest suites
+        id: vitest
         run: |
+          mkdir -p test-results
           bunx vitest run \
             src/components/assistant/__tests__/citationExportFixtures.test.ts \
             src/components/assistant/__tests__/citationRefs.test.ts \
             src/components/assistant/__tests__/citationUrlIntegrity.test.ts \
             src/components/assistant/__tests__/citationAppendix.test.ts \
             src/components/assistant/__tests__/CitationsPreview.test.tsx \
-            --reporter=verbose
+            --reporter=verbose \
+            --reporter=json --outputFile=test-results/citations-vitest.json
+
+      - name: Build broken citations summary
+        if: failure() && github.event_name == 'pull_request'
+        id: summary
+        run: |
+          node .github/scripts/citations-failure-summary.mjs \
+            test-results/citations-vitest.json > test-results/comment.md || true
+          echo "has_comment=$( [ -s test-results/comment.md ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
+
+      - name: Comment failure summary on PR
+        if: failure() && github.event_name == 'pull_request' && steps.summary.outputs.has_comment == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('test-results/comment.md', 'utf8');
+            const marker = '<!-- citations-tests-failure -->';
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            const fullBody = `${marker}\n${body}`;
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body: fullBody });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body: fullBody });
+            }
 
       - name: Upload Vitest logs on failure
         if: failure()
