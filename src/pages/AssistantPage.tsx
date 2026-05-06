@@ -615,8 +615,8 @@ export default function AssistantPage() {
           </div>
         </div>
         
-        {/* RIGHT COLUMN (40%) - Desktop only : Workspace + Framework Panel */}
-        <div className="hidden lg:flex lg:flex-col gap-4 w-[400px]">
+        {/* RIGHT COLUMN — Workspace + Framework Panel (xl+ only) */}
+        <div className="hidden xl:flex xl:flex-col gap-4 w-[360px] shrink-0">
           <div className="flex-1 min-h-0">
             <DocumentWorkspace
               document={generatedDocument}
@@ -625,10 +625,10 @@ export default function AssistantPage() {
               onSuggestionClick={handleSuggestionClick}
             />
           </div>
-          <div className="h-[340px] shrink-0">
+          <div className="h-[300px] shrink-0">
             <FrameworkPanel
-              query={[...messages].reverse().find(m => m.role === 'user')?.content ?? ''}
-              response={[...messages].reverse().find(m => m.role === 'assistant' && m.content !== WELCOME_MESSAGE.content)?.content ?? ''}
+              query={[...realMessages].reverse().find(m => m.role === 'user')?.content ?? ''}
+              response={[...realMessages].reverse().find(m => m.role === 'assistant')?.content ?? ''}
               contextActuIds={Array.from(selectedActualites)}
               contextDossierIds={Array.from(selectedDossiers)}
               contextActuTitles={Object.fromEntries(availableActualites.map(a => [a.id, a.titre]))}
