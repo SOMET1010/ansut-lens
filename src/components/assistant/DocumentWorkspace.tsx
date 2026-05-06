@@ -680,11 +680,17 @@ export function DocumentWorkspace({
             const label = rawLabel.length > 40 ? rawLabel.slice(0, 39) + '…' : rawLabel;
             const url = docxCitationUrl(isActu ? 'actu' : 'dossier', id);
             const badgeRun = new TextRun({
-              text: ` ${isActu ? '◆' : '■'} ${label} `,
+              text: url
+                ? ` ${isActu ? '◆' : '■'} ${label} `
+                : ` ⚠ ${label} · lien manquant `,
               bold: true,
               size: 16,
-              color: isActu ? '1D4ED8' : '7E22CE',
-              shading: { type: ShadingType.CLEAR, fill: isActu ? 'DBEAFE' : 'F3E8FF', color: 'auto' },
+              color: url ? (isActu ? '1D4ED8' : '7E22CE') : '92400E',
+              shading: {
+                type: ShadingType.CLEAR,
+                fill: url ? (isActu ? 'DBEAFE' : 'F3E8FF') : 'FEF3C7',
+                color: 'auto',
+              },
               style: url ? 'Hyperlink' : undefined,
             });
             runs.push(wrapWithLink(badgeRun, url));
@@ -692,11 +698,15 @@ export function DocumentWorkspace({
             const num = m[7];
             const url = docxCitationUrl('num', num);
             const badgeRun = new TextRun({
-              text: ` [${num}] `,
+              text: url ? ` [${num}] ` : ` ⚠ [${num}] · lien manquant `,
               bold: true,
               size: 14,
-              color: '334155',
-              shading: { type: ShadingType.CLEAR, fill: 'F1F5F9', color: 'auto' },
+              color: url ? '334155' : '92400E',
+              shading: {
+                type: ShadingType.CLEAR,
+                fill: url ? 'F1F5F9' : 'FEF3C7',
+                color: 'auto',
+              },
               style: url ? 'Hyperlink' : undefined,
             });
             runs.push(wrapWithLink(badgeRun, url));
