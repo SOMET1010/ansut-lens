@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Award, Building2, Network, Eye, Pencil, MoreHorizontal, Archive, Trash2, Info, Activity } from 'lucide-react';
+import { Award, Building2, Network, Eye, Pencil, MoreHorizontal, Archive, Trash2, Info, Activity, ShieldAlert, Flame, Sparkles, Snowflake, AlertTriangle } from 'lucide-react';
 import { CERCLE_LABELS } from '@/hooks/usePersonnalites';
 import { MiniSparkline } from '@/components/spdi/MiniSparkline';
 import { SentimentBar } from '@/components/spdi/SentimentBar';
