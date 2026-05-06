@@ -19,6 +19,8 @@ import { DocumentWorkspace, detectDocument, type GeneratedDocument } from '@/com
 import { FrameworkPanel } from '@/components/assistant/FrameworkPanel';
 import { WelcomeScreen } from '@/components/assistant/WelcomeScreen';
 import { useAuth } from '@/contexts/AuthContext';
+import { useResizableWidth } from '@/hooks/useResizableWidth';
+import { GripVertical } from 'lucide-react';
 
 const WELCOME_MESSAGE: ConversationMessage = {
   role: 'assistant',
@@ -176,6 +178,23 @@ export default function AssistantPage() {
   const [generatedDocument, setGeneratedDocument] = useState<GeneratedDocument | null>(null);
   const [citationWarning, setCitationWarning] = useState<CitationWarning | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Per-user resizable widths (workspace right panel + history sheet)
+  const userKey = user?.id ?? 'anon';
+  const workspaceResize = useResizableWidth({
+    key: `assistant:workspace-width:${userKey}`,
+    defaultWidth: 360,
+    min: 280,
+    max: 720,
+    side: 'left',
+  });
+  const historyResize = useResizableWidth({
+    key: `assistant:history-width:${userKey}`,
+    defaultWidth: 320,
+    min: 260,
+    max: 560,
+    side: 'right',
+  });
 
   const { 
     conversations, 
@@ -426,11 +445,24 @@ export default function AssistantPage() {
                     <History className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-80 p-0">
+                <SheetContent
+                  side="left"
+                  className="p-0 max-w-none"
+                  style={{ width: historyResize.width }}
+                >
                   <SheetHeader className="p-4 border-b">
-                    <SheetTitle className="flex items-center gap-2">
-                      <History className="h-4 w-4" />
-                      Historique
+                    <SheetTitle className="flex items-center gap-2 justify-between">
+                      <span className="flex items-center gap-2">
+                        <History className="h-4 w-4" />
+                        Historique
+                      </span>
+                      <button
+                        onClick={historyResize.reset}
+                        className="text-[10px] font-normal text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                        title="Réinitialiser la largeur"
+                      >
+                        Réinitialiser
+                      </button>
                     </SheetTitle>
                   </SheetHeader>
                   <div className="h-[calc(100vh-5rem)]">
@@ -442,6 +474,17 @@ export default function AssistantPage() {
                       onNewConversation={handleNewConversation}
                       onDeleteConversation={handleDeleteConversation}
                     />
+                  </div>
+                  {/* Resize handle on the right edge */}
+                  <div
+                    onPointerDown={historyResize.onPointerDown}
+                    onDoubleClick={historyResize.reset}
+                    className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize group hover:bg-primary/20 transition-colors"
+                    title="Glisser pour redimensionner • Double-clic pour réinitialiser"
+                  >
+                    <div className="absolute top-1/2 -translate-y-1/2 right-0 translate-x-1/2 h-10 w-3 rounded border bg-background shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <GripVertical className="h-3 w-3 text-muted-foreground" />
+                    </div>
                   </div>
                 </SheetContent>
               </Sheet>
@@ -615,8 +658,20 @@ export default function AssistantPage() {
           </div>
         </div>
         
+        {/* Resize handle between chat and workspace (xl+ only) */}
+        <div
+          onPointerDown={workspaceResize.onPointerDown}
+          onDoubleClick={workspaceResize.reset}
+          className="hidden xl:flex shrink-0 w-1.5 cursor-col-resize group items-center justify-center hover:bg-primary/20 transition-colors rounded-full"
+          title="Glisser pour redimensionner • Double-clic pour réinitialiser"
+        >
+          <div className="h-12 w-3 rounded border bg-background shadow-sm flex items-center justify-center opacity-40 group-hover:opacity-100 transition-opacity">
+            <GripVertical className="h-3 w-3 text-muted-foreground" />
+          </div>
+        </div>
+
         {/* RIGHT COLUMN — Workspace + Framework Panel (xl+ only) */}
-        <div className="hidden xl:flex xl:flex-col gap-4 w-[360px] shrink-0">
+        <div className="hidden xl:flex xl:flex-col gap-4 shrink-0" style={{ width: workspaceResize.width }}>
           <div className="flex-1 min-h-0">
             <DocumentWorkspace
               document={generatedDocument}
