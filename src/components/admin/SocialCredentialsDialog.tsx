@@ -261,10 +261,43 @@ export function SocialCredentialsDialog({
     setRotateDialogOpen(true);
   };
 
+  const sanitizeReason = (raw: string): string =>
+    raw
+      .replace(/[\u0000-\u001F\u007F]/g, ' ') // control chars
+      .replace(/\s+/g, ' ')                    // collapse whitespace
+      .trim()
+      .slice(0, 500);
+
+  const validateReason = (raw: string): string | null => {
+    const cleaned = sanitizeReason(raw);
+    if (cleaned.length < 10)
+      return 'Motif trop court — décrivez la raison en au moins 10 caractères.';
+    if (cleaned.length > 500)
+      return 'Motif trop long (500 caractères maximum).';
+    const letters = (cleaned.match(/\p{L}/gu) || []).length;
+    if (letters < 5)
+      return 'Le motif doit contenir au moins 5 lettres (texte explicatif requis).';
+    if (/^(.)\1{4,}$/.test(cleaned))
+      return 'Motif invalide (caractère répété).';
+    if (/^[^\p{L}\p{N}]+$/u.test(cleaned))
+      return 'Le motif ne peut pas contenir uniquement des symboles.';
+    return null;
+  };
+
+  const reasonError = useMemo(
+    () => (rotateReason.length === 0 ? null : validateReason(rotateReason)),
+    [rotateReason],
+  );
+  const cleanedReasonPreview = useMemo(
+    () => sanitizeReason(rotateReason),
+    [rotateReason],
+  );
+
   const handleRotate = async () => {
-    const reason = rotateReason.trim();
-    if (reason.length < 5) {
-      toast.error('Indiquez un motif (au moins 5 caractères) pour tracer cette action.');
+    const reason = sanitizeReason(rotateReason);
+    const err = validateReason(rotateReason);
+    if (err) {
+      toast.error(err);
       return;
     }
     const storedNames = Object.keys(stored).filter((n) => stored[n]);
@@ -560,14 +593,27 @@ export function SocialCredentialsDialog({
             <Textarea
               id="rotate-reason"
               value={rotateReason}
-              onChange={(e) => setRotateReason(e.target.value)}
+              onChange={(e) => setRotateReason(e.target.value.slice(0, 500))}
               placeholder="Ex : Token compromis, rotation périodique trimestrielle, départ d'un agent…"
               rows={3}
-              className="text-sm"
+              maxLength={500}
+              className={
+                reasonError
+                  ? 'text-sm border-red-400 focus-visible:ring-red-400'
+                  : cleanedReasonPreview.length >= 10
+                    ? 'text-sm border-emerald-400 focus-visible:ring-emerald-400'
+                    : 'text-sm'
+              }
             />
-            <p className="text-[11px] text-muted-foreground">
-              Au moins 5 caractères. Ce motif sera enregistré dans le journal d'audit.
-            </p>
+            <div className="flex items-center justify-between gap-2 text-[11px]">
+              <span className={reasonError ? 'text-red-700' : 'text-muted-foreground'}>
+                {reasonError ??
+                  'Min. 10 caractères, texte explicatif. Espaces et caractères de contrôle nettoyés avant enregistrement.'}
+              </span>
+              <span className="text-muted-foreground tabular-nums shrink-0">
+                {cleanedReasonPreview.length}/500
+              </span>
+            </div>
           </div>
         </div>
 
@@ -581,7 +627,7 @@ export function SocialCredentialsDialog({
           </Button>
           <Button
             onClick={handleRotate}
-            disabled={rotating || rotateReason.trim().length < 5}
+            disabled={rotating || validateReason(rotateReason) !== null}
             className="bg-purple-600 hover:bg-purple-700 text-white"
           >
             {rotating ? (
