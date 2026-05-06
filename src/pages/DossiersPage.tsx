@@ -205,7 +205,7 @@ export default function DossiersPage() {
       </div>
 
       {/* MODE: DG - Vue synthétique */}
-      {mode === 'dg' && (
+      {safeMode === 'dg' && (
         <div className="space-y-6">
           {/* Empty State when no published content */}
           {publies.length === 0 && !isLoadingDossiers && (
@@ -276,7 +276,7 @@ export default function DossiersPage() {
       )}
 
       {/* MODE: ANALYSTE - Vue complète avec onglets */}
-      {mode === 'analyste' && (
+      {safeMode === 'analyste' && (
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'notes' | 'newsletters')} className="space-y-6">
           <div className="flex items-center justify-between">
             <TabsList>
