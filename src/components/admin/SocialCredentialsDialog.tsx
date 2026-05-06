@@ -249,6 +249,47 @@ export function SocialCredentialsDialog({
     onSaved?.();
   };
 
+  const handleRotate = async () => {
+    if (!confirm(`Confirmer la rotation de TOUS les secrets stockés pour ${connectorName} ?\n\nCela les supprimera et exigera une nouvelle saisie. Une trace est conservée dans le journal d'audit.`)) {
+      return;
+    }
+    const storedNames = Object.keys(stored).filter((n) => stored[n]);
+    if (storedNames.length === 0) {
+      toast.info('Aucun secret stocké à révoquer.');
+      setRotationMode(true);
+      return;
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    // Insert audit entries first (action=rotate) for each stored secret
+    await supabase.from('social_api_audit_log').insert(
+      storedNames.map((name) => ({
+        connector: connectorId,
+        secret_name: name,
+        action: 'rotate' as const,
+        performed_by: user?.id ?? null,
+        notes: 'Révocation manuelle — nouvelle valeur attendue',
+      })),
+    );
+    const { error } = await supabase
+      .from('social_api_credentials')
+      .delete()
+      .eq('connector', connectorId)
+      .in('secret_name', storedNames);
+    if (error) {
+      toast.error('Rotation impossible : ' + error.message);
+      return;
+    }
+    const cleared: Record<string, boolean> = {};
+    storedNames.forEach((n) => (cleared[n] = false));
+    setStored((p) => ({ ...p, ...cleared }));
+    const clearedVals: Record<string, string> = {};
+    storedNames.forEach((n) => (clearedVals[n] = ''));
+    setValues((p) => ({ ...p, ...clearedVals }));
+    setRotationMode(true);
+    toast.success(`${storedNames.length} secret(s) révoqué(s). Saisissez les nouvelles valeurs.`);
+    onSaved?.();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
