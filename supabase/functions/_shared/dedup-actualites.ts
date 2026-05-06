@@ -212,12 +212,16 @@ export function formatConsolidatedForPrompt<T extends ActuLike>(
     const sourcesStr = g.sources
       .map(s => s.source_url ? `${s.source_nom} (${s.source_url})` : s.source_nom)
       .join(' ; ');
-    const dupCount = g.members.length > 1 ? ` [fusionné ×${g.members.length}]` : '';
+    const dupCount = g.members.length > 1 ? ` [SIGNAL CONSOLIDÉ ×${g.members.length} reprises — ${g.sources.length} source(s)]` : '';
+    // Liste enrichie des angles complémentaires des autres membres (titres) pour aider l'IA à fusionner les angles
+    const angles = g.members.length > 1
+      ? ' | Angles fusionnés: ' + g.members.slice(1, 4).map(m => `"${(m.titre || '').slice(0, 80)}"`).join(' / ')
+      : '';
     return `[${g.ref}] ${p.titre}${dupCount}` +
-      (p.resume ? ` — ${p.resume.substring(0, 200)}` : '') +
+      (p.resume ? ` — ${p.resume.substring(0, 220)}` : '') +
       ` (importance: ${p.importance ?? 50}/100, sentiment: ${p.sentiment ?? 'N/A'}` +
       (p.impact_ansut ? `, impact ANSUT: ${p.impact_ansut}` : '') +
-      `, sources: ${sourcesStr})`;
+      `, sources: ${sourcesStr})${angles}`;
   }).join('\n');
 }
 
