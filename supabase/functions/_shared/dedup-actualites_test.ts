@@ -90,7 +90,7 @@ Deno.test("formatConsolidatedForPrompt: marque [fusionné ×N] pour groupes", ()
   const groups = consolidateActualites(items);
   const text = formatConsolidatedForPrompt(groups);
   assert(text.includes("[1]"), "Référence [1] présente");
-  assert(text.includes("[fusionné ×2]"), "Marqueur de fusion présent");
+  assert(/SIGNAL CONSOLIDÉ ×2/.test(text), "Marqueur de fusion présent");
 });
 
 Deno.test("buildSourcesMap: indices uniques et continus", () => {

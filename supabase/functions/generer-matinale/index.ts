@@ -422,7 +422,7 @@ Deno.serve(async (req) => {
     });
 
     // ============= MODE FUSIONNER INTELLIGEMMENT =============
-    // Unifie articles DB + Perplexity + mentions ANSUT et déduplique transversalement.
+    // Unifie articles DB + Perplexity + mentions ANSUT + insights sociaux et déduplique transversalement.
     const allItems: ActuLike[] = [
       ...(articles || []).map(a => ({
         titre: a.titre,
@@ -432,6 +432,8 @@ Deno.serve(async (req) => {
         importance: a.importance,
         sentiment: a.sentiment,
         impact_ansut: a.impact_ansut,
+        entites_personnes: (a as any).entites_personnes ?? null,
+        entites_entreprises: (a as any).entites_entreprises ?? null,
         origin: 'db' as const,
       })),
       ...perplexityNews.articles.map(a => ({
@@ -442,14 +444,33 @@ Deno.serve(async (req) => {
         importance: 60,
         origin: 'perplexity' as const,
       })),
+      ...((mentions || []).map((m: any) => ({
+        titre: (m.contenu || '').slice(0, 140),
+        resume: m.contenu,
+        source_nom: m.source || 'Mention',
+        source_url: m.source_url,
+        importance: m.est_critique ? 75 : 50,
+        sentiment: m.sentiment,
+        origin: 'mention' as const,
+      }))),
+      ...((socialInsights || []).map((s: any) => ({
+        titre: (s.contenu || '').slice(0, 140),
+        resume: s.contenu,
+        source_nom: s.plateforme || 'Social',
+        source_url: s.url_original,
+        importance: s.est_critique ? 70 : 45,
+        sentiment: s.sentiment,
+        origin: 'social' as const,
+      }))),
     ];
     const consolidated = consolidateActualites(allItems);
     const dupGroups = consolidated.filter(g => g.members.length > 1).length;
+    const fusionnesCount = consolidated.reduce((s, g) => s + Math.max(0, g.members.length - 1), 0);
     const consolidatedList = consolidated.length > 0
       ? formatConsolidatedForPrompt(consolidated)
       : 'Aucune actualité disponible.';
 
-    console.log('[Matinale] Fusion intelligente:', allItems.length, 'items →', consolidated.length, 'faits uniques (', dupGroups, 'doublons fusionnés)');
+    console.log('[Matinale] Fusion intelligente:', allItems.length, 'items →', consolidated.length, 'faits uniques (', dupGroups, 'groupes,', fusionnesCount, 'doublons fusionnés)');
 
     const ansutArticlesList = ansutArticles.length > 0
       ? ansutArticles.map((a, i) =>
@@ -487,8 +508,11 @@ Deno.serve(async (req) => {
         }).join('\n')
       : 'Aucune personnalité enregistrée.';
 
-    const context = `=== ACTUALITÉS CONSOLIDÉES (${consolidated.length} faits uniques, ${dupGroups} doublon(s) fusionné(s)) ===
-Une seule référence [N] par fait, toutes les sources listées par groupe.
+    const context = `=== SIGNAUX CONSOLIDÉS (${consolidated.length} faits uniques après fusion ; ${fusionnesCount} doublons fusionnés sur ${allItems.length} items bruts) ===
+RÈGLE DE CONSOLIDATION : chaque entrée [N] représente UN signal unique, déjà fusionné depuis plusieurs sources.
+- Ne JAMAIS recréer un item par source. Un signal = une entrée, même s'il apparaît 5 fois dans la presse.
+- Quand un signal est marqué [SIGNAL CONSOLIDÉ ×N], cela renforce sa pertinence stratégique (à hiérarchiser plus haut).
+- Présenter les sources groupées (ex: "selon Reuters, Jeune Afrique et APA") plutôt que dupliquer le sujet.
 ${consolidatedList}
 
 === MENTIONS DIRECTES ANSUT (articles citant l'ANSUT) ===

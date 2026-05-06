@@ -66,6 +66,13 @@ function tokenize(s: string): Set<string> {
   );
 }
 
+function bigrams(s: string): Set<string> {
+  const toks = normalizeTitle(s).split(' ').filter(t => t.length >= 3 && !STOP_WORDS.has(t));
+  const out = new Set<string>();
+  for (let i = 0; i < toks.length - 1; i++) out.add(`${toks[i]} ${toks[i + 1]}`);
+  return out;
+}
+
 function jaccard(a: Set<string>, b: Set<string>): number {
   if (a.size === 0 || b.size === 0) return 0;
   let inter = 0;
@@ -113,46 +120,57 @@ export function consolidateActualites<T extends ActuLike>(
 ): ConsolidatedFact<T>[] {
   const groups: ConsolidatedFact<T>[] = [];
   const tokenCache = new Map<T, Set<string>>();
+  const bigramCache = new Map<T, Set<string>>();
   const urlCache = new Map<T, string | null>();
 
   for (const item of items) {
-    const tokens = tokenize(`${item.titre} ${item.resume ?? ''}`);
+    const text = `${item.titre} ${item.resume ?? ''}`;
+    const tokens = tokenize(text);
+    const bg = bigrams(text);
     const url = canonicalUrl(item.source_url);
     tokenCache.set(item, tokens);
+    bigramCache.set(item, bg);
     urlCache.set(item, url);
 
     let matchedGroup: ConsolidatedFact<T> | null = null;
+    let bestScore = 0;
 
     for (const g of groups) {
       const ref = g.primary;
       const refTokens = tokenCache.get(ref)!;
+      const refBg = bigramCache.get(ref)!;
       const refUrl = urlCache.get(ref)!;
 
-      // Rule 1: same canonical URL
+      // Rule 1: same canonical URL → fusion immédiate
       if (url && refUrl && url === refUrl) {
         matchedGroup = g;
         break;
       }
-      // Rule 2: title similarity > 0.6
       const sim = jaccard(tokens, refTokens);
-      if (sim > 0.6) {
-        matchedGroup = g;
-        break;
+      const simBg = jaccard(bg, refBg);
+      const ent = commonEntities(item, ref);
+
+      // Rule 2: forte similarité titre OU bigrammes
+      if (sim > 0.55 || simBg > 0.45) {
+        if (sim + simBg > bestScore) { matchedGroup = g; bestScore = sim + simBg; }
+        continue;
       }
-      // Rule 3: shared entities + moderate title sim
-      if (sim > 0.35 && commonEntities(item, ref) >= 2) {
-        matchedGroup = g;
-        break;
+      // Rule 3: similarité modérée + entités partagées (≥2)
+      if ((sim > 0.3 || simBg > 0.25) && ent >= 2) {
+        if (sim + simBg + ent * 0.1 > bestScore) { matchedGroup = g; bestScore = sim + simBg + ent * 0.1; }
+        continue;
+      }
+      // Rule 4: ≥3 entités fortes communes (même sujet, formulations différentes)
+      if (ent >= 3 && (sim > 0.15 || simBg > 0.15)) {
+        if (ent * 0.15 > bestScore) { matchedGroup = g; bestScore = ent * 0.15; }
       }
     }
 
     if (matchedGroup) {
       matchedGroup.members.push(item);
-      // promote new primary if richer
       if (richnessScore(item) > richnessScore(matchedGroup.primary)) {
         matchedGroup.primary = item;
       }
-      // add source if new canonical URL
       const srcKey = url ?? `${item.source_nom ?? 'unknown'}::${item.titre}`;
       if (!matchedGroup.sources.some(s => (canonicalUrl(s.source_url) ?? `${s.source_nom}::`) === srcKey)) {
         matchedGroup.sources.push({
@@ -194,12 +212,16 @@ export function formatConsolidatedForPrompt<T extends ActuLike>(
     const sourcesStr = g.sources
       .map(s => s.source_url ? `${s.source_nom} (${s.source_url})` : s.source_nom)
       .join(' ; ');
-    const dupCount = g.members.length > 1 ? ` [fusionné ×${g.members.length}]` : '';
+    const dupCount = g.members.length > 1 ? ` [SIGNAL CONSOLIDÉ ×${g.members.length} reprises — ${g.sources.length} source(s)]` : '';
+    // Liste enrichie des angles complémentaires des autres membres (titres) pour aider l'IA à fusionner les angles
+    const angles = g.members.length > 1
+      ? ' | Angles fusionnés: ' + g.members.slice(1, 4).map(m => `"${(m.titre || '').slice(0, 80)}"`).join(' / ')
+      : '';
     return `[${g.ref}] ${p.titre}${dupCount}` +
-      (p.resume ? ` — ${p.resume.substring(0, 200)}` : '') +
+      (p.resume ? ` — ${p.resume.substring(0, 220)}` : '') +
       ` (importance: ${p.importance ?? 50}/100, sentiment: ${p.sentiment ?? 'N/A'}` +
       (p.impact_ansut ? `, impact ANSUT: ${p.impact_ansut}` : '') +
-      `, sources: ${sourcesStr})`;
+      `, sources: ${sourcesStr})${angles}`;
   }).join('\n');
 }
 
