@@ -174,7 +174,7 @@ export function DocumentWorkspace({
       const drawWatermark = () => {
         if (!opts.watermarkEnabled || !opts.watermarkText.trim()) return;
         pdf.saveGraphicsState();
-        // @ts-expect-error - jsPDF GState typing is loose
+        // @ts-ignore - jsPDF GState typing is loose
         pdf.setGState(pdf.GState({ opacity: 0.08 }));
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(90);
