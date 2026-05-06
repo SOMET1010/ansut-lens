@@ -150,6 +150,7 @@ export function SocialCredentialsDialog({
   const [reveal, setReveal] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [rotationMode, setRotationMode] = useState(false);
 
   useEffect(() => {
     if (!open) return;
