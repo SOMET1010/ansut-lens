@@ -220,14 +220,20 @@ export function AnsutAccountsActivityWidget() {
           </div>
         )}
 
-        <Tabs defaultValue="comptes" className="w-full">
-          <TabsList className="grid grid-cols-5 w-full">
+        <Tabs defaultValue="diagnostic" className="w-full">
+          <TabsList className="grid grid-cols-6 w-full">
+            <TabsTrigger value="diagnostic">Diagnostic</TabsTrigger>
             <TabsTrigger value="comptes">Comptes</TabsTrigger>
             <TabsTrigger value="reseaux">Réseaux</TabsTrigger>
             <TabsTrigger value="sentiment">Réputation</TabsTrigger>
             <TabsTrigger value="alignement">Alignement</TabsTrigger>
             <TabsTrigger value="ia">Analyse IA</TabsTrigger>
           </TabsList>
+
+          {/* DIAGNOSTIC */}
+          <TabsContent value="diagnostic" className="space-y-3 mt-3">
+            <DiagnosticPanel diag={diag} loading={diagLoading} onRun={handleDiagnostic} />
+          </TabsContent>
 
           {/* COMPTES */}
           <TabsContent value="comptes" className="space-y-2 mt-3">
