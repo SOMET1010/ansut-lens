@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Printer, ArrowLeft, ShieldAlert, Mail, KeyRound, MapPin, UserCheck } from "lucide-react";
+import { Printer, ArrowLeft, ShieldAlert, Mail, KeyRound, MapPin, UserCheck, Wand2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { MessageGenerator } from "@/components/admin/MessageGenerator";
 
 interface NetworkSheet {
   id: string;
