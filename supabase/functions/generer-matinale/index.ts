@@ -422,7 +422,7 @@ Deno.serve(async (req) => {
     });
 
     // ============= MODE FUSIONNER INTELLIGEMMENT =============
-    // Unifie articles DB + Perplexity + mentions ANSUT et déduplique transversalement.
+    // Unifie articles DB + Perplexity + mentions ANSUT + insights sociaux et déduplique transversalement.
     const allItems: ActuLike[] = [
       ...(articles || []).map(a => ({
         titre: a.titre,
@@ -432,6 +432,8 @@ Deno.serve(async (req) => {
         importance: a.importance,
         sentiment: a.sentiment,
         impact_ansut: a.impact_ansut,
+        entites_personnes: (a as any).entites_personnes ?? null,
+        entites_entreprises: (a as any).entites_entreprises ?? null,
         origin: 'db' as const,
       })),
       ...perplexityNews.articles.map(a => ({
@@ -442,14 +444,33 @@ Deno.serve(async (req) => {
         importance: 60,
         origin: 'perplexity' as const,
       })),
+      ...((mentions || []).map((m: any) => ({
+        titre: (m.contenu || '').slice(0, 140),
+        resume: m.contenu,
+        source_nom: m.source || 'Mention',
+        source_url: m.source_url,
+        importance: m.est_critique ? 75 : 50,
+        sentiment: m.sentiment,
+        origin: 'mention' as const,
+      }))),
+      ...((socialInsights || []).map((s: any) => ({
+        titre: (s.contenu || '').slice(0, 140),
+        resume: s.contenu,
+        source_nom: s.plateforme || 'Social',
+        source_url: s.url_original,
+        importance: s.est_critique ? 70 : 45,
+        sentiment: s.sentiment,
+        origin: 'social' as const,
+      }))),
     ];
     const consolidated = consolidateActualites(allItems);
     const dupGroups = consolidated.filter(g => g.members.length > 1).length;
+    const fusionnesCount = consolidated.reduce((s, g) => s + Math.max(0, g.members.length - 1), 0);
     const consolidatedList = consolidated.length > 0
       ? formatConsolidatedForPrompt(consolidated)
       : 'Aucune actualité disponible.';
 
-    console.log('[Matinale] Fusion intelligente:', allItems.length, 'items →', consolidated.length, 'faits uniques (', dupGroups, 'doublons fusionnés)');
+    console.log('[Matinale] Fusion intelligente:', allItems.length, 'items →', consolidated.length, 'faits uniques (', dupGroups, 'groupes,', fusionnesCount, 'doublons fusionnés)');
 
     const ansutArticlesList = ansutArticles.length > 0
       ? ansutArticles.map((a, i) =>
