@@ -7,7 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
-import { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType, Header, Footer, PageNumber, BorderStyle, ShadingType, ExternalHyperlink } from 'docx';
+import { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType, Header, Footer, PageNumber, BorderStyle, ShadingType, ExternalHyperlink, TableOfContents, PageBreak } from 'docx';
 import { saveAs } from 'file-saver';
 
 export interface GeneratedDocument {
@@ -147,6 +147,10 @@ export function DocumentWorkspace({
       const contentTop = margin + 25;
       const contentBottom = pageHeight - margin - 15;
       let y = contentTop;
+
+      // Track headings encountered during render for the TOC
+      type TocEntry = { level: number; text: string; page: number };
+      const tocEntries: TocEntry[] = [];
 
       // Header on content pages
       const drawHeader = () => {
@@ -376,6 +380,8 @@ export function DocumentWorkspace({
           pdf.setFontSize(size);
           pdf.setTextColor(level === 1 ? 15 : 30, level === 1 ? 23 : 41, level === 1 ? 42 : 59);
           const wrapped = pdf.splitTextToSize(text, maxWidth);
+          // Record heading position (current page number, before drawing)
+          if (level <= 3) tocEntries.push({ level, text, page: pdf.getNumberOfPages() });
           pdf.text(wrapped, margin, y);
           y += wrapped.length * lh;
 
@@ -438,14 +444,88 @@ export function DocumentWorkspace({
         y += 3;
       }
 
-      // Page numbers (skip cover = page 1)
+      // ===== TABLE OF CONTENTS (inserted as page 2, after cover) =====
+      if (tocEntries.length > 0) {
+        pdf.insertPage(2);
+        pdf.setPage(2);
+        // Header
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.setTextColor(148, 163, 184);
+        pdf.text(cleanTitle.length > 70 ? cleanTitle.slice(0, 70) + '…' : cleanTitle, margin, 30);
+        pdf.text('ANSUT', pageWidth - margin, 30, { align: 'right' });
+        pdf.setDrawColor(226, 232, 240);
+        pdf.setLineWidth(0.5);
+        pdf.line(margin, 36, pageWidth - margin, 36);
+
+        // Title
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(20);
+        pdf.setTextColor(15, 23, 42);
+        pdf.text('Sommaire', margin, contentTop + 10);
+        pdf.setDrawColor(59, 130, 246);
+        pdf.setLineWidth(1.2);
+        pdf.line(margin, contentTop + 14, margin + 50, contentTop + 14);
+
+        let ty = contentTop + 44;
+        const tocBottom = pageHeight - margin - 30;
+        for (const entry of tocEntries) {
+          if (ty > tocBottom) break; // simple single-page TOC
+          const indent = (entry.level - 1) * 16;
+          const isH1 = entry.level === 1;
+          pdf.setFont('helvetica', isH1 ? 'bold' : 'normal');
+          pdf.setFontSize(isH1 ? 11 : 10);
+          pdf.setTextColor(isH1 ? 15 : 71, isH1 ? 23 : 85, isH1 ? 42 : 105);
+
+          const targetPage = entry.page + 1; // shifted by inserted TOC
+          const pageStr = String(targetPage - 2); // logical page number (content)
+          const pageW = pdf.getTextWidth(pageStr);
+          const titleMaxW = maxWidth - indent - pageW - 20;
+          const titleText = pdf.splitTextToSize(entry.text, titleMaxW)[0];
+          const titleW = pdf.getTextWidth(titleText);
+
+          pdf.text(titleText, margin + indent, ty);
+          // Dot leader
+          pdf.setTextColor(203, 213, 225);
+          const dotsStartX = margin + indent + titleW + 4;
+          const dotsEndX = pageWidth - margin - pageW - 4;
+          if (dotsEndX > dotsStartX) {
+            const dotW = pdf.getTextWidth('.');
+            const dotCount = Math.max(0, Math.floor((dotsEndX - dotsStartX) / dotW));
+            pdf.text('.'.repeat(dotCount), dotsStartX, ty);
+          }
+          // Page number
+          pdf.setTextColor(isH1 ? 15 : 71, isH1 ? 23 : 85, isH1 ? 42 : 105);
+          pdf.text(pageStr, pageWidth - margin, ty, { align: 'right' });
+
+          // Clickable link to target page
+          try {
+            pdf.link(margin + indent, ty - 10, maxWidth - indent, 14, { pageNumber: targetPage });
+          } catch { /* noop */ }
+
+          ty += isH1 ? 20 : 16;
+        }
+      }
+
+      // Page numbers (cover = 1, TOC = 2 if present, content starts after)
       const totalPages = pdf.getNumberOfPages();
-      for (let i = 2; i <= totalPages; i++) {
+      const contentStart = tocEntries.length > 0 ? 3 : 2;
+      const contentTotal = totalPages - (contentStart - 1);
+      for (let i = contentStart; i <= totalPages; i++) {
         pdf.setPage(i);
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(8);
         pdf.setTextColor(148, 163, 184);
-        pdf.text(`Page ${i - 1} / ${totalPages - 1}`, pageWidth - margin, pageHeight - 25, { align: 'right' });
+        pdf.text(`Page ${i - contentStart + 1} / ${contentTotal}`, pageWidth - margin, pageHeight - 25, { align: 'right' });
+        pdf.text('ANSUT — Document confidentiel', margin, pageHeight - 25);
+      }
+      // Footer for TOC page
+      if (tocEntries.length > 0) {
+        pdf.setPage(2);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.setTextColor(148, 163, 184);
+        pdf.text('Sommaire', pageWidth - margin, pageHeight - 25, { align: 'right' });
         pdf.text('ANSUT — Document confidentiel', margin, pageHeight - 25);
       }
 
@@ -457,7 +537,7 @@ export function DocumentWorkspace({
     const cleanTitle = document.title.replace(/\.(docx|pdf|txt)$/i, '');
     const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
-      const children: Paragraph[] = [
+      const children: (Paragraph | TableOfContents)[] = [
         new Paragraph({
           alignment: AlignmentType.LEFT,
           children: [new TextRun({ text: 'ANSUT • RADAR STRATÉGIQUE', bold: true, size: 18, color: '64748B' })],
@@ -483,8 +563,24 @@ export function DocumentWorkspace({
           children: [new TextRun({ text: 'Confidentialité : Usage interne', size: 20, color: '475569' })],
           spacing: { after: 400 },
         }),
-        new Paragraph({ text: '' }),
+        new Paragraph({ children: [new PageBreak()] }),
+        // Table of Contents (auto-built by Word from Heading 1-3)
+        new Paragraph({
+          children: [new TextRun({ text: 'Sommaire', bold: true, size: 32, color: '0F172A' })],
+          spacing: { after: 200 },
+          border: { bottom: { color: '3B82F6', space: 4, style: BorderStyle.SINGLE, size: 12 } },
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: 'Mettez à jour le sommaire dans Word (clic droit → Mettre à jour les champs).', italics: true, size: 16, color: '94A3B8' })],
+          spacing: { after: 200 },
+        }),
+        new TableOfContents('Sommaire', {
+          hyperlink: true,
+          headingStyleRange: '1-3',
+        }),
+        new Paragraph({ children: [new PageBreak()] }),
       ];
+
 
       const APP_BASE = 'https://ansut-lens.lovable.app';
       // Parse numeric reference URLs once for the whole document
