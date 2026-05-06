@@ -235,6 +235,16 @@ export default function AdminPage() {
               to="/admin/freshness"
               loading={isLoading}
             />
+            <AdminNavCard
+              color="amber"
+              icon={<Sliders size={24} />}
+              title="Règles de scoring"
+              badge="Intelligence exécutive"
+              badgeVariant="info"
+              subtitle="Seuils ROUGE/ORANGE/VERT/BLEU, pertinence min et volumes minimaux des livrables."
+              to="/admin/scoring"
+              loading={isLoading}
+            />
           </PermissionGate>
           <PermissionGate permission="manage_newsletters">
             <AdminNavCard
