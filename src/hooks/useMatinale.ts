@@ -10,26 +10,7 @@ interface MatinaleFlashItem {
   source_url?: string;
 }
 
-interface MatinaleContent {
-  flash_info: MatinaleFlashItem[];
-  veille_reputation: {
-    resume: string;
-    tonalite: 'positif' | 'neutre' | 'negatif';
-    mentions_cles: string[];
-    preuves?: {
-      titre: string;
-      source: string;
-      url: string;
-      extrait: string;
-      sentiment_article: 'positif' | 'neutre' | 'negatif';
-    }[];
-  };
-  pret_a_poster: {
-    linkedin: string;
-    angle: string;
-    x_post?: string;
-  };
-}
+type MatinaleContent = Record<string, any>;
 
 interface FreshnessMeta {
   window_hours: number;
