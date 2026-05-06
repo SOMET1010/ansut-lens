@@ -314,6 +314,31 @@ export function SocialCredentialsDialog({
           </div>
         </div>
 
+        {Object.values(stored).some(Boolean) && (
+          <div className="flex items-center justify-between rounded-md border border-purple-200 bg-purple-50 px-3 py-2 text-xs text-purple-900">
+            <div className="flex items-center gap-2">
+              <RotateCw className="h-4 w-4" />
+              <span>Rotation périodique recommandée tous les 90 jours.</span>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs border-purple-300"
+              onClick={handleRotate}
+            >
+              <RotateCw className="h-3 w-3 mr-1" />
+              Régénérer / révoquer
+            </Button>
+          </div>
+        )}
+
+        {rotationMode && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            🔄 Mode rotation actif — saisissez les <strong>nouvelles</strong> valeurs ci-dessous puis cliquez sur Enregistrer.
+          </div>
+        )}
+
         {loading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
