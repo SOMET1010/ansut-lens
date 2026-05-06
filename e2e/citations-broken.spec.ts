@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import { Document, Packer } from 'docx';
 import JSZip from 'jszip';
 import {
