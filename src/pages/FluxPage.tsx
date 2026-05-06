@@ -131,16 +131,16 @@ export default function FluxPage() {
         <Card className="glass">
           <CardContent className="py-12 text-center">
             <div className="h-16 w-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <Rss className="h-8 w-8 text-primary" />
+              <Radar className="h-8 w-8 text-primary" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Aucun flux créé</h3>
+            <h3 className="text-lg font-semibold mb-2">Aucun capteur déployé</h3>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Créez votre premier flux de veille personnalisé pour recevoir les actualités 
-              correspondant à vos critères, ou utilisez un modèle recommandé ci-dessous.
+              Déployez votre premier capteur stratégique pour activer la surveillance automatique,
+              ou choisissez un dispositif ANSUT ci-dessous.
             </p>
             <Button onClick={handleCreateNew} size="lg">
               <Plus className="h-4 w-4 mr-2" />
-              Créer mon premier flux
+              Déployer mon premier capteur
             </Button>
           </CardContent>
         </Card>
