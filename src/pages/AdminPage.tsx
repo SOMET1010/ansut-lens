@@ -236,7 +236,7 @@ export default function AdminPage() {
               loading={isLoading}
             />
             <AdminNavCard
-              color="amber"
+              color="orange"
               icon={<Sliders size={24} />}
               title="Règles de scoring"
               badge="Intelligence exécutive"
