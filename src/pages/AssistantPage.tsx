@@ -544,26 +544,34 @@ export default function AssistantPage() {
 
           {/* Messages Area */}
           <ScrollArea className="flex-1 p-4 lg:p-6" ref={scrollRef}>
-            <div className="space-y-2">
-              {messages.map((msg, i) => (
-                <ChatMessage
-                  key={i}
-                  role={msg.role}
-                  content={msg.content}
-                  isStreaming={isLoading && i === messages.length - 1 && msg.role === 'assistant'}
-                />
-              ))}
-              {isLoading && messages[messages.length - 1]?.role === 'user' && (
-                <div className="flex gap-4 mb-6">
-                  <div className="shrink-0 h-10 w-10 rounded-full flex items-center justify-center bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm">
-                    <Bot className="h-5 w-5" />
+            {showWelcome ? (
+              <WelcomeScreen
+                mode={mode}
+                onPromptClick={(p) => { setInput(p); }}
+                contextStats={{ actualites: contextStats.actualites, dossiers: contextStats.dossiers }}
+              />
+            ) : (
+              <div className="space-y-2 max-w-4xl mx-auto">
+                {realMessages.map((msg, i) => (
+                  <ChatMessage
+                    key={i}
+                    role={msg.role}
+                    content={msg.content}
+                    isStreaming={isLoading && i === realMessages.length - 1 && msg.role === 'assistant'}
+                  />
+                ))}
+                {isLoading && realMessages[realMessages.length - 1]?.role === 'user' && (
+                  <div className="flex gap-4 mb-6">
+                    <div className="shrink-0 h-10 w-10 rounded-full flex items-center justify-center bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-sm">
+                      <Bot className="h-5 w-5" />
+                    </div>
+                    <div className="bg-card border rounded-2xl rounded-tl-none p-5">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    </div>
                   </div>
-                  <div className="bg-card border rounded-2xl rounded-tl-none p-5">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </ScrollArea>
           
           {/* Input Area */}
