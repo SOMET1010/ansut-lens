@@ -724,6 +724,16 @@ export function DocumentWorkspace({
       }
 
       const doc = new Document({
+        styles: {
+          characterStyles: [
+            {
+              id: 'Hyperlink',
+              name: 'Hyperlink',
+              basedOn: 'DefaultParagraphFont',
+              run: { color: '1D4ED8', underline: { type: 'single', color: '1D4ED8' } },
+            },
+          ],
+        },
         sections: [{
           properties: {
             page: {
