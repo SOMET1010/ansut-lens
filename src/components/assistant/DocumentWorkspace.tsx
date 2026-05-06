@@ -486,6 +486,23 @@ export function DocumentWorkspace({
         new Paragraph({ text: '' }),
       ];
 
+      const APP_BASE = 'https://ansut-lens.lovable.app';
+      // Parse numeric reference URLs once for the whole document
+      const numRefUrlsDocx: Record<string, string> = {};
+      {
+        const refRe = /(?:^|\n)\s*(?:\[(\d{1,3})\]:?|(\d{1,3})[.)])\s*(https?:\/\/\S+)/g;
+        let rm: RegExpExecArray | null;
+        while ((rm = refRe.exec(document.content)) !== null) {
+          const n = rm[1] || rm[2];
+          if (n && !numRefUrlsDocx[n]) numRefUrlsDocx[n] = rm[3].replace(/[.,;)\]]+$/, '');
+        }
+      }
+      const docxCitationUrl = (variant: 'actu' | 'dossier' | 'num', id: string): string | null => {
+        if (variant === 'actu') return `${APP_BASE}/radar?tab=flux&id=${encodeURIComponent(id)}`;
+        if (variant === 'dossier') return `${APP_BASE}/dossiers?id=${encodeURIComponent(id)}`;
+        return numRefUrlsDocx[id] || null;
+      };
+
       const lines = document.content.split('\n');
       for (const raw of lines) {
         const line = raw.trim();
@@ -503,12 +520,16 @@ export function DocumentWorkspace({
         const text = line.replace(/^[-*]\s+/, '');
 
         // Tokenize: bold | [[ACTU|DOSSIER:id|title]] | [n]
-        const re = /(\*\*[^*]+\*\*)|(\[\[(ACTU|DOSSIER):[^|\]]+\|([^\]]+)\]\])|(\[(\d{1,3})\])/g;
-        const runs: TextRun[] = [];
+        const re = /(\*\*[^*]+\*\*)|(\[\[(ACTU|DOSSIER):([^|\]]+)\|([^\]]+)\]\])|(\[(\d{1,3})\])/g;
+        const runs: (TextRun | ExternalHyperlink)[] = [];
         let last = 0;
         let m: RegExpExecArray | null;
         const pushText = (t: string, bold = false) => {
           if (t) runs.push(new TextRun({ text: t, bold }));
+        };
+        const wrapWithLink = (run: TextRun, url: string | null) => {
+          if (!url) return run;
+          return new ExternalHyperlink({ link: url, children: [run] });
         };
         while ((m = re.exec(text)) !== null) {
           if (m.index > last) pushText(text.slice(last, m.index));
@@ -516,22 +537,31 @@ export function DocumentWorkspace({
             pushText(m[1].slice(2, -2), true);
           } else if (m[2]) {
             const isActu = m[3] === 'ACTU';
-            const label = m[4].length > 40 ? m[4].slice(0, 39) + '…' : m[4];
-            runs.push(new TextRun({
+            const id = m[4];
+            const rawLabel = m[5];
+            const label = rawLabel.length > 40 ? rawLabel.slice(0, 39) + '…' : rawLabel;
+            const url = docxCitationUrl(isActu ? 'actu' : 'dossier', id);
+            const badgeRun = new TextRun({
               text: ` ${isActu ? '◆' : '■'} ${label} `,
               bold: true,
               size: 16,
               color: isActu ? '1D4ED8' : '7E22CE',
               shading: { type: ShadingType.CLEAR, fill: isActu ? 'DBEAFE' : 'F3E8FF', color: 'auto' },
-            }));
-          } else if (m[5]) {
-            runs.push(new TextRun({
-              text: ` [${m[6]}] `,
+              style: url ? 'Hyperlink' : undefined,
+            });
+            runs.push(wrapWithLink(badgeRun, url));
+          } else if (m[6]) {
+            const num = m[7];
+            const url = docxCitationUrl('num', num);
+            const badgeRun = new TextRun({
+              text: ` [${num}] `,
               bold: true,
               size: 14,
               color: '334155',
               shading: { type: ShadingType.CLEAR, fill: 'F1F5F9', color: 'auto' },
-            }));
+              style: url ? 'Hyperlink' : undefined,
+            });
+            runs.push(wrapWithLink(badgeRun, url));
           }
           last = m.index + m[0].length;
         }
