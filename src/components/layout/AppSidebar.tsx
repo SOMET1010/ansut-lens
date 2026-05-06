@@ -55,10 +55,10 @@ const menuItems = [
     permission: 'view_radar'
   },
   { 
-    title: 'Mes Flux', 
+    title: 'Capteurs Stratégiques', 
     url: '/flux', 
     icon: Rss,
-    description: 'Flux personnalisés',
+    description: 'Dispositifs de surveillance numérique',
     permission: 'create_flux'
   },
   { 

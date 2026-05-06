@@ -13,9 +13,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Rss, Sparkles } from 'lucide-react';
+import { Plus, Radar, Sparkles, Bot } from 'lucide-react';
 import { useFluxVeille, useFluxActualitesCount, useFluxNewActualitesCount, useDeleteFlux, FluxVeille, useCreateFlux, FluxFormData } from '@/hooks/useFluxVeille';
 import { FluxCard, FluxFormDialog, FluxTemplateCard, fluxTemplates, FluxTemplate } from '@/components/flux';
+import { CentreSurveillanceBar } from '@/components/flux/CentreSurveillanceBar';
 
 export default function FluxPage() {
   const { data: flux, isLoading } = useFluxVeille();
@@ -81,25 +82,29 @@ export default function FluxPage() {
 
   return (
     <div className="w-full space-y-6 animate-fade-in">
-      {/* Header amélioré */}
+      {/* Centre de Surveillance Numérique */}
+      <CentreSurveillanceBar />
+
+      {/* Header — Capteurs Stratégiques */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3">
-            <Rss className="h-7 w-7 text-primary" />
-            Mes Flux de Veille
+            <Radar className="h-7 w-7 text-primary" />
+            Capteurs Stratégiques
             {!isLoading && flux && flux.length > 0 && (
-              <Badge variant="secondary" className="text-xs">
-                {activeCount} actifs
+              <Badge variant="secondary" className="text-xs gap-1">
+                <Bot className="h-3 w-3" />
+                {activeCount} agent{activeCount > 1 ? 's' : ''} actif{activeCount > 1 ? 's' : ''}
               </Badge>
             )}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Gérez vos robots de surveillance et vos alertes automatiques
+            Dispositifs de surveillance numérique — chaque agent surveille, analyse, alerte et recommande.
           </p>
         </div>
         <Button onClick={handleCreateNew} className="gap-2">
           <Plus className="h-4 w-4" />
-          Créer un nouveau flux
+          Déployer un capteur
         </Button>
       </div>
 
@@ -126,16 +131,16 @@ export default function FluxPage() {
         <Card className="glass">
           <CardContent className="py-12 text-center">
             <div className="h-16 w-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <Rss className="h-8 w-8 text-primary" />
+              <Radar className="h-8 w-8 text-primary" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Aucun flux créé</h3>
+            <h3 className="text-lg font-semibold mb-2">Aucun capteur déployé</h3>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Créez votre premier flux de veille personnalisé pour recevoir les actualités 
-              correspondant à vos critères, ou utilisez un modèle recommandé ci-dessous.
+              Déployez votre premier capteur stratégique pour activer la surveillance automatique,
+              ou choisissez un dispositif ANSUT ci-dessous.
             </p>
             <Button onClick={handleCreateNew} size="lg">
               <Plus className="h-4 w-4 mr-2" />
-              Créer mon premier flux
+              Déployer mon premier capteur
             </Button>
           </CardContent>
         </Card>
@@ -154,13 +159,16 @@ export default function FluxPage() {
         </div>
       )}
 
-      {/* Section : Modèles recommandés */}
+      {/* Section : Dispositifs ANSUT */}
       <div className="border-t border-border pt-8">
-        <h2 className="text-sm font-bold text-muted-foreground uppercase mb-4 flex items-center gap-2">
+        <h2 className="text-sm font-bold text-muted-foreground uppercase mb-1 flex items-center gap-2">
           <Sparkles className="h-4 w-4" />
-          Modèles recommandés pour vous
+          Dispositifs de Surveillance ANSUT
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <p className="text-xs text-muted-foreground mb-4">
+          Modèles préconfigurés alignés sur les missions stratégiques ANSUT — déploiement en un clic.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {fluxTemplates.map((template) => (
             <FluxTemplateCard
               key={template.id}
