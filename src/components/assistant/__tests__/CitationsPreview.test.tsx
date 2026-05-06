@@ -32,7 +32,7 @@ describe('CitationsPreview — broken badges stay non-clickable', () => {
       const { container } = render(<CitationsPreview content={fx.content} />);
       // Open the collapsible panel to render every badge.
       const toggle = screen.getByRole('button', { name: /aperçu des liens/i });
-      toggle.click();
+      fireEvent.click(toggle);
 
       const anchors = container.querySelectorAll('a');
       expect(anchors.length).toBe(validCount);
@@ -62,7 +62,7 @@ describe('CitationsPreview — broken badges stay non-clickable', () => {
 
   it('marks broken badges with aria-disabled and a tooltip', () => {
     render(<CitationsPreview content="Référence orpheline [99]." />);
-    screen.getByRole('button', { name: /aperçu des liens/i }).click();
+    fireEvent.click(screen.getByRole("button", { name: /aperçu des liens/i }));
     const broken = screen
       .getAllByText((_, el) => !!el && /lien manquant/i.test(el.textContent || ''))
       .find((el) => el.tagName.toLowerCase() !== 'span' || el.textContent?.includes('[99]'));
@@ -87,7 +87,7 @@ describe('CitationsPreview ↔ export contract alignment', () => {
         expect(container).toBeEmptyDOMElement();
         return;
       }
-      screen.getByRole('button', { name: /aperçu des liens/i }).click();
+      fireEvent.click(screen.getByRole("button", { name: /aperçu des liens/i }));
       expect(container.querySelectorAll('a').length).toBe(expectedValid);
     });
   }
