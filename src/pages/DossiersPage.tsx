@@ -275,21 +275,6 @@ export default function DossiersPage() {
                 </Card>
               </div>
 
-              {/* Recent published documents only */}
-              <section>
-                <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2 mb-4">
-                  <Send className="h-4 w-4" /> Derniers documents validés
-                </h2>
-                
-                {isLoadingDossiers ? (
-                  <Skeleton className="h-[200px]" />
-                ) : (
-                  <RecentSendsTable 
-                    dossiers={publies} 
-                    onSelect={setSelectedDossier} 
-                  />
-                )}
-              </section>
             </>
           )}
         </div>
@@ -387,21 +372,6 @@ export default function DossiersPage() {
                   )}
                 </section>
                 
-                {/* Section Derniers envois */}
-                <section>
-                  <h2 className="text-sm font-bold uppercase text-muted-foreground flex items-center gap-2 mb-4">
-                    <Send className="h-4 w-4" /> Derniers envois au Conseil
-                  </h2>
-                  
-                  {isLoadingDossiers ? (
-                    <Skeleton className="h-[200px]" />
-                  ) : (
-                    <RecentSendsTable 
-                      dossiers={publies} 
-                      onSelect={setSelectedDossier} 
-                    />
-                  )}
-                </section>
               </div>
               
               {/* COLONNE DROITE : Newsletter Quick View (35%) */}

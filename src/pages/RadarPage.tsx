@@ -196,18 +196,12 @@ export default function RadarPage() {
             onRetry={() => refetchKpis()}
           />
 
-          <ShareOfVoiceWidget />
-          <RadarProximiteWidget />
-          <div ref={briefingRef} className="scroll-mt-4">
-            <DailyBriefing />
-          </div>
-
-          {/* Aperçu du flux (top 20) avec invitation à voir tout */}
+          {/* Veille web (remontée tout en haut après KPIs) */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
-                Aperçu du flux
+                Veille web
               </h2>
               <Button variant="link" size="sm" onClick={() => handleTabChange('flux')}>
                 Voir le flux complet →
@@ -222,12 +216,9 @@ export default function RadarPage() {
             />
           </div>
 
-          <CompactRadar
-            signaux={signaux || []}
-            isLoading={signauxLoading}
-            isError={signauxError}
-            onRetry={() => refetchSignaux()}
-          />
+          <div ref={briefingRef} className="scroll-mt-4">
+            <DailyBriefing />
+          </div>
         </TabsContent>
 
         {/* === Onglet Flux complet === */}
