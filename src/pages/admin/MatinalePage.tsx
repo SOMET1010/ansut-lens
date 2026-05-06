@@ -94,6 +94,15 @@ export default function MatinalePage() {
             Prévisualiser
           </Button>
           <Button
+            variant="outline"
+            onClick={handleExportPDF}
+            disabled={!matinaleData}
+            title={!matinaleData ? 'Générez d\'abord un aperçu' : 'Exporter le briefing en PDF'}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Exporter PDF
+          </Button>
+          <Button
             onClick={handleSend}
             disabled={send.isPending}
           >
