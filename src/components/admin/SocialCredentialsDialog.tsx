@@ -593,14 +593,27 @@ export function SocialCredentialsDialog({
             <Textarea
               id="rotate-reason"
               value={rotateReason}
-              onChange={(e) => setRotateReason(e.target.value)}
+              onChange={(e) => setRotateReason(e.target.value.slice(0, 500))}
               placeholder="Ex : Token compromis, rotation périodique trimestrielle, départ d'un agent…"
               rows={3}
-              className="text-sm"
+              maxLength={500}
+              className={
+                reasonError
+                  ? 'text-sm border-red-400 focus-visible:ring-red-400'
+                  : cleanedReasonPreview.length >= 10
+                    ? 'text-sm border-emerald-400 focus-visible:ring-emerald-400'
+                    : 'text-sm'
+              }
             />
-            <p className="text-[11px] text-muted-foreground">
-              Au moins 5 caractères. Ce motif sera enregistré dans le journal d'audit.
-            </p>
+            <div className="flex items-center justify-between gap-2 text-[11px]">
+              <span className={reasonError ? 'text-red-700' : 'text-muted-foreground'}>
+                {reasonError ??
+                  'Min. 10 caractères, texte explicatif. Espaces et caractères de contrôle nettoyés avant enregistrement.'}
+              </span>
+              <span className="text-muted-foreground tabular-nums shrink-0">
+                {cleanedReasonPreview.length}/500
+              </span>
+            </div>
           </div>
         </div>
 
