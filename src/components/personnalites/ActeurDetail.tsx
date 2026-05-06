@@ -204,6 +204,11 @@ export function ActeurDetail({ personnalite, open, onOpenChange, onEdit, onArchi
 
           <Separator className="my-4" />
 
+          {/* Intelligence stratégique */}
+          <ActeurStrategicIntelligence personnalite={personnalite} />
+
+          <Separator className="my-4" />
+
           {/* Bio */}
           {personnalite.bio && (
             <div className="mb-4">
