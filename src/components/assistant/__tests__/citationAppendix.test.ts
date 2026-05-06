@@ -76,8 +76,10 @@ describe('DOCX export — hyperlink wrapping (integration)', () => {
   async function renderXml(content: string): Promise<string> {
     const paragraphs = buildDocxCitationAppendix(collectCitations(content));
     const doc = new Document({ sections: [{ children: paragraphs }] });
-    // Packer.toString returns the raw document.xml as a string.
-    return await Packer.toString(doc);
+    const blob = await Packer.toBlob(doc);
+    const buf = await blob.arrayBuffer();
+    const zip = await JSZip.loadAsync(buf);
+    return await zip.file('word/document.xml')!.async('string');
   }
 
   it('wraps valid URLs in <w:hyperlink> and never wraps broken refs', async () => {
