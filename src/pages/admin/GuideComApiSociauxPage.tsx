@@ -224,9 +224,22 @@ export default function GuideComApiSociauxPage() {
                 <div className="bg-muted/40 rounded-md p-3 border">
                   <div className="flex items-center gap-2 font-semibold mb-1 text-xs uppercase tracking-wide text-muted-foreground">
                     <Mail className="h-3.5 w-3.5" />
-                    Message prêt à envoyer
+                    Message prêt à envoyer (version imprimable)
                   </div>
                   <p className="text-sm italic">« {s.template} »</p>
+                </div>
+
+                <div className="rounded-md border p-3 bg-card">
+                  <div className="flex items-center gap-2 font-semibold mb-3 text-xs uppercase tracking-wide text-primary">
+                    <Wand2 className="h-3.5 w-3.5" />
+                    Générateur de message personnalisé
+                  </div>
+                  <MessageGenerator
+                    network={s.name}
+                    defaultContact={s.contact}
+                    template={s.template}
+                    asks={s.asks}
+                  />
                 </div>
               </CardContent>
             </Card>
