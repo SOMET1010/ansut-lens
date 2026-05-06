@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Eye, ExternalLink, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { extractNumericReferenceUrls } from './citationRefs';
 
 interface CitationsPreviewProps {
   content: string;
