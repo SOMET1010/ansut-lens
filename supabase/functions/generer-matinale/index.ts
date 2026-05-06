@@ -783,11 +783,33 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     }
 
 
-    // Cap "à retenir" à 3 items
-    if (Array.isArray(matinale.a_retenir)) {
-      matinale.a_retenir = matinale.a_retenir.slice(0, 3);
-    } else {
-      matinale.a_retenir = [];
+    // Normaliser les nouveaux blocs intelligence exécutive
+    matinale.synthese_60s = Array.isArray(matinale.synthese_60s) ? matinale.synthese_60s.slice(0, 5) : [];
+    matinale.signaux_faibles = Array.isArray(matinale.signaux_faibles) ? matinale.signaux_faibles.slice(0, 6) : [];
+    matinale.actions_immediates = Array.isArray(matinale.actions_immediates) ? matinale.actions_immediates.slice(0, 5) : [];
+    matinale.impact_projets_ansut = Array.isArray(matinale.impact_projets_ansut) ? matinale.impact_projets_ansut.slice(0, 6) : [];
+    matinale.lecture_strategique = Array.isArray(matinale.lecture_strategique) ? matinale.lecture_strategique.slice(0, 2) : [];
+    if (!matinale.veille_par_pilier || typeof matinale.veille_par_pilier !== 'object') {
+      matinale.veille_par_pilier = { connectivite: [], usages_services: [], regulation_souverainete: [], concurrence_marche: [] };
+    }
+    for (const k of ['connectivite', 'usages_services', 'regulation_souverainete', 'concurrence_marche']) {
+      if (!Array.isArray(matinale.veille_par_pilier[k])) matinale.veille_par_pilier[k] = [];
+      // Normaliser les URLs des items pilier (et garder même sans URL valide — c'est de la lecture, pas de la presse)
+      matinale.veille_par_pilier[k] = matinale.veille_par_pilier[k].map((it: any) => ({
+        ...it,
+        url: it?.url ? (validUrls.has(normalizeUrl(it.url)) ? normalizeUrl(it.url) : '') : '',
+      })).slice(0, 5);
+    }
+    if (!matinale.reputation_ansut || typeof matinale.reputation_ansut !== 'object') {
+      matinale.reputation_ansut = { positif: [], negatif: [], confusion_role: null, niveau_risque: 'VERT' };
+    }
+    if (!matinale.priorite_executive || typeof matinale.priorite_executive !== 'object') {
+      matinale.priorite_executive = {
+        titre: 'Veille en attente de consolidation',
+        impacts: ['Faible volume d\'actualités vérifiées sur la fenêtre.'],
+        recommandation: ['Renforcer la collecte sur les piliers Connectivité et Concurrence.'],
+        niveau: 'BLEU',
+      };
     }
 
     // Forcer activite_ansut à utiliser les vraies métriques (jamais l'IA)
