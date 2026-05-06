@@ -475,11 +475,41 @@ export function DocumentWorkspace({
 
         const isList = /^[-*]\s+/.test(line);
         const text = line.replace(/^[-*]\s+/, '');
-        const segments = text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
-        const runs = segments.map(seg => {
-          const bold = /^\*\*.+\*\*$/.test(seg);
-          return new TextRun({ text: bold ? seg.slice(2, -2) : seg, bold });
-        });
+
+        // Tokenize: bold | [[ACTU|DOSSIER:id|title]] | [n]
+        const re = /(\*\*[^*]+\*\*)|(\[\[(ACTU|DOSSIER):[^|\]]+\|([^\]]+)\]\])|(\[(\d{1,3})\])/g;
+        const runs: TextRun[] = [];
+        let last = 0;
+        let m: RegExpExecArray | null;
+        const pushText = (t: string, bold = false) => {
+          if (t) runs.push(new TextRun({ text: t, bold }));
+        };
+        while ((m = re.exec(text)) !== null) {
+          if (m.index > last) pushText(text.slice(last, m.index));
+          if (m[1]) {
+            pushText(m[1].slice(2, -2), true);
+          } else if (m[2]) {
+            const isActu = m[3] === 'ACTU';
+            const label = m[4].length > 40 ? m[4].slice(0, 39) + '…' : m[4];
+            runs.push(new TextRun({
+              text: ` ${isActu ? '◆' : '■'} ${label} `,
+              bold: true,
+              size: 16,
+              color: isActu ? '1D4ED8' : '7E22CE',
+              shading: { type: 'clear', fill: isActu ? 'DBEAFE' : 'F3E8FF', color: 'auto' },
+            }));
+          } else if (m[5]) {
+            runs.push(new TextRun({
+              text: ` [${m[6]}] `,
+              bold: true,
+              size: 14,
+              color: '334155',
+              shading: { type: 'clear', fill: 'F1F5F9', color: 'auto' },
+            }));
+          }
+          last = m.index + m[0].length;
+        }
+        if (last < text.length) pushText(text.slice(last));
 
         children.push(new Paragraph({
           children: runs,
