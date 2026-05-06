@@ -287,12 +287,14 @@ export function DocumentWorkspace({
         return w;
       };
 
-      const measureCitation = (label: string, variant: 'actu' | 'dossier' | 'num') => {
-        const prefix = variant === 'actu' ? '◆ ' : variant === 'dossier' ? '■ ' : '';
+      const measureCitation = (label: string, variant: 'actu' | 'dossier' | 'num', id: string) => {
+        const broken = !citationUrl(variant, id);
+        const prefix = broken ? '⚠ ' : variant === 'actu' ? '◆ ' : variant === 'dossier' ? '■ ' : '';
         const display = variant === 'num' ? label : (label.length > 40 ? label.slice(0, 39) + '…' : label);
+        const suffix = broken ? ' · lien manquant' : '';
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(variant === 'num' ? 8 : 9);
-        const w = pdf.getTextWidth(prefix + display) + 8;
+        const w = pdf.getTextWidth(prefix + display + suffix) + 8;
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(11);
         return w;
