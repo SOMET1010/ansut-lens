@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { FileText, Copy, RefreshCw, X, Download, ChevronRight, Loader2, Check, Save, FileType2, FileDown, AlertTriangle } from 'lucide-react';
+import { FileText, Copy, RefreshCw, X, Download, ChevronRight, Loader2, Check, Save, AlertTriangle, Settings2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
-import { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType, Header, Footer, PageNumber, BorderStyle, ShadingType, ExternalHyperlink, TableOfContents, PageBreak } from 'docx';
+import { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType, Header, Footer, PageNumber, BorderStyle, ShadingType, ExternalHyperlink, TableOfContents, PageBreak, convertMillimetersToTwip } from 'docx';
 import { saveAs } from 'file-saver';
+import { ExportSettingsDialog, type ExportOptions, loadExportOptions } from './ExportSettingsDialog';
 
 export interface GeneratedDocument {
   title: string;
