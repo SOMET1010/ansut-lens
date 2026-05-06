@@ -64,8 +64,8 @@ describe('validateReason', () => {
     expect(validateReason('   a b   ')).toBe(TOO_SHORT);
   });
 
-  it('rejects symbol-only input', () => {
-    expect(validateReason('!!!@@@###$$$')).toBe(ONLY_SYMBOLS);
+  it('rejects symbol-only input (caught by letters check first)', () => {
+    expect(validateReason('!!!@@@###$$$')).toBe(NEEDS_LETTERS);
   });
 
   it('rejects repeated single character (e.g. aaaaaaaaaa)', () => {
