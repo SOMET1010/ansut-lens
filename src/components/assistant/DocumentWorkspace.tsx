@@ -10,6 +10,7 @@ import { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType, Head
 import { saveAs } from 'file-saver';
 import { ExportSettingsDialog, type ExportOptions, loadExportOptions } from './ExportSettingsDialog';
 import { CitationsPreview } from './CitationsPreview';
+import { extractNumericReferenceUrls } from './citationRefs';
 
 export interface GeneratedDocument {
   title: string;
