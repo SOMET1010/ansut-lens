@@ -54,7 +54,7 @@ function formatDate(d?: string): string {
   return format(p, 'dd MMM yyyy', { locale: fr });
 }
 
-export function MatinaleSections({ data }: { data: any }) {
+export function MatinaleSections({ data, freshnessHours = 24 }: { data: any; freshnessHours?: number }) {
   const prio = data.priorite_executive;
   const synthese = data.synthese_60s || [];
   const veille = data.veille_par_pilier || {};
@@ -66,8 +66,29 @@ export function MatinaleSections({ data }: { data: any }) {
   const revue = data.revue_de_presse || [];
   const activite = data.activite_ansut;
 
+  const [drill, setDrill] = useState<null | {
+    title: string;
+    description?: string;
+    keywords: string[];
+    highlightedTitles?: string[];
+    analyzedItems?: { label: string; value?: string | number }[];
+  }>(null);
+
+  const DrillBtn = ({ payload }: { payload: NonNullable<typeof drill> }) => (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      className="h-7 px-2 text-xs gap-1 ml-auto"
+      onClick={() => setDrill(payload)}
+    >
+      <Search className="h-3 w-3" /> Détail
+    </Button>
+  );
+
   return (
     <div className="space-y-4">
+
       {/* 1. PRIORITÉ EXÉCUTIVE */}
       {prio && (
         <Card className="glass border-2 border-primary/40 bg-gradient-to-br from-primary/5 to-transparent">
