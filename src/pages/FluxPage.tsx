@@ -13,9 +13,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Rss, Sparkles } from 'lucide-react';
+import { Plus, Radar, Sparkles, Bot } from 'lucide-react';
 import { useFluxVeille, useFluxActualitesCount, useFluxNewActualitesCount, useDeleteFlux, FluxVeille, useCreateFlux, FluxFormData } from '@/hooks/useFluxVeille';
 import { FluxCard, FluxFormDialog, FluxTemplateCard, fluxTemplates, FluxTemplate } from '@/components/flux';
+import { CentreSurveillanceBar } from '@/components/flux/CentreSurveillanceBar';
 
 export default function FluxPage() {
   const { data: flux, isLoading } = useFluxVeille();
