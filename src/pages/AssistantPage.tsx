@@ -445,11 +445,24 @@ export default function AssistantPage() {
                     <History className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-80 p-0">
+                <SheetContent
+                  side="left"
+                  className="p-0 max-w-none"
+                  style={{ width: historyResize.width }}
+                >
                   <SheetHeader className="p-4 border-b">
-                    <SheetTitle className="flex items-center gap-2">
-                      <History className="h-4 w-4" />
-                      Historique
+                    <SheetTitle className="flex items-center gap-2 justify-between">
+                      <span className="flex items-center gap-2">
+                        <History className="h-4 w-4" />
+                        Historique
+                      </span>
+                      <button
+                        onClick={historyResize.reset}
+                        className="text-[10px] font-normal text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                        title="Réinitialiser la largeur"
+                      >
+                        Réinitialiser
+                      </button>
                     </SheetTitle>
                   </SheetHeader>
                   <div className="h-[calc(100vh-5rem)]">
@@ -461,6 +474,17 @@ export default function AssistantPage() {
                       onNewConversation={handleNewConversation}
                       onDeleteConversation={handleDeleteConversation}
                     />
+                  </div>
+                  {/* Resize handle on the right edge */}
+                  <div
+                    onPointerDown={historyResize.onPointerDown}
+                    onDoubleClick={historyResize.reset}
+                    className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize group hover:bg-primary/20 transition-colors"
+                    title="Glisser pour redimensionner • Double-clic pour réinitialiser"
+                  >
+                    <div className="absolute top-1/2 -translate-y-1/2 right-0 translate-x-1/2 h-10 w-3 rounded border bg-background shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <GripVertical className="h-3 w-3 text-muted-foreground" />
+                    </div>
                   </div>
                 </SheetContent>
               </Sheet>
