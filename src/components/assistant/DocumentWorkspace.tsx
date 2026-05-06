@@ -197,17 +197,8 @@ export function DocumentWorkspace({
       // App base for actu/dossier deep links
       const APP_BASE = 'https://ansut-lens.lovable.app';
 
-      // Build a map of numeric references → URL by scanning for footnote-style lines
-      // Accepts: "[1] https://..." | "[1]: https://..." | "1. https://..." | "1) https://..."
-      const numRefUrls: Record<string, string> = {};
-      {
-        const refRe = /(?:^|\n)\s*(?:\[(\d{1,3})\]:?|(\d{1,3})[.)])\s*(https?:\/\/\S+)/g;
-        let rm: RegExpExecArray | null;
-        while ((rm = refRe.exec(document.content)) !== null) {
-          const n = rm[1] || rm[2];
-          if (n && !numRefUrls[n]) numRefUrls[n] = rm[3].replace(/[.,;)\]]+$/, '');
-        }
-      }
+      // Build a map of numeric references → URL (handles many formats)
+      const numRefUrls = extractNumericReferenceUrls(document.content);
 
       const citationUrl = (variant: 'actu' | 'dossier' | 'num', idOrNum: string): string | null => {
         if (variant === 'actu') return `${APP_BASE}/radar?tab=flux&id=${encodeURIComponent(idOrNum)}`;
