@@ -496,7 +496,7 @@ export function DocumentWorkspace({
               bold: true,
               size: 16,
               color: isActu ? '1D4ED8' : '7E22CE',
-              shading: { type: 'clear', fill: isActu ? 'DBEAFE' : 'F3E8FF', color: 'auto' },
+              shading: { type: ShadingType.CLEAR, fill: isActu ? 'DBEAFE' : 'F3E8FF', color: 'auto' },
             }));
           } else if (m[5]) {
             runs.push(new TextRun({
@@ -504,7 +504,7 @@ export function DocumentWorkspace({
               bold: true,
               size: 14,
               color: '334155',
-              shading: { type: 'clear', fill: 'F1F5F9', color: 'auto' },
+              shading: { type: ShadingType.CLEAR, fill: 'F1F5F9', color: 'auto' },
             }));
           }
           last = m.index + m[0].length;
