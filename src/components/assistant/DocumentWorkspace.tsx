@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { FileText, Copy, RefreshCw, X, Download, ChevronRight, Loader2, Check, Save, FileType2, FileDown, AlertTriangle } from 'lucide-react';
+import { FileText, Copy, RefreshCw, X, Download, ChevronRight, Loader2, Check, Save, AlertTriangle, Settings2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
-import { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType, Header, Footer, PageNumber, BorderStyle, ShadingType, ExternalHyperlink, TableOfContents, PageBreak } from 'docx';
+import { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType, Header, Footer, PageNumber, BorderStyle, ShadingType, ExternalHyperlink, TableOfContents, PageBreak, convertMillimetersToTwip } from 'docx';
 import { saveAs } from 'file-saver';
+import { ExportSettingsDialog, type ExportOptions, loadExportOptions } from './ExportSettingsDialog';
 
 export interface GeneratedDocument {
   title: string;
@@ -38,6 +38,7 @@ export function DocumentWorkspace({
   onSuggestionClick 
 }: DocumentWorkspaceProps) {
   const [copied, setCopied] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [exportState, setExportState] = useState<{
     status: 'idle' | 'loading' | 'error';
     format?: 'pdf' | 'docx';
@@ -46,31 +47,33 @@ export function DocumentWorkspace({
 
   const formatLabel = (f?: 'pdf' | 'docx') => f === 'docx' ? 'DOCX' : 'PDF';
 
-  const runExport = async (format: 'pdf' | 'docx') => {
+  const runExport = async (opts: ExportOptions) => {
     if (!document) return;
-    setExportState({ status: 'loading', format });
+    setExportState({ status: 'loading', format: opts.format });
     try {
-      // Yield to the event loop so the loading UI paints before heavy sync work
       await new Promise(resolve => setTimeout(resolve, 50));
-      if (format === 'pdf') {
-        runExportPDF();
+      if (opts.format === 'pdf') {
+        runExportPDF(opts);
       } else {
-        await runExportDOCX();
+        await runExportDOCX(opts);
       }
       setExportState({ status: 'idle' });
-      toast.success(`${formatLabel(format)} téléchargé`);
+      setSettingsOpen(false);
+      toast.success(`${formatLabel(opts.format)} téléchargé`);
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Erreur inconnue';
-      console.error(`[Export ${format}] échec:`, e);
-      setExportState({ status: 'error', format, error: message });
-      toast.error(`Échec de l'export ${formatLabel(format)}`, { description: message });
+      console.error(`[Export ${opts.format}] échec:`, e);
+      setExportState({ status: 'error', format: opts.format, error: message });
+      toast.error(`Échec de l'export ${formatLabel(opts.format)}`, { description: message });
     }
   };
 
-  const handleExportPDF = () => { void runExport('pdf'); };
-  const handleExportDOCX = () => { void runExport('docx'); };
+  const handleOpenSettings = () => setSettingsOpen(true);
   const handleRetryExport = () => {
-    if (exportState.format) void runExport(exportState.format);
+    if (!document) return;
+    const opts = loadExportOptions((document.title || 'document').replace(/\.(docx|pdf|txt)$/i, ''));
+    if (exportState.format) opts.format = exportState.format;
+    void runExport(opts);
   };
   const dismissError = () => setExportState({ status: 'idle' });
 
@@ -92,12 +95,15 @@ export function DocumentWorkspace({
   const docTypeLabel = (t?: 'note' | 'briefing' | 'rapport') =>
     t === 'briefing' ? 'Briefing' : t === 'rapport' ? 'Rapport' : 'Note de synthèse';
 
-  const runExportPDF = () => {
+  const runExportPDF = (opts: ExportOptions) => {
     if (!document) throw new Error('Aucun document à exporter');
-    const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pdf = new jsPDF({ unit: 'pt', format: opts.pageFormat === 'letter' ? 'letter' : 'a4' });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 50;
+      const marginByPreset = { narrow: 36, normal: 50, wide: 72 };
+      const margin = marginByPreset[opts.margin];
+      const customHeader = opts.headerText.trim();
+      const customFooter = opts.footerText.trim();
       const maxWidth = pageWidth - margin * 2;
       const cleanTitle = document.title.replace(/\.(docx|pdf|txt)$/i, '');
       const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -159,10 +165,24 @@ export function DocumentWorkspace({
         pdf.setTextColor(148, 163, 184);
         const headerTitle = cleanTitle.length > 70 ? cleanTitle.slice(0, 70) + '…' : cleanTitle;
         pdf.text(headerTitle, margin, 30);
-        pdf.text('ANSUT', pageWidth - margin, 30, { align: 'right' });
+        if (customHeader) pdf.text(customHeader, pageWidth - margin, 30, { align: 'right' });
         pdf.setDrawColor(226, 232, 240);
         pdf.setLineWidth(0.5);
         pdf.line(margin, 36, pageWidth - margin, 36);
+      };
+
+      const drawWatermark = () => {
+        if (!opts.watermarkEnabled || !opts.watermarkText.trim()) return;
+        pdf.saveGraphicsState();
+        // @ts-ignore - jsPDF GState typing is loose
+        pdf.setGState(pdf.GState({ opacity: 0.08 }));
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(90);
+        pdf.setTextColor(15, 23, 42);
+        pdf.text(opts.watermarkText.toUpperCase(), pageWidth / 2, pageHeight / 2, {
+          align: 'center', baseline: 'middle', angle: 35,
+        });
+        pdf.restoreGraphicsState();
       };
 
       const ensureSpace = (needed: number) => {
@@ -507,32 +527,41 @@ export function DocumentWorkspace({
         }
       }
 
-      // Page numbers (cover = 1, TOC = 2 if present, content starts after)
+      // Page numbers + watermark (cover = 1, TOC = 2 if present, content starts after)
       const totalPages = pdf.getNumberOfPages();
       const contentStart = tocEntries.length > 0 ? 3 : 2;
       const contentTotal = totalPages - (contentStart - 1);
+      const footerLabel = customFooter;
       for (let i = contentStart; i <= totalPages; i++) {
         pdf.setPage(i);
+        drawWatermark();
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(8);
         pdf.setTextColor(148, 163, 184);
-        pdf.text(`Page ${i - contentStart + 1} / ${contentTotal}`, pageWidth - margin, pageHeight - 25, { align: 'right' });
-        pdf.text('ANSUT — Document confidentiel', margin, pageHeight - 25);
+        if (opts.showPageNumbers) {
+          pdf.text(`Page ${i - contentStart + 1} / ${contentTotal}`, pageWidth - margin, pageHeight - 25, { align: 'right' });
+        }
+        if (footerLabel) pdf.text(footerLabel, margin, pageHeight - 25);
       }
       // Footer for TOC page
       if (tocEntries.length > 0) {
         pdf.setPage(2);
+        drawWatermark();
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(8);
         pdf.setTextColor(148, 163, 184);
         pdf.text('Sommaire', pageWidth - margin, pageHeight - 25, { align: 'right' });
-        pdf.text('ANSUT — Document confidentiel', margin, pageHeight - 25);
+        if (footerLabel) pdf.text(footerLabel, margin, pageHeight - 25);
       }
+      // Watermark on cover
+      pdf.setPage(1);
+      drawWatermark();
 
-    pdf.save(`${baseTitle}.pdf`);
+    const safeName = (opts.filename || baseTitle).replace(/\.(pdf|docx|txt)$/i, '').trim() || baseTitle;
+    pdf.save(`${safeName}.pdf`);
   };
 
-  const runExportDOCX = async () => {
+  const runExportDOCX = async (opts: ExportOptions) => {
     if (!document) throw new Error('Aucun document à exporter');
     const cleanTitle = document.title.replace(/\.(docx|pdf|txt)$/i, '');
     const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -669,34 +698,58 @@ export function DocumentWorkspace({
         }));
       }
 
+      const marginMm = opts.margin === 'narrow' ? 12.5 : opts.margin === 'wide' ? 35 : 25;
+      const marginTwip = convertMillimetersToTwip(marginMm);
+      const pageSize = opts.pageFormat === 'letter'
+        ? { width: 12240, height: 15840 }
+        : { width: 11906, height: 16838 };
+      const customHeader = opts.headerText.trim();
+      const customFooter = opts.footerText.trim();
+
+      const footerRuns: TextRun[] = [];
+      if (customFooter) footerRuns.push(new TextRun({ text: customFooter, size: 16, color: '94A3B8' }));
+      if (opts.showPageNumbers) {
+        footerRuns.push(new TextRun({ text: customFooter ? '  •  Page ' : 'Page ', size: 16, color: '94A3B8' }));
+        footerRuns.push(new TextRun({ children: [PageNumber.CURRENT], size: 16, color: '94A3B8' }));
+        footerRuns.push(new TextRun({ text: ' / ', size: 16, color: '94A3B8' }));
+        footerRuns.push(new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 16, color: '94A3B8' }));
+      }
+
+      if (opts.watermarkEnabled && opts.watermarkText.trim()) {
+        children.unshift(new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({ text: opts.watermarkText.toUpperCase(), bold: true, size: 144, color: 'E2E8F0' })],
+          spacing: { after: 200 },
+        }));
+      }
+
       const doc = new Document({
         sections: [{
+          properties: {
+            page: {
+              size: pageSize,
+              margin: { top: marginTwip, right: marginTwip, bottom: marginTwip, left: marginTwip },
+            },
+          },
           headers: {
             default: new Header({
               children: [new Paragraph({
                 alignment: AlignmentType.RIGHT,
-                children: [new TextRun({ text: `${cleanTitle} — ANSUT`, size: 16, color: '94A3B8' })],
+                children: [new TextRun({ text: customHeader || `${cleanTitle} — ANSUT`, size: 16, color: '94A3B8' })],
               })],
             }),
           },
           footers: {
             default: new Footer({
-              children: [new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                  new TextRun({ text: 'ANSUT — Document confidentiel  •  Page ', size: 16, color: '94A3B8' }),
-                  new TextRun({ children: [PageNumber.CURRENT], size: 16, color: '94A3B8' }),
-                  new TextRun({ text: ' / ', size: 16, color: '94A3B8' }),
-                  new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 16, color: '94A3B8' }),
-                ],
-              })],
+              children: [new Paragraph({ alignment: AlignmentType.CENTER, children: footerRuns })],
             }),
           },
           children,
         }],
       });
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, `${baseTitle}.docx`);
+    const safeName = (opts.filename || baseTitle).replace(/\.(pdf|docx|txt)$/i, '').trim() || baseTitle;
+    saveAs(blob, `${safeName}.docx`);
   };
 
   const handleSaveDraft = () => {
@@ -859,34 +912,28 @@ export function DocumentWorkspace({
           <Save className="h-3.5 w-3.5 mr-1.5" />
           Enregistrer
         </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" disabled={exportState.status === 'loading'} className="text-xs min-w-[110px]">
-              {exportState.status === 'loading' ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                  Export {formatLabel(exportState.format)}…
-                </>
-              ) : (
-                <>
-                  <Download className="h-3.5 w-3.5 mr-1.5" />
-                  Exporter
-                </>
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleExportPDF} className="cursor-pointer">
-              <FileType2 className="h-4 w-4 mr-2" />
-              Exporter en PDF
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleExportDOCX} className="cursor-pointer">
-              <FileDown className="h-4 w-4 mr-2" />
-              Exporter en DOCX
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button size="sm" onClick={handleOpenSettings} disabled={exportState.status === 'loading'} className="text-xs min-w-[140px]">
+          {exportState.status === 'loading' ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              Export {formatLabel(exportState.format)}…
+            </>
+          ) : (
+            <>
+              <Settings2 className="h-3.5 w-3.5 mr-1.5" />
+              Exporter…
+            </>
+          )}
+        </Button>
       </div>
+
+      <ExportSettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        baseTitle={baseTitle}
+        onExport={(o) => void runExport(o)}
+        isExporting={exportState.status === 'loading'}
+      />
     </div>
   );
 }
