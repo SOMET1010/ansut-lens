@@ -34,6 +34,7 @@ import SourcesPage from "@/pages/admin/SourcesPage";
 import RolesPage from "@/pages/admin/RolesPage";
 import MatinalePage from "@/pages/admin/MatinalePage";
 import FreshnessPage from "@/pages/admin/FreshnessPage";
+import ScoringPage from "@/pages/admin/ScoringPage";
 import EvenementsPage from "@/pages/admin/EvenementsPage";
 import ShadowTrackerPage from "@/pages/admin/ShadowTrackerPage";
 import CoffreContenuPage from "@/pages/admin/CoffreContenuPage";
