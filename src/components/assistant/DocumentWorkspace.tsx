@@ -304,7 +304,7 @@ export function DocumentWorkspace({
             const sep = cursorX === x ? 0 : pdf.getTextWidth(' ');
             if (cursorX + sep + bw > x + availableWidth) newLine();
             else cursorX += sep > 0 ? (pdf.text(' ', cursorX, y), sep) : 0;
-            const drawn = drawCitationBadge(seg.label, seg.variant, cursorX, y);
+            const drawn = drawCitationBadge(seg.label, seg.variant, seg.id, cursorX, y);
             cursorX += drawn;
           }
         }
