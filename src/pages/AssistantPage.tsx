@@ -405,40 +405,24 @@ export default function AssistantPage() {
     }
   };
 
+  // Hide welcome placeholder when there are real messages
+  const realMessages = messages.filter(m => m.content !== '__WELCOME__');
+  const showWelcome = realMessages.length === 0;
+
   return (
     <TooltipProvider>
-      <div className="w-full h-[calc(100vh-6rem)] flex gap-6 p-6 animate-fade-in">
-        
-        {/* History Sidebar - Desktop */}
-        <div className="w-96 bg-card rounded-2xl border shadow-sm hidden xl:flex xl:flex-col overflow-hidden">
-          <div className="px-5 py-4 border-b bg-muted/30">
-            <h3 className="text-sm font-bold flex items-center gap-2">
-              <History className="h-4 w-4" />
-              Historique
-            </h3>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <ConversationHistory
-              conversations={conversations}
-              isLoading={loadingConversations}
-              currentConversationId={currentConversationId}
-              onSelectConversation={handleSelectConversation}
-              onNewConversation={handleNewConversation}
-              onDeleteConversation={handleDeleteConversation}
-            />
-          </div>
-        </div>
+      <div className="w-full h-[calc(100vh-6rem)] flex gap-4 p-4 lg:p-6 animate-fade-in">
 
-        {/* MAIN CHAT ZONE (60%) */}
-        <div className="flex-1 flex flex-col bg-card rounded-2xl border shadow-sm overflow-hidden">
-          
+        {/* MAIN CHAT ZONE — flexible width */}
+        <div className="flex-1 min-w-0 flex flex-col bg-card rounded-2xl border shadow-sm overflow-hidden">
+
           {/* Header with Mode Selector */}
-          <div className="px-4 lg:px-6 py-4 border-b bg-muted/30 flex flex-wrap gap-3 justify-between items-center">
-            <div className="flex items-center gap-3">
-              {/* Mobile History Button */}
+          <div className="px-4 lg:px-6 py-3 border-b bg-muted/30 flex flex-wrap gap-3 justify-between items-center">
+            <div className="flex items-center gap-3 min-w-0">
+              {/* History Button (always visible) */}
               <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="xl:hidden h-9 w-9">
+                  <Button variant="ghost" size="icon" className="h-9 w-9" title="Historique des conversations">
                     <History className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
@@ -462,14 +446,14 @@ export default function AssistantPage() {
                 </SheetContent>
               </Sheet>
 
-              <div className="bg-primary text-primary-foreground p-2 rounded-lg">
+              <div className="bg-primary text-primary-foreground p-2 rounded-lg shrink-0">
                 <Sparkles className="h-4 w-4" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h2 className="font-bold text-sm">Assistant SUTA</h2>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  En ligne • Base documentaire
+                  En ligne • {contextStats.actualites + contextStats.dossiers} sources
                 </div>
               </div>
             </div>
