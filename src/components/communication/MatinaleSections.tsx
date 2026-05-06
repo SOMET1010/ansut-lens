@@ -354,6 +354,15 @@ export function MatinaleSections({ data, freshnessHours = 24 }: { data: any; fre
               <Shield className="h-4 w-4 text-primary" />
               Réputation ANSUT
               <NiveauBadge niveau={reput.niveau_risque} />
+              <DrillBtn payload={{
+                title: 'Réputation ANSUT',
+                keywords: ['ANSUT', 'Service Universel'],
+                analyzedItems: [
+                  ...(reput.positif || []).map((p: string) => ({ label: `Positif : ${p}` })),
+                  ...(reput.negatif || []).map((n: string) => ({ label: `Négatif : ${n}` })),
+                  ...(reput.confusion_role ? [{ label: `Confusion de rôle : ${reput.confusion_role}` }] : []),
+                ],
+              }} />
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
