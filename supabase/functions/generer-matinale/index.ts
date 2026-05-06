@@ -325,6 +325,37 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Charger les règles de scoring configurables (admin/scoring)
+    const SCORING_DEFAULTS = {
+      threshold_rouge: 80,
+      threshold_orange: 60,
+      threshold_vert: 40,
+      pertinence_min: 30,
+      min_signaux_total: 8,
+      min_actions_immediates: 3,
+      min_signaux_faibles: 3,
+      min_synthese_60s: 2,
+      min_impact_projets: 2,
+      weight_press: 1,
+      weight_synthese: 1,
+      weight_pilier: 1,
+      weight_signaux_faibles: 1,
+    };
+    const scoring = { ...SCORING_DEFAULTS };
+    try {
+      const { data: scoringRows } = await supabase
+        .from('config_seuils')
+        .select('cle, valeur')
+        .like('cle', 'scoring_%');
+      for (const r of scoringRows || []) {
+        const k = (r.cle as string).replace(/^scoring_/, '');
+        if (k in scoring && typeof r.valeur === 'number') (scoring as any)[k] = r.valeur;
+      }
+    } catch (e) {
+      console.warn('[Matinale/Scoring] fallback defaults:', (e as Error).message);
+    }
+    console.log('[Matinale/Scoring] config:', scoring);
+
     // Fetch real-time news + titrologie from Perplexity (runs in parallel with DB queries)
     const perplexityPromise = fetchPerplexityNews();
     const titrologiePromise = fetchTitrologie();
