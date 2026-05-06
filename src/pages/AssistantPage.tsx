@@ -179,6 +179,23 @@ export default function AssistantPage() {
   const [citationWarning, setCitationWarning] = useState<CitationWarning | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Per-user resizable widths (workspace right panel + history sheet)
+  const userKey = user?.id ?? 'anon';
+  const workspaceResize = useResizableWidth({
+    key: `assistant:workspace-width:${userKey}`,
+    defaultWidth: 360,
+    min: 280,
+    max: 720,
+    side: 'left',
+  });
+  const historyResize = useResizableWidth({
+    key: `assistant:history-width:${userKey}`,
+    defaultWidth: 320,
+    min: 260,
+    max: 560,
+    side: 'right',
+  });
+
   const { 
     conversations, 
     isLoading: loadingConversations, 
