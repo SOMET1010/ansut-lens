@@ -72,7 +72,7 @@ function formatDate(d?: string): string {
 }
 
 interface Props {
-  data: any;
+  data: MatinaleData | null | undefined;
   freshnessHours?: number;
   loading?: boolean;
   error?: string | null;
@@ -80,17 +80,17 @@ interface Props {
 }
 
 export function MatinaleSections({ data, freshnessHours = 24, loading = false, error = null, onRetry }: Props) {
-  const safe = data || {};
-  const prio = safe.priorite_executive;
-  const synthese: any[] = safe.synthese_60s || [];
-  const veille: Record<string, any[]> = safe.veille_par_pilier || {};
-  const lectureStrat: any[] = safe.lecture_strategique || [];
-  const impactProjets: any[] = safe.impact_projets_ansut || [];
-  const actions: any[] = safe.actions_immediates || [];
-  const reput = safe.reputation_ansut;
+  const safe: MatinaleData = data || {};
+  const prio: PrioriteExecutive | undefined = safe.priorite_executive;
+  const synthese: SyntheseItem[] = safe.synthese_60s || [];
+  const veille: Partial<VeilleParPilier> = safe.veille_par_pilier || {};
+  const lectureStrat: LectureStrategiqueItem[] = safe.lecture_strategique || [];
+  const impactProjets: ImpactProjetItem[] = safe.impact_projets_ansut || [];
+  const actions: ActionImmediate[] = safe.actions_immediates || [];
+  const reput: ReputationAnsut | undefined = safe.reputation_ansut;
   const signaux: string[] = safe.signaux_faibles || [];
-  const revue: any[] = safe.revue_de_presse || [];
-  const activite = safe.activite_ansut;
+  const revue: RevueItem[] = safe.revue_de_presse || [];
+  const activite: ActiviteAnsut | undefined = safe.activite_ansut;
 
   const [drill, setDrill] = useState<null | {
     title: string;
