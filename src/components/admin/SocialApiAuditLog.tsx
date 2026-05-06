@@ -228,15 +228,21 @@ export function SocialApiAuditLog({ refreshKey = 0 }: { refreshKey?: number }) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <History className="h-5 w-5 text-primary" />
-          Journal d'audit — paramètres API sociaux
-        </CardTitle>
-        <CardDescription>
-          Toute modification (création, mise à jour, rotation, suppression) est enregistrée.
-          Les valeurs des secrets ne sont jamais affichées en clair (uniquement les 4 derniers caractères).
-        </CardDescription>
+      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+        <div>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <History className="h-5 w-5 text-primary" />
+            Journal d'audit — paramètres API sociaux
+          </CardTitle>
+          <CardDescription>
+            Toute modification (création, mise à jour, rotation, suppression) est enregistrée.
+            Les valeurs des secrets ne sont jamais affichées en clair (uniquement les 4 derniers caractères).
+          </CardDescription>
+        </div>
+        <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={exporting} className="shrink-0">
+          {exporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+          Exporter CSV
+        </Button>
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Filter bar */}
