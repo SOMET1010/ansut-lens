@@ -66,6 +66,13 @@ function tokenize(s: string): Set<string> {
   );
 }
 
+function bigrams(s: string): Set<string> {
+  const toks = normalizeTitle(s).split(' ').filter(t => t.length >= 3 && !STOP_WORDS.has(t));
+  const out = new Set<string>();
+  for (let i = 0; i < toks.length - 1; i++) out.add(`${toks[i]} ${toks[i + 1]}`);
+  return out;
+}
+
 function jaccard(a: Set<string>, b: Set<string>): number {
   if (a.size === 0 || b.size === 0) return 0;
   let inter = 0;
