@@ -23,6 +23,7 @@ import {
   INTERPRETATION_LABELS,
 } from '@/hooks/usePresenceDigitale';
 import { SPDIDashboardCompact } from '@/components/spdi';
+import { ActeurStrategicIntelligence } from './ActeurStrategicIntelligence';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Personnalite, CercleStrategique, Tendance } from '@/types';
 import { cn } from '@/lib/utils';
@@ -200,6 +201,11 @@ export function ActeurDetail({ personnalite, open, onOpenChange, onEdit, onArchi
               <span className="text-sm font-bold">{personnalite.score_influence}%</span>
             </div>
           </div>
+
+          <Separator className="my-4" />
+
+          {/* Intelligence stratégique */}
+          <ActeurStrategicIntelligence personnalite={personnalite} />
 
           <Separator className="my-4" />
 

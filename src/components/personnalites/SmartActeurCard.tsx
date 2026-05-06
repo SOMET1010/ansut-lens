@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Award, Building2, Network, Eye, Pencil, MoreHorizontal, Archive, Trash2, Info, Activity } from 'lucide-react';
+import { Award, Building2, Network, Eye, Pencil, MoreHorizontal, Archive, Trash2, Info, Activity, ShieldAlert, Flame, Sparkles, Snowflake, AlertTriangle } from 'lucide-react';
 import { CERCLE_LABELS } from '@/hooks/usePersonnalites';
 import { MiniSparkline } from '@/components/spdi/MiniSparkline';
 import { SentimentBar } from '@/components/spdi/SentimentBar';
@@ -215,7 +215,7 @@ export function SmartActeurCard({
             <h3 className="text-lg font-bold text-foreground leading-tight group-hover:text-primary transition-colors truncate">
               {personnalite.prenom} {personnalite.nom}
             </h3>
-            {/* Badges Cercle + Type */}
+            {/* Badges Cercle + Type + Alignement */}
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span className={cn(
                 'px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide border',
@@ -229,6 +229,31 @@ export function SmartActeurCard({
                   getCategorieStyle(personnalite.categorie)
                 )}>
                   {getCategorieLabel(personnalite.categorie)}
+                </span>
+              )}
+              {personnalite.niveau_alerte === 'critique' && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold border bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800">
+                        <Flame className="h-2.5 w-2.5" />
+                        Sensible
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom"><p className="text-xs">Acteur à sensibilité élevée</p></TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              {personnalite.niveau_alerte === 'eleve' && (
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800">
+                  <AlertTriangle className="h-2.5 w-2.5" />
+                  Vigilance
+                </span>
+              )}
+              {personnalite.cercle === 1 && personnalite.niveau_alerte !== 'critique' && personnalite.niveau_alerte !== 'eleve' && (
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800">
+                  <Sparkles className="h-2.5 w-2.5" />
+                  Aligné
                 </span>
               )}
             </div>
