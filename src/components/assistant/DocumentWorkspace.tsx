@@ -492,7 +492,7 @@ export function DocumentWorkspace({
         const renderCitationRow = (c: typeof allCitations[number]) => {
           ensureSpace(16);
           // Type tag
-          const tag = c.kind === 'actu' ? 'ACTU' : c.kind === 'dossier' ? 'DOSSIER' : `[${c.num}]`;
+          const tag = c.kind === 'actu' ? 'ACTU' : c.kind === 'dossier' ? 'DOSSIER' : `[${(c as { num: string }).num}]`;
           const tagColor = c.kind === 'actu' ? [29, 78, 216] : c.kind === 'dossier' ? [126, 34, 206] : [51, 65, 85];
           pdf.setFont('helvetica', 'bold');
           pdf.setFontSize(8);
