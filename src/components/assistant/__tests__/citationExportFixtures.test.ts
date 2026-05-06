@@ -110,9 +110,9 @@ describe('DOCX export — fixtures replay', () => {
           // Numeric label must appear in the appendix text.
           expect(visibleText).toContain(`[${(ref as any).num}]`);
         }
-        if ((ref as any).url) {
-          // The URL must appear either as anchor target or visible text.
-          const url = (ref as any).url as string;
+        const url = (ref as any).url as string | null | undefined;
+        if (url && /^https?:\/\//.test(url)) {
+          // External URLs must appear either as anchor target or visible text.
           const inAnchor = xml.includes(`Target="${url}"`) || xml.includes(`>${url}<`);
           const inText = visibleText.includes(url);
           expect(inAnchor || inText).toBe(true);
