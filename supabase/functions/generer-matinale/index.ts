@@ -1006,9 +1006,14 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     };
 
     const allUrlsTraceability = revue.map(r => r.url).filter(Boolean);
-    // Indicateur qualité = volume de signaux exploitables (pas seulement la presse)
-    const totalSignaux = revue.length + (synthese?.length || 0) + Object.values(veille || {}).reduce((s, arr: any) => s + (arr?.length || 0), 0);
-    const qualiteScore = totalSignaux >= 12 ? 'Bonne' : totalSignaux >= 6 ? 'Moyenne' : 'Faible';
+    // Indicateur qualité = volume total de signaux exploités (presse + analyses + veille sectorielle)
+    const totalSignaux = revue.length
+      + (synthese?.length || 0)
+      + Object.values(veille || {}).reduce((s, arr: any) => s + (arr?.length || 0), 0)
+      + (signaux?.length || 0)
+      + (actions?.length || 0)
+      + (impactProjets?.length || 0);
+    const qualiteScore = totalSignaux >= 15 ? 'Bonne' : totalSignaux >= 8 ? 'Moyenne' : 'Faible';
     const qualiteColor = qualiteScore === 'Bonne' ? '#10b981' : qualiteScore === 'Moyenne' ? '#f59e0b' : '#ef4444';
     const prioColor = NIV_COLORS[prio?.niveau || 'BLEU'];
 
