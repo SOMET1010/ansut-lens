@@ -1060,14 +1060,18 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     };
 
     const allUrlsTraceability = revue.map(r => r.url).filter(Boolean);
-    // Indicateur qualité = volume total de signaux exploités (presse + analyses + veille sectorielle)
-    const totalSignaux = revue.length
-      + (synthese?.length || 0)
-      + Object.values(veille || {}).reduce((s, arr: any) => s + (arr?.length || 0), 0)
-      + (signaux?.length || 0)
+    // Indicateur qualité pondéré (poids configurables via /admin/scoring)
+    const piliersCount = Object.values(veille || {}).reduce((s, arr: any) => s + (arr?.length || 0), 0);
+    const totalSignaux = Math.round(
+      revue.length * scoring.weight_press
+      + (synthese?.length || 0) * scoring.weight_synthese
+      + piliersCount * scoring.weight_pilier
+      + (signaux?.length || 0) * scoring.weight_signaux_faibles
       + (actions?.length || 0)
-      + (impactProjets?.length || 0);
-    const qualiteScore = totalSignaux >= 15 ? 'Bonne' : totalSignaux >= 8 ? 'Moyenne' : 'Faible';
+      + (impactProjets?.length || 0)
+    );
+    const seuilBonne = Math.max(scoring.min_signaux_total + 5, scoring.min_signaux_total * 1.6);
+    const qualiteScore = totalSignaux >= seuilBonne ? 'Bonne' : totalSignaux >= scoring.min_signaux_total ? 'Moyenne' : 'Faible';
     const qualiteColor = qualiteScore === 'Bonne' ? '#10b981' : qualiteScore === 'Moyenne' ? '#f59e0b' : '#ef4444';
     const prioColor = NIV_COLORS[prio?.niveau || 'BLEU'];
 
