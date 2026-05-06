@@ -431,6 +431,13 @@ export function MatinaleSections({ data, freshnessHours = 24 }: { data: any; fre
               <FileText className="h-4 w-4 text-primary" />
               Revue de presse
               <Badge variant="secondary" className="ml-auto text-xs">{revue.length} titres</Badge>
+              <DrillBtn payload={{
+                title: 'Revue de presse',
+                description: 'Sources consultées',
+                keywords: revue.flatMap((r: any) => (r.titre || '').split(/\s+/)).filter((w: string) => w.length > 4),
+                highlightedTitles: revue.map((r: any) => r.titre).filter(Boolean),
+                analyzedItems: revue.map((r: any) => ({ label: `[${r.rubrique || '—'}] ${r.titre}`, value: r.source })),
+              }} />
             </CardTitle>
             <CardDescription>Sources consultées — sans analyse</CardDescription>
           </CardHeader>
