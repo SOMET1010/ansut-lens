@@ -10,6 +10,24 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { MatinaleDrillDownModal } from './MatinaleDrillDownModal';
 import { MatinaleSectionShell, DrillButton, type SectionStatus } from './MatinaleSectionShell';
+import type {
+  MatinaleData, PrioriteExecutive, SyntheseItem, VeilleParPilier, VeillePilierItem,
+  LectureStrategiqueItem, ImpactProjetItem, ActionImmediate, ReputationAnsut, RevueItem, ActiviteAnsut,
+} from '@/types/matinale';
+import { extractSectionKeywords, useMatinaleSectionSourceCount } from '@/hooks/useMatinaleSources';
+
+function SourceCountBadge({ data, section, freshnessHours, enabled }: {
+  data: MatinaleData; section: any; freshnessHours: number; enabled: boolean;
+}) {
+  const kw = extractSectionKeywords(data, section);
+  const { data: count, isLoading } = useMatinaleSectionSourceCount(kw, freshnessHours, enabled);
+  if (!enabled || kw.length === 0) return null;
+  return (
+    <Badge variant="outline" className="text-[10px] gap-1">
+      {isLoading ? '…' : count ?? 0} sources
+    </Badge>
+  );
+}
 
 const RUBRIQUE_LABELS: Record<string, string> = {
   telecom_numerique: 'Télécom / Numérique',
