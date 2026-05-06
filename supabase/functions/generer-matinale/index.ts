@@ -590,21 +590,80 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     console.log('[Matinale] Generated successfully');
 
     // Post-process: Build sets of valid data for verification
-    const validUrls = new Set<string>();
-    for (const a of (articles || [])) { if (a.source_url) validUrls.add(a.source_url); }
-    for (const m of (mentions || [])) { if (m.source_url) validUrls.add(m.source_url); }
-    for (const s of (socialInsights || [])) { if (s.url_original) validUrls.add(s.url_original); }
-    for (const p of perplexityNews.articles) { if (p.url) validUrls.add(p.url); }
-    for (const c of perplexityNews.citations) { validUrls.add(c); }
+    // Normalize URLs to make matching robust (trailing slash, tracking params, casing)
+    const normalizeUrl = (u?: string | null): string => {
+      if (!u) return '';
+      try {
+        const url = new URL(u.trim());
+        // Strip common tracking params
+        const trackingPrefixes = ['utm_', 'fbclid', 'gclid', 'mc_'];
+        const params = [...url.searchParams.keys()];
+        for (const k of params) {
+          if (trackingPrefixes.some(p => k.toLowerCase().startsWith(p))) url.searchParams.delete(k);
+        }
+        let path = url.pathname.replace(/\/+$/, '');
+        if (!path) path = '/';
+        return `${url.protocol}//${url.host.toLowerCase()}${path}${url.search}`;
+      } catch {
+        return u.trim().toLowerCase().replace(/\/+$/, '');
+      }
+    };
 
-    // Post-process: filtrer la revue_de_presse — exiger URLs valides du contexte + 8 à 15 max
+    const urlMeta = new Map<string, { source: string; date: string; titre: string }>();
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const registerUrl = (rawUrl: string | null | undefined, source: string, titre: string, date?: string | null) => {
+      const norm = normalizeUrl(rawUrl);
+      if (!norm) return;
+      if (!urlMeta.has(norm)) urlMeta.set(norm, { source: source || 'Web', date: (date || '').slice(0, 10) || todayIso, titre: titre || '' });
+    };
+    for (const a of (articles || [])) registerUrl(a.source_url, a.source_nom || 'Source', a.titre, a.date_publication || a.created_at);
+    for (const m of (mentions || [])) registerUrl(m.source_url, m.source || 'Mention', (m.contenu || '').slice(0, 120), m.date_mention);
+    for (const s of (socialInsights || [])) registerUrl(s.url_original, s.plateforme || 'Social', (s.contenu || '').slice(0, 120));
+    for (const p of perplexityNews.articles) registerUrl(p.url, p.source, p.titre);
+    for (const c of perplexityNews.citations) registerUrl(c, 'Web', '');
+
+    const validUrls = new Set<string>(urlMeta.keys());
+
+    // Post-process: filtrer la revue_de_presse — exiger URLs valides du contexte (normalisées) + 15 max
     if (Array.isArray(matinale.revue_de_presse)) {
       matinale.revue_de_presse = matinale.revue_de_presse
-        .filter((r: any) => r?.url && r.url !== 'N/A' && validUrls.has(r.url))
+        .map((r: any) => {
+          if (!r?.url) return null;
+          const norm = normalizeUrl(r.url);
+          if (!validUrls.has(norm)) return null;
+          return { ...r, url: norm };
+        })
+        .filter(Boolean)
         .slice(0, 15);
     } else {
       matinale.revue_de_presse = [];
     }
+
+    // Fallback: si la revue est vide alors que des articles existent, on la reconstruit depuis le contexte
+    if (matinale.revue_de_presse.length === 0 && urlMeta.size > 0) {
+      console.warn('[Matinale] Revue vide après filtrage — reconstruction fallback depuis articles bruts');
+      const inferRubrique = (text: string): string => {
+        const t = text.toLowerCase();
+        if (/(banque|finance|bourse|économ|investiss|fisc|budget|pib)/.test(t)) return 'economie_finance';
+        if (/(régulat|gouvern|ministre|décret|loi|président|conseil|état)/.test(t)) return 'gouvernance_regulation';
+        if (/(union|afrique|union européenne|onu|cedeao|international|coopérat|sommet)/.test(t)) return 'international';
+        return 'telecom_numerique';
+      };
+      const fallback: Array<{ titre: string; source: string; date: string; url: string; rubrique: string }> = [];
+      for (const [url, meta] of urlMeta.entries()) {
+        if (!meta.titre) continue;
+        fallback.push({
+          titre: meta.titre,
+          source: meta.source,
+          date: meta.date || todayIso,
+          url,
+          rubrique: inferRubrique(`${meta.titre} ${meta.source}`),
+        });
+        if (fallback.length >= 15) break;
+      }
+      matinale.revue_de_presse = fallback;
+    }
+
 
     // Cap "à retenir" à 3 items
     if (Array.isArray(matinale.a_retenir)) {
