@@ -627,7 +627,7 @@ export function SocialCredentialsDialog({
           </Button>
           <Button
             onClick={handleRotate}
-            disabled={rotating || rotateReason.trim().length < 5}
+            disabled={rotating || validateReason(rotateReason) !== null}
             className="bg-purple-600 hover:bg-purple-700 text-white"
           >
             {rotating ? (
