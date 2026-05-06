@@ -98,6 +98,16 @@ export function MatinaleSections({ data, freshnessHours = 24 }: { data: any; fre
               Priorité Exécutive
               <NiveauBadge niveau={prio.niveau} />
               <Badge variant="secondary" className="ml-auto text-xs">Arbitrage DG</Badge>
+              <DrillBtn payload={{
+                title: 'Priorité Exécutive',
+                description: prio.titre,
+                keywords: [prio.titre, ...(prio.impacts || [])].flatMap((s: string) => (s || '').split(/\s+/)).filter((w: string) => w.length > 4),
+                highlightedTitles: [prio.titre].filter(Boolean),
+                analyzedItems: [
+                  ...(prio.impacts || []).map((i: string) => ({ label: `Impact : ${i}` })),
+                  ...(prio.recommandation || []).map((r: string) => ({ label: `Reco : ${r}` })),
+                ],
+              }} />
             </CardTitle>
             <CardDescription className="text-base font-semibold text-foreground mt-1">
               {prio.titre}
