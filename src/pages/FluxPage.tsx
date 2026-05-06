@@ -159,13 +159,16 @@ export default function FluxPage() {
         </div>
       )}
 
-      {/* Section : Modèles recommandés */}
+      {/* Section : Dispositifs ANSUT */}
       <div className="border-t border-border pt-8">
-        <h2 className="text-sm font-bold text-muted-foreground uppercase mb-4 flex items-center gap-2">
+        <h2 className="text-sm font-bold text-muted-foreground uppercase mb-1 flex items-center gap-2">
           <Sparkles className="h-4 w-4" />
-          Modèles recommandés pour vous
+          Dispositifs de Surveillance ANSUT
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <p className="text-xs text-muted-foreground mb-4">
+          Modèles préconfigurés alignés sur les missions stratégiques ANSUT — déploiement en un clic.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {fluxTemplates.map((template) => (
             <FluxTemplateCard
               key={template.id}
