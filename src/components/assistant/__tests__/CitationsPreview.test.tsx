@@ -94,7 +94,7 @@ describe('CitationsPreview — broken badges stay non-clickable', () => {
 
   it('snapshot: broken vs valid badge markup differs (no <a> for broken)', () => {
     const { container } = render(
-      <CitationsPreview content={'Source valide [1] et cassée [77].\n[1] https://ansut.ci/x'} />,,
+      <CitationsPreview content={'Source valide [1] et cassée [77].\n[1] https://ansut.ci/x'} />,
     );
     fireEvent.click(screen.getByRole("button", { name: /aperçu des liens/i }));
 
