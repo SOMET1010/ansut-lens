@@ -558,35 +558,115 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
                     required: ['titre', 'source', 'date', 'url', 'rubrique'],
                   },
                 },
-                a_retenir: {
-                  type: 'array',
-                  description: 'Maximum 3 phrases courtes factuelles',
-                  items: { type: 'string' },
-                },
-                retour_ansut: {
+                priorite_executive: {
                   type: 'object',
-                  properties: {
-                    lecture_service_universel: {
-                      type: 'object',
-                      properties: {
-                        acces: { type: ['string', 'null'] },
-                        usages: { type: ['string', 'null'] },
-                        impact: { type: ['string', 'null'] },
-                      },
-                      required: ['acces', 'usages', 'impact'],
-                    },
-                    implication_ansut: { type: ['string', 'null'], description: '2 lignes max ou null' },
-                    niveau_attention: { type: 'string', enum: ['Faible', 'Moyen', 'Élevé'] },
-                    action_suggeree: { type: ['string', 'null'] },
-                  },
-                  required: ['lecture_service_universel', 'implication_ansut', 'niveau_attention', 'action_suggeree'],
-                },
-                focus_du_jour: {
-                  type: ['object', 'null'],
-                  description: 'UNIQUEMENT si un sujet domine clairement, sinon null',
+                  description: 'LE sujet du jour qui exige une décision/arbitrage. Toujours présent.',
                   properties: {
                     titre: { type: 'string' },
-                    contenu: { type: 'string', description: '5 lignes max' },
+                    impacts: { type: 'array', items: { type: 'string' }, description: '3 puces max, ANSUT-centric' },
+                    recommandation: { type: 'array', items: { type: 'string' }, description: '2 à 4 actions' },
+                    niveau: { type: 'string', enum: ['ROUGE', 'ORANGE', 'VERT', 'BLEU'] },
+                  },
+                  required: ['titre', 'impacts', 'recommandation', 'niveau'],
+                },
+                synthese_60s: {
+                  type: 'array',
+                  description: '3 à 5 lignes ultra-condensées',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      sujet: { type: 'string' },
+                      impact_ansut: { type: 'string' },
+                      niveau: { type: 'string', enum: ['ROUGE', 'ORANGE', 'VERT', 'BLEU'] },
+                    },
+                    required: ['sujet', 'impact_ansut', 'niveau'],
+                  },
+                },
+                veille_par_pilier: {
+                  type: 'object',
+                  properties: {
+                    connectivite: { type: 'array', items: { type: 'object', properties: { titre: { type: 'string' }, lecture_ansut: { type: 'string' }, niveau: { type: 'string', enum: ['ROUGE', 'ORANGE', 'VERT', 'BLEU'] }, url: { type: 'string' }, source: { type: 'string' } }, required: ['titre', 'lecture_ansut', 'niveau'] } },
+                    usages_services: { type: 'array', items: { type: 'object', properties: { titre: { type: 'string' }, lecture_ansut: { type: 'string' }, niveau: { type: 'string', enum: ['ROUGE', 'ORANGE', 'VERT', 'BLEU'] }, url: { type: 'string' }, source: { type: 'string' } }, required: ['titre', 'lecture_ansut', 'niveau'] } },
+                    regulation_souverainete: { type: 'array', items: { type: 'object', properties: { titre: { type: 'string' }, lecture_ansut: { type: 'string' }, niveau: { type: 'string', enum: ['ROUGE', 'ORANGE', 'VERT', 'BLEU'] }, url: { type: 'string' }, source: { type: 'string' } }, required: ['titre', 'lecture_ansut', 'niveau'] } },
+                    concurrence_marche: { type: 'array', items: { type: 'object', properties: { titre: { type: 'string' }, lecture_ansut: { type: 'string' }, niveau: { type: 'string', enum: ['ROUGE', 'ORANGE', 'VERT', 'BLEU'] }, url: { type: 'string' }, source: { type: 'string' } }, required: ['titre', 'lecture_ansut', 'niveau'] } },
+                  },
+                  required: ['connectivite', 'usages_services', 'regulation_souverainete', 'concurrence_marche'],
+                },
+                lecture_strategique: {
+                  type: 'array',
+                  description: '1 à 2 sujets approfondis avec scores stratégiques',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      sujet: { type: 'string' },
+                      opportunites: { type: 'array', items: { type: 'string' } },
+                      risques: { type: 'array', items: { type: 'string' } },
+                      scores: {
+                        type: 'object',
+                        properties: {
+                          acces: { type: 'number' },
+                          usage: { type: 'number' },
+                          gouvernance: { type: 'number' },
+                          souverainete: { type: 'number' },
+                        },
+                        required: ['acces', 'usage', 'gouvernance', 'souverainete'],
+                      },
+                    },
+                    required: ['sujet', 'opportunites', 'risques', 'scores'],
+                  },
+                },
+                impact_projets_ansut: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      domaine: { type: 'string' },
+                      impact: { type: 'string', enum: ['ÉLEVÉ', 'MOYEN', 'FAIBLE', 'AUCUN'] },
+                      commentaire: { type: 'string' },
+                    },
+                    required: ['domaine', 'impact', 'commentaire'],
+                  },
+                },
+                actions_immediates: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      action: { type: 'string' },
+                      responsable: { type: 'string' },
+                      delai: { type: 'string' },
+                    },
+                    required: ['action', 'responsable', 'delai'],
+                  },
+                },
+                reputation_ansut: {
+                  type: 'object',
+                  properties: {
+                    positif: { type: 'array', items: { type: 'string' } },
+                    negatif: { type: 'array', items: { type: 'string' } },
+                    confusion_role: { type: ['string', 'null'] },
+                    niveau_risque: { type: 'string', enum: ['ROUGE', 'ORANGE', 'VERT', 'BLEU'] },
+                  },
+                  required: ['positif', 'negatif', 'confusion_role', 'niveau_risque'],
+                },
+                signaux_faibles: {
+                  type: 'array',
+                  description: '3 à 6 signaux émergents précis',
+                  items: { type: 'string' },
+                },
+                revue_de_presse: {
+                  type: 'array',
+                  description: '6 à 12 titres MAX, triés par rubrique, sans analyse',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      titre: { type: 'string' },
+                      source: { type: 'string' },
+                      date: { type: 'string', description: 'AAAA-MM-JJ' },
+                      url: { type: 'string', description: 'URL EXACTE depuis le contexte' },
+                      rubrique: { type: 'string', enum: ['telecom_numerique', 'economie_finance', 'gouvernance_regulation', 'international'] },
+                    },
+                    required: ['titre', 'source', 'date', 'url', 'rubrique'],
                   },
                 },
                 activite_ansut: {
@@ -598,7 +678,8 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
                   required: ['publications_count', 'visibilite'],
                 },
               },
-              required: ['revue_de_presse', 'a_retenir', 'retour_ansut', 'activite_ansut'],
+              required: ['priorite_executive', 'synthese_60s', 'veille_par_pilier', 'lecture_strategique', 'impact_projets_ansut', 'actions_immediates', 'reputation_ansut', 'signaux_faibles', 'revue_de_presse', 'activite_ansut'],
+
             },
           },
         }],
