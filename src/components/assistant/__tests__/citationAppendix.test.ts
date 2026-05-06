@@ -76,8 +76,7 @@ describe('DOCX export — hyperlink wrapping (integration)', () => {
   async function renderXml(content: string): Promise<string> {
     const paragraphs = buildDocxCitationAppendix(collectCitations(content));
     const doc = new Document({ sections: [{ children: paragraphs }] });
-    const blob = await Packer.toBlob(doc);
-    const buf = await blob.arrayBuffer();
+    const buf = await Packer.toBuffer(doc);
     const zip = await JSZip.loadAsync(buf);
     return await zip.file('word/document.xml')!.async('string');
   }
