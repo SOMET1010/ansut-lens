@@ -7,7 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
-import { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType, Header, Footer, PageNumber, BorderStyle } from 'docx';
+import { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType, Header, Footer, PageNumber, BorderStyle, ShadingType } from 'docx';
 import { saveAs } from 'file-saver';
 
 export interface GeneratedDocument {
@@ -169,44 +169,117 @@ export function DocumentWorkspace({
         }
       };
 
-      // Render a run of text with bold segments (**...**) preserved
-      const renderRichLine = (text: string, x: number, lineHeight: number, indent: number) => {
-        const segments: { text: string; bold: boolean }[] = [];
-        const parts = text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
-        for (const p of parts) {
-          if (/^\*\*.+\*\*$/.test(p)) segments.push({ text: p.slice(2, -2), bold: true });
-          else segments.push({ text: p, bold: false });
-        }
+      // Tokenize a line into text/bold/citation segments
+      type Seg =
+        | { kind: 'text'; text: string; bold: boolean }
+        | { kind: 'cite'; variant: 'actu' | 'dossier' | 'num'; label: string };
 
-        // Manual word-wrap that respects bold boundaries
+      const tokenizeLine = (text: string): Seg[] => {
+        // Combined regex: bold | [[ACTU|DOSSIER:id|title]] | [n]
+        const re = /(\*\*[^*]+\*\*)|(\[\[(ACTU|DOSSIER):[^|\]]+\|([^\]]+)\]\])|(\[(\d{1,3})\])/g;
+        const segs: Seg[] = [];
+        let last = 0;
+        let m: RegExpExecArray | null;
+        while ((m = re.exec(text)) !== null) {
+          if (m.index > last) segs.push({ kind: 'text', text: text.slice(last, m.index), bold: false });
+          if (m[1]) {
+            segs.push({ kind: 'text', text: m[1].slice(2, -2), bold: true });
+          } else if (m[2]) {
+            segs.push({ kind: 'cite', variant: m[3] === 'ACTU' ? 'actu' : 'dossier', label: m[4] });
+          } else if (m[5]) {
+            segs.push({ kind: 'cite', variant: 'num', label: m[6] });
+          }
+          last = m.index + m[0].length;
+        }
+        if (last < text.length) segs.push({ kind: 'text', text: text.slice(last), bold: false });
+        return segs;
+      };
+
+      const drawCitationBadge = (label: string, variant: 'actu' | 'dossier' | 'num', cursorX: number, baselineY: number) => {
+        // Colors per variant
+        const palette = variant === 'actu'
+          ? { bg: [219, 234, 254], fg: [29, 78, 216], border: [191, 219, 254] } // blue
+          : variant === 'dossier'
+            ? { bg: [243, 232, 255], fg: [126, 34, 206], border: [221, 214, 254] } // purple
+            : { bg: [241, 245, 249], fg: [51, 65, 85], border: [203, 213, 225] }; // slate
+
+        const prefix = variant === 'actu' ? '◆ ' : variant === 'dossier' ? '■ ' : '';
+        const display = variant === 'num' ? label : (label.length > 40 ? label.slice(0, 39) + '…' : label);
+        const fullText = prefix + display;
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(variant === 'num' ? 8 : 9);
+        const tw = pdf.getTextWidth(fullText);
+        const padX = 4, padY = 2;
+        const w = tw + padX * 2;
+        const h = (variant === 'num' ? 9 : 11) + padY;
+        const boxY = baselineY - h + 2;
+        pdf.setFillColor(palette.bg[0], palette.bg[1], palette.bg[2]);
+        pdf.setDrawColor(palette.border[0], palette.border[1], palette.border[2]);
+        pdf.setLineWidth(0.4);
+        pdf.roundedRect(cursorX, boxY, w, h, 2, 2, 'FD');
+        pdf.setTextColor(palette.fg[0], palette.fg[1], palette.fg[2]);
+        pdf.text(fullText, cursorX + padX, baselineY - 1);
+        // restore default
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(11);
+        pdf.setTextColor(15, 23, 42);
+        return w;
+      };
+
+      const measureCitation = (label: string, variant: 'actu' | 'dossier' | 'num') => {
+        const prefix = variant === 'actu' ? '◆ ' : variant === 'dossier' ? '■ ' : '';
+        const display = variant === 'num' ? label : (label.length > 40 ? label.slice(0, 39) + '…' : label);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(variant === 'num' ? 8 : 9);
+        const w = pdf.getTextWidth(prefix + display) + 8;
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(11);
+        return w;
+      };
+
+      // Render a run of text with bold + citation badges
+      const renderRichLine = (text: string, x: number, lineHeight: number, indent: number) => {
+        const segments = tokenizeLine(text);
         const availableWidth = maxWidth - indent;
         let cursorX = x;
-        let firstLineIndent = 0;
+
+        const newLine = () => {
+          y += lineHeight;
+          ensureSpace(lineHeight);
+          cursorX = x;
+        };
+
         const writeWord = (word: string, bold: boolean, space: string) => {
           pdf.setFont('helvetica', bold ? 'bold' : 'normal');
-          const w = pdf.getTextWidth((cursorX === x ? '' : space) + word);
-          if (cursorX + w > x + availableWidth - firstLineIndent) {
-            y += lineHeight;
-            ensureSpace(lineHeight);
-            cursorX = x;
-            firstLineIndent = 0;
+          const sep = cursorX === x ? '' : space;
+          const w = pdf.getTextWidth(sep + word);
+          if (cursorX + w > x + availableWidth) {
+            newLine();
             pdf.text(word, cursorX, y);
             cursorX += pdf.getTextWidth(word);
           } else {
-            const out = (cursorX === x ? '' : space) + word;
-            pdf.text(out, cursorX, y);
+            pdf.text(sep + word, cursorX, y);
             cursorX += w;
           }
         };
 
         for (const seg of segments) {
-          const tokens = seg.text.split(/(\s+)/);
-          let pendingSpace = '';
-          for (const tok of tokens) {
-            if (!tok) continue;
-            if (/^\s+$/.test(tok)) { pendingSpace = tok; continue; }
-            writeWord(tok, seg.bold, pendingSpace || ' ');
-            pendingSpace = '';
+          if (seg.kind === 'text') {
+            const tokens = seg.text.split(/(\s+)/);
+            let pendingSpace = '';
+            for (const tok of tokens) {
+              if (!tok) continue;
+              if (/^\s+$/.test(tok)) { pendingSpace = tok; continue; }
+              writeWord(tok, seg.bold, pendingSpace || ' ');
+              pendingSpace = '';
+            }
+          } else {
+            const bw = measureCitation(seg.label, seg.variant);
+            const sep = cursorX === x ? 0 : pdf.getTextWidth(' ');
+            if (cursorX + sep + bw > x + availableWidth) newLine();
+            else cursorX += sep > 0 ? (pdf.text(' ', cursorX, y), sep) : 0;
+            const drawn = drawCitationBadge(seg.label, seg.variant, cursorX, y);
+            cursorX += drawn;
           }
         }
         y += lineHeight;
@@ -402,11 +475,41 @@ export function DocumentWorkspace({
 
         const isList = /^[-*]\s+/.test(line);
         const text = line.replace(/^[-*]\s+/, '');
-        const segments = text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
-        const runs = segments.map(seg => {
-          const bold = /^\*\*.+\*\*$/.test(seg);
-          return new TextRun({ text: bold ? seg.slice(2, -2) : seg, bold });
-        });
+
+        // Tokenize: bold | [[ACTU|DOSSIER:id|title]] | [n]
+        const re = /(\*\*[^*]+\*\*)|(\[\[(ACTU|DOSSIER):[^|\]]+\|([^\]]+)\]\])|(\[(\d{1,3})\])/g;
+        const runs: TextRun[] = [];
+        let last = 0;
+        let m: RegExpExecArray | null;
+        const pushText = (t: string, bold = false) => {
+          if (t) runs.push(new TextRun({ text: t, bold }));
+        };
+        while ((m = re.exec(text)) !== null) {
+          if (m.index > last) pushText(text.slice(last, m.index));
+          if (m[1]) {
+            pushText(m[1].slice(2, -2), true);
+          } else if (m[2]) {
+            const isActu = m[3] === 'ACTU';
+            const label = m[4].length > 40 ? m[4].slice(0, 39) + '…' : m[4];
+            runs.push(new TextRun({
+              text: ` ${isActu ? '◆' : '■'} ${label} `,
+              bold: true,
+              size: 16,
+              color: isActu ? '1D4ED8' : '7E22CE',
+              shading: { type: ShadingType.CLEAR, fill: isActu ? 'DBEAFE' : 'F3E8FF', color: 'auto' },
+            }));
+          } else if (m[5]) {
+            runs.push(new TextRun({
+              text: ` [${m[6]}] `,
+              bold: true,
+              size: 14,
+              color: '334155',
+              shading: { type: ShadingType.CLEAR, fill: 'F1F5F9', color: 'auto' },
+            }));
+          }
+          last = m.index + m[0].length;
+        }
+        if (last < text.length) pushText(text.slice(last));
 
         children.push(new Paragraph({
           children: runs,
