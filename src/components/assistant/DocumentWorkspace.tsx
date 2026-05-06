@@ -451,7 +451,7 @@ export function DocumentWorkspace({
   // Empty state
   if (!document && !isGenerating) {
     return (
-      <div className="w-[400px] bg-card rounded-2xl border shadow-sm flex flex-col overflow-hidden">
+      <div className="w-full h-full bg-card rounded-2xl border shadow-sm flex flex-col overflow-hidden">
         <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
           <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
             <FileText className="h-8 w-8 text-primary" />
@@ -482,7 +482,7 @@ export function DocumentWorkspace({
   // Generating state
   if (isGenerating && !document) {
     return (
-      <div className="w-[400px] bg-card rounded-2xl border shadow-sm flex flex-col overflow-hidden">
+      <div className="w-full h-full bg-card rounded-2xl border shadow-sm flex flex-col overflow-hidden">
         <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
           <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 animate-pulse">
             <Loader2 className="h-8 w-8 text-primary animate-spin" />
@@ -498,7 +498,7 @@ export function DocumentWorkspace({
 
   // Document view
   return (
-    <div className="w-[400px] bg-card rounded-2xl border shadow-sm flex flex-col overflow-hidden">
+    <div className="w-full h-full bg-card rounded-2xl border shadow-sm flex flex-col overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b bg-primary/5 flex justify-between items-center">
         <div className="flex items-center gap-2 text-primary min-w-0">
