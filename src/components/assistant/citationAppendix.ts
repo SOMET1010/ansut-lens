@@ -60,7 +60,7 @@ export function renderPdfCitationAppendix(
 
   const renderRow = (c: CitationRef) => {
     ensureSpace(16);
-    const tag = c.kind === 'actu' ? 'ACTU' : c.kind === 'dossier' ? 'DOSSIER' : `[${c.num}]`;
+    const tag = c.kind === 'actu' ? 'ACTU' : c.kind === 'dossier' ? 'DOSSIER' : c.kind === 'num' ? `[${c.num}]` : '';
     const tagColor =
       c.kind === 'actu' ? [29, 78, 216] : c.kind === 'dossier' ? [126, 34, 206] : [51, 65, 85];
     pdf.setFont('helvetica', 'bold');
@@ -138,7 +138,7 @@ export function buildDocxCitationAppendix(citations: CitationRef[]): Paragraph[]
   const pushRow = (c: CitationRef) => {
     const isBroken = c.kind === 'num' && !c.url;
     const tagText =
-      c.kind === 'actu' ? 'ACTU' : c.kind === 'dossier' ? 'DOSSIER' : `[${c.num}]`;
+      c.kind === 'actu' ? 'ACTU' : c.kind === 'dossier' ? 'DOSSIER' : c.kind === 'num' ? `[${c.num}]` : '';
     const tagColor =
       c.kind === 'actu'
         ? '1D4ED8'
