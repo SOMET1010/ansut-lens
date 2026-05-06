@@ -507,5 +507,92 @@ export function SocialCredentialsDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <Dialog open={rotateDialogOpen} onOpenChange={(v) => !rotating && setRotateDialogOpen(v)}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <RotateCw className="h-5 w-5 text-purple-600" />
+            Confirmer l'action sur {connectorName}
+          </DialogTitle>
+          <DialogDescription>
+            Cette action supprime les secrets actuellement stockés et est <strong>tracée
+            dans le journal d'audit</strong> avec votre identité, l'horodatage et le motif
+            ci-dessous.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-sm">Type d'action</Label>
+            <RadioGroup
+              value={rotateAction}
+              onValueChange={(v) => setRotateAction(v as 'rotate' | 'revoke')}
+              className="space-y-1"
+            >
+              <div className="flex items-start gap-2 rounded-md border px-3 py-2">
+                <RadioGroupItem value="rotate" id="rot-rotate" className="mt-0.5" />
+                <Label htmlFor="rot-rotate" className="font-normal cursor-pointer flex-1">
+                  <div className="text-sm font-medium">Régénérer (rotation)</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    Supprime les valeurs actuelles. Vous saisirez ensuite les nouvelles.
+                  </div>
+                </Label>
+              </div>
+              <div className="flex items-start gap-2 rounded-md border px-3 py-2">
+                <RadioGroupItem value="revoke" id="rot-revoke" className="mt-0.5" />
+                <Label htmlFor="rot-revoke" className="font-normal cursor-pointer flex-1">
+                  <div className="text-sm font-medium">Révoquer (sans remplacement)</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    Supprime les valeurs sans nouvelle saisie immédiate. Le connecteur
+                    sera désactivé.
+                  </div>
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="rotate-reason" className="text-sm">
+              Motif <span className="text-red-600">*</span>
+            </Label>
+            <Textarea
+              id="rotate-reason"
+              value={rotateReason}
+              onChange={(e) => setRotateReason(e.target.value)}
+              placeholder="Ex : Token compromis, rotation périodique trimestrielle, départ d'un agent…"
+              rows={3}
+              className="text-sm"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Au moins 5 caractères. Ce motif sera enregistré dans le journal d'audit.
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => setRotateDialogOpen(false)}
+            disabled={rotating}
+          >
+            Annuler
+          </Button>
+          <Button
+            onClick={handleRotate}
+            disabled={rotating || rotateReason.trim().length < 5}
+            className="bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            {rotating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RotateCw className="h-4 w-4 mr-2" />
+            )}
+            Confirmer
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
