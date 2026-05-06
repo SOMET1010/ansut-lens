@@ -42,6 +42,7 @@ import VeilleSemantiquePage from "@/pages/admin/VeilleSemantiquePage";
 import AutoVeillePage from "@/pages/admin/AutoVeillePage";
 import CredibilitePDFPage from "@/pages/admin/CredibilitePDFPage";
 import ConnecteursSociauxPage from "@/pages/admin/ConnecteursSociauxPage";
+import GuideComApiSociauxPage from "@/pages/admin/GuideComApiSociauxPage";
 import AlertesHistoryPage from "@/pages/AlertesHistoryPage";
 import PresentationPage from "@/pages/PresentationPage";
 import ProfilePage from "@/pages/ProfilePage";
