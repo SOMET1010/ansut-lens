@@ -48,6 +48,13 @@ jobs:
             src/components/assistant/__tests__/citationRefs.test.ts \
             --reporter=verbose
 
+      - name: Verify DOCX export assertions (citationExportFixtures)
+        run: |
+          bunx vitest run \
+            src/components/assistant/__tests__/citationExportFixtures.test.ts \
+            -t "DOCX export" \
+            --reporter=verbose
+
       - name: Cache Playwright browsers
         id: cache-playwright
         uses: actions/cache@v4

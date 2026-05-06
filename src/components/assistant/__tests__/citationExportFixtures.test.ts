@@ -96,5 +96,35 @@ describe('DOCX export — fixtures replay', () => {
         expect(xml).not.toContain('⚠ Lien manquant');
       }
     });
+
+    it(`[${fx.id}] DOCX content embeds every valid citation URL & label`, async () => {
+      const xml = await renderDocxXml(fx.content);
+      const refs = collectCitations(fx.content);
+      const validRefs = refs.filter((r) => !(r.kind === 'num' && !r.url));
+
+      // Strip XML tags to inspect the visible text content.
+      const visibleText = xml.replace(/<[^>]+>/g, ' ');
+
+      // For numeric refs, both label AND URL must be embedded in the DOCX.
+      const validNum = validRefs.filter((r) => r.kind === 'num') as Array<{
+        num: string;
+        url: string;
+      }>;
+      for (const ref of validNum) {
+        expect(visibleText).toContain(`[${ref.num}]`);
+        const inAnchor = xml.includes(`Target="${ref.url}"`) || xml.includes(`>${ref.url}<`);
+        const inText = visibleText.includes(ref.url);
+        expect(inAnchor || inText).toBe(true);
+      }
+
+      // Broken numeric refs must still appear in the body text (just not clickable).
+      const brokenNums = refs
+        .filter((r) => r.kind === 'num' && !r.url)
+        .map((r: any) => r.num as string);
+      for (const n of brokenNums) {
+        expect(visibleText).toContain(`[${n}]`);
+      }
+    });
   }
 });
+
