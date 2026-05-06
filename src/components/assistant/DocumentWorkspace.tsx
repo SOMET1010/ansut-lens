@@ -934,6 +934,9 @@ export function DocumentWorkspace({
         </div>
       )}
 
+      {/* Citations preview */}
+      {document?.content && <CitationsPreview content={document.content} />}
+
       {/* Footer Actions */}
       <div className="p-4 border-t bg-muted/30 flex justify-end gap-3">
         <Button
