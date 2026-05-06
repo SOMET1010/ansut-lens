@@ -16,13 +16,7 @@ const APP_BASE = 'https://ansut-lens.lovable.app';
 
 function extractCitations(content: string): CitationItem[] {
   // Build numeric reference URL map (same regex as PDF/DOCX export)
-  const numRefUrls: Record<string, string> = {};
-  const refRe = /(?:^|\n)\s*(?:\[(\d{1,3})\]:?|(\d{1,3})[.)])\s*(https?:\/\/\S+)/g;
-  let rm: RegExpExecArray | null;
-  while ((rm = refRe.exec(content)) !== null) {
-    const n = rm[1] || rm[2];
-    if (n && !numRefUrls[n]) numRefUrls[n] = rm[3].replace(/[.,;)\]]+$/, '');
-  }
+  const numRefUrls = extractNumericReferenceUrls(content);
 
   const items: CitationItem[] = [];
   const seen = new Set<string>();
