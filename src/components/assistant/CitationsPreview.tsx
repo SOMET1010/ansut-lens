@@ -92,7 +92,10 @@ export function CitationsPreview({ content }: CitationsPreviewProps) {
                     <Badge
                       key={idx}
                       variant="outline"
-                      className="border-amber-400 border-dashed bg-amber-50 text-amber-800 font-bold text-[10px] gap-1"
+                      role="text"
+                      aria-disabled="true"
+                      data-broken-citation={item.num}
+                      className="border-amber-400 border-dashed bg-amber-50 text-amber-800 font-bold text-[10px] gap-1 cursor-not-allowed"
                       title="Lien manquant — apparaîtra non cliquable dans l'export"
                     >
                       <AlertTriangle className="h-2.5 w-2.5" />
