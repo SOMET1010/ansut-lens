@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
-import { sanitizeReason, validateReason } from './rotateReasonValidation';
+import { sanitizeReason, validateReason, REASON_MESSAGES } from './rotateReasonValidation';
 
 type SecretField = {
   name: string;
