@@ -579,6 +579,8 @@ export function DocumentWorkspace({
           headingStyleRange: '1-3',
         }),
         new Paragraph({ children: [new PageBreak()] }),
+      ] as (Paragraph | TableOfContents)[];
+
 
       const APP_BASE = 'https://ansut-lens.lovable.app';
       // Parse numeric reference URLs once for the whole document
