@@ -10,6 +10,24 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { MatinaleDrillDownModal } from './MatinaleDrillDownModal';
 import { MatinaleSectionShell, DrillButton, type SectionStatus } from './MatinaleSectionShell';
+import type {
+  MatinaleData, PrioriteExecutive, SyntheseItem, VeilleParPilier, VeillePilierItem,
+  LectureStrategiqueItem, ImpactProjetItem, ActionImmediate, ReputationAnsut, RevueItem, ActiviteAnsut,
+} from '@/types/matinale';
+import { extractSectionKeywords, useMatinaleSectionSourceCount } from '@/hooks/useMatinaleSources';
+
+function SourceCountBadge({ data, section, freshnessHours, enabled }: {
+  data: MatinaleData; section: any; freshnessHours: number; enabled: boolean;
+}) {
+  const kw = extractSectionKeywords(data, section);
+  const { data: count, isLoading } = useMatinaleSectionSourceCount(kw, freshnessHours, enabled);
+  if (!enabled || kw.length === 0) return null;
+  return (
+    <Badge variant="outline" className="text-[10px] gap-1">
+      {isLoading ? '…' : count ?? 0} sources
+    </Badge>
+  );
+}
 
 const RUBRIQUE_LABELS: Record<string, string> = {
   telecom_numerique: 'Télécom / Numérique',
@@ -54,7 +72,7 @@ function formatDate(d?: string): string {
 }
 
 interface Props {
-  data: any;
+  data: MatinaleData | null | undefined;
   freshnessHours?: number;
   loading?: boolean;
   error?: string | null;
@@ -62,17 +80,17 @@ interface Props {
 }
 
 export function MatinaleSections({ data, freshnessHours = 24, loading = false, error = null, onRetry }: Props) {
-  const safe = data || {};
-  const prio = safe.priorite_executive;
-  const synthese: any[] = safe.synthese_60s || [];
-  const veille: Record<string, any[]> = safe.veille_par_pilier || {};
-  const lectureStrat: any[] = safe.lecture_strategique || [];
-  const impactProjets: any[] = safe.impact_projets_ansut || [];
-  const actions: any[] = safe.actions_immediates || [];
-  const reput = safe.reputation_ansut;
+  const safe: MatinaleData = data || {};
+  const prio: PrioriteExecutive | undefined = safe.priorite_executive;
+  const synthese: SyntheseItem[] = safe.synthese_60s || [];
+  const veille: Partial<VeilleParPilier> = safe.veille_par_pilier || {};
+  const lectureStrat: LectureStrategiqueItem[] = safe.lecture_strategique || [];
+  const impactProjets: ImpactProjetItem[] = safe.impact_projets_ansut || [];
+  const actions: ActionImmediate[] = safe.actions_immediates || [];
+  const reput: ReputationAnsut | undefined = safe.reputation_ansut;
   const signaux: string[] = safe.signaux_faibles || [];
-  const revue: any[] = safe.revue_de_presse || [];
-  const activite = safe.activite_ansut;
+  const revue: RevueItem[] = safe.revue_de_presse || [];
+  const activite: ActiviteAnsut | undefined = safe.activite_ansut;
 
   const [drill, setDrill] = useState<null | {
     title: string;
@@ -151,7 +169,10 @@ export function MatinaleSections({ data, freshnessHours = 24, loading = false, e
         onRetry={onRetry}
         emptyHint="Aucun sujet n'a passé le seuil de pertinence sur la fenêtre sélectionnée."
         headerExtras={synthese.length > 0 && (
-          <Badge variant="secondary" className="ml-auto text-xs">{synthese.length} sujets</Badge>
+          <div className="ml-auto flex items-center gap-1.5">
+            <Badge variant="secondary" className="text-xs">{synthese.length} sujets</Badge>
+            <SourceCountBadge data={safe} section="synthese_60s" freshnessHours={freshnessHours} enabled={synthese.length > 0} />
+          </div>
         )}
         rightActions={synthese.length > 0 ? drillBtn({
           title: 'Synthèse 60 secondes',
@@ -183,6 +204,9 @@ export function MatinaleSections({ data, freshnessHours = 24, loading = false, e
         errorMessage={error || undefined}
         onRetry={onRetry}
         emptyHint="Aucun signal classé par pilier sur la fenêtre. Vérifiez les capteurs stratégiques."
+        headerExtras={Object.keys(veille).length > 0 && (
+          <SourceCountBadge data={safe} section="veille_par_pilier" freshnessHours={freshnessHours} enabled={true} />
+        )}
         rightActions={Object.keys(veille).length > 0 ? drillBtn({
           title: 'Veille par pilier ANSUT',
           description: 'Articles sources tous piliers',
