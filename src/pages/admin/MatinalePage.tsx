@@ -13,8 +13,10 @@ import {
 import {
   Newspaper, Send, Eye, Loader2, Target, MessageSquare,
   CheckCircle2, XCircle, Clock, ArrowLeft, CalendarClock, Info,
-  FileText, ListChecks, Building2, AlertTriangle, Lightbulb, BarChart3, ExternalLink,
+  FileText, ListChecks, Building2, AlertTriangle, Lightbulb, BarChart3, ExternalLink, Download,
 } from 'lucide-react';
+import { exportMatinalePDF } from '@/utils/exportMatinalePDF';
+import { toast } from 'sonner';
 
 const RUBRIQUE_LABELS: Record<string, string> = {
   telecom_numerique: 'Télécom / Numérique',
