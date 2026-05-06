@@ -82,25 +82,29 @@ export default function FluxPage() {
 
   return (
     <div className="w-full space-y-6 animate-fade-in">
-      {/* Header amélioré */}
+      {/* Centre de Surveillance Numérique */}
+      <CentreSurveillanceBar />
+
+      {/* Header — Capteurs Stratégiques */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3">
-            <Rss className="h-7 w-7 text-primary" />
-            Mes Flux de Veille
+            <Radar className="h-7 w-7 text-primary" />
+            Capteurs Stratégiques
             {!isLoading && flux && flux.length > 0 && (
-              <Badge variant="secondary" className="text-xs">
-                {activeCount} actifs
+              <Badge variant="secondary" className="text-xs gap-1">
+                <Bot className="h-3 w-3" />
+                {activeCount} agent{activeCount > 1 ? 's' : ''} actif{activeCount > 1 ? 's' : ''}
               </Badge>
             )}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Gérez vos robots de surveillance et vos alertes automatiques
+            Dispositifs de surveillance numérique — chaque agent surveille, analyse, alerte et recommande.
           </p>
         </div>
         <Button onClick={handleCreateNew} className="gap-2">
           <Plus className="h-4 w-4" />
-          Créer un nouveau flux
+          Déployer un capteur
         </Button>
       </div>
 
