@@ -94,10 +94,10 @@ export function buildTitrologieMarkdown(data: TitrologieData, filter?: Titrologi
     lines.push('');
   }
 
-  lines.push(`## Unes analysées (${data.unes.length})`);
+  lines.push(`## Unes analysées (${filteredUnes.length}${filteredUnes.length !== data.unes.length ? ` sur ${data.unes.length}` : ''})`);
   lines.push('');
 
-  data.unes.forEach((u: UneJournal, idx) => {
+  filteredUnes.forEach((u: UneJournal, idx) => {
     lines.push(`### ${idx + 1}. ${u.journal} — ${u.titre}`);
     lines.push('');
     lines.push(`- **Sujet** : ${u.sujet} · **Ton** : ${u.ton} · **Risque ANSUT** : ${u.risque_ansut}${typeof u.risque_score === 'number' ? ` (${u.risque_score} pts)` : ''}`);
