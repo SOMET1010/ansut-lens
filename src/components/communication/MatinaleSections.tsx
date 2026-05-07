@@ -88,11 +88,54 @@ const RISQUE_BADGE: Record<TitrologieRisque, string> = {
   VERT: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
 };
 
+const ANGLE_OPTIONS: Array<{ value: string; label: string; key: string }> = [
+  { value: 'all', label: 'Tous les angles', key: '' },
+  { value: 'politique', label: 'Politique', key: 'politique' },
+  { value: 'social', label: 'Social', key: 'social' },
+  { value: 'economique', label: 'Économie', key: 'economique' },
+  { value: 'numerique_telecom', label: 'Numérique / Réseaux', key: 'numerique_telecom' },
+  { value: 'reputationnel', label: 'Réputationnel', key: 'reputationnel' },
+];
+
 function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie: TitrologieData | null | undefined; status: SectionStatus; error: string | null; onRetry?: () => void }) {
   const unes = titrologie?.unes || [];
   const synth = titrologie?.synthese_codir;
   const signaux = titrologie?.signaux_ansut || [];
   const counts = unes.reduce((acc, u) => { acc[u.risque_ansut] = (acc[u.risque_ansut] || 0) + 1; return acc; }, {} as Record<string, number>);
+
+  const [angleFilter, setAngleFilter] = useState<string>('all');
+  const [minIntensite, setMinIntensite] = useState<string>('0');
+  const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
+
+  const angleKey = ANGLE_OPTIONS.find(o => o.value === angleFilter)?.key || '';
+  const minVal = parseInt(minIntensite, 10) || 0;
+
+  const getIntensite = (u: any): number => {
+    const a = u?.angles || {};
+    if (angleKey) return a[angleKey]?.intensite ?? 0;
+    return Math.max(
+      a.politique?.intensite ?? 0,
+      a.social?.intensite ?? 0,
+      a.economique?.intensite ?? 0,
+      a.numerique_telecom?.intensite ?? 0,
+      a.reputationnel?.intensite ?? 0,
+    );
+  };
+
+  const filteredUnes = unes
+    .filter(u => {
+      if (angleKey) {
+        const a = (u as any).angles?.[angleKey];
+        if (!a || (a.intensite ?? 0) < 1) return false;
+      }
+      return getIntensite(u) >= minVal;
+    })
+    .slice()
+    .sort((a, b) => {
+      const da = getIntensite(a);
+      const db = getIntensite(b);
+      return sortDir === 'desc' ? db - da : da - db;
+    });
 
   return (
     <MatinaleSectionShell
@@ -156,6 +199,40 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
         )}
 
         {unes.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <label className="text-muted-foreground">Angle :</label>
+            <select
+              value={angleFilter}
+              onChange={(e) => setAngleFilter(e.target.value)}
+              className="h-7 rounded border border-border bg-background px-2 text-xs"
+            >
+              {ANGLE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <label className="text-muted-foreground ml-2">Intensité min :</label>
+            <select
+              value={minIntensite}
+              onChange={(e) => setMinIntensite(e.target.value)}
+              className="h-7 rounded border border-border bg-background px-2 text-xs"
+            >
+              <option value="0">0</option>
+              <option value="1">≥ 1</option>
+              <option value="2">≥ 2</option>
+              <option value="3">3</option>
+            </select>
+            <label className="text-muted-foreground ml-2">Tri :</label>
+            <select
+              value={sortDir}
+              onChange={(e) => setSortDir(e.target.value as 'desc' | 'asc')}
+              className="h-7 rounded border border-border bg-background px-2 text-xs"
+            >
+              <option value="desc">Intensité décroissante</option>
+              <option value="asc">Intensité croissante</option>
+            </select>
+            <Badge variant="outline" className="text-[10px] ml-auto">{filteredUnes.length} / {unes.length} unes</Badge>
+          </div>
+        )}
+
+        {filteredUnes.length > 0 && (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="border-b">
@@ -168,7 +245,7 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
                 </tr>
               </thead>
               <tbody>
-                {unes.map((u, i) => {
+                {filteredUnes.map((u, i) => {
                   const angles = (u as any).angles || {};
                   const angleEntries: Array<[string, any]> = [
                     ['Pol', angles.politique],
