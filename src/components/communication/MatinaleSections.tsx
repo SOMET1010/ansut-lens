@@ -18,6 +18,7 @@ import type {
 } from '@/types/matinale';
 import { Newspaper } from 'lucide-react';
 import { extractSectionKeywords, useMatinaleSectionSourceCount } from '@/hooks/useMatinaleSources';
+import { downloadPDF as downloadTitrologiePDF, downloadMarkdown as downloadTitrologieMarkdown } from '@/utils/exportTitrologieBriefing';
 
 function SourceCountBadge({ data, section, freshnessHours, enabled }: {
   data: MatinaleData; section: any; freshnessHours: number; enabled: boolean;
