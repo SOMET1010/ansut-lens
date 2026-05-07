@@ -294,6 +294,14 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
         </div>
       </MatinaleSectionShell>
 
+      {/* 2bis. TITROLOGIE NATIONALE DU JOUR */}
+      <TitrologieSection
+        titrologie={titrologie}
+        status={status(!!titrologie && (titrologie.unes?.length || 0) > 0)}
+        error={error}
+        onRetry={onRetry}
+      />
+
       {/* 3. VEILLE PAR PILIER */}
       <MatinaleSectionShell
         icon={Layers}
