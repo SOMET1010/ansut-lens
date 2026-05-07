@@ -224,16 +224,16 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
           <Button
             variant="outline" size="sm"
             className="h-7 px-2 text-[11px] gap-1"
-            onClick={() => titrologie && downloadTitrologiePDF(titrologie)}
-            title="Exporter le briefing Titrologie en PDF"
+            onClick={() => titrologie && downloadTitrologiePDF(titrologie, { angleKey, minIntensite: minVal, sortDir })}
+            title={`Exporter en PDF (${filteredUnes.length}/${unes.length} unes filtrées)`}
           >
             <FileDown className="h-3.5 w-3.5" /> PDF
           </Button>
           <Button
             variant="outline" size="sm"
             className="h-7 px-2 text-[11px] gap-1"
-            onClick={() => titrologie && downloadTitrologieMarkdown(titrologie)}
-            title="Exporter le briefing Titrologie en Markdown"
+            onClick={() => titrologie && downloadTitrologieMarkdown(titrologie, { angleKey, minIntensite: minVal, sortDir })}
+            title={`Exporter en Markdown (${filteredUnes.length}/${unes.length} unes filtrées)`}
           >
             <Download className="h-3.5 w-3.5" /> Markdown
           </Button>
