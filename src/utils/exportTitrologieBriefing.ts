@@ -143,8 +143,8 @@ export function buildTitrologieMarkdown(data: TitrologieData, filter?: Titrologi
   return lines.join('\n');
 }
 
-export function downloadMarkdown(data: TitrologieData) {
-  const md = buildTitrologieMarkdown(data);
+export function downloadMarkdown(data: TitrologieData, filter?: TitrologieExportFilter) {
+  const md = buildTitrologieMarkdown(data, filter);
   const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
