@@ -156,7 +156,8 @@ export function downloadMarkdown(data: TitrologieData, filter?: TitrologieExport
   URL.revokeObjectURL(url);
 }
 
-export function downloadPDF(data: TitrologieData) {
+export function downloadPDF(data: TitrologieData, filter?: TitrologieExportFilter) {
+  const { unes: filteredUnes, filterLabel } = applyFilter(data, filter);
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
