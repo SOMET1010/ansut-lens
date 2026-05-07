@@ -100,6 +100,16 @@ export type TitrologieSujet = 'politique' | 'social' | 'economique' | 'numerique
 export type TitrologieTon = 'positif' | 'neutre' | 'negatif' | 'critique';
 export type TitrologieRisque = 'VERT' | 'ORANGE' | 'ROUGE';
 
+export type AngleKey = 'politique' | 'social' | 'economique' | 'numerique_telecom' | 'reputationnel';
+
+export interface AngleAnalyse {
+  intensite: 0 | 1 | 2 | 3;
+  lecture?: string | null;
+  lien_ansut_mtnd?: string | null;
+}
+
+export type UneAngles = Partial<Record<AngleKey, AngleAnalyse>>;
+
 export interface UneJournal {
   journal: string;
   type: 'nationale' | 'en_ligne' | 'economique';
@@ -110,6 +120,7 @@ export interface UneJournal {
   ton: TitrologieTon;
   risque_ansut: TitrologieRisque;
   lien_ansut: string;
+  angles?: UneAngles;
 }
 
 export interface TitrologieSyntheseCodir {
