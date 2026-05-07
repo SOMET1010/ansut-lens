@@ -217,10 +217,26 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
       onRetry={onRetry}
       emptyHint="Aucune une collectée. Vérifiez la connexion Perplexity."
       headerExtras={unes.length > 0 && (
-        <div className="ml-auto flex items-center gap-1.5">
+        <div className="ml-auto flex items-center gap-1.5 flex-wrap">
           <Badge variant="secondary" className="text-xs">{unes.length} unes</Badge>
           {counts.ROUGE > 0 && <Badge variant="outline" className={`${RISQUE_BADGE.ROUGE} text-[10px]`}>{counts.ROUGE} ROUGE</Badge>}
           {counts.ORANGE > 0 && <Badge variant="outline" className={`${RISQUE_BADGE.ORANGE} text-[10px]`}>{counts.ORANGE} ORANGE</Badge>}
+          <Button
+            variant="outline" size="sm"
+            className="h-7 px-2 text-[11px] gap-1"
+            onClick={() => titrologie && downloadTitrologiePDF(titrologie)}
+            title="Exporter le briefing Titrologie en PDF"
+          >
+            <FileDown className="h-3.5 w-3.5" /> PDF
+          </Button>
+          <Button
+            variant="outline" size="sm"
+            className="h-7 px-2 text-[11px] gap-1"
+            onClick={() => titrologie && downloadTitrologieMarkdown(titrologie)}
+            title="Exporter le briefing Titrologie en Markdown"
+          >
+            <Download className="h-3.5 w-3.5" /> Markdown
+          </Button>
         </div>
       )}
     >
