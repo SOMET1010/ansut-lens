@@ -245,6 +245,16 @@ export default function AdminPage() {
               to="/admin/scoring"
               loading={isLoading}
             />
+            <AdminNavCard
+              color="purple"
+              icon={<Newspaper size={24} />}
+              title="Titrologie"
+              badge="Service Universel"
+              badgeVariant="info"
+              subtitle="Sources scannées, fréquence, seuils d'alerte et catalogue de mots-clés (fibre, 5G, IA, cybersécurité…)."
+              to="/admin/titrologie"
+              loading={isLoading}
+            />
           </PermissionGate>
           <PermissionGate permission="manage_newsletters">
             <AdminNavCard
