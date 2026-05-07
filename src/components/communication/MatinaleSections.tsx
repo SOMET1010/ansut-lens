@@ -199,6 +199,40 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
         )}
 
         {unes.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <label className="text-muted-foreground">Angle :</label>
+            <select
+              value={angleFilter}
+              onChange={(e) => setAngleFilter(e.target.value)}
+              className="h-7 rounded border border-border bg-background px-2 text-xs"
+            >
+              {ANGLE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <label className="text-muted-foreground ml-2">Intensité min :</label>
+            <select
+              value={minIntensite}
+              onChange={(e) => setMinIntensite(e.target.value)}
+              className="h-7 rounded border border-border bg-background px-2 text-xs"
+            >
+              <option value="0">0</option>
+              <option value="1">≥ 1</option>
+              <option value="2">≥ 2</option>
+              <option value="3">3</option>
+            </select>
+            <label className="text-muted-foreground ml-2">Tri :</label>
+            <select
+              value={sortDir}
+              onChange={(e) => setSortDir(e.target.value as 'desc' | 'asc')}
+              className="h-7 rounded border border-border bg-background px-2 text-xs"
+            >
+              <option value="desc">Intensité décroissante</option>
+              <option value="asc">Intensité croissante</option>
+            </select>
+            <Badge variant="outline" className="text-[10px] ml-auto">{filteredUnes.length} / {unes.length} unes</Badge>
+          </div>
+        )}
+
+        {filteredUnes.length > 0 && (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="border-b">
@@ -211,7 +245,7 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
                 </tr>
               </thead>
               <tbody>
-                {unes.map((u, i) => {
+                {filteredUnes.map((u, i) => {
                   const angles = (u as any).angles || {};
                   const angleEntries: Array<[string, any]> = [
                     ['Pol', angles.politique],
