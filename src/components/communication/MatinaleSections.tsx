@@ -88,6 +88,49 @@ const RISQUE_BADGE: Record<TitrologieRisque, string> = {
   VERT: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
 };
 
+const ENTITE_META: Record<string, { label: string; cls: string }> = {
+  ANSUT:             { label: 'ANSUT',           cls: 'bg-primary/15 text-primary border-primary/30' },
+  MTNIT:             { label: 'MTNIT',           cls: 'bg-violet-500/15 text-violet-600 border-violet-500/30' },
+  SERVICE_UNIVERSEL: { label: 'Service Universel', cls: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30' },
+};
+
+function AngleLiens({ liens, fallback }: { liens?: any[]; fallback?: string | null }) {
+  const list = Array.isArray(liens) ? liens.filter(l => l && l.entite && l.phrase) : [];
+  if (list.length === 0) {
+    if (fallback) return <div className="ml-1 italic text-primary/80 text-[10px]">→ {fallback}</div>;
+    return null;
+  }
+  return (
+    <ul className="mt-1 ml-2 space-y-1">
+      {list.map((l, idx) => {
+        const meta = ENTITE_META[l.entite] || { label: l.entite, cls: 'bg-muted text-muted-foreground border-border' };
+        const sources: string[] = Array.isArray(l.sources) ? l.sources.filter(isValidUrl) : [];
+        return (
+          <li key={idx} className="text-[10px] leading-snug flex items-start gap-1.5">
+            <Badge variant="outline" className={`${meta.cls} text-[9px] px-1 py-0 border shrink-0`}>{meta.label}</Badge>
+            <div className="flex-1 min-w-0">
+              <div className="text-foreground/90">{l.phrase}</div>
+              {l.preuve && (
+                <div className="text-muted-foreground italic">« {l.preuve} »</div>
+              )}
+              {sources.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-0.5">
+                  {sources.map((s, k) => (
+                    <a key={k} href={s} target="_blank" rel="noopener noreferrer"
+                       className="inline-flex items-center gap-0.5 text-[9px] text-primary hover:underline">
+                      source {k + 1}<ExternalLink className="h-2.5 w-2.5" />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 const ANGLE_OPTIONS: Array<{ value: string; label: string; key: string }> = [
   { value: 'all', label: 'Tous les angles', key: '' },
   { value: 'politique', label: 'Politique', key: 'politique' },
