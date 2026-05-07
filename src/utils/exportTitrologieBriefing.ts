@@ -224,9 +224,9 @@ export function downloadPDF(data: TitrologieData, filter?: TitrologieExportFilte
     data.signaux_ansut.forEach(s => writeWrapped(`• ${s}`, { indent: 12 }));
   }
 
-  writeWrapped(`Unes analysées (${data.unes.length})`, { size: 13, bold: true, color: [15, 23, 42], gap: 8 });
+  writeWrapped(`Unes analysées (${filteredUnes.length}${filteredUnes.length !== data.unes.length ? ` sur ${data.unes.length}` : ''})`, { size: 13, bold: true, color: [15, 23, 42], gap: 8 });
 
-  data.unes.forEach((u: UneJournal, idx) => {
+  filteredUnes.forEach((u: UneJournal, idx) => {
     ensureSpace(40);
     writeWrapped(`${idx + 1}. ${u.journal} — ${u.titre}`, { size: 11, bold: true, color: [15, 23, 42] });
     writeWrapped(`Sujet : ${u.sujet} | Ton : ${u.ton} | Risque ANSUT : ${u.risque_ansut}${typeof u.risque_score === 'number' ? ` (${u.risque_score} pts)` : ''}`, { size: 9, color: [80, 80, 80] });
