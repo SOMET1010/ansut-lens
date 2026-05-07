@@ -618,7 +618,7 @@ Deno.serve(async (req) => {
       };
     });
 
-    console.log('[Matinale] Accounts activity:', accountsActivity.length, 'comptes,', (recentPubs || []).length, 'pubs 24h,', titrologie.length, 'titres presse');
+    console.log('[Matinale] Accounts activity:', accountsActivity.length, 'comptes,', (recentPubs || []).length, 'pubs 24h,', titrologie.unes.length, 'unes titrologie');
 
     // Also filter articles that specifically mention ANSUT
     const ansutKeywords = ['ansut', 'service universel', 'télécommunications'];
