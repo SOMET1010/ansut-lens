@@ -21,12 +21,55 @@ function fmtDate(): string {
   });
 }
 
-export function buildTitrologieMarkdown(data: TitrologieData): string {
+export interface TitrologieExportFilter {
+  angleKey?: string; // '' = tous angles
+  minIntensite?: number; // 0-3
+  sortDir?: 'asc' | 'desc';
+}
+
+function applyFilter(data: TitrologieData, filter?: TitrologieExportFilter): { unes: UneJournal[]; filterLabel: string | null } {
+  if (!filter) return { unes: data.unes, filterLabel: null };
+  const { angleKey = '', minIntensite = 0, sortDir = 'desc' } = filter;
+  const getInt = (u: any): number => {
+    const a = u?.angles || {};
+    if (angleKey) return a[angleKey]?.intensite ?? 0;
+    return Math.max(
+      a.politique?.intensite ?? 0,
+      a.social?.intensite ?? 0,
+      a.economique?.intensite ?? 0,
+      a.numerique_telecom?.intensite ?? 0,
+      a.reputationnel?.intensite ?? 0,
+    );
+  };
+  const filtered = data.unes
+    .filter(u => {
+      if (angleKey) {
+        const a = (u as any).angles?.[angleKey];
+        if (!a || (a.intensite ?? 0) < 1) return false;
+      }
+      return getInt(u) >= minIntensite;
+    })
+    .slice()
+    .sort((a, b) => sortDir === 'desc' ? getInt(b) - getInt(a) : getInt(a) - getInt(b));
+
+  const parts: string[] = [];
+  parts.push(`Angle : ${angleKey ? (ANGLE_LABELS[angleKey] || angleKey) : 'Tous'}`);
+  parts.push(`Intensité min : ${minIntensite}/3`);
+  parts.push(`Tri : ${sortDir === 'desc' ? 'décroissant' : 'croissant'}`);
+  return { unes: filtered, filterLabel: parts.join(' · ') };
+}
+
+export function buildTitrologieMarkdown(data: TitrologieData, filter?: TitrologieExportFilter): string {
   const lines: string[] = [];
   const date = fmtDate();
+  const { unes: filteredUnes, filterLabel } = applyFilter(data, filter);
   lines.push(`# Briefing Titrologie — ${date}`);
   lines.push('');
   lines.push(`_Agence Nationale du Service Universel des Télécommunications (ANSUT)_`);
+  if (filterLabel) {
+    lines.push('');
+    lines.push(`**Filtres appliqués** : ${filterLabel} — ${filteredUnes.length}/${data.unes.length} unes`);
+  }
   lines.push('');
 
   const synth = data.synthese_codir;
@@ -51,10 +94,10 @@ export function buildTitrologieMarkdown(data: TitrologieData): string {
     lines.push('');
   }
 
-  lines.push(`## Unes analysées (${data.unes.length})`);
+  lines.push(`## Unes analysées (${filteredUnes.length}${filteredUnes.length !== data.unes.length ? ` sur ${data.unes.length}` : ''})`);
   lines.push('');
 
-  data.unes.forEach((u: UneJournal, idx) => {
+  filteredUnes.forEach((u: UneJournal, idx) => {
     lines.push(`### ${idx + 1}. ${u.journal} — ${u.titre}`);
     lines.push('');
     lines.push(`- **Sujet** : ${u.sujet} · **Ton** : ${u.ton} · **Risque ANSUT** : ${u.risque_ansut}${typeof u.risque_score === 'number' ? ` (${u.risque_score} pts)` : ''}`);
@@ -100,8 +143,8 @@ export function buildTitrologieMarkdown(data: TitrologieData): string {
   return lines.join('\n');
 }
 
-export function downloadMarkdown(data: TitrologieData) {
-  const md = buildTitrologieMarkdown(data);
+export function downloadMarkdown(data: TitrologieData, filter?: TitrologieExportFilter) {
+  const md = buildTitrologieMarkdown(data, filter);
   const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -113,7 +156,8 @@ export function downloadMarkdown(data: TitrologieData) {
   URL.revokeObjectURL(url);
 }
 
-export function downloadPDF(data: TitrologieData) {
+export function downloadPDF(data: TitrologieData, filter?: TitrologieExportFilter) {
+  const { unes: filteredUnes, filterLabel } = applyFilter(data, filter);
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -158,6 +202,7 @@ export function downloadPDF(data: TitrologieData) {
   y = 80;
 
   writeWrapped('Agence Nationale du Service Universel des Télécommunications (ANSUT)', { size: 9, color: [120, 120, 120] });
+  if (filterLabel) writeWrapped(`Filtres : ${filterLabel} — ${filteredUnes.length}/${data.unes.length} unes`, { size: 9, color: [120, 120, 120] });
 
   const synth = data.synthese_codir;
   if (synth) {
@@ -179,9 +224,9 @@ export function downloadPDF(data: TitrologieData) {
     data.signaux_ansut.forEach(s => writeWrapped(`• ${s}`, { indent: 12 }));
   }
 
-  writeWrapped(`Unes analysées (${data.unes.length})`, { size: 13, bold: true, color: [15, 23, 42], gap: 8 });
+  writeWrapped(`Unes analysées (${filteredUnes.length}${filteredUnes.length !== data.unes.length ? ` sur ${data.unes.length}` : ''})`, { size: 13, bold: true, color: [15, 23, 42], gap: 8 });
 
-  data.unes.forEach((u: UneJournal, idx) => {
+  filteredUnes.forEach((u: UneJournal, idx) => {
     ensureSpace(40);
     writeWrapped(`${idx + 1}. ${u.journal} — ${u.titre}`, { size: 11, bold: true, color: [15, 23, 42] });
     writeWrapped(`Sujet : ${u.sujet} | Ton : ${u.ton} | Risque ANSUT : ${u.risque_ansut}${typeof u.risque_score === 'number' ? ` (${u.risque_score} pts)` : ''}`, { size: 9, color: [80, 80, 80] });
