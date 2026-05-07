@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+import type { TitrologieData } from '@/types/matinale';
+
 interface MatinaleFlashItem {
   titre: string;
   resume: string;
@@ -23,6 +25,7 @@ interface FreshnessMeta {
 
 interface MatinaleResponse {
   matinale: MatinaleContent;
+  titrologie?: TitrologieData;
   html?: string;
   articles_count: number;
   generated_at: string;
