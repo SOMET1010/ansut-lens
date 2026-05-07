@@ -104,12 +104,16 @@ async function ocrAndAnalyze(une: RawUne): Promise<any> {
       text: `Analyse cette une de presse ivoirienne (journal: ${une.journal}). Titre indicatif : "${une.titre_une}".
 Tâches :
 1. OCR : extrait tous les titres visibles (gros titres, sous-titres).
-2. Identifie le titre principal de la une.
-3. Détermine le sujet dominant (politique, économie, social, sport, télécom_numérique, securite, international, autre).
-4. Analyse le ton (positif, négatif, neutre, alarmiste, critique).
-5. Évalue le risque ANSUT (VERT / ORANGE / ROUGE) selon proximité avec : ${ANSUT_KEYWORDS.join(', ')}.
-6. Liste 2-5 thèmes clés (mots-clés courts).
-7. Si lien ANSUT direct ou indirect, explique en 1 phrase (lien_ansut), sinon null.
+2. Titre principal de la une.
+3. Sujet dominant.
+4. Ton.
+5. Risque ANSUT (VERT/ORANGE/ROUGE) selon proximité avec : ${ANSUT_KEYWORDS.join(', ')}.
+6. 2-5 thèmes clés (mots courts).
+7. Lien ANSUT direct/indirect en 1 phrase, sinon null.
+8. **ANALYSE PAR ANGLE** — pour chaque angle (politique, social, economique, numerique_telecom, reputationnel) :
+   - intensite : 0 (absent) / 1 (faible) / 2 (moyen) / 3 (fort)
+   - lecture : 1 phrase factuelle (max 25 mots) si intensite ≥ 1, sinon null
+   - lien_ansut_mtnd : lien possible avec ANSUT, MTND (Ministère de la Transition Numérique et de la Digitalisation) ou Service Universel — 1 phrase si pertinent, sinon null
 
 Réponds via l'outil structurer_une.`,
     },
@@ -119,10 +123,20 @@ Réponds via l'outil structurer_une.`,
     userParts.push({ type: 'image_url', image_url: { url: une.image_url } });
   }
 
+  const angleSchema = {
+    type: 'object',
+    properties: {
+      intensite: { type: 'integer', enum: [0, 1, 2, 3] },
+      lecture: { type: ['string', 'null'] },
+      lien_ansut_mtnd: { type: ['string', 'null'] },
+    },
+    required: ['intensite'],
+  };
+
   const body = {
     model: 'google/gemini-2.5-pro',
     messages: [
-      { role: 'system', content: 'Tu es analyste presse ANSUT. Sois précis et factuel. Pas d\'invention.' },
+      { role: 'system', content: 'Tu es analyste presse ANSUT/MTND. Précis, factuel, aucune invention.' },
       { role: 'user', content: userParts },
     ],
     temperature: 0.3,
@@ -130,19 +144,30 @@ Réponds via l'outil structurer_une.`,
       type: 'function',
       function: {
         name: 'structurer_une',
-        description: 'Structure l\'analyse OCR + visuelle de la une',
+        description: 'Structure l\'analyse OCR + visuelle + par angle de la une',
         parameters: {
           type: 'object',
           properties: {
-            raw_ocr: { type: 'string', description: 'Tout le texte OCR brut extrait de la une' },
+            raw_ocr: { type: 'string' },
             titre_principal: { type: 'string' },
             sujet: { type: 'string', enum: ['politique','economie','social','sport','telecom_numerique','securite','international','autre'] },
             ton: { type: 'string', enum: ['positif','negatif','neutre','alarmiste','critique'] },
             risque_ansut: { type: 'string', enum: ['VERT','ORANGE','ROUGE'] },
             themes: { type: 'array', items: { type: 'string' } },
             lien_ansut: { type: ['string','null'] },
+            angles: {
+              type: 'object',
+              properties: {
+                politique: angleSchema,
+                social: angleSchema,
+                economique: angleSchema,
+                numerique_telecom: angleSchema,
+                reputationnel: angleSchema,
+              },
+              required: ['politique','social','economique','numerique_telecom','reputationnel'],
+            },
           },
-          required: ['titre_principal','sujet','ton','risque_ansut','themes'],
+          required: ['titre_principal','sujet','ton','risque_ansut','themes','angles'],
         },
       },
     }],
@@ -200,6 +225,7 @@ Deno.serve(async (req) => {
           lien_ansut: analysis.lien_ansut || null,
           themes: analysis.themes || [],
           raw_ocr: analysis.raw_ocr || null,
+          angles: analysis.angles || {},
           analyse_ia: analysis,
         });
         analyzed++;

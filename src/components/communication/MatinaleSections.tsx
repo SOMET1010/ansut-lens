@@ -142,24 +142,64 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
                 </tr>
               </thead>
               <tbody>
-                {unes.map((u, i) => (
-                  <tr key={i} className="border-b border-border/40 align-top">
-                    <td className="py-1.5 pr-2 font-medium whitespace-nowrap">{u.journal}</td>
-                    <td className="py-1.5 pr-2">
-                      {isValidUrl(u.url) ? (
-                        <a href={u.url} target="_blank" rel="noopener noreferrer" className="hover:underline inline-flex items-start gap-1">
-                          {u.titre}<ExternalLink className="h-3 w-3 mt-0.5 shrink-0" />
-                        </a>
-                      ) : u.titre}
-                      {u.lien_ansut && <div className="text-[10px] text-muted-foreground mt-0.5 italic">↳ {u.lien_ansut}</div>}
-                    </td>
-                    <td className="py-1.5 pr-2 capitalize">{u.sujet.replace('_', ' ')}</td>
-                    <td className="py-1.5 pr-2 capitalize">{u.ton}</td>
-                    <td className="py-1.5 pr-2">
-                      <Badge variant="outline" className={`${RISQUE_BADGE[u.risque_ansut]} text-[10px] px-1.5 py-0`}>{u.risque_ansut}</Badge>
-                    </td>
-                  </tr>
-                ))}
+                {unes.map((u, i) => {
+                  const angles = (u as any).angles || {};
+                  const angleEntries: Array<[string, any]> = [
+                    ['Pol', angles.politique],
+                    ['Soc', angles.social],
+                    ['Éco', angles.economique],
+                    ['Num', angles.numerique_telecom],
+                    ['Rep', angles.reputationnel],
+                  ];
+                  const intensityClass = (n: number) =>
+                    n >= 3 ? 'bg-red-500/15 text-red-600 border-red-500/30'
+                    : n === 2 ? 'bg-amber-500/15 text-amber-600 border-amber-500/30'
+                    : n === 1 ? 'bg-blue-500/15 text-blue-600 border-blue-500/30'
+                    : 'bg-muted/30 text-muted-foreground border-border';
+                  const activeAngles = angleEntries.filter(([, a]) => a && a.intensite >= 1);
+                  return (
+                    <tr key={i} className="border-b border-border/40 align-top">
+                      <td className="py-1.5 pr-2 font-medium whitespace-nowrap">{u.journal}</td>
+                      <td className="py-1.5 pr-2">
+                        {isValidUrl(u.url) ? (
+                          <a href={u.url} target="_blank" rel="noopener noreferrer" className="hover:underline inline-flex items-start gap-1">
+                            {u.titre}<ExternalLink className="h-3 w-3 mt-0.5 shrink-0" />
+                          </a>
+                        ) : u.titre}
+                        {u.lien_ansut && <div className="text-[10px] text-muted-foreground mt-0.5 italic">↳ {u.lien_ansut}</div>}
+                        {activeAngles.length > 0 && (
+                          <div className="mt-1.5 space-y-0.5">
+                            {activeAngles.map(([label, a]) => (
+                              <div key={label} className="text-[10px] text-muted-foreground leading-snug">
+                                <span className="font-semibold text-foreground/80">{label} :</span> {a.lecture}
+                                {a.lien_ansut_mtnd && (
+                                  <span className="ml-1 italic text-primary/80">→ {a.lien_ansut_mtnd}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-1.5 pr-2 capitalize">{u.sujet.replace('_', ' ')}</td>
+                      <td className="py-1.5 pr-2 capitalize">{u.ton}</td>
+                      <td className="py-1.5 pr-2">
+                        <div className="flex flex-col gap-1">
+                          <Badge variant="outline" className={`${RISQUE_BADGE[u.risque_ansut]} text-[10px] px-1.5 py-0 w-fit`}>{u.risque_ansut}</Badge>
+                          <div className="flex flex-wrap gap-0.5">
+                            {angleEntries.map(([label, a]) => (
+                              <Badge key={label} variant="outline"
+                                title={`${label} — intensité ${a?.intensite ?? 0}${a?.lecture ? ` : ${a.lecture}` : ''}`}
+                                className={`${intensityClass(a?.intensite ?? 0)} text-[9px] px-1 py-0 border`}>
+                                {label}
+                                {(a?.intensite ?? 0) > 0 && <span className="ml-0.5 font-bold">{a.intensite}</span>}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

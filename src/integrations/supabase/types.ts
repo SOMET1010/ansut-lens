@@ -2030,6 +2030,7 @@ export type Database = {
       titrologie_unes: {
         Row: {
           analyse_ia: Json | null
+          angles: Json | null
           collected_at: string
           created_at: string
           date_parution: string
@@ -2047,6 +2048,7 @@ export type Database = {
         }
         Insert: {
           analyse_ia?: Json | null
+          angles?: Json | null
           collected_at?: string
           created_at?: string
           date_parution?: string
@@ -2064,6 +2066,7 @@ export type Database = {
         }
         Update: {
           analyse_ia?: Json | null
+          angles?: Json | null
           collected_at?: string
           created_at?: string
           date_parution?: string

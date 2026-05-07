@@ -372,25 +372,30 @@ async function fetchTitrologie(): Promise<TitrologieResult> {
     const today = new Date().toISOString().slice(0, 10);
     const { data: stored } = await sb
       .from('titrologie_unes')
-      .select('journal,titre_une,sujet,ton,risque_ansut,lien_ansut,themes,source_url,image_url')
+      .select('journal,titre_une,sujet,ton,risque_ansut,lien_ansut,themes,source_url,image_url,angles')
       .eq('date_parution', today)
       .order('risque_ansut', { ascending: false })
       .limit(15);
 
     if (stored && stored.length > 0) {
       console.log(`[Titrologie] Using ${stored.length} pre-collected unes from DB`);
+      const unes = stored.map((r: any) => ({
+        journal: r.journal,
+        titre: r.titre_une,
+        sujet: r.sujet || 'autre',
+        ton: r.ton || 'neutre',
+        risque_ansut: r.risque_ansut || 'VERT',
+        lien_ansut: r.lien_ansut || '',
+        url: r.source_url || r.image_url || '',
+        angles: r.angles || {},
+      }));
+      // Re-synthesize CODIR layer (signaux + synthèse) from stored unes
       try {
-        return await analyzeUnesWithAI(stored.map((r: any) => ({
+        const synth = await analyzeUnesWithAI(stored.map((r: any) => ({
           journal: r.journal, titre: r.titre_une, url: r.source_url || '',
         })));
+        return { ...synth, unes };
       } catch {
-        const unes = stored.map((r: any) => ({
-          journal: r.journal, titre: r.titre_une,
-          sujet: r.sujet || 'autre', ton: r.ton || 'neutre',
-          risque_ansut: r.risque_ansut || 'VERT',
-          lien_ansut: r.lien_ansut || '',
-          url: r.source_url || r.image_url || '',
-        }));
         return { unes, synthese_codir: null, signaux_ansut: [], generated_at: new Date().toISOString() };
       }
     }
