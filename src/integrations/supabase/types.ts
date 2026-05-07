@@ -1988,6 +1988,99 @@ export type Database = {
         }
         Relationships: []
       }
+      titrologie_runs: {
+        Row: {
+          duration_ms: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          metadata: Json | null
+          run_date: string
+          started_at: string
+          status: string
+          unes_analyzed: number
+          unes_collected: number
+        }
+        Insert: {
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json | null
+          run_date?: string
+          started_at?: string
+          status?: string
+          unes_analyzed?: number
+          unes_collected?: number
+        }
+        Update: {
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          metadata?: Json | null
+          run_date?: string
+          started_at?: string
+          status?: string
+          unes_analyzed?: number
+          unes_collected?: number
+        }
+        Relationships: []
+      }
+      titrologie_unes: {
+        Row: {
+          analyse_ia: Json | null
+          collected_at: string
+          created_at: string
+          date_parution: string
+          id: string
+          image_url: string | null
+          journal: string
+          lien_ansut: string | null
+          raw_ocr: string | null
+          risque_ansut: string
+          source_url: string | null
+          sujet: string | null
+          themes: string[] | null
+          titre_une: string
+          ton: string | null
+        }
+        Insert: {
+          analyse_ia?: Json | null
+          collected_at?: string
+          created_at?: string
+          date_parution?: string
+          id?: string
+          image_url?: string | null
+          journal: string
+          lien_ansut?: string | null
+          raw_ocr?: string | null
+          risque_ansut?: string
+          source_url?: string | null
+          sujet?: string | null
+          themes?: string[] | null
+          titre_une: string
+          ton?: string | null
+        }
+        Update: {
+          analyse_ia?: Json | null
+          collected_at?: string
+          created_at?: string
+          date_parution?: string
+          id?: string
+          image_url?: string | null
+          journal?: string
+          lien_ansut?: string | null
+          raw_ocr?: string | null
+          risque_ansut?: string
+          source_url?: string | null
+          sujet?: string | null
+          themes?: string[] | null
+          titre_une?: string
+          ton?: string | null
+        }
+        Relationships: []
+      }
       user_interactions: {
         Row: {
           action: string
