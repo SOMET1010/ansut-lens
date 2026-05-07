@@ -13,7 +13,9 @@ import { MatinaleSectionShell, DrillButton, type SectionStatus } from './Matinal
 import type {
   MatinaleData, PrioriteExecutive, SyntheseItem, VeilleParPilier, VeillePilierItem,
   LectureStrategiqueItem, ImpactProjetItem, ActionImmediate, ReputationAnsut, RevueItem, ActiviteAnsut,
+  TitrologieData, UneJournal, TitrologieRisque,
 } from '@/types/matinale';
+import { Newspaper } from 'lucide-react';
 import { extractSectionKeywords, useMatinaleSectionSourceCount } from '@/hooks/useMatinaleSources';
 
 function SourceCountBadge({ data, section, freshnessHours, enabled }: {
@@ -73,13 +75,110 @@ function formatDate(d?: string): string {
 
 interface Props {
   data: MatinaleData | null | undefined;
+  titrologie?: TitrologieData | null;
   freshnessHours?: number;
   loading?: boolean;
   error?: string | null;
   onRetry?: () => void;
 }
 
-export function MatinaleSections({ data, freshnessHours = 24, loading = false, error = null, onRetry }: Props) {
+const RISQUE_BADGE: Record<TitrologieRisque, string> = {
+  ROUGE: 'bg-red-500/15 text-red-600 border-red-500/30',
+  ORANGE: 'bg-amber-500/15 text-amber-600 border-amber-500/30',
+  VERT: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
+};
+
+function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie: TitrologieData | null | undefined; status: SectionStatus; error: string | null; onRetry?: () => void }) {
+  const unes = titrologie?.unes || [];
+  const synth = titrologie?.synthese_codir;
+  const signaux = titrologie?.signaux_ansut || [];
+  const counts = unes.reduce((acc, u) => { acc[u.risque_ansut] = (acc[u.risque_ansut] || 0) + 1; return acc; }, {} as Record<string, number>);
+
+  return (
+    <MatinaleSectionShell
+      icon={Newspaper}
+      title="🗞️ Titrologie nationale du jour"
+      description="Lecture des unes ivoiriennes — sujets, ton, risque ANSUT"
+      status={status}
+      errorMessage={error || undefined}
+      onRetry={onRetry}
+      emptyHint="Aucune une collectée. Vérifiez la connexion Perplexity."
+      headerExtras={unes.length > 0 && (
+        <div className="ml-auto flex items-center gap-1.5">
+          <Badge variant="secondary" className="text-xs">{unes.length} unes</Badge>
+          {counts.ROUGE > 0 && <Badge variant="outline" className={`${RISQUE_BADGE.ROUGE} text-[10px]`}>{counts.ROUGE} ROUGE</Badge>}
+          {counts.ORANGE > 0 && <Badge variant="outline" className={`${RISQUE_BADGE.ORANGE} text-[10px]`}>{counts.ORANGE} ORANGE</Badge>}
+        </div>
+      )}
+    >
+      <div className="space-y-4">
+        {synth && (
+          <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm space-y-2">
+            <div className="text-xs font-bold uppercase text-primary">Synthèse CODIR</div>
+            {synth.sujets_dominants?.length > 0 && (
+              <div><span className="font-semibold">Sujets dominants :</span> {synth.sujets_dominants.join(' · ')}</div>
+            )}
+            {synth.impact_ansut?.length > 0 && (
+              <ul className="list-disc list-inside text-xs space-y-0.5">
+                {synth.impact_ansut.map((i, k) => <li key={k}>{i}</li>)}
+              </ul>
+            )}
+            {synth.opportunite_communication && <div className="text-xs"><span className="font-semibold text-emerald-600">Opportunité com :</span> {synth.opportunite_communication}</div>}
+            {synth.risque_a_surveiller && <div className="text-xs"><span className="font-semibold text-red-600">Risque à surveiller :</span> {synth.risque_a_surveiller}</div>}
+            <div className="text-xs pt-1 border-t border-primary/20"><span className="font-semibold">Action recommandée :</span> {synth.action_recommandee}</div>
+          </div>
+        )}
+
+        {unes.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="border-b">
+                <tr className="text-left text-muted-foreground">
+                  <th className="py-1.5 pr-2 font-medium">Journal</th>
+                  <th className="py-1.5 pr-2 font-medium">Une</th>
+                  <th className="py-1.5 pr-2 font-medium">Sujet</th>
+                  <th className="py-1.5 pr-2 font-medium">Ton</th>
+                  <th className="py-1.5 pr-2 font-medium">Risque</th>
+                </tr>
+              </thead>
+              <tbody>
+                {unes.map((u, i) => (
+                  <tr key={i} className="border-b border-border/40 align-top">
+                    <td className="py-1.5 pr-2 font-medium whitespace-nowrap">{u.journal}</td>
+                    <td className="py-1.5 pr-2">
+                      {isValidUrl(u.url) ? (
+                        <a href={u.url} target="_blank" rel="noopener noreferrer" className="hover:underline inline-flex items-start gap-1">
+                          {u.titre}<ExternalLink className="h-3 w-3 mt-0.5 shrink-0" />
+                        </a>
+                      ) : u.titre}
+                      {u.lien_ansut && <div className="text-[10px] text-muted-foreground mt-0.5 italic">↳ {u.lien_ansut}</div>}
+                    </td>
+                    <td className="py-1.5 pr-2 capitalize">{u.sujet.replace('_', ' ')}</td>
+                    <td className="py-1.5 pr-2 capitalize">{u.ton}</td>
+                    <td className="py-1.5 pr-2">
+                      <Badge variant="outline" className={`${RISQUE_BADGE[u.risque_ansut]} text-[10px] px-1.5 py-0`}>{u.risque_ansut}</Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {signaux.length > 0 && (
+          <div className="text-xs">
+            <div className="font-semibold mb-1">Signaux ANSUT détectés</div>
+            <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
+              {signaux.map((s, k) => <li key={k}>{s}</li>)}
+            </ul>
+          </div>
+        )}
+      </div>
+    </MatinaleSectionShell>
+  );
+}
+
+export function MatinaleSections({ data, titrologie, freshnessHours = 24, loading = false, error = null, onRetry }: Props) {
   const safe: MatinaleData = data || {};
   const prio: PrioriteExecutive | undefined = safe.priorite_executive;
   const synthese: SyntheseItem[] = safe.synthese_60s || [];

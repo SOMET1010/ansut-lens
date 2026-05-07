@@ -96,9 +96,41 @@ export interface MatinaleData {
   activite_ansut?: ActiviteAnsut;
 }
 
+export type TitrologieSujet = 'politique' | 'social' | 'economique' | 'numerique_telecom' | 'reputationnel' | 'international' | 'autre';
+export type TitrologieTon = 'positif' | 'neutre' | 'negatif' | 'critique';
+export type TitrologieRisque = 'VERT' | 'ORANGE' | 'ROUGE';
+
+export interface UneJournal {
+  journal: string;
+  type: 'nationale' | 'en_ligne' | 'economique';
+  titre: string;
+  resume: string;
+  url: string;
+  sujet: TitrologieSujet;
+  ton: TitrologieTon;
+  risque_ansut: TitrologieRisque;
+  lien_ansut: string;
+}
+
+export interface TitrologieSyntheseCodir {
+  sujets_dominants: string[];
+  impact_ansut: string[];
+  opportunite_communication: string | null;
+  risque_a_surveiller: string | null;
+  action_recommandee: string;
+}
+
+export interface TitrologieData {
+  unes: UneJournal[];
+  synthese_codir: TitrologieSyntheseCodir | null;
+  signaux_ansut: string[];
+  generated_at: string;
+}
+
 export type MatinaleSectionKey =
   | 'priorite_executive'
   | 'synthese_60s'
+  | 'titrologie'
   | 'veille_par_pilier'
   | 'lecture_strategique'
   | 'impact_projets_ansut'
