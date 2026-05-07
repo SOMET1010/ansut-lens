@@ -202,6 +202,7 @@ export function downloadPDF(data: TitrologieData, filter?: TitrologieExportFilte
   y = 80;
 
   writeWrapped('Agence Nationale du Service Universel des Télécommunications (ANSUT)', { size: 9, color: [120, 120, 120] });
+  if (filterLabel) writeWrapped(`Filtres : ${filterLabel} — ${filteredUnes.length}/${data.unes.length} unes`, { size: 9, color: [120, 120, 120] });
 
   const synth = data.synthese_codir;
   if (synth) {
