@@ -113,86 +113,261 @@ RÈGLES: Ne fournis QUE des articles réels avec des URLs vérifiables. Maximum 
   return { articles: unique, citations: allCitations };
 }
 
-// Fetch Ivorian press headlines (titrologie) via Perplexity
-async function fetchTitrologie(): Promise<Array<{ journal: string; titre: string; resume: string; url: string; type: string }>> {
+// ============= MODULE TITROLOGIE IVOIRIENNE =============
+// Mots-clés Service Universel / ANSUT pour scoring de risque réputationnel
+const TITROLOGIE_RISK_KEYWORDS = [
+  'ansut', 'mtnd', 'artci', 'service universel', 'zones blanches',
+  'internet', 'réseau', 'fibre', 'haut débit', 'haut-débit', '5g', '4g',
+  'satellite', 'starlink', 'ia', 'intelligence artificielle',
+  'cybersécurité', 'cyber', 'dématérialisation', 'e-services', 'eservices',
+  'administration numérique', 'inclusion numérique', 'coût de connexion',
+  'accès rural', 'numérique', 'télécom', 'télécoms', 'telecom',
+  'orange', 'mtn', 'moov', 'wave', 'datacenter', 'data center', 'cloud souverain',
+];
+
+export type UneJournal = {
+  journal: string;
+  type: 'nationale' | 'en_ligne' | 'economique';
+  titre: string;
+  resume: string;
+  url: string;
+  sujet: 'politique' | 'social' | 'economique' | 'numerique_telecom' | 'reputationnel' | 'international' | 'autre';
+  ton: 'positif' | 'neutre' | 'negatif' | 'critique';
+  risque_ansut: 'VERT' | 'ORANGE' | 'ROUGE';
+  lien_ansut: string;
+};
+
+export type TitrologieResult = {
+  unes: UneJournal[];
+  synthese_codir: {
+    sujets_dominants: string[];
+    impact_ansut: string[];
+    opportunite_communication: string | null;
+    risque_a_surveiller: string | null;
+    action_recommandee: string;
+  } | null;
+  signaux_ansut: string[];
+  generated_at: string;
+};
+
+// Étape 1 : collecte brute des unes via Perplexity multi-sources
+async function collectUnesRaw(): Promise<Array<{ journal: string; titre: string; resume: string; url: string; type: string }>> {
   const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
   if (!PERPLEXITY_API_KEY) {
-    console.warn('[Matinale] PERPLEXITY_API_KEY not configured, skipping titrologie');
+    console.warn('[Titrologie] PERPLEXITY_API_KEY manquant');
     return [];
   }
 
-  const titrologiePrompt = `Donne-moi les gros titres du jour (titrologie) des principaux journaux et médias en Côte d'Ivoire. 
+  const prompt = `Scanne les UNES (gros titres principaux) du jour de la presse ivoirienne. Couvre OBLIGATOIREMENT plusieurs sources :
+- abidjan.net/titrologie et news.abidjan.net/titrologie (agrégateur national des unes)
+- linfodrome.com
+- koaci.com
+- fratmat.info (Fraternité Matin)
+- aip.ci (Agence Ivoirienne de Presse)
+- Et si possible : Le Patriote, Notre Voie, Soir Info, L'Intelligent d'Abidjan, L'Expression
 
-Journaux à couvrir en priorité :
-- PRESSE NATIONALE : Fraternité Matin, L'Intelligent d'Abidjan, Le Patriote, Notre Voie, Soir Info, Le Nouveau Réveil, Le Jour Plus, Le Matin d'Abidjan, L'Expression
-- PRESSE EN LIGNE : Abidjan.net, Koaci, Connectionivoirienne, AIP (Agence Ivoirienne de Presse), LInfodrome
-- PRESSE ÉCONOMIQUE/TECH : CIO Mag Afrique, Agence Ecofin, Financial Afrik, TechCabal
+Pour CHAQUE journal repéré aujourd'hui, donne 1 à 2 gros titres MAX (la une). Vise 8 à 15 unes au total.
 
-Pour chaque journal trouvé, donne le ou les gros titres principaux du jour avec un résumé d'une phrase.
-
-IMPORTANT : Ne fournis que des titres RÉELS publiés aujourd'hui. Si tu ne trouves pas de titres pour un journal, ne l'inclus pas.`;
+Concentre-toi sur les sujets : politique, social, économie, numérique/télécom, IA, cybersécurité, service universel, ARTCI, MTND, ANSUT, opérateurs (Orange/MTN/Moov), zones blanches, fibre, accès rural, dématérialisation, e-services.`;
 
   try {
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Authorization': `Bearer ${PERPLEXITY_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'sonar',
         messages: [
           {
             role: 'system',
-            content: `Tu es un assistant de revue de presse ivoirienne. Réponds UNIQUEMENT en JSON valide:
+            content: `Tu es un agent de revue de presse ivoirienne. Réponds UNIQUEMENT en JSON valide :
 {
   "titres": [
-    { "journal": "Nom du journal", "titre": "Gros titre exact", "resume": "Résumé en 1 phrase", "url": "URL de l'article si disponible", "type": "nationale|en_ligne|economique" }
+    { "journal": "Nom exact", "titre": "Gros titre EXACT publié aujourd'hui", "resume": "Une phrase résumant l'article", "url": "URL réelle", "type": "nationale|en_ligne|economique" }
   ]
 }
-RÈGLES: Ne fournis QUE des titres réels publiés aujourd'hui. Maximum 15 titres.`
+RÈGLES STRICTES :
+- N'invente AUCUN titre. Si non trouvé, omettre le journal.
+- Ne reprends que les unes du JOUR (date du jour).
+- Maximum 15 titres. Diversifie les journaux.`
           },
-          { role: 'user', content: titrologiePrompt }
+          { role: 'user', content: prompt }
         ],
         search_recency_filter: 'day',
         return_citations: true,
+        temperature: 0.2,
       }),
     });
 
     if (!response.ok) {
-      console.error(`[Matinale/Titrologie] Error ${response.status}`);
+      console.error(`[Titrologie/collect] Erreur ${response.status}`);
       await response.text();
       return [];
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '';
-    const citations = data.citations || [];
+    const citations: string[] = data.citations || [];
 
-    try {
-      const jsonMatch = content.match(/\{[\s\S]*"titres"[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        if (Array.isArray(parsed.titres)) {
-          const titres = parsed.titres.map((t: any, i: number) => ({
-            journal: t.journal || 'Inconnu',
-            titre: t.titre || '',
-            resume: t.resume || '',
-            url: t.url || citations[i] || '',
-            type: t.type || 'nationale',
-          }));
-          console.log(`[Matinale/Titrologie] ${titres.length} titres récupérés`);
-          return titres;
-        }
-      }
-    } catch (e) {
-      console.error('[Matinale/Titrologie] JSON parse error:', e);
-    }
+    const jsonMatch = content.match(/\{[\s\S]*"titres"[\s\S]*\}/);
+    if (!jsonMatch) return [];
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (!Array.isArray(parsed.titres)) return [];
+
+    return parsed.titres.map((t: any, i: number) => ({
+      journal: t.journal || 'Inconnu',
+      titre: t.titre || '',
+      resume: t.resume || '',
+      url: t.url || citations[i] || '',
+      type: t.type || 'nationale',
+    })).filter((t: any) => t.titre && t.titre.length > 5);
   } catch (e) {
-    console.error('[Matinale/Titrologie] Fetch error:', e);
+    console.error('[Titrologie/collect] Exception:', e);
+    return [];
+  }
+}
+
+// Étape 2 : analyse IA (Gemini 2.5 Pro) — sujet, ton, risque ANSUT, synthèse CODIR
+async function analyzeUnesWithAI(rawUnes: Array<{ journal: string; titre: string; resume: string; url: string; type: string }>): Promise<TitrologieResult> {
+  const empty: TitrologieResult = {
+    unes: [],
+    synthese_codir: null,
+    signaux_ansut: [],
+    generated_at: new Date().toISOString(),
+  };
+
+  if (rawUnes.length === 0) return empty;
+
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY) {
+    console.warn('[Titrologie/analyze] LOVABLE_API_KEY manquant — fallback heuristique');
+    // Fallback minimal : scoring lexical
+    return {
+      ...empty,
+      unes: rawUnes.slice(0, 12).map(t => {
+        const text = `${t.titre} ${t.resume}`.toLowerCase();
+        const hits = TITROLOGIE_RISK_KEYWORDS.filter(k => text.includes(k));
+        const risque: 'VERT' | 'ORANGE' | 'ROUGE' = hits.some(h => ['ansut', 'mtnd', 'artci', 'service universel'].includes(h)) ? 'ROUGE' : hits.length > 0 ? 'ORANGE' : 'VERT';
+        return {
+          journal: t.journal,
+          type: (t.type as any) || 'nationale',
+          titre: t.titre,
+          resume: t.resume,
+          url: t.url,
+          sujet: hits.length > 0 ? 'numerique_telecom' : 'autre',
+          ton: 'neutre',
+          risque_ansut: risque,
+          lien_ansut: hits.length > 0 ? `Mots-clés détectés : ${hits.join(', ')}` : '',
+        } as UneJournal;
+      }),
+    };
   }
 
-  return [];
+  const context = rawUnes.map((t, i) => `[${i + 1}] ${t.journal} (${t.type}) : "${t.titre}" — ${t.resume}`).join('\n');
+
+  try {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-pro',
+        messages: [
+          {
+            role: 'system',
+            content: `Tu es l'analyste titrologie de l'ANSUT (Agence Nationale du Service Universel des Télécommunications, Côte d'Ivoire). Tu analyses les unes de la presse ivoirienne pour le DG.
+
+Pour CHAQUE une fournie, tu détermines :
+- sujet : politique | social | economique | numerique_telecom | reputationnel | international | autre
+- ton : positif | neutre | negatif | critique
+- risque_ansut :
+  * VERT = aucun impact ANSUT/MTND/ARTCI/Service Universel
+  * ORANGE = sujet indirect mais sensible (numérique, télécoms, opérateurs, données, cyber, accès rural)
+  * ROUGE = sujet direct ANSUT/MTND/ARTCI/Service Universel ou pouvant exiger une réaction du DG
+- lien_ansut : phrase courte expliquant le lien (vide si VERT)
+
+Puis tu produis une SYNTHÈSE CODIR (3 sujets dominants, impact ANSUT, opportunité com, risque à surveiller, action recommandée) et 1-3 signaux faibles ANSUT.
+
+INTERDICTION absolue d'inventer des titres ou journaux. Reprends UNIQUEMENT ceux du contexte.`
+          },
+          { role: 'user', content: `UNES À ANALYSER :\n${context}` }
+        ],
+        tools: [{
+          type: 'function',
+          function: {
+            name: 'analyse_titrologie',
+            description: 'Analyse stratégique des unes ivoiriennes',
+            parameters: {
+              type: 'object',
+              properties: {
+                unes: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      journal: { type: 'string' },
+                      type: { type: 'string', enum: ['nationale', 'en_ligne', 'economique'] },
+                      titre: { type: 'string' },
+                      resume: { type: 'string' },
+                      url: { type: 'string' },
+                      sujet: { type: 'string', enum: ['politique', 'social', 'economique', 'numerique_telecom', 'reputationnel', 'international', 'autre'] },
+                      ton: { type: 'string', enum: ['positif', 'neutre', 'negatif', 'critique'] },
+                      risque_ansut: { type: 'string', enum: ['VERT', 'ORANGE', 'ROUGE'] },
+                      lien_ansut: { type: 'string' },
+                    },
+                    required: ['journal', 'type', 'titre', 'resume', 'url', 'sujet', 'ton', 'risque_ansut', 'lien_ansut'],
+                  },
+                },
+                synthese_codir: {
+                  type: 'object',
+                  properties: {
+                    sujets_dominants: { type: 'array', items: { type: 'string' }, description: '3 sujets dominants du jour' },
+                    impact_ansut: { type: 'array', items: { type: 'string' }, description: '2-4 puces sur l\'impact ANSUT' },
+                    opportunite_communication: { type: ['string', 'null'] },
+                    risque_a_surveiller: { type: ['string', 'null'] },
+                    action_recommandee: { type: 'string', description: 'Préparer / ne pas préparer de réaction, et pourquoi' },
+                  },
+                  required: ['sujets_dominants', 'impact_ansut', 'opportunite_communication', 'risque_a_surveiller', 'action_recommandee'],
+                },
+                signaux_ansut: { type: 'array', items: { type: 'string' }, description: '0 à 3 signaux faibles liés ANSUT/Service Universel' },
+              },
+              required: ['unes', 'synthese_codir', 'signaux_ansut'],
+            },
+          },
+        }],
+        tool_choice: { type: 'function', function: { name: 'analyse_titrologie' } },
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(`[Titrologie/analyze] Erreur AI Gateway ${response.status}`);
+      await response.text();
+      return { ...empty, unes: rawUnes.slice(0, 12).map(t => ({ journal: t.journal, type: (t.type as any) || 'nationale', titre: t.titre, resume: t.resume, url: t.url, sujet: 'autre', ton: 'neutre', risque_ansut: 'VERT', lien_ansut: '' })) };
+    }
+
+    const data = await response.json();
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall?.function?.arguments) return empty;
+
+    const parsed = JSON.parse(toolCall.function.arguments);
+    console.log(`[Titrologie] ${parsed.unes?.length || 0} unes analysées, synthèse=${!!parsed.synthese_codir}, signaux=${parsed.signaux_ansut?.length || 0}`);
+
+    return {
+      unes: Array.isArray(parsed.unes) ? parsed.unes : [],
+      synthese_codir: parsed.synthese_codir || null,
+      signaux_ansut: Array.isArray(parsed.signaux_ansut) ? parsed.signaux_ansut : [],
+      generated_at: new Date().toISOString(),
+    };
+  } catch (e) {
+    console.error('[Titrologie/analyze] Exception:', e);
+    return empty;
+  }
+}
+
+async function fetchTitrologie(): Promise<TitrologieResult> {
+  const raw = await collectUnesRaw();
+  if (raw.length === 0) {
+    return { unes: [], synthese_codir: null, signaux_ansut: [], generated_at: new Date().toISOString() };
+  }
+  return await analyzeUnesWithAI(raw);
 }
 
 const MATINALE_PROMPT = `Tu produis la **MATINALE CODIR – ANSUT** en mode **INTELLIGENCE EXÉCUTIVE**.
