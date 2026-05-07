@@ -21,12 +21,55 @@ function fmtDate(): string {
   });
 }
 
-export function buildTitrologieMarkdown(data: TitrologieData): string {
+export interface TitrologieExportFilter {
+  angleKey?: string; // '' = tous angles
+  minIntensite?: number; // 0-3
+  sortDir?: 'asc' | 'desc';
+}
+
+function applyFilter(data: TitrologieData, filter?: TitrologieExportFilter): { unes: UneJournal[]; filterLabel: string | null } {
+  if (!filter) return { unes: data.unes, filterLabel: null };
+  const { angleKey = '', minIntensite = 0, sortDir = 'desc' } = filter;
+  const getInt = (u: any): number => {
+    const a = u?.angles || {};
+    if (angleKey) return a[angleKey]?.intensite ?? 0;
+    return Math.max(
+      a.politique?.intensite ?? 0,
+      a.social?.intensite ?? 0,
+      a.economique?.intensite ?? 0,
+      a.numerique_telecom?.intensite ?? 0,
+      a.reputationnel?.intensite ?? 0,
+    );
+  };
+  const filtered = data.unes
+    .filter(u => {
+      if (angleKey) {
+        const a = (u as any).angles?.[angleKey];
+        if (!a || (a.intensite ?? 0) < 1) return false;
+      }
+      return getInt(u) >= minIntensite;
+    })
+    .slice()
+    .sort((a, b) => sortDir === 'desc' ? getInt(b) - getInt(a) : getInt(a) - getInt(b));
+
+  const parts: string[] = [];
+  parts.push(`Angle : ${angleKey ? (ANGLE_LABELS[angleKey] || angleKey) : 'Tous'}`);
+  parts.push(`Intensité min : ${minIntensite}/3`);
+  parts.push(`Tri : ${sortDir === 'desc' ? 'décroissant' : 'croissant'}`);
+  return { unes: filtered, filterLabel: parts.join(' · ') };
+}
+
+export function buildTitrologieMarkdown(data: TitrologieData, filter?: TitrologieExportFilter): string {
   const lines: string[] = [];
   const date = fmtDate();
+  const { unes: filteredUnes, filterLabel } = applyFilter(data, filter);
   lines.push(`# Briefing Titrologie — ${date}`);
   lines.push('');
   lines.push(`_Agence Nationale du Service Universel des Télécommunications (ANSUT)_`);
+  if (filterLabel) {
+    lines.push('');
+    lines.push(`**Filtres appliqués** : ${filterLabel} — ${filteredUnes.length}/${data.unes.length} unes`);
+  }
   lines.push('');
 
   const synth = data.synthese_codir;
