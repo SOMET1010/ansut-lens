@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import {
   AlertTriangle, Zap, Layers, Scale, Target, ListChecks,
   Shield, Radar, FileText, Building2, ExternalLink, Clock,
-  CheckCircle2, XCircle, Lightbulb, MessageSquare, BarChart3,
+  CheckCircle2, XCircle, Lightbulb, MessageSquare, BarChart3, Download, FileDown,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -17,6 +18,7 @@ import type {
 } from '@/types/matinale';
 import { Newspaper } from 'lucide-react';
 import { extractSectionKeywords, useMatinaleSectionSourceCount } from '@/hooks/useMatinaleSources';
+import { downloadPDF as downloadTitrologiePDF, downloadMarkdown as downloadTitrologieMarkdown } from '@/utils/exportTitrologieBriefing';
 
 function SourceCountBadge({ data, section, freshnessHours, enabled }: {
   data: MatinaleData; section: any; freshnessHours: number; enabled: boolean;
@@ -215,10 +217,26 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
       onRetry={onRetry}
       emptyHint="Aucune une collectée. Vérifiez la connexion Perplexity."
       headerExtras={unes.length > 0 && (
-        <div className="ml-auto flex items-center gap-1.5">
+        <div className="ml-auto flex items-center gap-1.5 flex-wrap">
           <Badge variant="secondary" className="text-xs">{unes.length} unes</Badge>
           {counts.ROUGE > 0 && <Badge variant="outline" className={`${RISQUE_BADGE.ROUGE} text-[10px]`}>{counts.ROUGE} ROUGE</Badge>}
           {counts.ORANGE > 0 && <Badge variant="outline" className={`${RISQUE_BADGE.ORANGE} text-[10px]`}>{counts.ORANGE} ORANGE</Badge>}
+          <Button
+            variant="outline" size="sm"
+            className="h-7 px-2 text-[11px] gap-1"
+            onClick={() => titrologie && downloadTitrologiePDF(titrologie)}
+            title="Exporter le briefing Titrologie en PDF"
+          >
+            <FileDown className="h-3.5 w-3.5" /> PDF
+          </Button>
+          <Button
+            variant="outline" size="sm"
+            className="h-7 px-2 text-[11px] gap-1"
+            onClick={() => titrologie && downloadTitrologieMarkdown(titrologie)}
+            title="Exporter le briefing Titrologie en Markdown"
+          >
+            <Download className="h-3.5 w-3.5" /> Markdown
+          </Button>
         </div>
       )}
     >
