@@ -406,38 +406,6 @@ async function fetchTitrologie(): Promise<TitrologieResult> {
   return await analyzeUnesWithAI(raw);
 }
 
-    if (stored && stored.length > 0) {
-      console.log(`[Titrologie] Using ${stored.length} pre-collected unes from DB`);
-      const unes = stored.map((r: any) => ({
-        journal: r.journal,
-        titre: r.titre_une,
-        sujet: r.sujet || 'autre',
-        ton: r.ton || 'neutre',
-        risque_ansut: r.risque_ansut || 'VERT',
-        lien_ansut: r.lien_ansut || '',
-        url: r.source_url || r.image_url || '',
-        themes: r.themes || [],
-      }));
-      // Re-synthesize CODIR view from stored unes
-      try {
-        return await analyzeUnesWithAI(stored.map((r: any) => ({
-          journal: r.journal, titre: r.titre_une, url: r.source_url || '',
-        })));
-      } catch {
-        return { unes, synthese_codir: null, signaux_ansut: [], generated_at: new Date().toISOString() };
-      }
-    }
-  } catch (e) {
-    console.warn('[Titrologie] DB read failed, falling back to live collect:', (e as Error).message);
-  }
-
-  // 2. Fallback: live collection via Perplexity (slower, on-demand)
-  const raw = await collectUnesRaw();
-  if (raw.length === 0) {
-    return { unes: [], synthese_codir: null, signaux_ansut: [], generated_at: new Date().toISOString() };
-  }
-  return await analyzeUnesWithAI(raw);
-}
 
 const MATINALE_PROMPT = `Tu produis la **MATINALE CODIR – ANSUT** en mode **INTELLIGENCE EXÉCUTIVE**.
 Tu n'es PAS un agrégateur de presse : tu es la cellule d'intelligence stratégique du Directeur Général de l'Agence Nationale du Service Universel des Télécommunications (Côte d'Ivoire).
