@@ -13,7 +13,9 @@ import { MatinaleSectionShell, DrillButton, type SectionStatus } from './Matinal
 import type {
   MatinaleData, PrioriteExecutive, SyntheseItem, VeilleParPilier, VeillePilierItem,
   LectureStrategiqueItem, ImpactProjetItem, ActionImmediate, ReputationAnsut, RevueItem, ActiviteAnsut,
+  TitrologieData, UneJournal, TitrologieRisque,
 } from '@/types/matinale';
+import { Newspaper } from 'lucide-react';
 import { extractSectionKeywords, useMatinaleSectionSourceCount } from '@/hooks/useMatinaleSources';
 
 function SourceCountBadge({ data, section, freshnessHours, enabled }: {
