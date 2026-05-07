@@ -1988,6 +1988,39 @@ export type Database = {
         }
         Relationships: []
       }
+      titrologie_keywords: {
+        Row: {
+          actif: boolean
+          categorie: string
+          created_at: string
+          id: string
+          mot_cle: string
+          notes: string | null
+          poids: number
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          categorie?: string
+          created_at?: string
+          id?: string
+          mot_cle: string
+          notes?: string | null
+          poids?: number
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          categorie?: string
+          created_at?: string
+          id?: string
+          mot_cle?: string
+          notes?: string | null
+          poids?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       titrologie_runs: {
         Row: {
           duration_ms: number | null
@@ -2024,6 +2057,42 @@ export type Database = {
           status?: string
           unes_analyzed?: number
           unes_collected?: number
+        }
+        Relationships: []
+      }
+      titrologie_sources: {
+        Row: {
+          actif: boolean
+          created_at: string
+          id: string
+          nom: string
+          notes: string | null
+          priorite: number
+          type: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          actif?: boolean
+          created_at?: string
+          id?: string
+          nom: string
+          notes?: string | null
+          priorite?: number
+          type?: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          actif?: boolean
+          created_at?: string
+          id?: string
+          nom?: string
+          notes?: string | null
+          priorite?: number
+          type?: string
+          updated_at?: string
+          url?: string
         }
         Relationships: []
       }
