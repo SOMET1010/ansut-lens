@@ -102,10 +102,20 @@ export type TitrologieRisque = 'VERT' | 'ORANGE' | 'ROUGE';
 
 export type AngleKey = 'politique' | 'social' | 'economique' | 'numerique_telecom' | 'reputationnel';
 
+export type EntiteLien = 'ANSUT' | 'MTNIT' | 'SERVICE_UNIVERSEL';
+
+export interface AngleLien {
+  entite: EntiteLien;
+  phrase: string;          // explication 1 phrase
+  preuve?: string | null;  // citation/extrait factuel
+  sources?: string[];      // URLs de référence
+}
+
 export interface AngleAnalyse {
   intensite: 0 | 1 | 2 | 3;
   lecture?: string | null;
-  lien_ansut_mtnd?: string | null;
+  lien_ansut_mtnd?: string | null; // legacy fallback
+  liens?: AngleLien[];
 }
 
 export type UneAngles = Partial<Record<AngleKey, AngleAnalyse>>;
