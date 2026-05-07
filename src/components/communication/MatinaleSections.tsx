@@ -88,11 +88,54 @@ const RISQUE_BADGE: Record<TitrologieRisque, string> = {
   VERT: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
 };
 
+const ANGLE_OPTIONS: Array<{ value: string; label: string; key: string }> = [
+  { value: 'all', label: 'Tous les angles', key: '' },
+  { value: 'politique', label: 'Politique', key: 'politique' },
+  { value: 'social', label: 'Social', key: 'social' },
+  { value: 'economique', label: 'Économie', key: 'economique' },
+  { value: 'numerique_telecom', label: 'Numérique / Réseaux', key: 'numerique_telecom' },
+  { value: 'reputationnel', label: 'Réputationnel', key: 'reputationnel' },
+];
+
 function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie: TitrologieData | null | undefined; status: SectionStatus; error: string | null; onRetry?: () => void }) {
   const unes = titrologie?.unes || [];
   const synth = titrologie?.synthese_codir;
   const signaux = titrologie?.signaux_ansut || [];
   const counts = unes.reduce((acc, u) => { acc[u.risque_ansut] = (acc[u.risque_ansut] || 0) + 1; return acc; }, {} as Record<string, number>);
+
+  const [angleFilter, setAngleFilter] = useState<string>('all');
+  const [minIntensite, setMinIntensite] = useState<string>('0');
+  const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
+
+  const angleKey = ANGLE_OPTIONS.find(o => o.value === angleFilter)?.key || '';
+  const minVal = parseInt(minIntensite, 10) || 0;
+
+  const getIntensite = (u: any): number => {
+    const a = u?.angles || {};
+    if (angleKey) return a[angleKey]?.intensite ?? 0;
+    return Math.max(
+      a.politique?.intensite ?? 0,
+      a.social?.intensite ?? 0,
+      a.economique?.intensite ?? 0,
+      a.numerique_telecom?.intensite ?? 0,
+      a.reputationnel?.intensite ?? 0,
+    );
+  };
+
+  const filteredUnes = unes
+    .filter(u => {
+      if (angleKey) {
+        const a = (u as any).angles?.[angleKey];
+        if (!a || (a.intensite ?? 0) < 1) return false;
+      }
+      return getIntensite(u) >= minVal;
+    })
+    .slice()
+    .sort((a, b) => {
+      const da = getIntensite(a);
+      const db = getIntensite(b);
+      return sortDir === 'desc' ? db - da : da - db;
+    });
 
   return (
     <MatinaleSectionShell
