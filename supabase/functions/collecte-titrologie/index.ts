@@ -225,6 +225,7 @@ Deno.serve(async (req) => {
           lien_ansut: analysis.lien_ansut || null,
           themes: analysis.themes || [],
           raw_ocr: analysis.raw_ocr || null,
+          angles: analysis.angles || {},
           analyse_ia: analysis,
         });
         analyzed++;
