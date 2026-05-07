@@ -43,6 +43,7 @@ import AutoVeillePage from "@/pages/admin/AutoVeillePage";
 import CredibilitePDFPage from "@/pages/admin/CredibilitePDFPage";
 import ConnecteursSociauxPage from "@/pages/admin/ConnecteursSociauxPage";
 import GuideComApiSociauxPage from "@/pages/admin/GuideComApiSociauxPage";
+import TitrologieAdminPage from "@/pages/admin/TitrologieAdminPage";
 import AlertesHistoryPage from "@/pages/AlertesHistoryPage";
 import PresentationPage from "@/pages/PresentationPage";
 import ProfilePage from "@/pages/ProfilePage";
@@ -174,6 +175,7 @@ const App = () => (
                             <Route path="/admin/matinale" element={<MatinalePage />} />
                             <Route path="/admin/freshness" element={<FreshnessPage />} />
                             <Route path="/admin/scoring" element={<ScoringPage />} />
+                            <Route path="/admin/titrologie" element={<TitrologieAdminPage />} />
                           </Route>
                           
                           <Route element={<PermissionRoute permission="manage_keywords" />}>
