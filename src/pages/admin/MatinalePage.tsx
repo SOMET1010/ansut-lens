@@ -212,6 +212,7 @@ export default function MatinalePage() {
           {(matinaleData || preview.isPending || preview.isError) && (
             <MatinaleSections
               data={matinaleData || {}}
+              titrologie={titrologie}
               freshnessHours={freshness}
               loading={preview.isPending}
               error={preview.isError ? (preview.error as Error)?.message || 'Erreur de génération' : null}
