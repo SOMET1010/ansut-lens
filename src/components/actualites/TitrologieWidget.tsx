@@ -28,7 +28,7 @@ async function fetchTitrologie(): Promise<TitreJournal[]> {
   });
 
   if (error) throw error;
-  return data?.titrologie || [];
+  return (data?.titrologie?.unes || []) as TitreJournal[];
 }
 
 export function TitrologieWidget() {
