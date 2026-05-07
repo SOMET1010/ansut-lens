@@ -343,6 +343,7 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
                             {activeAngles.map(([label, a]) => (
                               <div key={label} className="text-[10px] text-muted-foreground leading-snug">
                                 <span className="font-semibold text-foreground/80">{label} :</span> {a.lecture}
+                                <span className="ml-1 inline-flex align-middle"><ConfianceBadge value={a.confiance} /></span>
                                 <AngleLiens liens={a.liens} fallback={a.lien_ansut_mtnd} />
                               </div>
                             ))}
