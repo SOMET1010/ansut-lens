@@ -113,7 +113,12 @@ Tâches :
 8. **ANALYSE PAR ANGLE** — pour chaque angle (politique, social, economique, numerique_telecom, reputationnel) :
    - intensite : 0 (absent) / 1 (faible) / 2 (moyen) / 3 (fort)
    - lecture : 1 phrase factuelle (max 25 mots) si intensite ≥ 1, sinon null
-   - lien_ansut_mtnd : lien possible avec ANSUT, MTND (Ministère de la Transition Numérique et de la Digitalisation) ou Service Universel — 1 phrase si pertinent, sinon null
+   - liens : tableau des références institutionnelles détectées (vide si aucune). Pour chaque entité concernée parmi :
+       * ANSUT (Agence Nationale du Service Universel des Télécommunications)
+       * MTNIT (Ministère de la Transition Numérique, de l'Innovation et des Télécommunications)
+       * SERVICE_UNIVERSEL (politique de service universel : zones blanches, fibre rurale, accessibilité numérique, e-services)
+     fournir : { entite, phrase (1 phrase explicative ≤ 30 mots), preuve (citation factuelle extraite de la une / OCR ou null), sources (URLs de la une si disponibles) }.
+   Ne jamais inventer un lien : si l'entité n'est pas explicitement ou implicitement concernée par l'angle, ne pas l'inclure.
 
 Réponds via l'outil structurer_une.`,
     },
@@ -123,12 +128,23 @@ Réponds via l'outil structurer_une.`,
     userParts.push({ type: 'image_url', image_url: { url: une.image_url } });
   }
 
+  const lienSchema = {
+    type: 'object',
+    properties: {
+      entite: { type: 'string', enum: ['ANSUT', 'MTNIT', 'SERVICE_UNIVERSEL'] },
+      phrase: { type: 'string' },
+      preuve: { type: ['string', 'null'] },
+      sources: { type: 'array', items: { type: 'string' } },
+    },
+    required: ['entite', 'phrase'],
+  };
+
   const angleSchema = {
     type: 'object',
     properties: {
       intensite: { type: 'integer', enum: [0, 1, 2, 3] },
       lecture: { type: ['string', 'null'] },
-      lien_ansut_mtnd: { type: ['string', 'null'] },
+      liens: { type: 'array', items: lienSchema },
     },
     required: ['intensite'],
   };
