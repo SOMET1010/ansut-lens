@@ -121,6 +121,14 @@ export interface UneJournal {
   risque_ansut: TitrologieRisque;
   lien_ansut: string;
   angles?: UneAngles;
+  risque_score?: number;
+  risque_signals?: string[];
+}
+
+export interface TitrologieRisqueDistribution {
+  ROUGE: number;
+  ORANGE: number;
+  VERT: number;
 }
 
 export interface TitrologieSyntheseCodir {
@@ -129,6 +137,10 @@ export interface TitrologieSyntheseCodir {
   opportunite_communication: string | null;
   risque_a_surveiller: string | null;
   action_recommandee: string;
+  risque_distribution?: TitrologieRisqueDistribution;
+  risque_global?: TitrologieRisque;
+  score_global?: number;
+  top_risques?: Array<{ journal: string; titre: string; score: number; risque: TitrologieRisque; signals: string[] }>;
 }
 
 export interface TitrologieData {
