@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import {
   AlertTriangle, Zap, Layers, Scale, Target, ListChecks,
   Shield, Radar, FileText, Building2, ExternalLink, Clock,
-  CheckCircle2, XCircle, Lightbulb, MessageSquare, BarChart3,
+  CheckCircle2, XCircle, Lightbulb, MessageSquare, BarChart3, Download, FileDown,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
