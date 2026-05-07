@@ -54,6 +54,7 @@ export default function MatinalePage() {
   const { data: history, isLoading: historyLoading } = useMatinaleHistory();
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [matinaleData, setMatinaleData] = useState<import('@/types/matinale').MatinaleData | null>(null);
+  const [titrologie, setTitrologie] = useState<import('@/types/matinale').TitrologieData | null>(null);
   const [freshnessMeta, setFreshnessMeta] = useState<any>(null);
   const [freshness, setFreshness] = useState<FreshnessWindow>(24);
 
@@ -61,6 +62,7 @@ export default function MatinalePage() {
     const result = await preview.mutateAsync(freshness);
     setPreviewHtml(result.html || null);
     setMatinaleData(result.matinale);
+    setTitrologie(result.titrologie || null);
     setFreshnessMeta(result.freshness || null);
   };
 
