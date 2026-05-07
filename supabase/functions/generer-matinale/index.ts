@@ -444,6 +444,8 @@ INTERDICTION absolue d'inventer des titres ou journaux. Reprends UNIQUEMENT ceux
 }
 
 async function fetchTitrologie(): Promise<TitrologieResult> {
+  let baseResult: TitrologieResult | null = null;
+
   // 1. Try to read today's pre-collected unes from titrologie_unes (cron at 06:00 UTC)
   try {
     const sb = createClient(
@@ -463,6 +465,8 @@ async function fetchTitrologie(): Promise<TitrologieResult> {
       const unes = stored.map((r: any) => ({
         journal: r.journal,
         titre: r.titre_une,
+        resume: '',
+        type: 'nationale' as const,
         sujet: r.sujet || 'autre',
         ton: r.ton || 'neutre',
         risque_ansut: r.risque_ansut || 'VERT',
@@ -470,14 +474,13 @@ async function fetchTitrologie(): Promise<TitrologieResult> {
         url: r.source_url || r.image_url || '',
         angles: r.angles || {},
       }));
-      // Re-synthesize CODIR layer (signaux + synthèse) from stored unes
       try {
         const synth = await analyzeUnesWithAI(stored.map((r: any) => ({
-          journal: r.journal, titre: r.titre_une, url: r.source_url || '',
+          journal: r.journal, titre: r.titre_une, resume: '', url: r.source_url || '', type: 'nationale',
         })));
-        return { ...synth, unes };
+        baseResult = { ...synth, unes };
       } catch {
-        return { unes, synthese_codir: null, signaux_ansut: [], generated_at: new Date().toISOString() };
+        baseResult = { unes, synthese_codir: null, signaux_ansut: [], generated_at: new Date().toISOString() };
       }
     }
   } catch (e) {
@@ -485,11 +488,15 @@ async function fetchTitrologie(): Promise<TitrologieResult> {
   }
 
   // 2. Fallback: live collection via Perplexity (slower, on-demand)
-  const raw = await collectUnesRaw();
-  if (raw.length === 0) {
-    return { unes: [], synthese_codir: null, signaux_ansut: [], generated_at: new Date().toISOString() };
+  if (!baseResult) {
+    const raw = await collectUnesRaw();
+    baseResult = raw.length === 0
+      ? { unes: [], synthese_codir: null, signaux_ansut: [], generated_at: new Date().toISOString() }
+      : await analyzeUnesWithAI(raw);
   }
-  return await analyzeUnesWithAI(raw);
+
+  // 3. Apply deterministic risk scoring + aggregate into CODIR synthesis
+  return enrichTitrologieWithRisk(baseResult);
 }
 
 
