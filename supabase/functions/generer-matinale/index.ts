@@ -138,17 +138,98 @@ export type UneJournal = {
 };
 
 export type TitrologieResult = {
-  unes: UneJournal[];
+  unes: (UneJournal & { risque_score?: number; risque_signals?: string[] })[];
   synthese_codir: {
     sujets_dominants: string[];
     impact_ansut: string[];
     opportunite_communication: string | null;
     risque_a_surveiller: string | null;
     action_recommandee: string;
+    risque_distribution?: { ROUGE: number; ORANGE: number; VERT: number };
+    risque_global?: 'VERT' | 'ORANGE' | 'ROUGE';
+    score_global?: number;
+    top_risques?: Array<{ journal: string; titre: string; score: number; risque: 'VERT' | 'ORANGE' | 'ROUGE'; signals: string[] }>;
   } | null;
   signaux_ansut: string[];
   generated_at: string;
 };
+
+// ============= SCORING DÉTERMINISTE DU RISQUE RÉPUTATIONNEL =============
+// Mots-clés pondérés (poids = points)
+const RISK_KEYWORDS_DIRECT: Record<string, number> = {
+  'ansut': 6, 'mtnd': 5, 'artci': 4, 'service universel': 5,
+  'ministère du numérique': 4, 'ministere du numerique': 4,
+};
+const RISK_KEYWORDS_SECTOR: Record<string, number> = {
+  'fibre': 3, 'haut débit': 3, 'haut-débit': 3, '5g': 3, '4g': 2,
+  'cybersécurité': 3, 'cyber': 2, 'datacenter': 3, 'data center': 3,
+  'cloud souverain': 3, 'zones blanches': 3, 'accès rural': 3,
+  'inclusion numérique': 3, 'starlink': 2, 'satellite': 2,
+  'dématérialisation': 2, 'e-services': 2, 'eservices': 2,
+  'administration numérique': 2, 'télécom': 2, 'télécoms': 2, 'telecom': 2,
+  'orange ci': 2, 'mtn ci': 2, 'moov africa': 2, 'wave': 1,
+  'ia': 1, 'intelligence artificielle': 2,
+};
+const RISK_TONE_BOOST: Record<string, number> = {
+  critique: 3, negatif: 2, alarmiste: 3, neutre: 0, positif: -1,
+};
+
+function scoreUneRisk(une: { titre: string; resume?: string; ton?: string }): { score: number; signals: string[]; risque: 'VERT' | 'ORANGE' | 'ROUGE' } {
+  const text = `${une.titre || ''} ${une.resume || ''}`.toLowerCase();
+  let score = 0;
+  const signals: string[] = [];
+  for (const [kw, w] of Object.entries(RISK_KEYWORDS_DIRECT)) {
+    if (text.includes(kw)) { score += w; signals.push(`direct:${kw}(+${w})`); }
+  }
+  for (const [kw, w] of Object.entries(RISK_KEYWORDS_SECTOR)) {
+    if (text.includes(kw)) { score += w; signals.push(`secteur:${kw}(+${w})`); }
+  }
+  const toneBoost = RISK_TONE_BOOST[(une.ton || 'neutre').toLowerCase()] ?? 0;
+  if (toneBoost !== 0) { score += toneBoost; signals.push(`ton:${une.ton}(${toneBoost >= 0 ? '+' : ''}${toneBoost})`); }
+  score = Math.max(0, score);
+  // Seuils : ≥6 ROUGE, ≥3 ORANGE, sinon VERT
+  const risque: 'VERT' | 'ORANGE' | 'ROUGE' = score >= 6 ? 'ROUGE' : score >= 3 ? 'ORANGE' : 'VERT';
+  return { score, signals, risque };
+}
+
+const RISK_RANK: Record<string, number> = { VERT: 0, ORANGE: 1, ROUGE: 2 };
+function maxRisque(a: 'VERT' | 'ORANGE' | 'ROUGE', b: 'VERT' | 'ORANGE' | 'ROUGE'): 'VERT' | 'ORANGE' | 'ROUGE' {
+  return RISK_RANK[a] >= RISK_RANK[b] ? a : b;
+}
+
+// Enrichit chaque une avec score déterministe + agrège la synthèse CODIR
+function enrichTitrologieWithRisk(result: TitrologieResult): TitrologieResult {
+  const unes = (result.unes || []).map(u => {
+    const det = scoreUneRisk({ titre: u.titre, resume: u.resume, ton: u.ton });
+    const finalRisque = maxRisque(u.risque_ansut || 'VERT', det.risque);
+    return { ...u, risque_ansut: finalRisque, risque_score: det.score, risque_signals: det.signals };
+  });
+  const distribution = unes.reduce((acc, u) => { acc[u.risque_ansut] = (acc[u.risque_ansut] || 0) + 1; return acc; }, { ROUGE: 0, ORANGE: 0, VERT: 0 } as { ROUGE: number; ORANGE: number; VERT: number });
+  const score_global = unes.reduce((s, u) => s + (u.risque_score || 0), 0);
+  const risque_global: 'VERT' | 'ORANGE' | 'ROUGE' =
+    distribution.ROUGE >= 2 ? 'ROUGE'
+    : distribution.ROUGE === 1 || distribution.ORANGE >= 3 ? 'ORANGE'
+    : distribution.ORANGE >= 1 ? 'ORANGE' : 'VERT';
+  const top_risques = [...unes]
+    .filter(u => (u.risque_score || 0) > 0)
+    .sort((a, b) => (b.risque_score || 0) - (a.risque_score || 0))
+    .slice(0, 3)
+    .map(u => ({ journal: u.journal, titre: u.titre, score: u.risque_score || 0, risque: u.risque_ansut, signals: u.risque_signals || [] }));
+  const synthese_codir = result.synthese_codir
+    ? { ...result.synthese_codir, risque_distribution: distribution, risque_global, score_global, top_risques }
+    : (unes.length > 0 ? {
+        sujets_dominants: [],
+        impact_ansut: [],
+        opportunite_communication: null,
+        risque_a_surveiller: top_risques[0] ? `${top_risques[0].journal} — ${top_risques[0].titre}` : null,
+        action_recommandee: risque_global === 'ROUGE' ? 'Préparer une réaction DG sous 24h' : risque_global === 'ORANGE' ? 'Surveiller et instruire dans la semaine' : 'Aucune action immédiate',
+        risque_distribution: distribution,
+        risque_global,
+        score_global,
+        top_risques,
+      } : null);
+  return { ...result, unes, synthese_codir };
+}
 
 // Étape 1 : collecte brute des unes via Perplexity multi-sources
 async function collectUnesRaw(): Promise<Array<{ journal: string; titre: string; resume: string; url: string; type: string }>> {
@@ -363,6 +444,8 @@ INTERDICTION absolue d'inventer des titres ou journaux. Reprends UNIQUEMENT ceux
 }
 
 async function fetchTitrologie(): Promise<TitrologieResult> {
+  let baseResult: TitrologieResult | null = null;
+
   // 1. Try to read today's pre-collected unes from titrologie_unes (cron at 06:00 UTC)
   try {
     const sb = createClient(
@@ -382,6 +465,8 @@ async function fetchTitrologie(): Promise<TitrologieResult> {
       const unes = stored.map((r: any) => ({
         journal: r.journal,
         titre: r.titre_une,
+        resume: '',
+        type: 'nationale' as const,
         sujet: r.sujet || 'autre',
         ton: r.ton || 'neutre',
         risque_ansut: r.risque_ansut || 'VERT',
@@ -389,14 +474,13 @@ async function fetchTitrologie(): Promise<TitrologieResult> {
         url: r.source_url || r.image_url || '',
         angles: r.angles || {},
       }));
-      // Re-synthesize CODIR layer (signaux + synthèse) from stored unes
       try {
         const synth = await analyzeUnesWithAI(stored.map((r: any) => ({
-          journal: r.journal, titre: r.titre_une, url: r.source_url || '',
+          journal: r.journal, titre: r.titre_une, resume: '', url: r.source_url || '', type: 'nationale',
         })));
-        return { ...synth, unes };
+        baseResult = { ...synth, unes };
       } catch {
-        return { unes, synthese_codir: null, signaux_ansut: [], generated_at: new Date().toISOString() };
+        baseResult = { unes, synthese_codir: null, signaux_ansut: [], generated_at: new Date().toISOString() };
       }
     }
   } catch (e) {
@@ -404,11 +488,15 @@ async function fetchTitrologie(): Promise<TitrologieResult> {
   }
 
   // 2. Fallback: live collection via Perplexity (slower, on-demand)
-  const raw = await collectUnesRaw();
-  if (raw.length === 0) {
-    return { unes: [], synthese_codir: null, signaux_ansut: [], generated_at: new Date().toISOString() };
+  if (!baseResult) {
+    const raw = await collectUnesRaw();
+    baseResult = raw.length === 0
+      ? { unes: [], synthese_codir: null, signaux_ansut: [], generated_at: new Date().toISOString() }
+      : await analyzeUnesWithAI(raw);
   }
-  return await analyzeUnesWithAI(raw);
+
+  // 3. Apply deterministic risk scoring + aggregate into CODIR synthesis
+  return enrichTitrologieWithRisk(baseResult);
 }
 
 

@@ -114,7 +114,20 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
       <div className="space-y-4">
         {synth && (
           <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm space-y-2">
-            <div className="text-xs font-bold uppercase text-primary">Synthèse CODIR</div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="text-xs font-bold uppercase text-primary">Synthèse CODIR</div>
+              {synth.risque_global && (
+                <Badge variant="outline" className={`${RISQUE_BADGE[synth.risque_global]} text-[10px]`}>
+                  Risque global : {synth.risque_global}
+                  {typeof synth.score_global === 'number' && ` · ${synth.score_global} pts`}
+                </Badge>
+              )}
+              {synth.risque_distribution && (
+                <span className="text-[10px] text-muted-foreground">
+                  {synth.risque_distribution.ROUGE}🔴 / {synth.risque_distribution.ORANGE}🟠 / {synth.risque_distribution.VERT}🟢
+                </span>
+              )}
+            </div>
             {synth.sujets_dominants?.length > 0 && (
               <div><span className="font-semibold">Sujets dominants :</span> {synth.sujets_dominants.join(' · ')}</div>
             )}
@@ -122,6 +135,19 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
               <ul className="list-disc list-inside text-xs space-y-0.5">
                 {synth.impact_ansut.map((i, k) => <li key={k}>{i}</li>)}
               </ul>
+            )}
+            {synth.top_risques && synth.top_risques.length > 0 && (
+              <div className="text-xs space-y-1 pt-1 border-t border-primary/20">
+                <div className="font-semibold">Top risques détectés :</div>
+                <ul className="space-y-0.5">
+                  {synth.top_risques.map((r, k) => (
+                    <li key={k} className="flex items-start gap-1.5">
+                      <Badge variant="outline" className={`${RISQUE_BADGE[r.risque]} text-[9px] px-1 py-0 shrink-0`}>{r.score}</Badge>
+                      <span className="flex-1"><span className="font-medium">{r.journal}</span> — {r.titre}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
             {synth.opportunite_communication && <div className="text-xs"><span className="font-semibold text-emerald-600">Opportunité com :</span> {synth.opportunite_communication}</div>}
             {synth.risque_a_surveiller && <div className="text-xs"><span className="font-semibold text-red-600">Risque à surveiller :</span> {synth.risque_a_surveiller}</div>}
