@@ -94,6 +94,28 @@ const ENTITE_META: Record<string, { label: string; cls: string }> = {
   SERVICE_UNIVERSEL: { label: 'Service Universel', cls: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30' },
 };
 
+function confianceClass(c?: number): string {
+  if (typeof c !== 'number') return 'bg-muted text-muted-foreground border-border';
+  if (c >= 75) return 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30';
+  if (c >= 50) return 'bg-blue-500/15 text-blue-600 border-blue-500/30';
+  if (c >= 25) return 'bg-amber-500/15 text-amber-600 border-amber-500/30';
+  return 'bg-red-500/15 text-red-600 border-red-500/30';
+}
+
+function ConfianceBadge({ value, prefix = 'Confiance' }: { value?: number; prefix?: string }) {
+  if (typeof value !== 'number') return null;
+  const v = Math.max(0, Math.min(100, Math.round(value)));
+  return (
+    <Badge
+      variant="outline"
+      title={`${prefix} : ${v}/100`}
+      className={`${confianceClass(v)} text-[9px] px-1 py-0 border shrink-0`}
+    >
+      {prefix === 'Confiance' ? '✓' : prefix} {v}
+    </Badge>
+  );
+}
+
 function AngleLiens({ liens, fallback }: { liens?: any[]; fallback?: string | null }) {
   const list = Array.isArray(liens) ? liens.filter(l => l && l.entite && l.phrase) : [];
   if (list.length === 0) {
@@ -109,7 +131,10 @@ function AngleLiens({ liens, fallback }: { liens?: any[]; fallback?: string | nu
           <li key={idx} className="text-[10px] leading-snug flex items-start gap-1.5">
             <Badge variant="outline" className={`${meta.cls} text-[9px] px-1 py-0 border shrink-0`}>{meta.label}</Badge>
             <div className="flex-1 min-w-0">
-              <div className="text-foreground/90">{l.phrase}</div>
+              <div className="text-foreground/90 flex items-start gap-1.5 flex-wrap">
+                <span>{l.phrase}</span>
+                <ConfianceBadge value={l.confiance} />
+              </div>
               {l.preuve && (
                 <div className="text-muted-foreground italic">« {l.preuve} »</div>
               )}
@@ -318,6 +343,7 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
                             {activeAngles.map(([label, a]) => (
                               <div key={label} className="text-[10px] text-muted-foreground leading-snug">
                                 <span className="font-semibold text-foreground/80">{label} :</span> {a.lecture}
+                                <span className="ml-1 inline-flex align-middle"><ConfianceBadge value={a.confiance} /></span>
                                 <AngleLiens liens={a.liens} fallback={a.lien_ansut_mtnd} />
                               </div>
                             ))}

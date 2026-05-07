@@ -117,7 +117,8 @@ Tâches :
        * ANSUT (Agence Nationale du Service Universel des Télécommunications)
        * MTNIT (Ministère de la Transition Numérique, de l'Innovation et des Télécommunications)
        * SERVICE_UNIVERSEL (politique de service universel : zones blanches, fibre rurale, accessibilité numérique, e-services)
-     fournir : { entite, phrase (1 phrase explicative ≤ 30 mots), preuve (citation factuelle extraite de la une / OCR ou null), sources (URLs de la une si disponibles) }.
+     fournir : { entite, phrase (1 phrase explicative ≤ 30 mots), preuve (citation factuelle extraite de la une / OCR ou null), sources (URLs de la une si disponibles), confiance (entier 0-100 reflétant la solidité du rattachement à l'entité — 0 spéculatif, 100 explicitement nommé/cité) }.
+   - confiance : entier 0-100 reflétant la fiabilité globale de l'analyse de cet angle (lecture OCR + interprétation).
    Ne jamais inventer un lien : si l'entité n'est pas explicitement ou implicitement concernée par l'angle, ne pas l'inclure.
 
 Réponds via l'outil structurer_une.`,
@@ -135,6 +136,7 @@ Réponds via l'outil structurer_une.`,
       phrase: { type: 'string' },
       preuve: { type: ['string', 'null'] },
       sources: { type: 'array', items: { type: 'string' } },
+      confiance: { type: 'integer', minimum: 0, maximum: 100 },
     },
     required: ['entite', 'phrase'],
   };
@@ -145,6 +147,7 @@ Réponds via l'outil structurer_une.`,
       intensite: { type: 'integer', enum: [0, 1, 2, 3] },
       lecture: { type: ['string', 'null'] },
       liens: { type: 'array', items: lienSchema },
+      confiance: { type: 'integer', minimum: 0, maximum: 100 },
     },
     required: ['intensite'],
   };

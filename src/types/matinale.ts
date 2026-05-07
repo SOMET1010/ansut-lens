@@ -106,16 +106,18 @@ export type EntiteLien = 'ANSUT' | 'MTNIT' | 'SERVICE_UNIVERSEL';
 
 export interface AngleLien {
   entite: EntiteLien;
-  phrase: string;          // explication 1 phrase
-  preuve?: string | null;  // citation/extrait factuel
-  sources?: string[];      // URLs de référence
+  phrase: string;
+  preuve?: string | null;
+  sources?: string[];
+  confiance?: number; // 0-100
 }
 
 export interface AngleAnalyse {
   intensite: 0 | 1 | 2 | 3;
   lecture?: string | null;
-  lien_ansut_mtnd?: string | null; // legacy fallback
+  lien_ansut_mtnd?: string | null;
   liens?: AngleLien[];
+  confiance?: number; // 0-100
 }
 
 export type UneAngles = Partial<Record<AngleKey, AngleAnalyse>>;
