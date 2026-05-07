@@ -365,13 +365,46 @@ INTERDICTION absolue d'inventer des titres ou journaux. Reprends UNIQUEMENT ceux
 async function fetchTitrologie(): Promise<TitrologieResult> {
   // 1. Try to read today's pre-collected unes from titrologie_unes (cron at 06:00 UTC)
   try {
+    const sb = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
     const today = new Date().toISOString().slice(0, 10);
-    const { data: stored } = await supabase
+    const { data: stored } = await sb
       .from('titrologie_unes')
       .select('journal,titre_une,sujet,ton,risque_ansut,lien_ansut,themes,source_url,image_url')
       .eq('date_parution', today)
       .order('risque_ansut', { ascending: false })
       .limit(15);
+
+    if (stored && stored.length > 0) {
+      console.log(`[Titrologie] Using ${stored.length} pre-collected unes from DB`);
+      try {
+        return await analyzeUnesWithAI(stored.map((r: any) => ({
+          journal: r.journal, titre: r.titre_une, url: r.source_url || '',
+        })));
+      } catch {
+        const unes = stored.map((r: any) => ({
+          journal: r.journal, titre: r.titre_une,
+          sujet: r.sujet || 'autre', ton: r.ton || 'neutre',
+          risque_ansut: r.risque_ansut || 'VERT',
+          lien_ansut: r.lien_ansut || '',
+          url: r.source_url || r.image_url || '',
+        }));
+        return { unes, synthese_codir: null, signaux_ansut: [], generated_at: new Date().toISOString() };
+      }
+    }
+  } catch (e) {
+    console.warn('[Titrologie] DB read failed, falling back to live collect:', (e as Error).message);
+  }
+
+  // 2. Fallback: live collection via Perplexity (slower, on-demand)
+  const raw = await collectUnesRaw();
+  if (raw.length === 0) {
+    return { unes: [], synthese_codir: null, signaux_ansut: [], generated_at: new Date().toISOString() };
+  }
+  return await analyzeUnesWithAI(raw);
+}
 
     if (stored && stored.length > 0) {
       console.log(`[Titrologie] Using ${stored.length} pre-collected unes from DB`);
