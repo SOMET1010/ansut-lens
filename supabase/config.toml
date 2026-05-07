@@ -95,3 +95,6 @@ verify_jwt = false
 
 [functions.profil-veille]
 verify_jwt = false
+
+[functions.collecte-titrologie]
+verify_jwt = false
