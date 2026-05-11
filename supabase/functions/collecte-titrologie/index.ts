@@ -199,9 +199,9 @@ Réponds via l'outil structurer_une.`,
     properties: {
       entite: { type: 'string', enum: ['ANSUT', 'MTNIT', 'SERVICE_UNIVERSEL'] },
       phrase: { type: 'string' },
-      preuve: { type: ['string', 'null'] },
+      preuve: { type: 'string', description: 'Citation factuelle, vide si non disponible' },
       sources: { type: 'array', items: { type: 'string' } },
-      confiance: { type: 'integer', minimum: 0, maximum: 100 },
+      confiance: { type: 'integer', description: '0-100 fiabilité du lien' },
     },
     required: ['entite', 'phrase'],
   };
@@ -209,10 +209,10 @@ Réponds via l'outil structurer_une.`,
   const angleSchema = {
     type: 'object',
     properties: {
-      intensite: { type: 'integer', enum: [0, 1, 2, 3] },
-      lecture: { type: ['string', 'null'] },
+      intensite: { type: 'integer', description: '0=absent,1=faible,2=moyen,3=fort' },
+      lecture: { type: 'string', description: 'Vide si intensite=0' },
       liens: { type: 'array', items: lienSchema },
-      confiance: { type: 'integer', minimum: 0, maximum: 100 },
+      confiance: { type: 'integer', description: '0-100 fiabilité de l analyse' },
     },
     required: ['intensite'],
   };
@@ -235,13 +235,13 @@ Réponds via l'outil structurer_une.`,
             raw_ocr: { type: 'string' },
             titre_principal: { type: 'string' },
             titres_secondaires: { type: 'array', items: { type: 'string' }, description: 'Titres secondaires lus sur la une (chacun séparé)' },
-            ocr_confidence: { type: 'integer', minimum: 0, maximum: 100, description: 'Confiance globale de la lecture OCR (0=illisible, 100=parfait)' },
+            ocr_confidence: { type: 'integer', description: '0-100 fiabilité OCR' },
             ocr_warnings: { type: 'array', items: { type: 'string' }, description: 'Anomalies/erreurs OCR détectées (flou, troncature, charabia…)' },
             sujet: { type: 'string', enum: ['politique','economie','social','sport','telecom_numerique','securite','international','autre'] },
             ton: { type: 'string', enum: ['positif','negatif','neutre','alarmiste','critique'] },
             risque_ansut: { type: 'string', enum: ['VERT','ORANGE','ROUGE'] },
             themes: { type: 'array', items: { type: 'string' } },
-            lien_ansut: { type: ['string','null'] },
+            lien_ansut: { type: 'string', description: 'Vide si pas de lien' },
             angles: {
               type: 'object',
               properties: {
@@ -269,7 +269,7 @@ Réponds via l'outil structurer_une.`,
 
   if (!resp.ok) {
     const t = await resp.text();
-    throw new Error(`Gateway ${resp.status}: ${t.slice(0, 200)}`);
+    throw new Error(`Gateway ${resp.status}: ${t.slice(0, 800)}`);
   }
   const data = await resp.json();
   const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
