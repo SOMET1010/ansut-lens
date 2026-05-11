@@ -201,7 +201,7 @@ Réponds via l'outil structurer_une.`,
       phrase: { type: 'string' },
       preuve: { type: 'string', description: 'Citation factuelle, vide si non disponible' },
       sources: { type: 'array', items: { type: 'string' } },
-      confiance: { type: 'integer', minimum: 0, maximum: 100 },
+      confiance: { type: 'integer', description: '0-100 fiabilité du lien' },
     },
     required: ['entite', 'phrase'],
   };
@@ -209,10 +209,10 @@ Réponds via l'outil structurer_une.`,
   const angleSchema = {
     type: 'object',
     properties: {
-      intensite: { type: 'integer', enum: [0, 1, 2, 3] },
+      intensite: { type: 'integer', description: '0=absent,1=faible,2=moyen,3=fort' },
       lecture: { type: 'string', description: 'Vide si intensite=0' },
       liens: { type: 'array', items: lienSchema },
-      confiance: { type: 'integer', minimum: 0, maximum: 100 },
+      confiance: { type: 'integer', description: '0-100 fiabilité de l analyse' },
     },
     required: ['intensite'],
   };
