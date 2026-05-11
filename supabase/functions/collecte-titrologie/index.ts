@@ -59,32 +59,48 @@ function guessJournal(input: string): string {
   return cleaned ? cleaned.replace(/\b\w/g, (c) => c.toUpperCase()) : 'Journal';
 }
 
+// Stats de collecte par source (logs techniques exposés à l'admin)
+interface SourceStat {
+  source: string;
+  url: string;
+  nombre_images_detectees: number;
+  nombre_images_traitees: number;
+  nombre_erreurs_ocr: number;
+  dernier_scan: string;
+  statut: 'success' | 'partial' | 'error';
+  error?: string | null;
+}
+
+interface ScrapeOutcome { unes: RawUne[]; stat: SourceStat; }
+
 // 1. Discover front pages via Firecrawl scraping (Phase 1: Abidjan.net + Presse CI)
-async function scrapeSourceForUnes(src: ScrapeSource): Promise<RawUne[]> {
-  if (!FIRECRAWL_API_KEY) throw new Error('FIRECRAWL_API_KEY missing');
+async function scrapeSourceForUnes(src: ScrapeSource): Promise<ScrapeOutcome> {
+  const stat: SourceStat = {
+    source: src.name, url: src.url,
+    nombre_images_detectees: 0, nombre_images_traitees: 0, nombre_erreurs_ocr: 0,
+    dernier_scan: new Date().toISOString(), statut: 'success', error: null,
+  };
+  if (!FIRECRAWL_API_KEY) {
+    stat.statut = 'error'; stat.error = 'FIRECRAWL_API_KEY missing';
+    return { unes: [], stat };
+  }
 
   const resp = await fetch('https://api.firecrawl.dev/v2/scrape', {
     method: 'POST',
     headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      url: src.url,
-      formats: ['html', 'links', 'markdown'],
-      onlyMainContent: false,
-      waitFor: 1500,
-    }),
+    body: JSON.stringify({ url: src.url, formats: ['html', 'links', 'markdown'], onlyMainContent: false, waitFor: 1500 }),
   });
-
   if (!resp.ok) {
     const t = await resp.text();
-    console.error(`[Titrologie] Firecrawl ${src.key} ${resp.status}: ${t.slice(0, 200)}`);
-    return [];
+    stat.statut = 'error'; stat.error = `Firecrawl ${resp.status}: ${t.slice(0,160)}`;
+    console.error(`[Titrologie] ${stat.error}`);
+    return { unes: [], stat };
   }
   const payload = await resp.json();
   const data = payload?.data ?? payload;
   const html: string = data?.html || data?.rawHtml || '';
-  if (!html) return [];
+  if (!html) { stat.statut = 'error'; stat.error = 'HTML vide'; return { unes: [], stat }; }
 
-  // Extract <img src=... alt=...> matching plausible une images
   const unes: RawUne[] = [];
   const seen = new Set<string>();
   const imgRe = /<img\b[^>]*?>/gi;
@@ -93,14 +109,12 @@ async function scrapeSourceForUnes(src: ScrapeSource): Promise<RawUne[]> {
   const titleRe = /\btitle\s*=\s*"([^"]*)"|\btitle\s*=\s*'([^']*)'/i;
 
   const matches = html.match(imgRe) || [];
+  stat.nombre_images_detectees = matches.length;
   for (const tag of matches) {
-    const sm = tag.match(srcRe);
-    const am = tag.match(altRe);
-    const tm = tag.match(titleRe);
+    const sm = tag.match(srcRe); const am = tag.match(altRe); const tm = tag.match(titleRe);
     const rawSrc = sm ? (sm[1] || sm[2]) : '';
     if (!rawSrc) continue;
     const url = absoluteUrl(rawSrc, src.url);
-    // Filter: must look like a press front page image, exclude logos/sprites/icons
     if (!/\.(jpe?g|png|webp)(\?|$)/i.test(url)) continue;
     if (/(logo|sprite|icon|avatar|banner|pub|advert|placeholder|share|social|facebook|twitter|whatsapp)/i.test(url)) continue;
     if (seen.has(url)) continue;
@@ -108,35 +122,37 @@ async function scrapeSourceForUnes(src: ScrapeSource): Promise<RawUne[]> {
     const altText = (am ? (am[1] || am[2]) : '') || (tm ? (tm[1] || tm[2]) : '');
     const fname = url.split('/').pop() || '';
     const journal = guessJournal(altText || fname);
-    unes.push({
-      journal,
-      titre_une: altText || `Une ${journal}`,
-      image_url: url,
-      source_url: src.url,
-    });
+    unes.push({ journal, titre_une: altText || `Une ${journal}`, image_url: url, source_url: src.url });
     if (unes.length >= 20) break;
   }
-  console.log(`[Titrologie] ${src.key}: ${unes.length} unes détectées`);
-  return unes;
+  console.log(`[Titrologie] ${src.key}: ${unes.length}/${stat.nombre_images_detectees} unes retenues`);
+  return { unes, stat };
 }
 
-async function discoverUnes(): Promise<RawUne[]> {
+async function discoverUnes(): Promise<{ unes: RawUne[]; stats: SourceStat[] }> {
   const all: RawUne[] = [];
+  const stats: SourceStat[] = [];
   for (const src of TITROLOGIE_SOURCES) {
     try {
-      const list = await scrapeSourceForUnes(src);
-      all.push(...list);
+      const out = await scrapeSourceForUnes(src);
+      all.push(...out.unes);
+      stats.push(out.stat);
     } catch (e) {
-      console.error(`[Titrologie] scrape ${src.key} failed:`, e instanceof Error ? e.message : e);
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[Titrologie] scrape ${src.key} failed:`, msg);
+      stats.push({
+        source: src.name, url: src.url,
+        nombre_images_detectees: 0, nombre_images_traitees: 0, nombre_erreurs_ocr: 0,
+        dernier_scan: new Date().toISOString(), statut: 'error', error: msg,
+      });
     }
   }
-  // Déduplication par image_url
   const dedup = new Map<string, RawUne>();
   for (const u of all) {
     const key = u.image_url || `${u.journal}::${u.titre_une}`;
     if (!dedup.has(key)) dedup.set(key, u);
   }
-  return Array.from(dedup.values()).slice(0, 16);
+  return { unes: Array.from(dedup.values()).slice(0, 16), stats };
 }
 
 
@@ -149,14 +165,17 @@ async function ocrAndAnalyze(une: RawUne): Promise<any> {
       type: 'text',
       text: `Analyse cette une de presse ivoirienne (journal: ${une.journal}). Titre indicatif : "${une.titre_une}".
 Tâches :
-1. OCR : extrait tous les titres visibles (gros titres, sous-titres).
+1. OCR : extrait tous les titres visibles (gros titres, sous-titres). Renvoie le texte brut concaténé dans raw_ocr.
 2. Titre principal de la une.
-3. Sujet dominant.
-4. Ton.
-5. Risque ANSUT (VERT/ORANGE/ROUGE) selon proximité avec : ${ANSUT_KEYWORDS.join(', ')}.
-6. 2-5 thèmes clés (mots courts).
-7. Lien ANSUT direct/indirect en 1 phrase, sinon null.
-8. **ANALYSE PAR ANGLE** — pour chaque angle (politique, social, economique, numerique_telecom, reputationnel) :
+3. titres_secondaires : tableau des autres titres visibles (chapeaux, sous-titres, encadrés), un titre par item, déjà nettoyés.
+4. ocr_confidence (0-100) : confiance globale de la lecture OCR (qualité d'image, netteté, lisibilité). 0 = illisible, 100 = parfait.
+5. ocr_warnings : tableau d'anomalies détectées (image floue, titre tronqué, texte illisible, charabia OCR…). Vide si propre.
+6. Sujet dominant.
+7. Ton.
+8. Risque ANSUT (VERT/ORANGE/ROUGE) selon proximité avec : ${ANSUT_KEYWORDS.join(', ')}.
+9. 2-5 thèmes clés (mots courts).
+10. Lien ANSUT direct/indirect en 1 phrase, sinon null.
+11. **ANALYSE PAR ANGLE** — pour chaque angle (politique, social, economique, numerique_telecom, reputationnel) :
    - intensite : 0 (absent) / 1 (faible) / 2 (moyen) / 3 (fort)
    - lecture : 1 phrase factuelle (max 25 mots) si intensite ≥ 1, sinon null
    - liens : tableau des références institutionnelles détectées (vide si aucune). Pour chaque entité concernée parmi :
@@ -215,6 +234,9 @@ Réponds via l'outil structurer_une.`,
           properties: {
             raw_ocr: { type: 'string' },
             titre_principal: { type: 'string' },
+            titres_secondaires: { type: 'array', items: { type: 'string' }, description: 'Titres secondaires lus sur la une (chacun séparé)' },
+            ocr_confidence: { type: 'integer', minimum: 0, maximum: 100, description: 'Confiance globale de la lecture OCR (0=illisible, 100=parfait)' },
+            ocr_warnings: { type: 'array', items: { type: 'string' }, description: 'Anomalies/erreurs OCR détectées (flou, troncature, charabia…)' },
             sujet: { type: 'string', enum: ['politique','economie','social','sport','telecom_numerique','securite','international','autre'] },
             ton: { type: 'string', enum: ['positif','negatif','neutre','alarmiste','critique'] },
             risque_ansut: { type: 'string', enum: ['VERT','ORANGE','ROUGE'] },
@@ -232,7 +254,7 @@ Réponds via l'outil structurer_une.`,
               required: ['politique','social','economique','numerique_telecom','reputationnel'],
             },
           },
-          required: ['titre_principal','sujet','ton','risque_ansut','themes','angles'],
+          required: ['titre_principal','sujet','ton','risque_ansut','themes','angles','ocr_confidence'],
         },
       },
     }],
@@ -269,15 +291,20 @@ Deno.serve(async (req) => {
 
   try {
     console.log('[Titrologie] Discovering unes...');
-    const rawUnes = await discoverUnes();
+    const { unes: rawUnes, stats: sourceStats } = await discoverUnes();
     console.log(`[Titrologie] Found ${rawUnes.length} raw unes`);
 
     let analyzed = 0;
     const inserts: any[] = [];
 
+    // Map source name → stat for incrementing OCR counters
+    const statByUrl = new Map<string, SourceStat>(sourceStats.map(s => [s.url, s]));
+
     for (const une of rawUnes) {
+      const stat = une.source_url ? statByUrl.get(une.source_url) : undefined;
       try {
         const analysis = await ocrAndAnalyze(une);
+        if (stat) stat.nombre_images_traitees++;
         inserts.push({
           date_parution: today,
           journal: une.journal,
@@ -295,12 +322,12 @@ Deno.serve(async (req) => {
         });
         analyzed++;
       } catch (e) {
+        if (stat) { stat.nombre_erreurs_ocr++; if (stat.statut === 'success') stat.statut = 'partial'; }
         console.error(`[Titrologie] Analyze failed for ${une.journal}:`, e instanceof Error ? e.message : e);
       }
     }
 
     if (inserts.length > 0) {
-      // Replace today's entries
       await supabase.from('titrologie_unes').delete().eq('date_parution', today);
       const { error: insErr } = await supabase.from('titrologie_unes').insert(inserts);
       if (insErr) throw insErr;
@@ -312,10 +339,11 @@ Deno.serve(async (req) => {
       unes_analyzed: analyzed,
       duration_ms: Date.now() - startedAt,
       finished_at: new Date().toISOString(),
+      metadata: { sources: sourceStats },
     }).eq('id', runId);
 
     return new Response(JSON.stringify({
-      ok: true, date: today, collected: rawUnes.length, analyzed, inserted: inserts.length,
+      ok: true, date: today, collected: rawUnes.length, analyzed, inserted: inserts.length, sources: sourceStats,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

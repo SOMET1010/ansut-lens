@@ -8,13 +8,16 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Newspaper, Plus, Save, Trash2, Tags, Globe, AlertTriangle, Clock } from 'lucide-react';
+import { Newspaper, Plus, Save, Trash2, Tags, Globe, AlertTriangle, Clock, Activity, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import {
   useTitrologieSources, useUpsertSource, useDeleteSource,
   useTitrologieKeywords, useUpsertKeyword, useDeleteKeyword,
   useTitrologieSettings, useUpdateTitrologieSettings,
   type TitrologieSettings,
 } from '@/hooks/useTitrologieAdmin';
+import { useTitrologieRuns } from '@/hooks/useTitrologieRuns';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 const sourceSchema = z.object({
   nom: z.string().trim().min(2).max(100),
@@ -89,6 +92,7 @@ export default function TitrologieAdminPage() {
           <TabsTrigger value="settings"><Clock className="h-4 w-4 mr-1.5" />Fréquence & seuils</TabsTrigger>
           <TabsTrigger value="sources"><Globe className="h-4 w-4 mr-1.5" />Sources ({sourcesQ.data?.length || 0})</TabsTrigger>
           <TabsTrigger value="keywords"><Tags className="h-4 w-4 mr-1.5" />Mots-clés ({kwQ.data?.length || 0})</TabsTrigger>
+          <TabsTrigger value="logs"><Activity className="h-4 w-4 mr-1.5" />Logs techniques</TabsTrigger>
         </TabsList>
 
         {/* ---------- Settings ---------- */}
@@ -224,7 +228,90 @@ export default function TitrologieAdminPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        {/* ---------- Logs techniques ---------- */}
+        <TabsContent value="logs" className="space-y-4">
+          <LogsTechniques />
+        </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function statutBadge(s: string) {
+  if (s === 'success') return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 text-[10px]"><CheckCircle2 className="h-3 w-3 mr-1" />OK</Badge>;
+  if (s === 'partial') return <Badge className="bg-amber-100 text-amber-700 border-amber-300 text-[10px]"><AlertCircle className="h-3 w-3 mr-1" />Partiel</Badge>;
+  if (s === 'error') return <Badge className="bg-red-100 text-red-700 border-red-300 text-[10px]"><XCircle className="h-3 w-3 mr-1" />Erreur</Badge>;
+  return <Badge variant="outline" className="text-[10px]">{s}</Badge>;
+}
+
+function LogsTechniques() {
+  const runsQ = useTitrologieRuns(20);
+  const runs = runsQ.data || [];
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Historique des collectes (20 dernières)</CardTitle>
+        <CardDescription>Suivi par source : images détectées, traitées, erreurs OCR, statut.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {runsQ.isLoading ? <p className="text-sm text-muted-foreground">Chargement…</p> : runs.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Aucune collecte enregistrée.</p>
+        ) : (
+          <div className="space-y-4">
+            {runs.map(run => {
+              const sources = run.metadata?.sources || [];
+              return (
+                <div key={run.id} className="rounded-md border border-border p-3 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap text-sm">
+                    <span className="font-semibold">{run.run_date}</span>
+                    {statutBadge(run.status)}
+                    <span className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(run.started_at), { addSuffix: true, locale: fr })}
+                    </span>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {run.unes_collected} unes collectées · {run.unes_analyzed} analysées
+                      {run.duration_ms ? ` · ${(run.duration_ms / 1000).toFixed(1)}s` : ''}
+                    </span>
+                  </div>
+                  {run.error && <div className="text-xs text-red-600">⚠ {run.error}</div>}
+                  {sources.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="text-left border-b text-muted-foreground">
+                            <th className="py-1.5 pr-2">Source</th>
+                            <th className="pr-2">URL</th>
+                            <th className="pr-2 text-right">Images détectées</th>
+                            <th className="pr-2 text-right">Traitées</th>
+                            <th className="pr-2 text-right">Erreurs OCR</th>
+                            <th className="pr-2">Dernier scan</th>
+                            <th>Statut</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sources.map((s, i) => (
+                            <tr key={i} className="border-b last:border-0">
+                              <td className="py-1.5 pr-2 font-medium">{s.source}</td>
+                              <td className="pr-2"><a href={s.url} target="_blank" rel="noreferrer" className="text-primary underline truncate inline-block max-w-[220px]">{s.url}</a></td>
+                              <td className="pr-2 text-right">{s.nombre_images_detectees}</td>
+                              <td className="pr-2 text-right">{s.nombre_images_traitees}</td>
+                              <td className="pr-2 text-right">{s.nombre_erreurs_ocr}</td>
+                              <td className="pr-2 text-muted-foreground">{new Date(s.dernier_scan).toLocaleTimeString('fr-FR')}</td>
+                              <td>{statutBadge(s.statut)}{s.error && <div className="text-[10px] text-red-600 mt-0.5">{s.error}</div>}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">Pas de détail par source (collecte antérieure au tracking).</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

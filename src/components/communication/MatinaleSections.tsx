@@ -75,6 +75,88 @@ function formatDate(d?: string): string {
   return format(p, 'dd MMM yyyy', { locale: fr });
 }
 
+const TITROLOGIE_SOURCES_LIST = ['Abidjan.net', 'Presse Côte d\'Ivoire'];
+
+function TitrologieBilanBlock({
+  unes, synth,
+}: { unes: any[]; synth: any | undefined | null }) {
+  const journauxDetectes = new Set(unes.map(u => (u.journal || '').trim()).filter(Boolean)).size;
+  const unesExploitables = unes.filter(u => {
+    const conf = u?.analyse_ia?.ocr_confidence ?? 100;
+    return conf >= 40 && (u.titre_une || '').length > 3;
+  }).length;
+  const sujets = synth?.sujets_dominants?.slice(0, 3) || [];
+  const impacts = synth?.impact_ansut?.slice(0, 3) || [];
+  const risque: TitrologieRisque = synth?.risque_global || (() => {
+    const counts = unes.reduce((a, u) => { a[u.risque_ansut] = (a[u.risque_ansut] || 0) + 1; return a; }, {} as Record<string, number>);
+    if ((counts.ROUGE || 0) > 0) return 'ROUGE';
+    if ((counts.ORANGE || 0) > 0) return 'ORANGE';
+    return 'VERT';
+  })();
+  const action = synth?.action_recommandee || (risque === 'ROUGE'
+    ? 'Activer la cellule de communication et préparer une réponse officielle dans les 4h.'
+    : risque === 'ORANGE'
+      ? 'Surveillance renforcée + briefing DG dans la journée.'
+      : 'Veille passive — aucune action immédiate requise.');
+
+  return (
+    <div className="rounded-md border-2 border-primary/40 bg-gradient-to-br from-primary/5 to-background p-4 text-sm space-y-3">
+      <div className="flex items-center gap-2 flex-wrap pb-2 border-b border-primary/20">
+        <Newspaper className="h-4 w-4 text-primary" />
+        <div className="font-bold text-primary">🗞️ Titrologie nationale du jour</div>
+        <Badge variant="outline" className={`${RISQUE_BADGE[risque]} text-[10px] ml-auto`}>
+          Risque réputationnel : {risque}
+        </Badge>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+        <div>
+          <div className="font-semibold text-muted-foreground uppercase text-[10px] mb-1">Sources analysées</div>
+          <ul className="space-y-0.5">
+            {TITROLOGIE_SOURCES_LIST.map(s => (
+              <li key={s} className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-3 w-3 text-emerald-600" /> {s}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded bg-muted/50 p-2">
+            <div className="text-[10px] uppercase text-muted-foreground">Journaux détectés</div>
+            <div className="text-xl font-bold">{journauxDetectes}</div>
+          </div>
+          <div className="rounded bg-muted/50 p-2">
+            <div className="text-[10px] uppercase text-muted-foreground">Unes exploitables</div>
+            <div className="text-xl font-bold">{unesExploitables}<span className="text-xs text-muted-foreground">/{unes.length}</span></div>
+          </div>
+        </div>
+      </div>
+
+      {sujets.length > 0 && (
+        <div className="text-xs">
+          <div className="font-semibold mb-1">Sujets dominants :</div>
+          <ol className="list-decimal list-inside space-y-0.5">
+            {sujets.map((s: string, i: number) => <li key={i}>{s}</li>)}
+          </ol>
+        </div>
+      )}
+
+      {impacts.length > 0 && (
+        <div className="text-xs">
+          <div className="font-semibold mb-1">Impact ANSUT :</div>
+          <ul className="list-disc list-inside space-y-0.5">
+            {impacts.map((s: string, i: number) => <li key={i}>{s}</li>)}
+          </ul>
+        </div>
+      )}
+
+      <div className="text-xs pt-2 border-t border-primary/20">
+        <span className="font-semibold">Action recommandée :</span> {action}
+      </div>
+    </div>
+  );
+}
+
 interface Props {
   data: MatinaleData | null | undefined;
   titrologie?: TitrologieData | null;
@@ -241,6 +323,7 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
       )}
     >
       <div className="space-y-4">
+        <TitrologieBilanBlock unes={unes} synth={synth} />
         {synth && (
           <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
