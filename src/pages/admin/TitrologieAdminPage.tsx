@@ -92,6 +92,7 @@ export default function TitrologieAdminPage() {
           <TabsTrigger value="settings"><Clock className="h-4 w-4 mr-1.5" />Fréquence & seuils</TabsTrigger>
           <TabsTrigger value="sources"><Globe className="h-4 w-4 mr-1.5" />Sources ({sourcesQ.data?.length || 0})</TabsTrigger>
           <TabsTrigger value="keywords"><Tags className="h-4 w-4 mr-1.5" />Mots-clés ({kwQ.data?.length || 0})</TabsTrigger>
+          <TabsTrigger value="logs"><Activity className="h-4 w-4 mr-1.5" />Logs techniques</TabsTrigger>
         </TabsList>
 
         {/* ---------- Settings ---------- */}
