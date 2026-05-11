@@ -210,7 +210,7 @@ Réponds via l'outil structurer_une.`,
     type: 'object',
     properties: {
       intensite: { type: 'integer', enum: [0, 1, 2, 3] },
-      lecture: { type: ['string', 'null'] },
+      lecture: { type: 'string', description: 'Vide si intensite=0' },
       liens: { type: 'array', items: lienSchema },
       confiance: { type: 'integer', minimum: 0, maximum: 100 },
     },
