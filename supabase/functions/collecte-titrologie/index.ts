@@ -13,6 +13,21 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY');
+
+// Pluggable scrapers — Phase 1 cible la titrologie papier (Abidjan.net + Presse CI).
+// Architecture extensible : ajouter ultérieurement GDELT / NewsData / Mediastack
+// en créant de nouveaux discoverers et en les ajoutant à DISCOVERERS.
+interface ScrapeSource {
+  key: string;
+  name: string;
+  url: string;
+}
+
+const TITROLOGIE_SOURCES: ScrapeSource[] = [
+  { key: 'abidjan_net', name: 'Abidjan.net Titrologie', url: 'https://news.abidjan.net/titrologie' },
+  { key: 'presse_ci', name: 'Presse Côte d\'Ivoire Titrologie', url: 'https://www.pressecotedivoire.fr/titrologie' },
+];
 
 const ANSUT_KEYWORDS = [
   'ansut', 'service universel', 'télécommunications', 'fibre', 'connectivité',
