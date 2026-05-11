@@ -199,7 +199,7 @@ Réponds via l'outil structurer_une.`,
     properties: {
       entite: { type: 'string', enum: ['ANSUT', 'MTNIT', 'SERVICE_UNIVERSEL'] },
       phrase: { type: 'string' },
-      preuve: { type: ['string', 'null'] },
+      preuve: { type: 'string', description: 'Citation factuelle, vide si non disponible' },
       sources: { type: 'array', items: { type: 'string' } },
       confiance: { type: 'integer', minimum: 0, maximum: 100 },
     },
