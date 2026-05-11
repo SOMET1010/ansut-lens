@@ -241,7 +241,7 @@ Réponds via l'outil structurer_une.`,
             ton: { type: 'string', enum: ['positif','negatif','neutre','alarmiste','critique'] },
             risque_ansut: { type: 'string', enum: ['VERT','ORANGE','ROUGE'] },
             themes: { type: 'array', items: { type: 'string' } },
-            lien_ansut: { type: ['string','null'] },
+            lien_ansut: { type: 'string', description: 'Vide si pas de lien' },
             angles: {
               type: 'object',
               properties: {
