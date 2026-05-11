@@ -8,13 +8,16 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Newspaper, Plus, Save, Trash2, Tags, Globe, AlertTriangle, Clock } from 'lucide-react';
+import { Newspaper, Plus, Save, Trash2, Tags, Globe, AlertTriangle, Clock, Activity, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import {
   useTitrologieSources, useUpsertSource, useDeleteSource,
   useTitrologieKeywords, useUpsertKeyword, useDeleteKeyword,
   useTitrologieSettings, useUpdateTitrologieSettings,
   type TitrologieSettings,
 } from '@/hooks/useTitrologieAdmin';
+import { useTitrologieRuns } from '@/hooks/useTitrologieRuns';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 const sourceSchema = z.object({
   nom: z.string().trim().min(2).max(100),
