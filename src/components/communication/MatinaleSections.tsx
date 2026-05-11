@@ -241,6 +241,7 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
       )}
     >
       <div className="space-y-4">
+        <TitrologieBilanBlock unes={unes} synth={synth} />
         {synth && (
           <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
