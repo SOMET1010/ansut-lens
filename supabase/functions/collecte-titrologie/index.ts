@@ -291,15 +291,20 @@ Deno.serve(async (req) => {
 
   try {
     console.log('[Titrologie] Discovering unes...');
-    const rawUnes = await discoverUnes();
+    const { unes: rawUnes, stats: sourceStats } = await discoverUnes();
     console.log(`[Titrologie] Found ${rawUnes.length} raw unes`);
 
     let analyzed = 0;
     const inserts: any[] = [];
 
+    // Map source name → stat for incrementing OCR counters
+    const statByUrl = new Map<string, SourceStat>(sourceStats.map(s => [s.url, s]));
+
     for (const une of rawUnes) {
+      const stat = une.source_url ? statByUrl.get(une.source_url) : undefined;
       try {
         const analysis = await ocrAndAnalyze(une);
+        if (stat) stat.nombre_images_traitees++;
         inserts.push({
           date_parution: today,
           journal: une.journal,
@@ -317,12 +322,12 @@ Deno.serve(async (req) => {
         });
         analyzed++;
       } catch (e) {
+        if (stat) { stat.nombre_erreurs_ocr++; if (stat.statut === 'success') stat.statut = 'partial'; }
         console.error(`[Titrologie] Analyze failed for ${une.journal}:`, e instanceof Error ? e.message : e);
       }
     }
 
     if (inserts.length > 0) {
-      // Replace today's entries
       await supabase.from('titrologie_unes').delete().eq('date_parution', today);
       const { error: insErr } = await supabase.from('titrologie_unes').insert(inserts);
       if (insErr) throw insErr;
@@ -334,10 +339,11 @@ Deno.serve(async (req) => {
       unes_analyzed: analyzed,
       duration_ms: Date.now() - startedAt,
       finished_at: new Date().toISOString(),
+      metadata: { sources: sourceStats },
     }).eq('id', runId);
 
     return new Response(JSON.stringify({
-      ok: true, date: today, collected: rawUnes.length, analyzed, inserted: inserts.length,
+      ok: true, date: today, collected: rawUnes.length, analyzed, inserted: inserts.length, sources: sourceStats,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
