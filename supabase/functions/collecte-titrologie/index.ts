@@ -165,14 +165,17 @@ async function ocrAndAnalyze(une: RawUne): Promise<any> {
       type: 'text',
       text: `Analyse cette une de presse ivoirienne (journal: ${une.journal}). Titre indicatif : "${une.titre_une}".
 Tâches :
-1. OCR : extrait tous les titres visibles (gros titres, sous-titres).
+1. OCR : extrait tous les titres visibles (gros titres, sous-titres). Renvoie le texte brut concaténé dans raw_ocr.
 2. Titre principal de la une.
-3. Sujet dominant.
-4. Ton.
-5. Risque ANSUT (VERT/ORANGE/ROUGE) selon proximité avec : ${ANSUT_KEYWORDS.join(', ')}.
-6. 2-5 thèmes clés (mots courts).
-7. Lien ANSUT direct/indirect en 1 phrase, sinon null.
-8. **ANALYSE PAR ANGLE** — pour chaque angle (politique, social, economique, numerique_telecom, reputationnel) :
+3. titres_secondaires : tableau des autres titres visibles (chapeaux, sous-titres, encadrés), un titre par item, déjà nettoyés.
+4. ocr_confidence (0-100) : confiance globale de la lecture OCR (qualité d'image, netteté, lisibilité). 0 = illisible, 100 = parfait.
+5. ocr_warnings : tableau d'anomalies détectées (image floue, titre tronqué, texte illisible, charabia OCR…). Vide si propre.
+6. Sujet dominant.
+7. Ton.
+8. Risque ANSUT (VERT/ORANGE/ROUGE) selon proximité avec : ${ANSUT_KEYWORDS.join(', ')}.
+9. 2-5 thèmes clés (mots courts).
+10. Lien ANSUT direct/indirect en 1 phrase, sinon null.
+11. **ANALYSE PAR ANGLE** — pour chaque angle (politique, social, economique, numerique_telecom, reputationnel) :
    - intensite : 0 (absent) / 1 (faible) / 2 (moyen) / 3 (fort)
    - lecture : 1 phrase factuelle (max 25 mots) si intensite ≥ 1, sinon null
    - liens : tableau des références institutionnelles détectées (vide si aucune). Pour chaque entité concernée parmi :
