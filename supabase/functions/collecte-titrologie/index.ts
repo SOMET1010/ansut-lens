@@ -269,7 +269,7 @@ Réponds via l'outil structurer_une.`,
 
   if (!resp.ok) {
     const t = await resp.text();
-    throw new Error(`Gateway ${resp.status}: ${t.slice(0, 200)}`);
+    throw new Error(`Gateway ${resp.status}: ${t.slice(0, 800)}`);
   }
   const data = await resp.json();
   const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
