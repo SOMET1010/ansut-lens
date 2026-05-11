@@ -42,72 +42,103 @@ interface RawUne {
   source_url?: string;
 }
 
-// 1. Discover front pages via Perplexity (multi-source)
-async function discoverUnes(): Promise<RawUne[]> {
-  if (!PERPLEXITY_API_KEY) throw new Error('PERPLEXITY_API_KEY missing');
+// Resolve relative URLs against a base
+function absoluteUrl(src: string, base: string): string {
+  try { return new URL(src, base).toString(); } catch { return src; }
+}
 
-  const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+// Heuristic to guess journal name from filename / alt text
+function guessJournal(input: string): string {
+  const cleaned = input
+    .replace(/\.(jpe?g|png|webp|gif|pdf)$/i, '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b(une|titrologie|journal|du|le|la|les|of|the)\b/gi, ' ')
+    .replace(/\d{2,4}[-/]\d{1,2}[-/]\d{1,4}/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned ? cleaned.replace(/\b\w/g, (c) => c.toUpperCase()) : 'Journal';
+}
 
-  const prompt = `Liste les UNES (titres principaux) des journaux ivoiriens publiés aujourd'hui ${today}.
-Cible : Fraternité Matin, L'Inter, Soir Info, Notre Voie, Le Patriote, Le Nouveau Réveil, L'Expression, Le Jour Plus, Le Mandat, Notre Temps, Aujourd'hui.
-Sources à scanner en priorité :
-- abidjan.net/titrologie ou news.abidjan.net/titrologie
-- linfodrome.com, koaci.com, fratmat.info, aip.ci
-Pour chaque journal trouvé, retourne strictement en JSON :
-{ "unes": [ { "journal": "...", "titre_une": "...", "image_url": "URL image de la une si disponible", "source_url": "URL source" } ] }
-Maximum 12 unes. Aucune invention : si pas trouvé, ne pas inclure.`;
+// 1. Discover front pages via Firecrawl scraping (Phase 1: Abidjan.net + Presse CI)
+async function scrapeSourceForUnes(src: ScrapeSource): Promise<RawUne[]> {
+  if (!FIRECRAWL_API_KEY) throw new Error('FIRECRAWL_API_KEY missing');
 
-  const resp = await fetch('https://api.perplexity.ai/chat/completions', {
+  const resp = await fetch('https://api.firecrawl.dev/v2/scrape', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${PERPLEXITY_API_KEY}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'sonar-pro',
-      messages: [
-        { role: 'system', content: 'Tu es un agrégateur de presse ivoirienne. Réponds en JSON strict.' },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.2,
-      search_recency_filter: 'day',
-      response_format: {
-        type: 'json_schema',
-        json_schema: {
-          schema: {
-            type: 'object',
-            properties: {
-              unes: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    journal: { type: 'string' },
-                    titre_une: { type: 'string' },
-                    image_url: { type: 'string' },
-                    source_url: { type: 'string' },
-                  },
-                  required: ['journal', 'titre_une'],
-                },
-              },
-            },
-            required: ['unes'],
-          },
-        },
-      },
+      url: src.url,
+      formats: ['html', 'links', 'markdown'],
+      onlyMainContent: false,
+      waitFor: 1500,
     }),
   });
 
   if (!resp.ok) {
     const t = await resp.text();
-    throw new Error(`Perplexity ${resp.status}: ${t.slice(0, 200)}`);
-  }
-  const data = await resp.json();
-  const content = data.choices?.[0]?.message?.content || '{}';
-  try {
-    const parsed = JSON.parse(content);
-    return Array.isArray(parsed.unes) ? parsed.unes.slice(0, 12) : [];
-  } catch {
+    console.error(`[Titrologie] Firecrawl ${src.key} ${resp.status}: ${t.slice(0, 200)}`);
     return [];
   }
+  const payload = await resp.json();
+  const data = payload?.data ?? payload;
+  const html: string = data?.html || data?.rawHtml || '';
+  if (!html) return [];
+
+  // Extract <img src=... alt=...> matching plausible une images
+  const unes: RawUne[] = [];
+  const seen = new Set<string>();
+  const imgRe = /<img\b[^>]*?>/gi;
+  const srcRe = /\bsrc\s*=\s*"([^"]+)"|\bsrc\s*=\s*'([^']+)'/i;
+  const altRe = /\balt\s*=\s*"([^"]*)"|\balt\s*=\s*'([^']*)'/i;
+  const titleRe = /\btitle\s*=\s*"([^"]*)"|\btitle\s*=\s*'([^']*)'/i;
+
+  const matches = html.match(imgRe) || [];
+  for (const tag of matches) {
+    const sm = tag.match(srcRe);
+    const am = tag.match(altRe);
+    const tm = tag.match(titleRe);
+    const rawSrc = sm ? (sm[1] || sm[2]) : '';
+    if (!rawSrc) continue;
+    const url = absoluteUrl(rawSrc, src.url);
+    // Filter: must look like a press front page image, exclude logos/sprites/icons
+    if (!/\.(jpe?g|png|webp)(\?|$)/i.test(url)) continue;
+    if (/(logo|sprite|icon|avatar|banner|pub|advert|placeholder|share|social|facebook|twitter|whatsapp)/i.test(url)) continue;
+    if (seen.has(url)) continue;
+    seen.add(url);
+    const altText = (am ? (am[1] || am[2]) : '') || (tm ? (tm[1] || tm[2]) : '');
+    const fname = url.split('/').pop() || '';
+    const journal = guessJournal(altText || fname);
+    unes.push({
+      journal,
+      titre_une: altText || `Une ${journal}`,
+      image_url: url,
+      source_url: src.url,
+    });
+    if (unes.length >= 20) break;
+  }
+  console.log(`[Titrologie] ${src.key}: ${unes.length} unes détectées`);
+  return unes;
 }
+
+async function discoverUnes(): Promise<RawUne[]> {
+  const all: RawUne[] = [];
+  for (const src of TITROLOGIE_SOURCES) {
+    try {
+      const list = await scrapeSourceForUnes(src);
+      all.push(...list);
+    } catch (e) {
+      console.error(`[Titrologie] scrape ${src.key} failed:`, e instanceof Error ? e.message : e);
+    }
+  }
+  // Déduplication par image_url
+  const dedup = new Map<string, RawUne>();
+  for (const u of all) {
+    const key = u.image_url || `${u.journal}::${u.titre_une}`;
+    if (!dedup.has(key)) dedup.set(key, u);
+  }
+  return Array.from(dedup.values()).slice(0, 16);
+}
+
 
 // 2. OCR + visual analysis on a front page image (Gemini 2.5 Pro multimodal)
 async function ocrAndAnalyze(une: RawUne): Promise<any> {
