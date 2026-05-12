@@ -217,8 +217,8 @@ Réponds via l'outil structurer_une.`,
     required: ['intensite'],
   };
 
-  const body = {
-    model: 'google/gemini-2.5-pro',
+  const buildBody = (model: string) => ({
+    model,
     messages: [
       { role: 'system', content: 'Tu es analyste presse ANSUT/MTND. Précis, factuel, aucune invention.' },
       { role: 'user', content: userParts },
