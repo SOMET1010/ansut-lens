@@ -217,8 +217,8 @@ Réponds via l'outil structurer_une.`,
     required: ['intensite'],
   };
 
-  const body = {
-    model: 'google/gemini-2.5-pro',
+  const buildBody = (model: string) => ({
+    model,
     messages: [
       { role: 'system', content: 'Tu es analyste presse ANSUT/MTND. Précis, factuel, aucune invention.' },
       { role: 'user', content: userParts },
@@ -259,22 +259,45 @@ Réponds via l'outil structurer_une.`,
       },
     }],
     tool_choice: { type: 'function', function: { name: 'structurer_une' } },
-  };
-
-  const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
   });
 
-  if (!resp.ok) {
-    const t = await resp.text();
-    throw new Error(`Gateway ${resp.status}: ${t.slice(0, 800)}`);
+  // Default to Flash for speed; fallback to Flash-Lite then Pro on timeout/5xx.
+  const MODELS = ['google/gemini-2.5-flash', 'google/gemini-2.5-flash-lite', 'google/gemini-2.5-pro'];
+  const TIMEOUT_MS = 45000;
+  let lastErr: unknown = null;
+
+  for (const model of MODELS) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+    try {
+      const resp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildBody(model)),
+        signal: ctrl.signal,
+      });
+      clearTimeout(t);
+      if (!resp.ok) {
+        const txt = await resp.text();
+        const retriable = resp.status === 408 || resp.status === 429 || resp.status >= 500;
+        console.warn(`[Titrologie] ${model} -> ${resp.status} ${retriable ? '(fallback)' : ''}: ${txt.slice(0,200)}`);
+        if (!retriable) throw new Error(`Gateway ${resp.status}: ${txt.slice(0, 800)}`);
+        lastErr = new Error(`Gateway ${resp.status}`);
+        continue;
+      }
+      const data = await resp.json();
+      const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+      if (!toolCall?.function?.arguments) throw new Error('No tool call returned');
+      return JSON.parse(toolCall.function.arguments);
+    } catch (e) {
+      clearTimeout(t);
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn(`[Titrologie] ${model} échec (${msg}) — fallback suivant`);
+      lastErr = e;
+      continue;
+    }
   }
-  const data = await resp.json();
-  const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-  if (!toolCall?.function?.arguments) throw new Error('No tool call returned');
-  return JSON.parse(toolCall.function.arguments);
+  throw lastErr instanceof Error ? lastErr : new Error('All models failed');
 }
 
 Deno.serve(async (req) => {
