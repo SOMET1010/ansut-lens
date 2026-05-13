@@ -33,9 +33,12 @@ async function fetchPerplexityNews(): Promise<{ articles: Array<{ titre: string;
     return { articles: [], citations: [] };
   }
 
+  const todayStr = new Date().toISOString().slice(0, 10);
   const queries = [
-    "Actualités télécommunications numérique Côte d'Ivoire ANSUT ARTCI aujourd'hui",
-    "Opérateurs telecoms Orange MTN Moov Côte d'Ivoire Afrique de l'Ouest actualités",
+    `Actualités précises ${todayStr} ANSUT ARTCI MTND Côte d'Ivoire télécommunications numérique service universel : décisions, annonces, projets, partenariats. Donne uniquement des articles datés des 48 dernières heures avec URL d'article (pas la page d'accueil).`,
+    `Annonces ${todayStr} opérateurs Orange CI, MTN CI, Moov Africa CI, Wave, Starlink Côte d'Ivoire : tarifs, couverture, investissements, incidents, régulation. Articles datés, URLs d'articles uniquement.`,
+    `Événements tech Afrique en cours cette semaine ${todayStr} : ID4Africa Abidjan, Africa CEO Forum Kigali, GITEX Africa, AfricaCom, Mobile World Congress, sommets numériques UEMOA/CEDEAO. Donne les annonces concrètes (signatures, discours, chiffres) avec URLs d'articles.`,
+    `Actualités régulation et souveraineté numérique Afrique de l'Ouest ${todayStr} : ARTCI, identité numérique, cloud souverain, cybersécurité, données personnelles, taxation telecoms. URLs d'articles uniquement.`,
   ];
 
   const allArticles: Array<{ titre: string; resume: string; source: string; url: string }> = [];
@@ -54,24 +57,27 @@ async function fetchPerplexityNews(): Promise<{ articles: Array<{ titre: string;
           messages: [
             {
               role: 'system',
-              content: `Tu es un assistant de veille. Réponds UNIQUEMENT en JSON valide:
-{
-  "articles": [
-    { "titre": "Titre exact de l'article", "resume": "Résumé en 1-2 phrases", "source": "Nom du média", "url": "URL exacte de l'article" }
-  ]
-}
-RÈGLES: Ne fournis QUE des articles réels avec des URLs vérifiables. Maximum 5 articles par requête.`
+              content: `Tu es un agent de veille presse pour la Direction Générale de l'ANSUT (Côte d'Ivoire).
+Tu dois retourner UNIQUEMENT du JSON valide, structure :
+{ "articles": [ { "titre": "Titre EXACT de l'article (pas le nom du média, pas une description du site)", "resume": "Résumé factuel en 2 phrases reprenant les FAITS de l'article (chiffres, noms, décisions)", "source": "Nom du média", "url": "URL DIRECTE de l'article publié (avec /chemin, jamais juste le domaine)", "date": "AAAA-MM-JJ" } ] }
+
+RÈGLES STRICTES :
+- Maximum 6 articles par requête, datés des 72 dernières heures.
+- Le "titre" doit être le titre journalistique de l'article, JAMAIS la description SEO/meta du site (ex: "Connecting Africa is a trusted technology..." → INTERDIT).
+- L'URL doit pointer vers l'article lui-même (ex: https://site.com/2026/05/13/article-slug), JAMAIS la page d'accueil ou une rubrique générique.
+- Si tu n'as pas d'article concret avec un vrai titre + URL d'article, retourne "articles": [].
+- Pas d'invention. Pas de paraphrase de homepage.`
             },
             { role: 'user', content: query }
           ],
-          search_recency_filter: 'day',
+          search_recency_filter: 'week',
           return_citations: true,
         }),
       });
 
       if (!response.ok) {
-        console.error(`[Matinale/Perplexity] Error ${response.status} for query: ${query}`);
-        await response.text();
+        const body = await response.text();
+        console.error(`[Matinale/Perplexity] Error ${response.status} for query: ${query} | body: ${body.slice(0, 300)}`);
         continue;
       }
 
@@ -102,14 +108,39 @@ RÈGLES: Ne fournis QUE des articles réels avec des URLs vérifiables. Maximum 
     }
   }
 
+  // Reject homepage URLs (no real path) and titles that look like source/SEO descriptions
+  const isHomepageUrl = (u: string): boolean => {
+    try {
+      const url = new URL(u);
+      const path = url.pathname.replace(/\/+$/, '');
+      if (!path || path === '/') return true;
+      const segs = path.split('/').filter(Boolean);
+      // 1 court segment sans chiffre = rubrique générique (ex: /telecom)
+      if (segs.length <= 1 && segs[0] && segs[0].length < 14 && !/\d/.test(segs[0])) return true;
+      return false;
+    } catch { return true; }
+  };
+  const looksLikeSourceDescription = (titre: string): boolean => {
+    const t = (titre || '').trim();
+    if (!t || t.length < 12) return true;
+    // ex: "Connecting Africa - Pan-African Tech and Telecoms News: ..."
+    if (/^[A-Z][\w &'-]{2,40}\s*[:|-]\s+/.test(t) && /(news|magazine|site|actualité|référence|trusted|leading|covering)/i.test(t)) return true;
+    if (/\bis a (trusted|leading|premier|reference|specialized)\b/i.test(t)) return true;
+    if (/\bsite officiel\b/i.test(t)) return true;
+    if (/^accueil\b/i.test(t)) return true;
+    return false;
+  };
+
   const seen = new Set<string>();
   const unique = allArticles.filter(a => {
     if (!a.url || seen.has(a.url)) return false;
+    if (isHomepageUrl(a.url)) return false;
+    if (looksLikeSourceDescription(a.titre)) return false;
     seen.add(a.url);
     return true;
   });
 
-  console.log(`[Matinale/Perplexity] Fetched ${unique.length} real-time articles with ${allCitations.length} citations`);
+  console.log(`[Matinale/Perplexity] Fetched ${unique.length}/${allArticles.length} articles after filter, ${allCitations.length} citations`);
   return { articles: unique, citations: allCitations };
 }
 
@@ -1098,7 +1129,17 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     for (const m of (mentions || [])) registerUrl(m.source_url, m.source || 'Mention', (m.contenu || '').slice(0, 120), m.date_mention);
     for (const s of (socialInsights || [])) registerUrl(s.url_original, s.plateforme || 'Social', (s.contenu || '').slice(0, 120));
     for (const p of perplexityNews.articles) registerUrl(p.url, p.source, p.titre);
-    for (const c of perplexityNews.citations) registerUrl(c, 'Web', '');
+    // N'enregistrer que les citations qui pointent vers un VRAI article (pas une homepage),
+    // pour éviter que la matinale se nourrisse de descriptions de site.
+    for (const c of perplexityNews.citations) {
+      try {
+        const url = new URL(c);
+        const path = url.pathname.replace(/\/+$/, '');
+        const segs = path.split('/').filter(Boolean);
+        const isArticleUrl = segs.length >= 2 || segs.some(s => /\d/.test(s) || s.length >= 14);
+        if (isArticleUrl) registerUrl(c, 'Web', '');
+      } catch { /* skip */ }
+    }
 
     const validUrls = new Set<string>(urlMeta.keys());
 
