@@ -1502,7 +1502,7 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
 
 <!-- 2. SYNTHÈSE 60s -->
 ${synthese.length ? `<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 10px;border-bottom:2px solid #6366f1;padding-bottom:6px;">⏱️ Synthèse 60 secondes</h2>
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 10px;border-bottom:2px solid #6366f1;padding-bottom:6px;">📌 Sujets chauds du jour</h2>
   <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
     <tr style="background:#f1f5f9;"><th style="padding:8px;text-align:left;font-size:11px;color:#475569;text-transform:uppercase;">Sujet</th><th style="padding:8px;text-align:left;font-size:11px;color:#475569;text-transform:uppercase;">Impact ANSUT</th><th style="padding:8px;text-align:center;font-size:11px;color:#475569;text-transform:uppercase;width:80px;">Niveau</th></tr>
     ${synthese.map(s => `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:8px;font-size:13px;color:#1e3a5f;font-weight:600;">${s.sujet}</td><td style="padding:8px;font-size:12px;color:#374151;">${s.impact_ansut}</td><td style="padding:8px;text-align:center;">${nivBadge(s.niveau)}</td></tr>`).join('')}
