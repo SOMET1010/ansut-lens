@@ -53,7 +53,7 @@ async function fetchPerplexityNews(): Promise<{ articles: Array<{ titre: string;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'sonar-pro',
+          model: 'sonar',
           messages: [
             {
               role: 'system',
