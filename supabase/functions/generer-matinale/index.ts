@@ -1467,6 +1467,23 @@ ${synthese.length ? `<tr><td style="padding:0 24px 20px;">
   </table>
 </td></tr>` : ''}
 
+<!-- 2bis. TITROLOGIE IVOIRIENNE DU JOUR -->
+${titroTopUnes.length ? `<tr><td style="padding:0 24px 20px;">
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 10px;border-bottom:2px solid #ea580c;padding-bottom:6px;">📰 Titrologie ivoirienne du jour <span style="font-size:11px;color:#9ca3af;font-weight:400;">(${titroUnes.length} unes analysées)</span></h2>
+  ${titroSynthese ? `<div style="margin-bottom:12px;padding:12px;background:#fff7ed;border-radius:8px;border-left:4px solid #ea580c;">
+    ${Array.isArray(titroSynthese.sujets_dominants) && titroSynthese.sujets_dominants.length ? `<p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#9a3412;text-transform:uppercase;letter-spacing:0.5px;">Sujets dominants</p><p style="margin:0 0 8px;font-size:12px;color:#1e3a5f;">${titroSynthese.sujets_dominants.join(' · ')}</p>` : ''}
+    ${Array.isArray(titroSynthese.impact_ansut) && titroSynthese.impact_ansut.length ? `<p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#9a3412;text-transform:uppercase;letter-spacing:0.5px;">Impact ANSUT</p><ul style="margin:0 0 8px;padding-left:18px;">${titroSynthese.impact_ansut.map((i: string) => `<li style="font-size:12px;color:#1e3a5f;line-height:1.5;">${i}</li>`).join('')}</ul>` : ''}
+    ${titroSynthese.opportunite_communication ? `<p style="margin:6px 0 0;font-size:12px;color:#16a34a;"><strong>🎙️ Opportunité com :</strong> ${titroSynthese.opportunite_communication}</p>` : ''}
+    ${titroSynthese.risque_a_surveiller ? `<p style="margin:4px 0 0;font-size:12px;color:#dc2626;"><strong>⚠️ Risque à surveiller :</strong> ${titroSynthese.risque_a_surveiller}</p>` : ''}
+    ${titroSynthese.action_recommandee ? `<p style="margin:6px 0 0;font-size:12px;color:#1e3a5f;"><strong>✅ Action recommandée :</strong> ${titroSynthese.action_recommandee}</p>` : ''}
+  </div>` : ''}
+  <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+    <tr style="background:#fef3c7;"><th style="padding:8px;text-align:left;font-size:11px;color:#92400e;text-transform:uppercase;width:110px;">Journal</th><th style="padding:8px;text-align:left;font-size:11px;color:#92400e;text-transform:uppercase;">Une</th><th style="padding:8px;text-align:center;font-size:11px;color:#92400e;text-transform:uppercase;width:70px;">Risque</th></tr>
+    ${titroTopUnes.map((u: any) => `<tr style="border-bottom:1px solid #fde68a;"><td style="padding:8px;font-size:12px;color:#1e3a5f;font-weight:600;vertical-align:top;">${u.journal || '—'}</td><td style="padding:8px;font-size:12px;color:#1e3a5f;line-height:1.4;">${u.url ? `<a href="${u.url}" target="_blank" style="color:#1e3a5f;text-decoration:none;"><strong>${u.titre || ''}</strong></a>` : `<strong>${u.titre || ''}</strong>`}${u.lien_ansut ? `<br/><span style="color:#6b7280;font-size:11px;">→ ${u.lien_ansut}</span>` : ''}</td><td style="padding:8px;text-align:center;"><span style="display:inline-block;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700;color:#fff;background:${titroRiskColor[u.risque_ansut] || '#9ca3af'};">${u.risque_ansut || '—'}</span></td></tr>`).join('')}
+  </table>
+  ${titroSignaux.length ? `<div style="margin-top:10px;padding:10px;background:#fff7ed;border-radius:6px;"><p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#9a3412;text-transform:uppercase;">📡 Signaux faibles titrologie</p><ul style="margin:0;padding-left:18px;">${titroSignaux.map(s => `<li style="font-size:12px;color:#9a3412;line-height:1.5;">${s}</li>`).join('')}</ul></div>` : ''}
+</td></tr>` : ''}
+
 <!-- 3. VEILLE STRATÉGIQUE PAR PILIER -->
 <tr><td style="padding:0 24px 20px;">
   <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #2563eb;padding-bottom:6px;">🎯 Veille stratégique par pilier ANSUT</h2>
