@@ -53,21 +53,24 @@ async function fetchPerplexityNews(): Promise<{ articles: Array<{ titre: string;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'sonar',
+          model: 'sonar-pro',
           messages: [
             {
               role: 'system',
-              content: `Tu es un assistant de veille. Réponds UNIQUEMENT en JSON valide:
-{
-  "articles": [
-    { "titre": "Titre exact de l'article", "resume": "Résumé en 1-2 phrases", "source": "Nom du média", "url": "URL exacte de l'article" }
-  ]
-}
-RÈGLES: Ne fournis QUE des articles réels avec des URLs vérifiables. Maximum 5 articles par requête.`
+              content: `Tu es un agent de veille presse pour la Direction Générale de l'ANSUT (Côte d'Ivoire).
+Tu dois retourner UNIQUEMENT du JSON valide, structure :
+{ "articles": [ { "titre": "Titre EXACT de l'article (pas le nom du média, pas une description du site)", "resume": "Résumé factuel en 2 phrases reprenant les FAITS de l'article (chiffres, noms, décisions)", "source": "Nom du média", "url": "URL DIRECTE de l'article publié (avec /chemin, jamais juste le domaine)", "date": "AAAA-MM-JJ" } ] }
+
+RÈGLES STRICTES :
+- Maximum 6 articles par requête, datés des 72 dernières heures.
+- Le "titre" doit être le titre journalistique de l'article, JAMAIS la description SEO/meta du site (ex: "Connecting Africa is a trusted technology..." → INTERDIT).
+- L'URL doit pointer vers l'article lui-même (ex: https://site.com/2026/05/13/article-slug), JAMAIS la page d'accueil ou une rubrique générique.
+- Si tu n'as pas d'article concret avec un vrai titre + URL d'article, retourne "articles": [].
+- Pas d'invention. Pas de paraphrase de homepage.`
             },
             { role: 'user', content: query }
           ],
-          search_recency_filter: 'day',
+          search_recency_filter: 'week',
           return_citations: true,
         }),
       });
