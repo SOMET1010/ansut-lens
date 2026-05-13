@@ -300,35 +300,25 @@ Réponds via l'outil structurer_une.`,
   throw lastErr instanceof Error ? lastErr : new Error('All models failed');
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
-
-  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
-  const startedAt = Date.now();
-  const today = new Date().toISOString().slice(0, 10);
-
-  // Create run record
-  const { data: run } = await supabase.from('titrologie_runs')
-    .insert({ run_date: today, status: 'running' }).select().single();
-  const runId = run?.id;
-
+async function runCollecte(supabase: any, runId: string | undefined, today: string, startedAt: number) {
   try {
     console.log('[Titrologie] Discovering unes...');
     const { unes: rawUnes, stats: sourceStats } = await discoverUnes();
     console.log(`[Titrologie] Found ${rawUnes.length} raw unes`);
 
-    let analyzed = 0;
-    const inserts: any[] = [];
+    // Wipe today's unes upfront so progressive inserts replace them cleanly
+    await supabase.from('titrologie_unes').delete().eq('date_parution', today);
 
-    // Map source name → stat for incrementing OCR counters
+    let analyzed = 0;
     const statByUrl = new Map<string, SourceStat>(sourceStats.map(s => [s.url, s]));
 
-    for (const une of rawUnes) {
+    for (let i = 0; i < rawUnes.length; i++) {
+      const une = rawUnes[i];
       const stat = une.source_url ? statByUrl.get(une.source_url) : undefined;
       try {
         const analysis = await ocrAndAnalyze(une);
         if (stat) stat.nombre_images_traitees++;
-        inserts.push({
+        const row = {
           date_parution: today,
           journal: une.journal,
           image_url: une.image_url || null,
@@ -342,32 +332,35 @@ Deno.serve(async (req) => {
           raw_ocr: analysis.raw_ocr || null,
           angles: analysis.angles || {},
           analyse_ia: analysis,
-        });
-        analyzed++;
+        };
+        const { error: insErr } = await supabase.from('titrologie_unes').insert(row);
+        if (insErr) console.error('[Titrologie] insert err:', insErr.message);
+        else analyzed++;
       } catch (e) {
         if (stat) { stat.nombre_erreurs_ocr++; if (stat.statut === 'success') stat.statut = 'partial'; }
         console.error(`[Titrologie] Analyze failed for ${une.journal}:`, e instanceof Error ? e.message : e);
       }
-    }
 
-    if (inserts.length > 0) {
-      await supabase.from('titrologie_unes').delete().eq('date_parution', today);
-      const { error: insErr } = await supabase.from('titrologie_unes').insert(inserts);
-      if (insErr) throw insErr;
+      // Progressive run state update so admin can monitor progress live
+      if (runId && (i + 1) % 2 === 0) {
+        await supabase.from('titrologie_runs').update({
+          unes_collected: rawUnes.length,
+          unes_analyzed: analyzed,
+          metadata: { sources: sourceStats, progress: `${i + 1}/${rawUnes.length}` },
+        }).eq('id', runId);
+      }
     }
 
     await supabase.from('titrologie_runs').update({
-      status: 'success',
+      status: analyzed > 0 ? 'success' : 'error',
       unes_collected: rawUnes.length,
       unes_analyzed: analyzed,
       duration_ms: Date.now() - startedAt,
       finished_at: new Date().toISOString(),
+      error: analyzed === 0 ? 'Aucune une analysée' : null,
       metadata: { sources: sourceStats },
     }).eq('id', runId);
-
-    return new Response(JSON.stringify({
-      ok: true, date: today, collected: rawUnes.length, analyzed, inserted: inserts.length, sources: sourceStats,
-    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    console.log(`[Titrologie] DONE — ${analyzed}/${rawUnes.length} analyzed`);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error('[Titrologie] FATAL:', msg);
@@ -375,8 +368,27 @@ Deno.serve(async (req) => {
       status: 'error', error: msg, duration_ms: Date.now() - startedAt,
       finished_at: new Date().toISOString(),
     }).eq('id', runId);
-    return new Response(JSON.stringify({ ok: false, error: msg }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
   }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
+  const startedAt = Date.now();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { data: run } = await supabase.from('titrologie_runs')
+    .insert({ run_date: today, status: 'running' }).select().single();
+  const runId = run?.id;
+
+  // Run in background to survive client disconnect; return immediately
+  // @ts-ignore EdgeRuntime is available in Supabase Edge Runtime
+  EdgeRuntime.waitUntil(runCollecte(supabase, runId, today, startedAt));
+
+  return new Response(JSON.stringify({
+    ok: true, runId, date: today, status: 'started',
+    message: 'Collecte démarrée en arrière-plan. Suivre la progression via /admin/titrologie.',
+  }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 });
+
