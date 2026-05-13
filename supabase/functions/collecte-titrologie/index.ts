@@ -152,7 +152,7 @@ async function discoverUnes(): Promise<{ unes: RawUne[]; stats: SourceStat[] }> 
     const key = u.image_url || `${u.journal}::${u.titre_une}`;
     if (!dedup.has(key)) dedup.set(key, u);
   }
-  return { unes: Array.from(dedup.values()).slice(0, 16), stats };
+  return { unes: Array.from(dedup.values()).slice(0, 10), stats };
 }
 
 
