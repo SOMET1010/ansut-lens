@@ -76,8 +76,8 @@ RÈGLES STRICTES :
       });
 
       if (!response.ok) {
-        console.error(`[Matinale/Perplexity] Error ${response.status} for query: ${query}`);
-        await response.text();
+        const body = await response.text();
+        console.error(`[Matinale/Perplexity] Error ${response.status} for query: ${query} | body: ${body.slice(0, 300)}`);
         continue;
       }
 
