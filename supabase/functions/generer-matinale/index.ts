@@ -1610,7 +1610,7 @@ ${signaux.length ? `<tr><td style="padding:0 24px 20px;">
   </div>
 </td></tr>
 
-<tr><td style="background-color:#0f172a;padding:14px;text-align:center;"><p style="margin:0;color:#64748b;font-size:10px;letter-spacing:0.5px;">ANSUT RADAR · Système d'intelligence stratégique numérique · Document interne</p></td></tr>
+<tr><td style="background-color:#0f172a;padding:14px;text-align:center;"><p style="margin:0;color:#64748b;font-size:10px;letter-spacing:0.5px;">ANSUT RADAR · Matinale Communication & Veille 360 · Document interne</p></td></tr>
 
 </table></td></tr></table></body></html>`;
 
