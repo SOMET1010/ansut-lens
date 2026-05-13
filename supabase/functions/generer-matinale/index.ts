@@ -47,7 +47,9 @@ async function fetchPerplexityNews(): Promise<{ articles: Array<{ titre: string;
   const allArticles: Array<{ titre: string; resume: string; source: string; url: string }> = [];
   const allCitations: string[] = [];
 
-  for (const query of queries) {
+  for (let qi = 0; qi < queries.length; qi++) {
+    const query = queries[qi];
+    const isEventQuery = qi === 0 || qi === 3 || qi === 5; // événements & agenda
     try {
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
@@ -56,24 +58,25 @@ async function fetchPerplexityNews(): Promise<{ articles: Array<{ titre: string;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'sonar',
+          model: isEventQuery ? 'sonar-pro' : 'sonar',
           messages: [
             {
               role: 'system',
               content: `Tu es un agent de veille presse pour la Direction Générale de l'ANSUT (Côte d'Ivoire).
 Tu dois retourner UNIQUEMENT du JSON valide, structure :
-{ "articles": [ { "titre": "Titre EXACT de l'article (pas le nom du média, pas une description du site)", "resume": "Résumé factuel en 2 phrases reprenant les FAITS de l'article (chiffres, noms, décisions)", "source": "Nom du média", "url": "URL DIRECTE de l'article publié (avec /chemin, jamais juste le domaine)", "date": "AAAA-MM-JJ" } ] }
+{ "articles": [ { "titre": "Titre EXACT de l'article (pas le nom du média, pas une description du site)", "resume": "Résumé factuel en 2 phrases reprenant les FAITS de l'article (chiffres, noms, décisions, lieu, dates)", "source": "Nom du média", "url": "URL DIRECTE de l'article publié (avec /chemin, jamais juste le domaine)", "date": "AAAA-MM-JJ" } ] }
 
 RÈGLES STRICTES :
-- Maximum 6 articles par requête, datés des 72 dernières heures.
-- Le "titre" doit être le titre journalistique de l'article, JAMAIS la description SEO/meta du site (ex: "Connecting Africa is a trusted technology..." → INTERDIT).
-- L'URL doit pointer vers l'article lui-même (ex: https://site.com/2026/05/13/article-slug), JAMAIS la page d'accueil ou une rubrique générique.
+- Maximum ${isEventQuery ? 10 : 6} articles par requête, datés des 72 dernières heures.
+- Couvre EXHAUSTIVEMENT les événements en cours en Côte d'Ivoire (ID4Africa, SARA, salons, sommets, signatures). Si plusieurs sources couvrent le même événement, garde les plus factuelles.
+- Le "titre" doit être le titre journalistique de l'article, JAMAIS la description SEO/meta du site.
+- L'URL doit pointer vers l'article (ex: https://site.com/2026/05/13/article-slug), JAMAIS la page d'accueil ou une rubrique générique.
 - Si tu n'as pas d'article concret avec un vrai titre + URL d'article, retourne "articles": [].
 - Pas d'invention. Pas de paraphrase de homepage.`
             },
             { role: 'user', content: query }
           ],
-          search_recency_filter: 'week',
+          search_recency_filter: isEventQuery ? 'day' : 'week',
           return_citations: true,
         }),
       });
