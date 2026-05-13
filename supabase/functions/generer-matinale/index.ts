@@ -78,31 +78,6 @@ RÈGLES STRICTES :
           ],
           search_recency_filter: isEventQuery ? 'day' : 'week',
           return_citations: true,
-          response_format: {
-            type: 'json_schema',
-            json_schema: {
-              schema: {
-                type: 'object',
-                properties: {
-                  articles: {
-                    type: 'array',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        titre: { type: 'string' },
-                        resume: { type: 'string' },
-                        source: { type: 'string' },
-                        url: { type: 'string' },
-                        date: { type: 'string' },
-                      },
-                      required: ['titre', 'resume', 'source', 'url'],
-                    },
-                  },
-                },
-                required: ['articles'],
-              },
-            },
-          },
         }),
       });
 
@@ -119,7 +94,7 @@ RÈGLES STRICTES :
 
       let parsedCount = 0;
       try {
-        const jsonMatch = content.match(/\{[\s\S]*"articles"[\s\S]*\}/);
+        const jsonMatch = content.match(/\{[\s\S]*?"articles"[\s\S]*\}/);
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
           if (Array.isArray(parsed.articles)) {
@@ -135,6 +110,26 @@ RÈGLES STRICTES :
         }
       } catch (e) {
         console.error('[Matinale/Perplexity] JSON parse error:', e);
+      }
+
+      // Fallback: if model returned prose without JSON but we have citations,
+      // ingest citations directly so events surfaced via search are not lost.
+      if (parsedCount === 0 && citations.length > 0 && content.length > 50) {
+        for (const citUrl of citations.slice(0, 8)) {
+          if (typeof citUrl !== 'string' || !/^https?:\/\//.test(citUrl)) continue;
+          let host = '';
+          try { host = new URL(citUrl).hostname.replace(/^www\./, ''); } catch { continue; }
+          // Use first 200 chars of content as resume + the URL slug as fallback title
+          const slug = (citUrl.split('/').filter(Boolean).pop() || '').replace(/[-_]+/g, ' ').replace(/\.\w+$/, '').slice(0, 120);
+          const titre = slug && slug.length > 6 ? slug : `Source ${host}`;
+          allArticles.push({
+            titre,
+            resume: content.slice(0, 240).replace(/\s+/g, ' ').trim(),
+            source: host,
+            url: citUrl,
+          });
+        }
+        parsedCount = Math.min(citations.length, 8);
       }
       console.log(`[Matinale/Perplexity] Q${qi} (${isEventQuery ? 'EVT' : 'STD'}): parsed=${parsedCount}, citations=${citations.length}, content.len=${content.length}`);
     } catch (e) {
