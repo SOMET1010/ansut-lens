@@ -1445,10 +1445,10 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     };
 
     const PILIER_LABELS: Record<string, { label: string; color: string }> = {
-      connectivite: { label: '📡 Connectivité', color: '#2563eb' },
-      usages_services: { label: '💳 Usages & Services', color: '#7c3aed' },
-      regulation_souverainete: { label: '⚖️ Régulation & Souveraineté', color: '#0891b2' },
-      concurrence_marche: { label: '🏁 Concurrence & Marché', color: '#dc2626' },
+      connectivite: { label: '📡 Connectivité & accès', color: '#2563eb' },
+      usages_services: { label: '💳 Usages & services qui buzzent', color: '#7c3aed' },
+      regulation_souverainete: { label: '⚖️ Identité numérique & souveraineté', color: '#0891b2' },
+      concurrence_marche: { label: '🏁 Activité concurrence (qui communique)', color: '#dc2626' },
     };
     const buildPilierBlock = (key: string) => {
       const items = (veille?.[key] || []);
