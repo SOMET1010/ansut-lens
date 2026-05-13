@@ -1570,7 +1570,7 @@ ${actions.length ? `<tr><td style="padding:0 24px 20px;">
 
 <!-- 7. RÉPUTATION ANSUT -->
 <tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #0891b2;padding-bottom:6px;">🛡️ Réputation & visibilité ANSUT</h2>
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #0891b2;padding-bottom:6px;">🛡️ Réputation & risques image</h2>
   <div style="padding:14px;background:#ecfeff;border-radius:8px;">
     <table width="100%" cellpadding="0" cellspacing="0"><tr>
       <td style="vertical-align:top;width:50%;padding-right:8px;"><p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#16a34a;text-transform:uppercase;">✅ Positif</p>${(reput?.positif||[]).length ? `<ul style="margin:0;padding-left:16px;">${reput.positif.map(p=>`<li style="font-size:12px;color:#1e3a5f;line-height:1.5;">${p}</li>`).join('')}</ul>` : '<p style="margin:0;font-size:11px;color:#9ca3af;font-style:italic;">—</p>'}</td>
