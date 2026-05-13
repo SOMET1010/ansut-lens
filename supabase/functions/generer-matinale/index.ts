@@ -1552,9 +1552,9 @@ ${lectureStrat.length ? `<tr><td style="padding:0 24px 20px;">
 
 <!-- 5. IMPACT PROJETS ANSUT -->
 ${impactProjets.length ? `<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #f59e0b;padding-bottom:6px;">🎯 Impact direct projets ANSUT</h2>
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #f59e0b;padding-bottom:6px;">📣 Activité des acteurs (qui communique aujourd'hui)</h2>
   <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-    <tr style="background:#fffbeb;"><th style="padding:8px;text-align:left;font-size:11px;color:#92400e;text-transform:uppercase;">Domaine / Projet</th><th style="padding:8px;text-align:center;font-size:11px;color:#92400e;text-transform:uppercase;width:90px;">Impact</th><th style="padding:8px;text-align:left;font-size:11px;color:#92400e;text-transform:uppercase;">Lecture</th></tr>
+    <tr style="background:#fffbeb;"><th style="padding:8px;text-align:left;font-size:11px;color:#92400e;text-transform:uppercase;">Acteur</th><th style="padding:8px;text-align:center;font-size:11px;color:#92400e;text-transform:uppercase;width:100px;">Niveau d'activité</th><th style="padding:8px;text-align:left;font-size:11px;color:#92400e;text-transform:uppercase;">Sur quoi ils communiquent</th></tr>
     ${impactProjets.map(p => `<tr style="border-bottom:1px solid #fde68a;"><td style="padding:8px;font-size:13px;font-weight:600;color:#1e3a5f;">${p.domaine}</td><td style="padding:8px;text-align:center;">${impactBadge(p.impact)}</td><td style="padding:8px;font-size:12px;color:#374151;">${p.commentaire}</td></tr>`).join('')}
   </table>
 </td></tr>` : ''}
