@@ -34,17 +34,22 @@ async function fetchPerplexityNews(): Promise<{ articles: Array<{ titre: string;
   }
 
   const todayStr = new Date().toISOString().slice(0, 10);
+  // PRIORITÉ : événements MAJEURS en cours à Abidjan / Côte d'Ivoire — toujours en tête.
   const queries = [
-    `Actualités précises ${todayStr} ANSUT ARTCI MTND Côte d'Ivoire télécommunications numérique service universel : décisions, annonces, projets, partenariats. Donne uniquement des articles datés des 48 dernières heures avec URL d'article (pas la page d'accueil).`,
-    `Annonces ${todayStr} opérateurs Orange CI, MTN CI, Moov Africa CI, Wave, Starlink Côte d'Ivoire : tarifs, couverture, investissements, incidents, régulation. Articles datés, URLs d'articles uniquement.`,
-    `Événements tech Afrique en cours cette semaine ${todayStr} : ID4Africa Abidjan, Africa CEO Forum Kigali, GITEX Africa, AfricaCom, Mobile World Congress, sommets numériques UEMOA/CEDEAO. Donne les annonces concrètes (signatures, discours, chiffres) avec URLs d'articles.`,
+    `Événements MAJEURS en cours cette semaine à Abidjan et en Côte d'Ivoire (${todayStr}) : ID4Africa, SARA, salons numériques, sommets ministériels, conférences telecoms, ASPEX, forums tech, signatures de conventions, lancements officiels, visites de délégations. Liste TOUT ce qui se déroule actuellement à Abidjan avec faits concrets (intervenants, annonces, chiffres) et URL d'article (jamais homepage).`,
+    `Actualités précises ${todayStr} ANSUT ARTCI MTND Côte d'Ivoire télécommunications numérique service universel : décisions, annonces, projets, partenariats. Articles datés des 72 dernières heures, URLs d'articles (pas page d'accueil).`,
+    `Annonces ${todayStr} opérateurs Orange CI, MTN CI, Moov Africa CI, Wave, Starlink Côte d'Ivoire : tarifs, couverture, investissements, incidents, régulation. URLs d'articles uniquement.`,
+    `Événements tech panafricains en cours ${todayStr} avec délégation ivoirienne : Africa CEO Forum, GITEX Africa, AfricaCom, MWC, sommets UEMOA/CEDEAO numérique. Annonces concrètes (signatures, discours, chiffres) + URLs d'articles.`,
     `Actualités régulation et souveraineté numérique Afrique de l'Ouest ${todayStr} : ARTCI, identité numérique, cloud souverain, cybersécurité, données personnelles, taxation telecoms. URLs d'articles uniquement.`,
+    `Agenda institutionnel et diplomatique Côte d'Ivoire ${todayStr} : visites présidentielles, conseils des ministres, signatures d'accords numériques, audiences avec opérateurs ou bailleurs (Banque mondiale, BAD, UIT, UA). Faits datés + URL.`,
   ];
 
   const allArticles: Array<{ titre: string; resume: string; source: string; url: string }> = [];
   const allCitations: string[] = [];
 
-  for (const query of queries) {
+  for (let qi = 0; qi < queries.length; qi++) {
+    const query = queries[qi];
+    const isEventQuery = qi === 0 || qi === 3 || qi === 5; // événements & agenda
     try {
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
@@ -53,24 +58,25 @@ async function fetchPerplexityNews(): Promise<{ articles: Array<{ titre: string;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'sonar',
+          model: isEventQuery ? 'sonar-pro' : 'sonar',
           messages: [
             {
               role: 'system',
               content: `Tu es un agent de veille presse pour la Direction Générale de l'ANSUT (Côte d'Ivoire).
 Tu dois retourner UNIQUEMENT du JSON valide, structure :
-{ "articles": [ { "titre": "Titre EXACT de l'article (pas le nom du média, pas une description du site)", "resume": "Résumé factuel en 2 phrases reprenant les FAITS de l'article (chiffres, noms, décisions)", "source": "Nom du média", "url": "URL DIRECTE de l'article publié (avec /chemin, jamais juste le domaine)", "date": "AAAA-MM-JJ" } ] }
+{ "articles": [ { "titre": "Titre EXACT de l'article (pas le nom du média, pas une description du site)", "resume": "Résumé factuel en 2 phrases reprenant les FAITS de l'article (chiffres, noms, décisions, lieu, dates)", "source": "Nom du média", "url": "URL DIRECTE de l'article publié (avec /chemin, jamais juste le domaine)", "date": "AAAA-MM-JJ" } ] }
 
 RÈGLES STRICTES :
-- Maximum 6 articles par requête, datés des 72 dernières heures.
-- Le "titre" doit être le titre journalistique de l'article, JAMAIS la description SEO/meta du site (ex: "Connecting Africa is a trusted technology..." → INTERDIT).
-- L'URL doit pointer vers l'article lui-même (ex: https://site.com/2026/05/13/article-slug), JAMAIS la page d'accueil ou une rubrique générique.
+- Maximum ${isEventQuery ? 10 : 6} articles par requête, datés des 72 dernières heures.
+- Couvre EXHAUSTIVEMENT les événements en cours en Côte d'Ivoire (ID4Africa, SARA, salons, sommets, signatures). Si plusieurs sources couvrent le même événement, garde les plus factuelles.
+- Le "titre" doit être le titre journalistique de l'article, JAMAIS la description SEO/meta du site.
+- L'URL doit pointer vers l'article (ex: https://site.com/2026/05/13/article-slug), JAMAIS la page d'accueil ou une rubrique générique.
 - Si tu n'as pas d'article concret avec un vrai titre + URL d'article, retourne "articles": [].
 - Pas d'invention. Pas de paraphrase de homepage.`
             },
             { role: 'user', content: query }
           ],
-          search_recency_filter: 'week',
+          search_recency_filter: isEventQuery ? 'day' : 'week',
           return_citations: true,
         }),
       });
@@ -86,8 +92,9 @@ RÈGLES STRICTES :
       const citations = data.citations || [];
       allCitations.push(...citations);
 
+      let parsedCount = 0;
       try {
-        const jsonMatch = content.match(/\{[\s\S]*"articles"[\s\S]*\}/);
+        const jsonMatch = content.match(/\{[\s\S]*?"articles"[\s\S]*\}/);
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
           if (Array.isArray(parsed.articles)) {
@@ -98,11 +105,33 @@ RÈGLES STRICTES :
               url: a.url || citations[i] || '',
             }));
             allArticles.push(...enriched);
+            parsedCount = enriched.length;
           }
         }
       } catch (e) {
         console.error('[Matinale/Perplexity] JSON parse error:', e);
       }
+
+      // Fallback: if model returned prose without JSON but we have citations,
+      // ingest citations directly so events surfaced via search are not lost.
+      if (parsedCount === 0 && citations.length > 0 && content.length > 50) {
+        for (const citUrl of citations.slice(0, 8)) {
+          if (typeof citUrl !== 'string' || !/^https?:\/\//.test(citUrl)) continue;
+          let host = '';
+          try { host = new URL(citUrl).hostname.replace(/^www\./, ''); } catch { continue; }
+          // Use first 200 chars of content as resume + the URL slug as fallback title
+          const slug = (citUrl.split('/').filter(Boolean).pop() || '').replace(/[-_]+/g, ' ').replace(/\.\w+$/, '').slice(0, 120);
+          const titre = slug && slug.length > 6 ? slug : `Source ${host}`;
+          allArticles.push({
+            titre,
+            resume: content.slice(0, 240).replace(/\s+/g, ' ').trim(),
+            source: host,
+            url: citUrl,
+          });
+        }
+        parsedCount = Math.min(citations.length, 8);
+      }
+      console.log(`[Matinale/Perplexity] Q${qi} (${isEventQuery ? 'EVT' : 'STD'}): parsed=${parsedCount}, citations=${citations.length}, content.len=${content.length}`);
     } catch (e) {
       console.error(`[Matinale/Perplexity] Fetch error for query "${query}":`, e);
     }
@@ -559,6 +588,14 @@ Et toujours en arrière-plan : lecture Service Universel (Accès / Usages / Impa
 - Une actualité étrangère (Sénégal, Maroc, Nigeria, France, USA…) ne devient PRIORITÉ EXÉCUTIVE que si elle a un lien opérationnel direct et explicite avec un projet/dossier ANSUT en Côte d'Ivoire. Sinon → la classer en "signaux_faibles" ou "veille_par_pilier", JAMAIS en priorité du jour.
 - Les actions_immediates doivent désigner des responsables internes ANSUT/CI (DG, DTDI, DSIS, CT, ARTCI, MTNIT) et viser des livrables exécutables en Côte d'Ivoire.
 - Si une actualité étrangère est citée pour benchmark, le commentaire doit expliquer ce que la Côte d'Ivoire / l'ANSUT en tire concrètement (ne JAMAIS recommander une action sur le pays étranger lui-même).
+
+==== ÉVÉNEMENTS EN COURS À ABIDJAN — OBLIGATION DE COUVERTURE ====
+- Si le contexte mentionne un événement MAJEUR se déroulant ACTUELLEMENT à Abidjan ou en Côte d'Ivoire (ID4Africa, SARA, ASPEX, salon numérique, sommet ministériel, conférence telecoms, signature inter-États, visite officielle), il DOIT obligatoirement apparaître :
+  • soit en priorite_executive si lien direct ANSUT/MTNIT/ARTCI/service universel/identité numérique,
+  • soit dans veille_par_pilier (rubrique pertinente) avec lecture_ansut explicite,
+  • et systématiquement dans la revue_de_presse.
+- Ne JAMAIS ignorer un événement panafricain organisé à Abidjan : c'est une fenêtre d'influence et de sourcing pour l'ANSUT.
+- ID4Africa (identité numérique) → impact direct sur la stratégie d'identité numérique CI : priorite_executive ou lecture_strategique obligatoire si présent dans le contexte.
 
 ==== CONTRAINTES STRICTES ====
 - JAMAIS inventer un titre, une URL, un chiffre, un nom, une fonction, un projet
