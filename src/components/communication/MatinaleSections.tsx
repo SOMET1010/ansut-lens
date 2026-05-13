@@ -136,6 +136,12 @@ function TitrologieBilanBlock({
       <div className="flex items-center gap-2 flex-wrap pb-2 border-b border-primary/20">
         <Newspaper className="h-4 w-4 text-primary" />
         <div className="font-bold text-primary">🗞️ Titrologie nationale du jour</div>
+        {liveMapped.length > 0 && (
+          <Badge variant="outline" className="text-[10px] gap-1 bg-emerald-500/10 text-emerald-700 border-emerald-500/30">
+            <RefreshCw className={`h-3 w-3 ${isFetching ? 'animate-spin' : ''}`} />
+            Live · maj {format(new Date(dataUpdatedAt), 'HH:mm:ss', { locale: fr })}
+          </Badge>
+        )}
         <Badge variant="outline" className={`${RISQUE_BADGE[risque]} text-[10px] ml-auto`}>
           Risque réputationnel : {risque}
         </Badge>
