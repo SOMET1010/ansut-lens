@@ -34,11 +34,14 @@ async function fetchPerplexityNews(): Promise<{ articles: Array<{ titre: string;
   }
 
   const todayStr = new Date().toISOString().slice(0, 10);
+  // PRIORITÉ : événements MAJEURS en cours à Abidjan / Côte d'Ivoire — toujours en tête.
   const queries = [
-    `Actualités précises ${todayStr} ANSUT ARTCI MTND Côte d'Ivoire télécommunications numérique service universel : décisions, annonces, projets, partenariats. Donne uniquement des articles datés des 48 dernières heures avec URL d'article (pas la page d'accueil).`,
-    `Annonces ${todayStr} opérateurs Orange CI, MTN CI, Moov Africa CI, Wave, Starlink Côte d'Ivoire : tarifs, couverture, investissements, incidents, régulation. Articles datés, URLs d'articles uniquement.`,
-    `Événements tech Afrique en cours cette semaine ${todayStr} : ID4Africa Abidjan, Africa CEO Forum Kigali, GITEX Africa, AfricaCom, Mobile World Congress, sommets numériques UEMOA/CEDEAO. Donne les annonces concrètes (signatures, discours, chiffres) avec URLs d'articles.`,
+    `Événements MAJEURS en cours cette semaine à Abidjan et en Côte d'Ivoire (${todayStr}) : ID4Africa, SARA, salons numériques, sommets ministériels, conférences telecoms, ASPEX, forums tech, signatures de conventions, lancements officiels, visites de délégations. Liste TOUT ce qui se déroule actuellement à Abidjan avec faits concrets (intervenants, annonces, chiffres) et URL d'article (jamais homepage).`,
+    `Actualités précises ${todayStr} ANSUT ARTCI MTND Côte d'Ivoire télécommunications numérique service universel : décisions, annonces, projets, partenariats. Articles datés des 72 dernières heures, URLs d'articles (pas page d'accueil).`,
+    `Annonces ${todayStr} opérateurs Orange CI, MTN CI, Moov Africa CI, Wave, Starlink Côte d'Ivoire : tarifs, couverture, investissements, incidents, régulation. URLs d'articles uniquement.`,
+    `Événements tech panafricains en cours ${todayStr} avec délégation ivoirienne : Africa CEO Forum, GITEX Africa, AfricaCom, MWC, sommets UEMOA/CEDEAO numérique. Annonces concrètes (signatures, discours, chiffres) + URLs d'articles.`,
     `Actualités régulation et souveraineté numérique Afrique de l'Ouest ${todayStr} : ARTCI, identité numérique, cloud souverain, cybersécurité, données personnelles, taxation telecoms. URLs d'articles uniquement.`,
+    `Agenda institutionnel et diplomatique Côte d'Ivoire ${todayStr} : visites présidentielles, conseils des ministres, signatures d'accords numériques, audiences avec opérateurs ou bailleurs (Banque mondiale, BAD, UIT, UA). Faits datés + URL.`,
   ];
 
   const allArticles: Array<{ titre: string; resume: string; source: string; url: string }> = [];
