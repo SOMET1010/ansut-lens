@@ -78,6 +78,31 @@ RÈGLES STRICTES :
           ],
           search_recency_filter: isEventQuery ? 'day' : 'week',
           return_citations: true,
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              schema: {
+                type: 'object',
+                properties: {
+                  articles: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        titre: { type: 'string' },
+                        resume: { type: 'string' },
+                        source: { type: 'string' },
+                        url: { type: 'string' },
+                        date: { type: 'string' },
+                      },
+                      required: ['titre', 'resume', 'source', 'url'],
+                    },
+                  },
+                },
+                required: ['articles'],
+              },
+            },
+          },
         }),
       });
 
@@ -92,6 +117,7 @@ RÈGLES STRICTES :
       const citations = data.citations || [];
       allCitations.push(...citations);
 
+      let parsedCount = 0;
       try {
         const jsonMatch = content.match(/\{[\s\S]*"articles"[\s\S]*\}/);
         if (jsonMatch) {
@@ -104,11 +130,13 @@ RÈGLES STRICTES :
               url: a.url || citations[i] || '',
             }));
             allArticles.push(...enriched);
+            parsedCount = enriched.length;
           }
         }
       } catch (e) {
         console.error('[Matinale/Perplexity] JSON parse error:', e);
       }
+      console.log(`[Matinale/Perplexity] Q${qi} (${isEventQuery ? 'EVT' : 'STD'}): parsed=${parsedCount}, citations=${citations.length}, content.len=${content.length}`);
     } catch (e) {
       console.error(`[Matinale/Perplexity] Fetch error for query "${query}":`, e);
     }
