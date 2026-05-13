@@ -1129,7 +1129,17 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     for (const m of (mentions || [])) registerUrl(m.source_url, m.source || 'Mention', (m.contenu || '').slice(0, 120), m.date_mention);
     for (const s of (socialInsights || [])) registerUrl(s.url_original, s.plateforme || 'Social', (s.contenu || '').slice(0, 120));
     for (const p of perplexityNews.articles) registerUrl(p.url, p.source, p.titre);
-    for (const c of perplexityNews.citations) registerUrl(c, 'Web', '');
+    // N'enregistrer que les citations qui pointent vers un VRAI article (pas une homepage),
+    // pour éviter que la matinale se nourrisse de descriptions de site.
+    for (const c of perplexityNews.citations) {
+      try {
+        const url = new URL(c);
+        const path = url.pathname.replace(/\/+$/, '');
+        const segs = path.split('/').filter(Boolean);
+        const isArticleUrl = segs.length >= 2 || segs.some(s => /\d/.test(s) || s.length >= 14);
+        if (isArticleUrl) registerUrl(c, 'Web', '');
+      } catch { /* skip */ }
+    }
 
     const validUrls = new Set<string>(urlMeta.keys());
 
