@@ -1528,7 +1528,7 @@ ${titroTopUnes.length ? `<tr><td style="padding:0 24px 20px;">
 
 <!-- 3. VEILLE STRATÉGIQUE PAR PILIER -->
 <tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #2563eb;padding-bottom:6px;">🎯 Veille stratégique par pilier ANSUT</h2>
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #2563eb;padding-bottom:6px;">📊 Tendances par domaine</h2>
   ${['connectivite','usages_services','regulation_souverainete','concurrence_marche'].map(buildPilierBlock).join('')}
 </td></tr>
 
