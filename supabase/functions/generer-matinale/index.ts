@@ -1481,22 +1481,22 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
 
 <!-- EN-TÊTE -->
 <tr><td style="background:linear-gradient(135deg,#0f172a,#1e3a5f);padding:28px 30px;">
-  <p style="margin:0;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;">Système d'intelligence stratégique numérique</p>
-  <h1 style="color:#ffffff;margin:6px 0 0;font-size:24px;letter-spacing:0.3px;">Matinale CODIR – ANSUT</h1>
+  <p style="margin:0;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;">Centre de situation communication & écosystème numérique</p>
+  <h1 style="color:#ffffff;margin:6px 0 0;font-size:24px;letter-spacing:0.3px;">Matinale Communication & Veille 360 – ANSUT</h1>
   <p style="color:#bfdbfe;margin:6px 0 0;font-size:13px;">${dateStr}</p>
   <p style="color:#94a3b8;margin:10px 0 0;font-size:11px;">Génération ${generatedAtUtc} · Fenêtre ${freshnessHours}h · ${totalSignaux} signaux exploités</p>
 </td></tr>
 
-<!-- 1. PRIORITÉ EXÉCUTIVE -->
+<!-- 1. SUJET CHAUD DU JOUR -->
 <tr><td style="padding:24px 24px 16px;">
-  <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:#dc2626;letter-spacing:1.5px;">🚨 PRIORITÉ EXÉCUTIVE</p>
+  <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:#dc2626;letter-spacing:1.5px;">🔥 SUJET CHAUD DU JOUR</p>
   <div style="padding:18px;background:${prioColor.bg};border-radius:10px;border-left:5px solid ${prioColor.border};">
     <table width="100%" cellpadding="0" cellspacing="0"><tr>
       <td style="font-size:16px;font-weight:700;color:${prioColor.fg};">${prio?.titre || ''}</td>
       <td style="text-align:right;width:90px;">${nivBadge(prio?.niveau || 'BLEU')}</td>
     </tr></table>
-    ${(prio?.impacts || []).length ? `<p style="margin:14px 0 4px;font-size:11px;font-weight:700;color:${prioColor.fg};text-transform:uppercase;letter-spacing:0.5px;">Impact potentiel</p><ul style="margin:0;padding-left:18px;">${prio.impacts.map((i: string) => `<li style="font-size:13px;color:#1e3a5f;line-height:1.5;margin-bottom:3px;">${i}</li>`).join('')}</ul>` : ''}
-    ${(prio?.recommandation || []).length ? `<p style="margin:12px 0 4px;font-size:11px;font-weight:700;color:${prioColor.fg};text-transform:uppercase;letter-spacing:0.5px;">Recommandation IA</p><ul style="margin:0;padding-left:18px;">${prio.recommandation.map((i: string) => `<li style="font-size:13px;color:#1e3a5f;line-height:1.5;margin-bottom:3px;">${i}</li>`).join('')}</ul>` : ''}
+    ${(prio?.impacts || []).length ? `<p style="margin:14px 0 4px;font-size:11px;font-weight:700;color:${prioColor.fg};text-transform:uppercase;letter-spacing:0.5px;">Ce qui ressort</p><ul style="margin:0;padding-left:18px;">${prio.impacts.map((i: string) => `<li style="font-size:13px;color:#1e3a5f;line-height:1.5;margin-bottom:3px;">${i}</li>`).join('')}</ul>` : ''}
+    ${(prio?.recommandation || []).length ? `<p style="margin:12px 0 4px;font-size:11px;font-weight:700;color:${prioColor.fg};text-transform:uppercase;letter-spacing:0.5px;">Opportunité COM — prise de parole</p><ul style="margin:0;padding-left:18px;">${prio.recommandation.map((i: string) => `<li style="font-size:13px;color:#1e3a5f;line-height:1.5;margin-bottom:3px;">${i}</li>`).join('')}</ul>` : ''}
   </div>
 </td></tr>
 
