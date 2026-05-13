@@ -1534,7 +1534,7 @@ ${titroTopUnes.length ? `<tr><td style="padding:0 24px 20px;">
 
 <!-- 4. LECTURE STRATÉGIQUE -->
 ${lectureStrat.length ? `<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #8b5cf6;padding-bottom:6px;">🧠 Lecture stratégique ANSUT</h2>
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #8b5cf6;padding-bottom:6px;">🚀 Tendances numériques & télécoms</h2>
   ${lectureStrat.map(l => `<div style="margin-bottom:14px;padding:14px;background:#faf5ff;border-radius:8px;border-left:4px solid #8b5cf6;">
     <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#6b21a8;">${l.sujet}</p>
     <table width="100%" cellpadding="0" cellspacing="0"><tr>
