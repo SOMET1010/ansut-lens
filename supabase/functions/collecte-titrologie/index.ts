@@ -262,8 +262,8 @@ Réponds via l'outil structurer_une.`,
   });
 
   // Default to Flash for speed; fallback to Flash-Lite then Pro on timeout/5xx.
-  const MODELS = ['google/gemini-2.5-flash', 'google/gemini-2.5-flash-lite', 'google/gemini-2.5-pro'];
-  const TIMEOUT_MS = 45000;
+  const MODELS = ['google/gemini-2.5-flash-lite', 'google/gemini-2.5-flash'];
+  const TIMEOUT_MS = 25000;
   let lastErr: unknown = null;
 
   for (const model of MODELS) {
