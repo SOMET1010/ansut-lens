@@ -1595,7 +1595,7 @@ ${signaux.length ? `<tr><td style="padding:0 24px 20px;">
 
 <!-- F. ACTIVITÉ ANSUT -->
 <tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:14px;margin:0 0 10px;border-bottom:1px dashed #cbd5e1;padding-bottom:4px;">📣 Activité ANSUT (24h)</h2>
+  <h2 style="color:#1e3a5f;font-size:14px;margin:0 0 10px;border-bottom:1px dashed #cbd5e1;padding-bottom:4px;">📣 Visibilité ANSUT (24h)</h2>
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border-radius:6px;"><tr>
     <td style="padding:10px;font-size:12px;color:#1e3a5f;"><strong>Publications :</strong> ${act?.publications_count ?? 0}</td>
     <td style="padding:10px;font-size:12px;color:#1e3a5f;text-align:right;"><strong>Visibilité :</strong> <span style="color:${act?.visibilite === 'Fort' ? '#10b981' : act?.visibilite === 'Moyen' ? '#f59e0b' : '#ef4444'};font-weight:700;">${act?.visibilite || 'Faible'}</span></td>
