@@ -1700,7 +1700,7 @@ ${signaux.length ? `<tr><td style="padding:0 24px 20px;">
 
     console.log(`[Matinale] Sending to ${recipients.length} recipients`);
 
-    const subject = `📰 La Matinale ANSUT — ${dateStr}`;
+    const subject = `📌 Matinale COM ANSUT — ${dateStr}`;
     let successCount = 0;
     let failCount = 0;
 
