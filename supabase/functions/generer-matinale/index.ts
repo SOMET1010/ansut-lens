@@ -1365,6 +1365,19 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     const reput = matinale.reputation_ansut as { positif: string[]; negatif: string[]; confusion_role: string | null; niveau_risque: string };
     const signaux = (matinale.signaux_faibles || []) as string[];
 
+    // Titrologie ivoirienne du jour (rendu email)
+    const titroUnes = Array.isArray(titrologie?.unes) ? titrologie.unes : [];
+    const titroSynthese = (titrologie as any)?.synthese_codir || null;
+    const titroSignaux: string[] = Array.isArray((titrologie as any)?.signaux_ansut) ? (titrologie as any).signaux_ansut : [];
+    const titroRiskColor: Record<string, string> = { ROUGE: '#dc2626', ORANGE: '#ea580c', VERT: '#16a34a' };
+    const titroTopUnes = titroUnes
+      .slice()
+      .sort((a: any, b: any) => {
+        const order: Record<string, number> = { ROUGE: 0, ORANGE: 1, VERT: 2 };
+        return (order[a?.risque_ansut] ?? 3) - (order[b?.risque_ansut] ?? 3);
+      })
+      .slice(0, 8);
+
     // Couleurs par niveau de criticité
     const NIV_COLORS: Record<string, { bg: string; fg: string; border: string }> = {
       ROUGE:  { bg: '#fef2f2', fg: '#991b1b', border: '#dc2626' },
