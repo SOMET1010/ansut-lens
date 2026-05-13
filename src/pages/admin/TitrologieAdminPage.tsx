@@ -260,6 +260,9 @@ function LogsTechniques() {
           <div className="space-y-4">
             {runs.map(run => {
               const sources = run.metadata?.sources || [];
+              const failures = run.metadata?.failures || [];
+              const exploitables = run.metadata?.exploitables;
+              const threshold = run.metadata?.ocr_threshold ?? 40;
               return (
                 <div key={run.id} className="rounded-md border border-border p-3 space-y-2">
                   <div className="flex items-center gap-2 flex-wrap text-sm">
@@ -269,7 +272,9 @@ function LogsTechniques() {
                       {formatDistanceToNow(new Date(run.started_at), { addSuffix: true, locale: fr })}
                     </span>
                     <span className="text-xs text-muted-foreground ml-auto">
-                      {run.unes_collected} unes collectées · {run.unes_analyzed} analysées
+                      {run.unes_collected} collectées · {run.unes_analyzed} analysées
+                      {typeof exploitables === 'number' ? ` · ${exploitables} exploitables` : ''}
+                      {failures.length > 0 ? ` · ${failures.length} OCR KO` : ''}
                       {run.duration_ms ? ` · ${(run.duration_ms / 1000).toFixed(1)}s` : ''}
                     </span>
                   </div>
@@ -281,7 +286,7 @@ function LogsTechniques() {
                           <tr className="text-left border-b text-muted-foreground">
                             <th className="py-1.5 pr-2">Source</th>
                             <th className="pr-2">URL</th>
-                            <th className="pr-2 text-right">Images détectées</th>
+                            <th className="pr-2 text-right">Détectées</th>
                             <th className="pr-2 text-right">Traitées</th>
                             <th className="pr-2 text-right">Erreurs OCR</th>
                             <th className="pr-2">Dernier scan</th>
@@ -305,6 +310,51 @@ function LogsTechniques() {
                     </div>
                   ) : (
                     <p className="text-xs text-muted-foreground italic">Pas de détail par source (collecte antérieure au tracking).</p>
+                  )}
+
+                  {failures.length > 0 && (
+                    <details className="rounded border border-amber-500/30 bg-amber-500/5 p-2" open={failures.length <= 3}>
+                      <summary className="cursor-pointer text-xs font-semibold text-amber-700 flex items-center gap-1.5">
+                        <AlertCircle className="h-3.5 w-3.5" /> {failures.length} journal{failures.length > 1 ? 'aux' : ''} mal lu{failures.length > 1 ? 's' : ''} (seuil OCR : {threshold}/100)
+                      </summary>
+                      <div className="overflow-x-auto mt-2">
+                        <table className="w-full text-[11px]">
+                          <thead>
+                            <tr className="text-left border-b text-muted-foreground">
+                              <th className="py-1 pr-2">Journal</th>
+                              <th className="pr-2">Source</th>
+                              <th className="pr-2 text-right">Confiance</th>
+                              <th className="pr-2">Code</th>
+                              <th className="pr-2">Raison</th>
+                              <th>Image</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {failures.map((f, i) => (
+                              <tr key={i} className="border-b last:border-0 align-top">
+                                <td className="py-1 pr-2 font-medium">{f.journal}</td>
+                                <td className="pr-2 text-muted-foreground">{f.source}</td>
+                                <td className="pr-2 text-right">
+                                  <Badge variant="outline" className={`text-[10px] ${f.ocr_confidence < threshold ? 'border-red-300 text-red-700' : ''}`}>
+                                    {f.ocr_confidence}/100
+                                  </Badge>
+                                </td>
+                                <td className="pr-2"><Badge variant="outline" className="text-[10px]">{f.raison_code}</Badge></td>
+                                <td className="pr-2">
+                                  {f.reason}
+                                  {f.ocr_warnings && f.ocr_warnings.length > 0 && (
+                                    <div className="text-[10px] text-muted-foreground mt-0.5">⚠ {f.ocr_warnings.join(' · ')}</div>
+                                  )}
+                                </td>
+                                <td>
+                                  {f.image_url && <a href={f.image_url} target="_blank" rel="noreferrer" className="text-primary underline">voir</a>}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </details>
                   )}
                 </div>
               );
