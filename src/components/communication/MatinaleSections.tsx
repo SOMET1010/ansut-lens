@@ -82,8 +82,22 @@ const TITROLOGIE_SOURCES_LIST = ['Abidjan.net', 'Presse Côte d\'Ivoire'];
 const OCR_CONFIDENCE_THRESHOLD = 40;
 
 function TitrologieBilanBlock({
-  unes, synth,
+  unes: unesProp, synth,
 }: { unes: any[]; synth: any | undefined | null }) {
+  // Live auto-refresh: override the static prop with today's live unes when available
+  const { data: liveUnes, isFetching, dataUpdatedAt } = useTitrologieToday(true);
+  const liveMapped = (liveUnes || []).map((r) => ({
+    journal: r.journal,
+    titre_une: r.titre_une,
+    sujet: r.sujet,
+    ton: r.ton,
+    risque_ansut: r.risque_ansut,
+    lien_ansut: r.lien_ansut,
+    image_url: r.image_url,
+    source_url: r.source_url,
+    analyse_ia: r.analyse_ia,
+  }));
+  const unes = liveMapped.length > 0 ? liveMapped : unesProp;
   const journauxDetectes = new Set(unes.map(u => (u.journal || '').trim()).filter(Boolean)).size;
 
   // Defaillances: confidence < threshold OR ocr_warnings present OR titre too short OR explicit ocr_failed flag
