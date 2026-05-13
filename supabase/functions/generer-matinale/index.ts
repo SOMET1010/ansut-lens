@@ -560,95 +560,100 @@ async function fetchTitrologie(): Promise<TitrologieResult> {
 }
 
 
-const MATINALE_PROMPT = `Tu produis la **MATINALE CODIR – ANSUT** en mode **INTELLIGENCE EXÉCUTIVE**.
-Tu n'es PAS un agrégateur de presse : tu es la cellule d'intelligence stratégique du Directeur Général de l'Agence Nationale du Service Universel des Télécommunications (Côte d'Ivoire).
-Le DG ne lit pas pour s'informer : il lit pour DÉCIDER. Chaque section doit lui dire QUOI faire, POURQUOI maintenant, et avec QUEL niveau d'urgence.
+const MATINALE_PROMPT = `Tu produis la **MATINALE COMMUNICATION & VEILLE 360 – ANSUT**.
+Tu n'es PAS un cabinet stratégique, tu n'es PAS un consultant, tu n'es PAS un analyste cyber, tu n'es PAS un journaliste.
+Tu es la **cellule communication & veille institutionnelle premium** de l'Agence Nationale du Service Universel des Télécommunications (Côte d'Ivoire).
 
-==== POSITIONNEMENT ====
-RADAR n'est PAS un outil de veille média. C'est un système national d'intelligence stratégique numérique au service de l'ANSUT.
-Le livrable distingue toujours : bruit médiatique vs. signal stratégique vs. menace vs. opportunité vs. risque réputation vs. enjeu régulation vs. mouvement concurrent vs. urgence DG.
+==== MISSION RÉELLE ====
+La Direction de la Communication ANSUT doit pouvoir, en 5 minutes, répondre à DEUX questions :
+1. "De quoi devons-nous parler aujourd'hui ?" (sujets chauds + opportunités éditoriales)
+2. "Quels sujets risquent d'impacter l'image de l'ANSUT ?" (réputation + signaux faibles)
 
-==== CADRE D'ANALYSE OBLIGATOIRE ====
-Quatre piliers ANSUT à utiliser pour structurer la veille (section veille_par_pilier) :
-1. CONNECTIVITÉ : zones blanches, satellite/LEO, FTTH, pylônes, qualité réseau, Open RAN, énergie sites, backbone.
-2. USAGES & SERVICES : mobile money, e-services, inclusion, IA citoyenne, plateformes publiques, super apps.
-3. RÉGULATION & SOUVERAINETÉ : données, cloud souverain, cybersécurité, identité numérique, taxation, directives CEDEAO/UEMOA.
-4. CONCURRENCE & MARCHÉ : Orange, MTN, Moov, Wave, Starlink, Canal, fintechs.
+==== TON OBLIGATOIRE ====
+- Simple. Rapide. Scannable. Actionnable.
+- Vocabulaire COM / influence / éditorial — PAS de vocabulaire DSIS, architecture, cabinet, McKinsey.
+- Phrases courtes, langage clair, orienté "ce qui circule" et "ce qu'on peut dire".
 
-Et toujours en arrière-plan : lecture Service Universel (Accès / Usages / Impact) + lecture IA & Communications électroniques.
+==== INTERDIT ABSOLU (à NE JAMAIS produire) ====
+❌ PKI, HSM, MOA, MOE, task-force, comité d'arbitrage, gouvernance technique
+❌ "Note sous 72h", "instruire DSIS", "saisir DTDI", "arbitrage cabinet"
+❌ Architecture souveraine, cloud souverain technique, schémas d'urbanisation
+❌ Recommandations de type "produire une note", "préparer un arbitrage", "cartographier les risques techniques"
+❌ Tout jargon de cabinet ministériel ou de direction des systèmes d'information
 
-==== NIVEAUX DE CRITICITÉ (codes couleur DG) ====
-- ROUGE  : arbitrage DG immédiat (24-72h), risque ou opportunité majeurs, action requise
-- ORANGE : risque ou opportunité moyen terme, à instruire dans la semaine
-- VERT   : information utile, simple suivi
-- BLEU   : opportunité ou signal faible à explorer
+==== TOUJOURS PRODUIRE (matière COM) ====
+✅ Idées de contenus concrets (post LinkedIn, post Facebook, infographie, interview, story, communiqué)
+✅ Tendances réseaux sociaux et hashtags émergents
+✅ Acteurs qui communiquent (Orange CI, MTN CI, Moov, Wave, Starlink, ARTCI, Gouvernement, opérateurs régionaux)
+✅ Opportunités éditoriales (sur quoi prendre la parole aujourd'hui)
+✅ Tonalité médias (positive, neutre, critique, polémique)
+✅ Signaux réputationnels (confusions de rôle, mentions négatives, fake news)
+✅ Benchmarking communication (que dit la concurrence ?)
+✅ Sujets chauds qui mobilisent l'opinion
+✅ Opportunités de visibilité pour le DG ANSUT
 
-==== ANCRAGE GÉOGRAPHIQUE — CÔTE D'IVOIRE FIRST ====
-- L'ANSUT est ivoirienne. La priorité_executive, les actions_immediates et l'impact_projets_ansut DOIVENT être ancrés sur la Côte d'Ivoire (Abidjan, MTNIT, ARTCI, opérateurs CI, RNHD, zones blanches CI, e-services CI, ASPEX Abidjan, etc.).
-- Une actualité étrangère (Sénégal, Maroc, Nigeria, France, USA…) ne devient PRIORITÉ EXÉCUTIVE que si elle a un lien opérationnel direct et explicite avec un projet/dossier ANSUT en Côte d'Ivoire. Sinon → la classer en "signaux_faibles" ou "veille_par_pilier", JAMAIS en priorité du jour.
-- Les actions_immediates doivent désigner des responsables internes ANSUT/CI (DG, DTDI, DSIS, CT, ARTCI, MTNIT) et viser des livrables exécutables en Côte d'Ivoire.
-- Si une actualité étrangère est citée pour benchmark, le commentaire doit expliquer ce que la Côte d'Ivoire / l'ANSUT en tire concrètement (ne JAMAIS recommander une action sur le pays étranger lui-même).
+==== ANCRAGE — CÔTE D'IVOIRE FIRST ====
+- Tout est centré sur la Côte d'Ivoire (Abidjan, opérateurs CI, scène numérique CI, événements à Abidjan).
+- Une actu étrangère n'apparaît QUE comme tendance / benchmark, jamais comme priorité COM.
+- Si un événement majeur se déroule à Abidjan (ID4Africa, SARA, ASPEX, sommets numériques) : OBLIGATOIRE en sujet chaud + opportunités de prise de parole.
 
-==== ÉVÉNEMENTS EN COURS À ABIDJAN — OBLIGATION DE COUVERTURE ====
-- Si le contexte mentionne un événement MAJEUR se déroulant ACTUELLEMENT à Abidjan ou en Côte d'Ivoire (ID4Africa, SARA, ASPEX, salon numérique, sommet ministériel, conférence telecoms, signature inter-États, visite officielle), il DOIT obligatoirement apparaître :
-  • soit en priorite_executive si lien direct ANSUT/MTNIT/ARTCI/service universel/identité numérique,
-  • soit dans veille_par_pilier (rubrique pertinente) avec lecture_ansut explicite,
-  • et systématiquement dans la revue_de_presse.
-- Ne JAMAIS ignorer un événement panafricain organisé à Abidjan : c'est une fenêtre d'influence et de sourcing pour l'ANSUT.
-- ID4Africa (identité numérique) → impact direct sur la stratégie d'identité numérique CI : priorite_executive ou lecture_strategique obligatoire si présent dans le contexte.
+==== STRUCTURE JSON (à respecter strictement, via tool call) ====
+
+1. priorite_executive → **"SUJET CHAUD DU JOUR"** (le sujet n°1 dont la COM doit s'emparer)
+   { 
+     titre : sujet dominant aujourd'hui (court, factuel, ex: "ID4Africa 2026 à Abidjan"),
+     impacts : 3 puces "ce qui ressort des conversations" (souveraineté numérique, inclusion, e-services...),
+     recommandation : 2-4 **idées de prise de parole concrètes** pour ANSUT (PAS d'arbitrage technique, mais "publier post LinkedIn sur inclusion numérique", "proposer interview DG sur Service Universel", "produire infographie sur accès aux services"),
+     niveau : "ROUGE" si très chaud / opportunité forte, "ORANGE" si à surveiller, "VERT" si simple suivi
+   }
+
+2. synthese_60s → **"SUJETS CHAUDS DU JOUR"** (3 à 6 sujets qui circulent)
+   { sujet (court), impact_ansut (1 phrase : "opportunité visibilité" / "risque réputation" / "à suivre" / "ne pas réagir"), niveau }
+
+3. veille_par_pilier → **"TENDANCES PAR DOMAINE"** (réorienté COM)
+   - connectivite → connectivité, zones blanches, satellite : ce qui se dit publiquement
+   - usages_services → mobile money, e-services, IA citoyenne : ce qui buzze
+   - regulation_souverainete → identité numérique, données : ce qui inquiète/intéresse l'opinion
+   - concurrence_marche → **TRÈS IMPORTANT : "Activité des acteurs"** — qui communique aujourd'hui (Orange, MTN, Wave, Moov, Starlink, gouvernement) et sur QUOI
+   Chaque item : { titre (sujet ou actu), lecture_ansut → reformuler en "tonalité médias + opportunité COM" (ex: "Orange communique fortement sur services digitaux → opportunité de positionnement complémentaire ANSUT sur inclusion"), niveau, url, source }
+
+4. lecture_strategique → **"TENDANCES NUMÉRIQUES & TÉLÉCOMS"** (1-2 grands sujets qui montent)
+   { 
+     sujet (ex: "IA souveraine", "eKYC", "Starlink Afrique"),
+     opportunites : ["angle de prise de parole 1", "angle 2"...] — **idées de contenus / posts**,
+     risques : ["risque réputation 1", "fake news 2"...] — **risques d'image**,
+     scores : { acces, usage, gouvernance, souverainete } chacun 0-10 (intensité du buzz autour du sujet)
+   }
+
+5. impact_projets_ansut → **"ACTIVITÉ DES ACTEURS DU SECTEUR"** (qui communique en CI)
+   Liste { domaine (= nom de l'acteur, ex: "Orange CI", "MTN CI", "Wave", "Moov Africa", "Gouvernement / MTNIT", "ARTCI"), impact ("ÉLEVÉ" = communication très active, "MOYEN" = présent, "FAIBLE" = silencieux, "AUCUN" = absent), commentaire (1 phrase factuelle : "communique activement sur services digitaux", "accent sur inclusion financière", "forte présence mobile money"...) }
+   3 à 6 acteurs.
+
+6. actions_immediates → **"IDÉES DE CONTENUS POUR LA COM"** (la section la plus importante)
+   Liste { 
+     action : **contenu éditorial concret** (ex: "Pourquoi l'identité numérique est essentielle pour l'accès aux services publics", "Le rôle du Service Universel dans l'inclusion numérique", "Comment le numérique simplifie la vie des citoyens"),
+     responsable : **canal de diffusion** ("LinkedIn", "Facebook", "Infographie", "Interview DG", "Communiqué", "Story Instagram", "Post X / Twitter"),
+     delai : **niveau de priorité éditoriale** ("Aujourd'hui", "Cette semaine", "À planifier")
+   }
+   3 à 6 idées concrètes, ancrées dans les sujets chauds du jour.
+
+7. reputation_ansut → **"RÉPUTATION & RISQUES IMAGE"**
+   { positif : ce qui joue en faveur d'ANSUT, negatif : mentions critiques / faiblesses perçues, confusion_role : ex "ANSUT/ARTCI" si confusion détectée, niveau_risque }
+
+8. signaux_faibles → **"SIGNAUX FAIBLES À SURVEILLER"** (3 à 6 tendances émergentes)
+   Strings courtes, ex: "Montée discussions IA africaine", "Intérêt croissant souveraineté numérique", "Poussée sujets satellites/connectivité rurale", "Hashtag #DigitalCI gagne en visibilité".
+
+9. revue_de_presse → 6 à 12 titres exacts depuis le contexte. Items { titre, source, date, url valide, rubrique }
+
+10. activite_ansut → { publications_count, visibilite } — fournis dans le contexte, ne pas recalculer.
 
 ==== CONTRAINTES STRICTES ====
-- JAMAIS inventer un titre, une URL, un chiffre, un nom, une fonction, un projet
-- JAMAIS de phrases vides type "la concurrence s'intensifie" sans QUI / SUR QUOI / IMPACT ANSUT / RISQUE / ACTION
-- JAMAIS dire "0 sources retenues". Si la matière est faible, basculer en mode "signaux faibles + suivi tendances + veille opérateurs" et le dire clairement.
-- Si une donnée est incertaine → l'omettre purement (pas de "non disponible" partout)
-- Aucun jargon de communication interne
-- Français professionnel, ton institutionnel décisionnel
-- Si tu nommes une personne, utiliser UNIQUEMENT le "RÉFÉRENTIEL PERSONNALITÉS VÉRIFIÉES". Sinon : ne pas nommer.
-- URLs : copier EXACTEMENT depuis le contexte. Aucune URL inventée. Si pas d'URL fiable, exclure le titre.
-
-==== STRUCTURE DE SORTIE OBLIGATOIRE (JSON via tool call) ====
-
-1. priorite_executive : LE sujet du jour qui exige une décision/arbitrage du DG.
-   Toujours présent. Si rien d'urgent : prendre le signal stratégique le plus structurant et l'expliquer comme tel.
-   { titre, impacts: [3 puces max, factuelles, ANSUT-centric], recommandation: [2-4 actions concrètes], niveau: "ROUGE|ORANGE|VERT|BLEU" }
-
-2. synthese_60s : 3 à 5 lignes ultra-condensées pour lire la journée en 60 secondes.
-   Chaque ligne : { sujet (court), impact_ansut (1 phrase), niveau: "ROUGE|ORANGE|VERT|BLEU" }
-
-3. veille_par_pilier : la veille structurée PAR PILIER ANSUT (pas par actualité).
-   { connectivite: [items], usages_services: [items], regulation_souverainete: [items], concurrence_marche: [items] }
-   Chaque item : { titre, lecture_ansut (1-2 phrases : ce que ça veut dire pour l'ANSUT), niveau: "ROUGE|ORANGE|VERT|BLEU", url (depuis contexte), source }
-   Distribuer intelligemment les actualités du contexte. Vide ([]) autorisé pour un pilier sans matière.
-
-4. lecture_strategique : 1 à 2 sujets approfondis avec vraie analyse.
-   { sujet, opportunites: [puces], risques: [puces], scores: { acces, usage, gouvernance, souverainete } (chaque score 0-10) }
-
-5. impact_projets_ansut : impact direct sur les projets connus de l'ANSUT.
-   Liste d'objets { domaine (ex: "Zones blanches", "RNHD", "Cockpit DG", "Identité numérique"), impact: "ÉLEVÉ|MOYEN|FAIBLE|AUCUN", commentaire (1 phrase) }
-   3 à 6 entrées. Si aucun projet impacté de façon connue : tableau vide.
-
-6. actions_immediates : ce que le DG/CODIR doit déclencher.
-   Liste d'objets { action (verbe d'action), responsable (ex: "DTDI", "DSIS", "CT", "DG"), delai (ex: "72h", "5 jours", "1 semaine") }
-   2 à 5 actions concrètes. Vide [] si vraiment rien.
-
-7. reputation_ansut : lecture critique de la perception ANSUT.
-   { positif: [puces courtes], negatif: [puces courtes], confusion_role: (string|null, ex: "ANSUT/ARTCI"), niveau_risque: "ROUGE|ORANGE|VERT|BLEU" }
-
-8. signaux_faibles : tendances émergentes / signaux à surveiller (régional, technologique, sociétal).
-   Liste de 3 à 6 strings courtes et précises (pas de génériques creux).
-
-9. revue_de_presse : 6 à 12 titres MAX, triés par rubrique, sans analyse.
-   Items { titre exact, source, date (AAAA-MM-JJ), url valide, rubrique: "telecom_numerique|economie_finance|gouvernance_regulation|international" }
-
-10. activite_ansut : { publications_count (fourni dans contexte), visibilite (fourni dans contexte) } — ne PAS recalculer.
-
-==== ANTI-FAIBLESSE ====
-Si le contexte est pauvre :
-- TOUJOURS produire priorite_executive en s'appuyant sur le signal le plus structurant disponible (mention, signal faible, tendance régionale)
-- TOUJOURS produire au moins 3 signaux_faibles (issus de la connaissance du secteur télécom/numérique africain)
-- TOUJOURS produire au moins 2 actions_immediates (ne serait-ce que "instruire", "cartographier", "préparer note")
-- Ne JAMAIS écrire "Aucune actualité disponible" comme contenu utile`;
+- JAMAIS inventer un titre, une URL, un chiffre, un nom
+- JAMAIS de jargon technique / cabinet
+- JAMAIS recommander une "task force" ou un "arbitrage technique"
+- TOUJOURS proposer des contenus éditoriaux concrets dans actions_immediates
+- TOUJOURS identifier qui communique chez la concurrence dans impact_projets_ansut
+- Si le contexte est pauvre : basculer en mode "tendances + idées de contenus génériques actualisés" (jamais "aucune actualité")`;
 
 
 Deno.serve(async (req) => {
@@ -1440,10 +1445,10 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     };
 
     const PILIER_LABELS: Record<string, { label: string; color: string }> = {
-      connectivite: { label: '📡 Connectivité', color: '#2563eb' },
-      usages_services: { label: '💳 Usages & Services', color: '#7c3aed' },
-      regulation_souverainete: { label: '⚖️ Régulation & Souveraineté', color: '#0891b2' },
-      concurrence_marche: { label: '🏁 Concurrence & Marché', color: '#dc2626' },
+      connectivite: { label: '📡 Connectivité & accès', color: '#2563eb' },
+      usages_services: { label: '💳 Usages & services qui buzzent', color: '#7c3aed' },
+      regulation_souverainete: { label: '⚖️ Identité numérique & souveraineté', color: '#0891b2' },
+      concurrence_marche: { label: '🏁 Activité concurrence (qui communique)', color: '#dc2626' },
     };
     const buildPilierBlock = (key: string) => {
       const items = (veille?.[key] || []);
@@ -1476,28 +1481,28 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
 
 <!-- EN-TÊTE -->
 <tr><td style="background:linear-gradient(135deg,#0f172a,#1e3a5f);padding:28px 30px;">
-  <p style="margin:0;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;">Système d'intelligence stratégique numérique</p>
-  <h1 style="color:#ffffff;margin:6px 0 0;font-size:24px;letter-spacing:0.3px;">Matinale CODIR – ANSUT</h1>
+  <p style="margin:0;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;">Centre de situation communication & écosystème numérique</p>
+  <h1 style="color:#ffffff;margin:6px 0 0;font-size:24px;letter-spacing:0.3px;">Matinale Communication & Veille 360 – ANSUT</h1>
   <p style="color:#bfdbfe;margin:6px 0 0;font-size:13px;">${dateStr}</p>
   <p style="color:#94a3b8;margin:10px 0 0;font-size:11px;">Génération ${generatedAtUtc} · Fenêtre ${freshnessHours}h · ${totalSignaux} signaux exploités</p>
 </td></tr>
 
-<!-- 1. PRIORITÉ EXÉCUTIVE -->
+<!-- 1. SUJET CHAUD DU JOUR -->
 <tr><td style="padding:24px 24px 16px;">
-  <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:#dc2626;letter-spacing:1.5px;">🚨 PRIORITÉ EXÉCUTIVE</p>
+  <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:#dc2626;letter-spacing:1.5px;">🔥 SUJET CHAUD DU JOUR</p>
   <div style="padding:18px;background:${prioColor.bg};border-radius:10px;border-left:5px solid ${prioColor.border};">
     <table width="100%" cellpadding="0" cellspacing="0"><tr>
       <td style="font-size:16px;font-weight:700;color:${prioColor.fg};">${prio?.titre || ''}</td>
       <td style="text-align:right;width:90px;">${nivBadge(prio?.niveau || 'BLEU')}</td>
     </tr></table>
-    ${(prio?.impacts || []).length ? `<p style="margin:14px 0 4px;font-size:11px;font-weight:700;color:${prioColor.fg};text-transform:uppercase;letter-spacing:0.5px;">Impact potentiel</p><ul style="margin:0;padding-left:18px;">${prio.impacts.map((i: string) => `<li style="font-size:13px;color:#1e3a5f;line-height:1.5;margin-bottom:3px;">${i}</li>`).join('')}</ul>` : ''}
-    ${(prio?.recommandation || []).length ? `<p style="margin:12px 0 4px;font-size:11px;font-weight:700;color:${prioColor.fg};text-transform:uppercase;letter-spacing:0.5px;">Recommandation IA</p><ul style="margin:0;padding-left:18px;">${prio.recommandation.map((i: string) => `<li style="font-size:13px;color:#1e3a5f;line-height:1.5;margin-bottom:3px;">${i}</li>`).join('')}</ul>` : ''}
+    ${(prio?.impacts || []).length ? `<p style="margin:14px 0 4px;font-size:11px;font-weight:700;color:${prioColor.fg};text-transform:uppercase;letter-spacing:0.5px;">Ce qui ressort</p><ul style="margin:0;padding-left:18px;">${prio.impacts.map((i: string) => `<li style="font-size:13px;color:#1e3a5f;line-height:1.5;margin-bottom:3px;">${i}</li>`).join('')}</ul>` : ''}
+    ${(prio?.recommandation || []).length ? `<p style="margin:12px 0 4px;font-size:11px;font-weight:700;color:${prioColor.fg};text-transform:uppercase;letter-spacing:0.5px;">Opportunité COM — prise de parole</p><ul style="margin:0;padding-left:18px;">${prio.recommandation.map((i: string) => `<li style="font-size:13px;color:#1e3a5f;line-height:1.5;margin-bottom:3px;">${i}</li>`).join('')}</ul>` : ''}
   </div>
 </td></tr>
 
 <!-- 2. SYNTHÈSE 60s -->
 ${synthese.length ? `<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 10px;border-bottom:2px solid #6366f1;padding-bottom:6px;">⏱️ Synthèse 60 secondes</h2>
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 10px;border-bottom:2px solid #6366f1;padding-bottom:6px;">📌 Sujets chauds du jour</h2>
   <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
     <tr style="background:#f1f5f9;"><th style="padding:8px;text-align:left;font-size:11px;color:#475569;text-transform:uppercase;">Sujet</th><th style="padding:8px;text-align:left;font-size:11px;color:#475569;text-transform:uppercase;">Impact ANSUT</th><th style="padding:8px;text-align:center;font-size:11px;color:#475569;text-transform:uppercase;width:80px;">Niveau</th></tr>
     ${synthese.map(s => `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:8px;font-size:13px;color:#1e3a5f;font-weight:600;">${s.sujet}</td><td style="padding:8px;font-size:12px;color:#374151;">${s.impact_ansut}</td><td style="padding:8px;text-align:center;">${nivBadge(s.niveau)}</td></tr>`).join('')}
@@ -1523,13 +1528,13 @@ ${titroTopUnes.length ? `<tr><td style="padding:0 24px 20px;">
 
 <!-- 3. VEILLE STRATÉGIQUE PAR PILIER -->
 <tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #2563eb;padding-bottom:6px;">🎯 Veille stratégique par pilier ANSUT</h2>
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #2563eb;padding-bottom:6px;">📊 Tendances par domaine</h2>
   ${['connectivite','usages_services','regulation_souverainete','concurrence_marche'].map(buildPilierBlock).join('')}
 </td></tr>
 
 <!-- 4. LECTURE STRATÉGIQUE -->
 ${lectureStrat.length ? `<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #8b5cf6;padding-bottom:6px;">🧠 Lecture stratégique ANSUT</h2>
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #8b5cf6;padding-bottom:6px;">🚀 Tendances numériques & télécoms</h2>
   ${lectureStrat.map(l => `<div style="margin-bottom:14px;padding:14px;background:#faf5ff;border-radius:8px;border-left:4px solid #8b5cf6;">
     <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#6b21a8;">${l.sujet}</p>
     <table width="100%" cellpadding="0" cellspacing="0"><tr>
@@ -1547,25 +1552,25 @@ ${lectureStrat.length ? `<tr><td style="padding:0 24px 20px;">
 
 <!-- 5. IMPACT PROJETS ANSUT -->
 ${impactProjets.length ? `<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #f59e0b;padding-bottom:6px;">🎯 Impact direct projets ANSUT</h2>
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #f59e0b;padding-bottom:6px;">📣 Activité des acteurs (qui communique aujourd'hui)</h2>
   <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-    <tr style="background:#fffbeb;"><th style="padding:8px;text-align:left;font-size:11px;color:#92400e;text-transform:uppercase;">Domaine / Projet</th><th style="padding:8px;text-align:center;font-size:11px;color:#92400e;text-transform:uppercase;width:90px;">Impact</th><th style="padding:8px;text-align:left;font-size:11px;color:#92400e;text-transform:uppercase;">Lecture</th></tr>
+    <tr style="background:#fffbeb;"><th style="padding:8px;text-align:left;font-size:11px;color:#92400e;text-transform:uppercase;">Acteur</th><th style="padding:8px;text-align:center;font-size:11px;color:#92400e;text-transform:uppercase;width:100px;">Niveau d'activité</th><th style="padding:8px;text-align:left;font-size:11px;color:#92400e;text-transform:uppercase;">Sur quoi ils communiquent</th></tr>
     ${impactProjets.map(p => `<tr style="border-bottom:1px solid #fde68a;"><td style="padding:8px;font-size:13px;font-weight:600;color:#1e3a5f;">${p.domaine}</td><td style="padding:8px;text-align:center;">${impactBadge(p.impact)}</td><td style="padding:8px;font-size:12px;color:#374151;">${p.commentaire}</td></tr>`).join('')}
   </table>
 </td></tr>` : ''}
 
 <!-- 6. ACTIONS IMMÉDIATES -->
 ${actions.length ? `<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #dc2626;padding-bottom:6px;">⚡ Actions immédiates</h2>
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #dc2626;padding-bottom:6px;">✍️ Idées de contenus pour la COM</h2>
   <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#fef2f2;border-radius:8px;overflow:hidden;">
-    <tr style="background:#fee2e2;"><th style="padding:10px;text-align:left;font-size:11px;color:#991b1b;text-transform:uppercase;">Action</th><th style="padding:10px;text-align:center;font-size:11px;color:#991b1b;text-transform:uppercase;width:120px;">Responsable</th><th style="padding:10px;text-align:center;font-size:11px;color:#991b1b;text-transform:uppercase;width:90px;">Délai</th></tr>
+    <tr style="background:#fee2e2;"><th style="padding:10px;text-align:left;font-size:11px;color:#991b1b;text-transform:uppercase;">Contenu / Angle éditorial</th><th style="padding:10px;text-align:center;font-size:11px;color:#991b1b;text-transform:uppercase;width:140px;">Canal</th><th style="padding:10px;text-align:center;font-size:11px;color:#991b1b;text-transform:uppercase;width:110px;">Priorité</th></tr>
     ${actions.map(a => `<tr style="border-bottom:1px solid #fecaca;"><td style="padding:10px;font-size:13px;color:#1e3a5f;">${a.action}</td><td style="padding:10px;text-align:center;font-size:12px;font-weight:700;color:#991b1b;">${a.responsable}</td><td style="padding:10px;text-align:center;font-size:12px;font-weight:700;color:#991b1b;">${a.delai}</td></tr>`).join('')}
   </table>
 </td></tr>` : ''}
 
 <!-- 7. RÉPUTATION ANSUT -->
 <tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #0891b2;padding-bottom:6px;">🛡️ Réputation & visibilité ANSUT</h2>
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #0891b2;padding-bottom:6px;">🛡️ Réputation & risques image</h2>
   <div style="padding:14px;background:#ecfeff;border-radius:8px;">
     <table width="100%" cellpadding="0" cellspacing="0"><tr>
       <td style="vertical-align:top;width:50%;padding-right:8px;"><p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#16a34a;text-transform:uppercase;">✅ Positif</p>${(reput?.positif||[]).length ? `<ul style="margin:0;padding-left:16px;">${reput.positif.map(p=>`<li style="font-size:12px;color:#1e3a5f;line-height:1.5;">${p}</li>`).join('')}</ul>` : '<p style="margin:0;font-size:11px;color:#9ca3af;font-style:italic;">—</p>'}</td>
@@ -1590,7 +1595,7 @@ ${signaux.length ? `<tr><td style="padding:0 24px 20px;">
 
 <!-- F. ACTIVITÉ ANSUT -->
 <tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:14px;margin:0 0 10px;border-bottom:1px dashed #cbd5e1;padding-bottom:4px;">📣 Activité ANSUT (24h)</h2>
+  <h2 style="color:#1e3a5f;font-size:14px;margin:0 0 10px;border-bottom:1px dashed #cbd5e1;padding-bottom:4px;">📣 Visibilité ANSUT (24h)</h2>
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border-radius:6px;"><tr>
     <td style="padding:10px;font-size:12px;color:#1e3a5f;"><strong>Publications :</strong> ${act?.publications_count ?? 0}</td>
     <td style="padding:10px;font-size:12px;color:#1e3a5f;text-align:right;"><strong>Visibilité :</strong> <span style="color:${act?.visibilite === 'Fort' ? '#10b981' : act?.visibilite === 'Moyen' ? '#f59e0b' : '#ef4444'};font-weight:700;">${act?.visibilite || 'Faible'}</span></td>
@@ -1605,7 +1610,7 @@ ${signaux.length ? `<tr><td style="padding:0 24px 20px;">
   </div>
 </td></tr>
 
-<tr><td style="background-color:#0f172a;padding:14px;text-align:center;"><p style="margin:0;color:#64748b;font-size:10px;letter-spacing:0.5px;">ANSUT RADAR · Système d'intelligence stratégique numérique · Document interne</p></td></tr>
+<tr><td style="background-color:#0f172a;padding:14px;text-align:center;"><p style="margin:0;color:#64748b;font-size:10px;letter-spacing:0.5px;">ANSUT RADAR · Matinale Communication & Veille 360 · Document interne</p></td></tr>
 
 </table></td></tr></table></body></html>`;
 
@@ -1695,7 +1700,7 @@ ${signaux.length ? `<tr><td style="padding:0 24px 20px;">
 
     console.log(`[Matinale] Sending to ${recipients.length} recipients`);
 
-    const subject = `📰 La Matinale ANSUT — ${dateStr}`;
+    const subject = `📌 Matinale COM ANSUT — ${dateStr}`;
     let successCount = 0;
     let failCount = 0;
 
