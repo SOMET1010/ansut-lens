@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Newspaper, Plus, Save, Trash2, Tags, Globe, AlertTriangle, Clock, Activity, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { Newspaper, Plus, Save, Trash2, Tags, Globe, AlertTriangle, Clock, Activity, CheckCircle2, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import {
   useTitrologieSources, useUpsertSource, useDeleteSource,
   useTitrologieKeywords, useUpsertKeyword, useDeleteKeyword,
@@ -18,6 +18,9 @@ import {
 import { useTitrologieRuns } from '@/hooks/useTitrologieRuns';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 const sourceSchema = z.object({
   nom: z.string().trim().min(2).max(100),
@@ -77,14 +80,44 @@ export default function TitrologieAdminPage() {
     updSettings.mutate(settings);
   };
 
+  // ----- Relancer la collecte (manuel) -----
+  const qc = useQueryClient();
+  const [relaunching, setRelaunching] = useState(false);
+  const relancerCollecte = async () => {
+    if (relaunching) return;
+    if (!confirm('Lancer une nouvelle collecte de titrologie maintenant ?\n\nCela peut prendre 30-90 s et écrasera les unes du jour.')) return;
+    setRelaunching(true);
+    const t = toast.loading('Collecte titrologie en cours…');
+    try {
+      const { data, error } = await supabase.functions.invoke('collecte-titrologie', { body: {} });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(
+        `Collecte lancée — ${data?.unes_collected ?? '?'} unes détectées, ${data?.unes_analyzed ?? '?'} analysées`,
+        { id: t },
+      );
+      // Forcer le refresh immédiat des compteurs (runs + unes du jour)
+      qc.invalidateQueries({ queryKey: ['titrologie_runs'] });
+      qc.invalidateQueries({ queryKey: ['titrologie_today'] });
+    } catch (e: any) {
+      toast.error(`Échec de la collecte : ${e?.message || e}`, { id: t });
+    } finally {
+      setRelaunching(false);
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 space-y-6 max-w-6xl">
       <header className="flex items-center gap-3">
         <Newspaper className="h-7 w-7 text-primary" />
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold">Administration Titrologie</h1>
           <p className="text-sm text-muted-foreground">Sources scannées, fréquence de collecte, seuils d'alerte et catalogue de mots-clés Service Universel.</p>
         </div>
+        <Button onClick={relancerCollecte} disabled={relaunching} variant="default">
+          <RefreshCw className={`h-4 w-4 mr-1.5 ${relaunching ? 'animate-spin' : ''}`} />
+          {relaunching ? 'Collecte en cours…' : 'Relancer la titrologie'}
+        </Button>
       </header>
 
       <Tabs defaultValue="settings">
