@@ -300,6 +300,20 @@ Réponds via l'outil structurer_une.`,
   throw lastErr instanceof Error ? lastErr : new Error('All models failed');
 }
 
+// Confidence threshold: under this value, the OCR is flagged as failed and the
+// front page is reported in the Matinale + admin logs as "lecture défaillante".
+const OCR_CONFIDENCE_THRESHOLD = 40;
+
+interface OcrFailure {
+  journal: string;
+  source: string;
+  image_url: string | null;
+  ocr_confidence: number;
+  ocr_warnings: string[];
+  reason: string;
+  raison_code: 'GATEWAY_ERROR' | 'LOW_CONFIDENCE' | 'OCR_WARNINGS' | 'EMPTY_TITLE';
+}
+
 async function runCollecte(supabase: any, runId: string | undefined, today: string, startedAt: number) {
   try {
     console.log('[Titrologie] Discovering unes...');
@@ -310,20 +324,39 @@ async function runCollecte(supabase: any, runId: string | undefined, today: stri
     await supabase.from('titrologie_unes').delete().eq('date_parution', today);
 
     let analyzed = 0;
+    let exploitables = 0;
+    const failures: OcrFailure[] = [];
     const statByUrl = new Map<string, SourceStat>(sourceStats.map(s => [s.url, s]));
 
     for (let i = 0; i < rawUnes.length; i++) {
       const une = rawUnes[i];
       const stat = une.source_url ? statByUrl.get(une.source_url) : undefined;
+      const sourceName = stat?.source || une.source_url || 'Source inconnue';
       try {
         const analysis = await ocrAndAnalyze(une);
         if (stat) stat.nombre_images_traitees++;
+
+        const conf = Number(analysis?.ocr_confidence ?? 0);
+        const warnings: string[] = Array.isArray(analysis?.ocr_warnings) ? analysis.ocr_warnings : [];
+        const titre = (analysis?.titre_principal || '').trim();
+
+        let ocrFailed = false;
+        let raison_code: OcrFailure['raison_code'] = 'LOW_CONFIDENCE';
+        let reason = '';
+        if (!titre || titre.length < 4) {
+          ocrFailed = true; raison_code = 'EMPTY_TITLE'; reason = 'Titre principal vide ou trop court';
+        } else if (conf < OCR_CONFIDENCE_THRESHOLD) {
+          ocrFailed = true; raison_code = 'LOW_CONFIDENCE'; reason = `Confiance OCR ${conf}/100 < seuil ${OCR_CONFIDENCE_THRESHOLD}`;
+        } else if (warnings.length > 0) {
+          ocrFailed = true; raison_code = 'OCR_WARNINGS'; reason = warnings.join(' · ');
+        }
+
         const row = {
           date_parution: today,
           journal: une.journal,
           image_url: une.image_url || null,
           source_url: une.source_url || null,
-          titre_une: analysis.titre_principal || une.titre_une,
+          titre_une: titre || une.titre_une,
           sujet: analysis.sujet,
           ton: analysis.ton,
           risque_ansut: analysis.risque_ansut || 'VERT',
@@ -331,14 +364,31 @@ async function runCollecte(supabase: any, runId: string | undefined, today: stri
           themes: analysis.themes || [],
           raw_ocr: analysis.raw_ocr || null,
           angles: analysis.angles || {},
-          analyse_ia: analysis,
+          analyse_ia: { ...analysis, ocr_failed: ocrFailed, ocr_reason: ocrFailed ? reason : null },
         };
         const { error: insErr } = await supabase.from('titrologie_unes').insert(row);
         if (insErr) console.error('[Titrologie] insert err:', insErr.message);
-        else analyzed++;
+        else {
+          analyzed++;
+          if (!ocrFailed) exploitables++;
+          if (ocrFailed) {
+            if (stat) { stat.nombre_erreurs_ocr++; if (stat.statut === 'success') stat.statut = 'partial'; }
+            failures.push({
+              journal: une.journal, source: sourceName, image_url: une.image_url || null,
+              ocr_confidence: conf, ocr_warnings: warnings, reason, raison_code,
+            });
+            console.warn(`[Titrologie] OCR FAIL ${une.journal} (${raison_code}): ${reason}`);
+          }
+        }
       } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
         if (stat) { stat.nombre_erreurs_ocr++; if (stat.statut === 'success') stat.statut = 'partial'; }
-        console.error(`[Titrologie] Analyze failed for ${une.journal}:`, e instanceof Error ? e.message : e);
+        failures.push({
+          journal: une.journal, source: sourceName, image_url: une.image_url || null,
+          ocr_confidence: 0, ocr_warnings: [], reason: `Échec passerelle IA: ${msg.slice(0,160)}`,
+          raison_code: 'GATEWAY_ERROR',
+        });
+        console.error(`[Titrologie] Analyze failed for ${une.journal}:`, msg);
       }
 
       // Progressive run state update so admin can monitor progress live
@@ -346,7 +396,7 @@ async function runCollecte(supabase: any, runId: string | undefined, today: stri
         await supabase.from('titrologie_runs').update({
           unes_collected: rawUnes.length,
           unes_analyzed: analyzed,
-          metadata: { sources: sourceStats, progress: `${i + 1}/${rawUnes.length}` },
+          metadata: { sources: sourceStats, failures, exploitables, progress: `${i + 1}/${rawUnes.length}` },
         }).eq('id', runId);
       }
     }
@@ -358,7 +408,8 @@ async function runCollecte(supabase: any, runId: string | undefined, today: stri
       duration_ms: Date.now() - startedAt,
       finished_at: new Date().toISOString(),
       error: analyzed === 0 ? 'Aucune une analysée' : null,
-      metadata: { sources: sourceStats },
+      metadata: { sources: sourceStats, failures, exploitables, ocr_threshold: OCR_CONFIDENCE_THRESHOLD },
+
     }).eq('id', runId);
     console.log(`[Titrologie] DONE — ${analyzed}/${rawUnes.length} analyzed`);
   } catch (e) {

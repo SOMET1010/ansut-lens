@@ -77,14 +77,30 @@ function formatDate(d?: string): string {
 
 const TITROLOGIE_SOURCES_LIST = ['Abidjan.net', 'Presse Côte d\'Ivoire'];
 
+const OCR_CONFIDENCE_THRESHOLD = 40;
+
 function TitrologieBilanBlock({
   unes, synth,
 }: { unes: any[]; synth: any | undefined | null }) {
   const journauxDetectes = new Set(unes.map(u => (u.journal || '').trim()).filter(Boolean)).size;
-  const unesExploitables = unes.filter(u => {
-    const conf = u?.analyse_ia?.ocr_confidence ?? 100;
-    return conf >= 40 && (u.titre_une || '').length > 3;
-  }).length;
+
+  // Defaillances: confidence < threshold OR ocr_warnings present OR titre too short OR explicit ocr_failed flag
+  const defaillances = unes
+    .map(u => {
+      const conf = Number(u?.analyse_ia?.ocr_confidence ?? 0);
+      const warnings: string[] = Array.isArray(u?.analyse_ia?.ocr_warnings) ? u.analyse_ia.ocr_warnings : [];
+      const titre = (u.titre_une || '').trim();
+      const flagged = u?.analyse_ia?.ocr_failed === true;
+      let raison = '';
+      if (flagged && u?.analyse_ia?.ocr_reason) raison = u.analyse_ia.ocr_reason;
+      else if (!titre || titre.length < 4) raison = 'Titre principal vide ou trop court';
+      else if (conf < OCR_CONFIDENCE_THRESHOLD) raison = `Confiance OCR ${conf}/100 < seuil ${OCR_CONFIDENCE_THRESHOLD}`;
+      else if (warnings.length > 0) raison = warnings.join(' · ');
+      return raison ? { journal: u.journal || 'Journal inconnu', conf, raison, warnings, image_url: u.image_url } : null;
+    })
+    .filter(Boolean) as { journal: string; conf: number; raison: string; warnings: string[]; image_url?: string }[];
+
+  const unesExploitables = unes.length - defaillances.length;
   const sujets = synth?.sujets_dominants?.slice(0, 3) || [];
   const impacts = synth?.impact_ansut?.slice(0, 3) || [];
   const risque: TitrologieRisque = synth?.risque_global || (() => {
@@ -120,17 +136,46 @@ function TitrologieBilanBlock({
             ))}
           </ul>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <div className="rounded bg-muted/50 p-2">
-            <div className="text-[10px] uppercase text-muted-foreground">Journaux détectés</div>
+            <div className="text-[10px] uppercase text-muted-foreground">Journaux</div>
             <div className="text-xl font-bold">{journauxDetectes}</div>
           </div>
-          <div className="rounded bg-muted/50 p-2">
-            <div className="text-[10px] uppercase text-muted-foreground">Unes exploitables</div>
-            <div className="text-xl font-bold">{unesExploitables}<span className="text-xs text-muted-foreground">/{unes.length}</span></div>
+          <div className="rounded bg-emerald-500/10 p-2">
+            <div className="text-[10px] uppercase text-emerald-700">Exploitables</div>
+            <div className="text-xl font-bold text-emerald-700">{unesExploitables}<span className="text-xs text-muted-foreground">/{unes.length}</span></div>
+          </div>
+          <div className="rounded bg-amber-500/10 p-2">
+            <div className="text-[10px] uppercase text-amber-700">Lectures KO</div>
+            <div className="text-xl font-bold text-amber-700">{defaillances.length}</div>
           </div>
         </div>
       </div>
+
+      {defaillances.length > 0 && (
+        <details className="text-xs rounded border border-amber-500/30 bg-amber-500/5 p-2" open={defaillances.length <= 3}>
+          <summary className="cursor-pointer font-semibold text-amber-700 flex items-center gap-1.5">
+            ⚠ {defaillances.length} journal{defaillances.length > 1 ? 'aux' : ''} mal lu{defaillances.length > 1 ? 's' : ''} — exclu{defaillances.length > 1 ? 's' : ''} du briefing
+          </summary>
+          <ul className="mt-2 space-y-1.5">
+            {defaillances.map((d, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <Badge variant="outline" className="text-[10px] shrink-0 bg-background">conf. {d.conf}/100</Badge>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{d.journal}</div>
+                  <div className="text-[11px] text-muted-foreground">{d.raison}</div>
+                </div>
+                {d.image_url && (
+                  <a href={d.image_url} target="_blank" rel="noreferrer" className="text-[11px] text-primary underline shrink-0">image</a>
+                )}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[10px] text-muted-foreground italic">
+            Seuil OCR : confiance ≥ {OCR_CONFIDENCE_THRESHOLD}/100 et titre principal non vide. Détail complet dans Admin → Titrologie → Logs techniques.
+          </p>
+        </details>
+      )}
 
       {sujets.length > 0 && (
         <div className="text-xs">
