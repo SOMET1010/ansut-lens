@@ -12,6 +12,16 @@ export interface TitrologieRunSourceStat {
   error?: string | null;
 }
 
+export interface OcrFailureLog {
+  journal: string;
+  source: string;
+  image_url: string | null;
+  ocr_confidence: number;
+  ocr_warnings: string[];
+  reason: string;
+  raison_code: 'GATEWAY_ERROR' | 'LOW_CONFIDENCE' | 'OCR_WARNINGS' | 'EMPTY_TITLE';
+}
+
 export interface TitrologieRun {
   id: string;
   run_date: string;
@@ -22,7 +32,12 @@ export interface TitrologieRun {
   error: string | null;
   started_at: string;
   finished_at: string | null;
-  metadata: { sources?: TitrologieRunSourceStat[] } | null;
+  metadata: {
+    sources?: TitrologieRunSourceStat[];
+    failures?: OcrFailureLog[];
+    exploitables?: number;
+    ocr_threshold?: number;
+  } | null;
 }
 
 export function useTitrologieRuns(limit = 20) {
