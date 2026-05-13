@@ -1561,9 +1561,9 @@ ${impactProjets.length ? `<tr><td style="padding:0 24px 20px;">
 
 <!-- 6. ACTIONS IMMÉDIATES -->
 ${actions.length ? `<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #dc2626;padding-bottom:6px;">⚡ Actions immédiates</h2>
+  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #dc2626;padding-bottom:6px;">✍️ Idées de contenus pour la COM</h2>
   <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#fef2f2;border-radius:8px;overflow:hidden;">
-    <tr style="background:#fee2e2;"><th style="padding:10px;text-align:left;font-size:11px;color:#991b1b;text-transform:uppercase;">Action</th><th style="padding:10px;text-align:center;font-size:11px;color:#991b1b;text-transform:uppercase;width:120px;">Responsable</th><th style="padding:10px;text-align:center;font-size:11px;color:#991b1b;text-transform:uppercase;width:90px;">Délai</th></tr>
+    <tr style="background:#fee2e2;"><th style="padding:10px;text-align:left;font-size:11px;color:#991b1b;text-transform:uppercase;">Contenu / Angle éditorial</th><th style="padding:10px;text-align:center;font-size:11px;color:#991b1b;text-transform:uppercase;width:140px;">Canal</th><th style="padding:10px;text-align:center;font-size:11px;color:#991b1b;text-transform:uppercase;width:110px;">Priorité</th></tr>
     ${actions.map(a => `<tr style="border-bottom:1px solid #fecaca;"><td style="padding:10px;font-size:13px;color:#1e3a5f;">${a.action}</td><td style="padding:10px;text-align:center;font-size:12px;font-weight:700;color:#991b1b;">${a.responsable}</td><td style="padding:10px;text-align:center;font-size:12px;font-weight:700;color:#991b1b;">${a.delai}</td></tr>`).join('')}
   </table>
 </td></tr>` : ''}
