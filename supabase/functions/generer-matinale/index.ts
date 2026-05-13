@@ -33,9 +33,12 @@ async function fetchPerplexityNews(): Promise<{ articles: Array<{ titre: string;
     return { articles: [], citations: [] };
   }
 
+  const todayStr = new Date().toISOString().slice(0, 10);
   const queries = [
-    "Actualités télécommunications numérique Côte d'Ivoire ANSUT ARTCI aujourd'hui",
-    "Opérateurs telecoms Orange MTN Moov Côte d'Ivoire Afrique de l'Ouest actualités",
+    `Actualités précises ${todayStr} ANSUT ARTCI MTND Côte d'Ivoire télécommunications numérique service universel : décisions, annonces, projets, partenariats. Donne uniquement des articles datés des 48 dernières heures avec URL d'article (pas la page d'accueil).`,
+    `Annonces ${todayStr} opérateurs Orange CI, MTN CI, Moov Africa CI, Wave, Starlink Côte d'Ivoire : tarifs, couverture, investissements, incidents, régulation. Articles datés, URLs d'articles uniquement.`,
+    `Événements tech Afrique en cours cette semaine ${todayStr} : ID4Africa Abidjan, Africa CEO Forum Kigali, GITEX Africa, AfricaCom, Mobile World Congress, sommets numériques UEMOA/CEDEAO. Donne les annonces concrètes (signatures, discours, chiffres) avec URLs d'articles.`,
+    `Actualités régulation et souveraineté numérique Afrique de l'Ouest ${todayStr} : ARTCI, identité numérique, cloud souverain, cybersécurité, données personnelles, taxation telecoms. URLs d'articles uniquement.`,
   ];
 
   const allArticles: Array<{ titre: string; resume: string; source: string; url: string }> = [];
