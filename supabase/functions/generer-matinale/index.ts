@@ -108,14 +108,39 @@ RÈGLES STRICTES :
     }
   }
 
+  // Reject homepage URLs (no real path) and titles that look like source/SEO descriptions
+  const isHomepageUrl = (u: string): boolean => {
+    try {
+      const url = new URL(u);
+      const path = url.pathname.replace(/\/+$/, '');
+      if (!path || path === '/') return true;
+      const segs = path.split('/').filter(Boolean);
+      // 1 court segment sans chiffre = rubrique générique (ex: /telecom)
+      if (segs.length <= 1 && segs[0] && segs[0].length < 14 && !/\d/.test(segs[0])) return true;
+      return false;
+    } catch { return true; }
+  };
+  const looksLikeSourceDescription = (titre: string): boolean => {
+    const t = (titre || '').trim();
+    if (!t || t.length < 12) return true;
+    // ex: "Connecting Africa - Pan-African Tech and Telecoms News: ..."
+    if (/^[A-Z][\w &'-]{2,40}\s*[:|-]\s+/.test(t) && /(news|magazine|site|actualité|référence|trusted|leading|covering)/i.test(t)) return true;
+    if (/\bis a (trusted|leading|premier|reference|specialized)\b/i.test(t)) return true;
+    if (/\bsite officiel\b/i.test(t)) return true;
+    if (/^accueil\b/i.test(t)) return true;
+    return false;
+  };
+
   const seen = new Set<string>();
   const unique = allArticles.filter(a => {
     if (!a.url || seen.has(a.url)) return false;
+    if (isHomepageUrl(a.url)) return false;
+    if (looksLikeSourceDescription(a.titre)) return false;
     seen.add(a.url);
     return true;
   });
 
-  console.log(`[Matinale/Perplexity] Fetched ${unique.length} real-time articles with ${allCitations.length} citations`);
+  console.log(`[Matinale/Perplexity] Fetched ${unique.length}/${allArticles.length} articles after filter, ${allCitations.length} citations`);
   return { articles: unique, citations: allCitations };
 }
 
