@@ -150,7 +150,7 @@ Deno.serve(async (req) => {
           content: body.content.slice(0, 160),
           username,
           password,
-          // SMS = pas de champ channel (canal par défaut du Gateway)
+          channel: "SMS",
         };
         break;
       }
