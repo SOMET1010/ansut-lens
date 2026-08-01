@@ -56,6 +56,13 @@ const menuItems = [
     permission: 'view_radar'
   },
   { 
+    title: 'Balayage 30 jours', 
+    url: '/balayage', 
+    icon: Satellite,
+    description: 'Un sujet, toutes les sources',
+    permission: 'view_radar'
+  },
+  { 
     title: 'Capteurs Stratégiques', 
     url: '/flux', 
     icon: Rss,
