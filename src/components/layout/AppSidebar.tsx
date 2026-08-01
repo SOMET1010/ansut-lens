@@ -9,6 +9,7 @@ import {
   User,
   Rss,
   Megaphone,
+  Satellite,
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
