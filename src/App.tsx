@@ -14,6 +14,7 @@ import AuthPage from "@/pages/AuthPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import RadarPage from "@/pages/RadarPage";
 import ActualitesPage from "@/pages/ActualitesPage";
+import BalayagePage from "@/pages/BalayagePage";
 
 import ActeursInfluencePage from "@/pages/ActeursInfluencePage";
 import DossiersPage from "@/pages/DossiersPage";
