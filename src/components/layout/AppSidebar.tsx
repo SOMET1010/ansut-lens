@@ -9,6 +9,7 @@ import {
   User,
   Rss,
   Megaphone,
+  Satellite,
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -52,6 +53,13 @@ const menuItems = [
     url: '/radar', 
     icon: Radar,
     description: 'Synthèse, flux & alertes',
+    permission: 'view_radar'
+  },
+  { 
+    title: 'Balayage 30 jours', 
+    url: '/balayage', 
+    icon: Satellite,
+    description: 'Un sujet, toutes les sources',
     permission: 'view_radar'
   },
   { 
