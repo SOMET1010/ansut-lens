@@ -27,12 +27,15 @@ export function useAnsutPublications(limit = 5, maxAgeHours?: number) {
   return useQuery({
     queryKey: ['ansut-publications', limit, maxAgeHours ?? null],
     queryFn: async (): Promise<PublicationAnsut[]> => {
+      // On montre toute la voix institutionnelle de l'ANSUT (pages officielles
+      // ET prises de parole des dirigeants), sans dépendre du drapeau
+      // `est_officiel` qui n'est positionné que si le champ `fonction` du compte
+      // contient « officiel » — trop fragile pour conditionner l'affichage.
       let query = supabase
         .from('publications_institutionnelles')
         .select(
           'id, plateforme, auteur, contenu, date_publication, url_original, likes_count, comments_count, shares_count',
         )
-        .eq('est_officiel', true)
         .order('date_publication', { ascending: false });
 
       if (maxAgeHours) {
