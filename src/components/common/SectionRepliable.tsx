@@ -13,7 +13,7 @@ interface SectionRepliableProps {
    * mecanisme de pliage. Permet de replier sur mobile tout en gardant un
    * affichage classique sur grand ecran.
    */
-  toujoursOuvertDes?: 'md' | 'lg' | 'jamais';
+  toujoursOuvertDes?: 'md' | 'lg' | 'xl' | 'jamais';
   children: React.ReactNode;
 }
 
