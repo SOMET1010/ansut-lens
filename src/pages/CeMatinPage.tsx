@@ -1,11 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  AlertTriangle,
-  ArrowRight,
   BellRing,
   CalendarCheck,
-  ChevronDown,
   Clock,
   FileText,
   Home,
@@ -29,65 +26,49 @@ import {
   useRadarSignaux,
 } from '@/hooks/useRadarData';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
-import { ObjectifsStrategiques } from '@/components/radar/ObjectifsStrategiques';
-import { PreuvesParAxe } from '@/components/radar/PreuvesParAxe';
-import { DailyBriefing } from '@/components/radar/DailyBriefing';
 import { ActiviteAnsut } from '@/components/radar/ActiviteAnsut';
+import { ChangementsDepuisHier } from '@/components/radar/ChangementsDepuisHier';
+import { ASurveiller } from '@/components/radar/ASurveiller';
 import { useAnsutPublications } from '@/hooks/useAnsutPublications';
-import { deriverAdnPublications } from '@/lib/prioritesAnsut';
+import { prioritesAvecRepli } from '@/lib/prioritesAnsut';
+import { alignement, piliersDeLActu } from '@/lib/missions';
+import { MISSIONS_STRATEGIQUES } from '@/config/missions';
+import { nettoyerTitre } from '@/lib/nettoyerExtrait';
 
 /**
- * Taille du vivier d'actualites recentes charge pour l'accueil. Il alimente a la
- * fois la repartition par mission (« objectifs impactes ») et les preuves, sans
- * multiplier les requetes.
+ * Fenêtre « ce matin » pour la veille externe : l'accueil ne considère que
+ * l'actualité des dernières 24 h sous la question « qu'est-ce qui a changé
+ * depuis hier ? ». Le vivier chargé sert au filtrage par priorité et au
+ * dédoublonnage.
  */
 const TAILLE_VIVIER_ACCUEIL = 40;
-
-/**
- * Fenetre « ce matin » : l'accueil ne considere que l'actualite des dernieres
- * 24 h. La page promet « ce qu'il faut savoir aujourd'hui » — elle ne doit donc
- * pas afficher d'articles anciens sous ce bandeau. En l'absence d'actualite
- * fraiche, l'ecran le dit honnetement plutot que de remonter du contenu perime.
- */
 const FENETRE_CE_MATIN_HEURES = 24;
 
-/**
- * Formule une phrase de lecture pour un volume d'alertes en attente.
- * L'accord est ecrit selon le nombre plutot que contourne par un point median :
- * le public de la plateforme inclut des agents dont la maitrise de l'ecrit
- * varie, l'accord doit donc etre juste et lisible.
- */
-function lireAlertes(valeur: number): string {
-  if (valeur === 0) return 'Aucune alerte en attente de traitement';
-  if (valeur === 1) return 'Une alerte attend votre traitement';
-  return `${valeur} alertes attendent votre traitement`;
+/** Fenêtre de la voix propre de l'ANSUT (question 1), en jours. */
+const FENETRE_ANSUT_JOURS = 30;
+
+/** Alignement minimal pour proposer un sujet comme prochaine action. */
+const SEUIL_ACTION = 65;
+
+function mission(id: string | undefined) {
+  return id ? MISSIONS_STRATEGIQUES.find((m) => m.id === id) : undefined;
 }
 
 /**
  * Page d'accueil « Ce matin ».
  *
- * L'ancien ecran d'accueil cumulait trois roles — tableau de bord, flux
- * d'actualites et fil personnalise — derriere trois onglets de premier niveau
- * eux-memes surmontes de trois onglets de periode. L'utilisateur devait faire
- * plusieurs choix avant de voir la moindre information utile.
+ * L'écran répond à quatre questions, et à elles seules, de haut en bas :
+ *   1. Qu'a fait ou annoncé l'ANSUT récemment ?  → « L'ANSUT récemment »
+ *   2. Qu'est-ce qui a changé depuis hier ?       → « Ce qui a changé depuis hier »
+ *   3. Quel sujet mérite une attention humaine ?  → « À arbitrer »
+ *   4. Que faut-il faire aujourd'hui ?            → « Prochaine action »
  *
- * Ce nouvel ecran repond a une seule question : que dois-je savoir maintenant ?
- * Il tient sans onglet et se lit de haut en bas en quatre strates de priorite
- * decroissante : alerte critique s'il y en a une, les objectifs strategiques
- * impactes (ce qui bouge sur les missions de l'ANSUT), les sujets qui comptent
- * comme preuves, puis la prochaine action a mener.
- *
- * Les chiffres bruts d'antan (mentions, articles, alertes, score) ont ete
- * remplaces par cette lecture par mission : l'article devient une preuve
- * rattachee a un objectif, plutot que le contenu principal.
- *
- * Tout le reste a migre vers les pages Veille et Recherche, accessibles en un
- * clic depuis des liens explicites.
+ * L'organisation part de l'actualité propre de l'ANSUT, puis relie les signaux
+ * externes à ces priorités — au lieu d'un simple flux de presse. Les chiffres
+ * bruts, le briefing en prose non sourcée et la répétition de l'alerte critique
+ * ont été retirés : chaque fait affiché provient d'une source datée.
  */
 export default function CeMatinPage() {
-  /** Depliage des signaux critiques directement dans la barre d'alerte. */
-  const [signauxDeplies, setSignauxDeplies] = useState(false);
-
   const { data: kpis, isFetching: kpisFetching } = useRadarKPIs('24h');
   const { data: signaux } = useRadarSignaux();
   const { data: sujets, isLoading: sujetsLoading } = useIntelligenceFeed(
@@ -95,14 +76,14 @@ export default function CeMatinPage() {
     FENETRE_CE_MATIN_HEURES,
   );
 
-  // ADN appris des publications de l'ANSUT sur ~2 mois : quels axes l'agence
-  // porte-t-elle activement en ce moment ? Ces priorités contextualisent la
-  // lecture de la veille (« touche-t-elle une priorité actuelle de l'ANSUT ? »).
-  const { data: publicationsAdn } = useAnsutPublications(200, 60 * 24);
-  const prioritesActives = useMemo(
-    () => deriverAdnPublications(publicationsAdn ?? []).actifs,
+  // Priorités de l'ANSUT : apprises de ses publications, avec repli sur les
+  // piliers qu'elle porte par mandat (P1, P6) quand la collecte est encore mince.
+  const { data: publicationsAdn } = useAnsutPublications(200, FENETRE_ANSUT_JOURS * 24);
+  const { priorites: prioritesActives } = useMemo(
+    () => prioritesAvecRepli(publicationsAdn ?? []),
     [publicationsAdn],
   );
+
   const { data: derniereCollecte } = useLastCollecteTime();
   const { hasPermission } = useUserPermissions();
 
@@ -113,60 +94,73 @@ export default function CeMatinPage() {
 
   const alertesActives = kpis?.alertesActives ?? 0;
 
+  // Sujet le plus aligné du matin (sert la prochaine action quand aucun signal
+  // critique n'est en attente).
+  const sujetPhare = useMemo(
+    () => (sujets ?? []).find((a) => alignement(a) >= SEUIL_ACTION),
+    [sujets],
+  );
+
   /**
-   * Determine l'action la plus pertinente a proposer, selon l'etat du systeme
-   * et les permissions. Une seule action est proposee a la fois : proposer un
-   * choix reviendrait a reintroduire la charge de decision que la refonte
-   * cherche precisement a supprimer.
+   * Question 4 : une action précise et attribuable. On formule un verbe clair
+   * (préparer une note, vérifier, ouvrir la veille), rattaché au sujet concret
+   * du jour, plutôt qu'une recommandation générique. L'alerte critique n'est pas
+   * répétée ici : elle vit dans « À arbitrer ».
    */
   const prochaineAction = useMemo(() => {
     if (signauxCritiques.length > 0) {
+      const s = signauxCritiques[0];
       return {
-        titre: 'Traiter les signaux critiques du jour',
+        titre: `Préparer une note sur : ${s.titre}`,
         raison:
           signauxCritiques.length === 1
-            ? 'Un signal critique n’a pas encore été traité.'
-            : `${signauxCritiques.length} signaux critiques n’ont pas encore été traités.`,
-        actionLabel: 'Examiner les signaux',
-        onAction: () => setSignauxDeplies(true),
-        icon: AlertTriangle,
+            ? 'Un signal critique doit être qualifié et documenté aujourd’hui.'
+            : `${signauxCritiques.length} signaux critiques doivent être qualifiés aujourd’hui.`,
+        actionLabel: 'Aller à Publier',
+        to: '/publier',
+        icon: FileText,
         ton: 'urgent' as const,
+      };
+    }
+    if (sujetPhare) {
+      const m = mission(piliersDeLActu(sujetPhare)[0]);
+      return {
+        titre: `Vérifier et qualifier : ${nettoyerTitre(sujetPhare.titre)}`,
+        raison: m
+          ? `Sujet le plus aligné du matin (${m.code} — ${m.nom}). À confirmer avant toute diffusion.`
+          : 'Sujet le plus aligné du matin. À confirmer avant toute diffusion.',
+        actionLabel: 'Ouvrir la veille',
+        to: sujetPhare.pilier_id ? `/veille?mission=${sujetPhare.pilier_id}` : '/veille',
+        icon: Newspaper,
+        ton: 'attention' as const,
       };
     }
     if (alertesActives > 0 && hasPermission('receive_alerts')) {
       return {
         titre: 'Passer en revue les alertes en attente',
-        raison: lireAlertes(alertesActives),
+        raison:
+          alertesActives === 1
+            ? 'Une alerte attend votre traitement.'
+            : `${alertesActives} alertes attendent votre traitement.`,
         actionLabel: 'Ouvrir les alertes',
         to: '/alertes',
         icon: BellRing,
         ton: 'attention' as const,
       };
     }
-    if (hasPermission('view_dossiers')) {
-      return {
-        titre: 'Préparer la note de synthèse du jour',
-        raison:
-          'La veille des dernières vingt-quatre heures est disponible et peut être transformée en note.',
-        actionLabel: 'Aller à Publier',
-        to: '/publier',
-        icon: FileText,
-        ton: 'neutre' as const,
-      };
-    }
     return {
-      titre: 'Explorer la veille de la journée',
-      raison: 'Les articles collectés cette nuit sont prêts à être lus.',
+      titre: 'Maintenir la surveillance',
+      raison: 'Aucun sujet ne requiert d’action particulière aujourd’hui. La veille reste active.',
       actionLabel: 'Ouvrir la veille',
       to: '/veille',
       icon: Newspaper,
       ton: 'neutre' as const,
     };
-  }, [signauxCritiques.length, alertesActives, hasPermission]);
+  }, [signauxCritiques, sujetPhare, alertesActives, hasPermission]);
 
   return (
     <PageContainer>
-      <div className="space-y-6">
+      <div className="space-y-8">
         <PageHeader
           titre="Ce matin"
           description={`Ce qu’il faut savoir aujourd’hui, ${format(new Date(), 'EEEE d MMMM yyyy', { locale: fr })}.`}
@@ -187,117 +181,28 @@ export default function CeMatinPage() {
           }
         />
 
-        {/*
-          Strate 1 : alerte critique, affichee seulement si necessaire.
+        {/* Q1 — Qu'a fait ou annoncé l'ANSUT récemment ? */}
+        <ActiviteAnsut joursFenetre={FENETRE_ANSUT_JOURS} />
 
-          Cette barre pointait initialement vers `/veille?niveau=critical`. La
-          recette a montre que la promesse ne pouvait pas etre tenue : les
-          signaux proviennent de la table `signaux`, tandis que la page Veille
-          lit la table `actualites`. Aucun champ commun ne permet de filtrer
-          l'une par la criticite de l'autre, si bien que l'utilisateur cliquait
-          sur « Examiner » et recevait la liste complete des articles.
-
-          Plutot que de simuler un filtre, les signaux sont depliables sur place.
-          L'information demandee est ainsi obtenue sans changer d'ecran ni
-          perdre le contexte.
-        */}
-        {signauxCritiques.length > 0 && (
-          <div
-            role="alert"
-            className="rounded-xl border border-destructive/40 bg-destructive/[0.06] p-4"
-          >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 items-start gap-3">
-                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden />
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-destructive">
-                    {signauxCritiques.length === 1
-                      ? 'Un signal critique détecté'
-                      : `${signauxCritiques.length} signaux critiques détectés`}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {signauxCritiques.length === 1
-                      ? 'Ce sujet requiert votre attention aujourd’hui.'
-                      : 'Ces sujets requièrent votre attention aujourd’hui.'}
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="min-h-11 shrink-0 sm:min-h-9"
-                onClick={() => setSignauxDeplies((ouvert) => !ouvert)}
-                aria-expanded={signauxDeplies}
-              >
-                {signauxDeplies ? 'Masquer' : 'Examiner'}
-                <ChevronDown
-                  className={`ml-1.5 h-4 w-4 transition-transform ${
-                    signauxDeplies ? 'rotate-180' : ''
-                  }`}
-                  aria-hidden
-                />
-              </Button>
-            </div>
-
-            {signauxDeplies && (
-              <ul className="mt-3 space-y-2 border-t border-destructive/20 pt-3">
-                {signauxCritiques.map((signal) => (
-                  <li key={signal.id} className="rounded-lg bg-background/70 p-3">
-                    <p className="text-sm font-medium leading-snug">{signal.titre}</p>
-                    {signal.description && (
-                      <p className="mt-1 text-xs text-muted-foreground">{signal.description}</p>
-                    )}
-                    <p className="mt-1.5 text-xs text-muted-foreground">
-                      Détecté <RelativeTime date={signal.date_detection} />
-                      {typeof signal.score_impact === 'number' && signal.score_impact > 0 && (
-                        <> · impact estimé {signal.score_impact}/100</>
-                      )}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-
-        {/*
-          Strate 2 : les objectifs strategiques impactes.
-
-          Les quatre chiffres bruts (mentions, articles, alertes, score) ont ete
-          remplaces : a 8 h du matin, un decideur ne veut pas un decompte, il
-          veut savoir ce qui bouge sur les missions de l'ANSUT. Les actualites
-          recentes sont reparties par mission, chaque carte portant un niveau
-          d'attention et l'information la plus alignee du moment. Les articles
-          deviennent les preuves, presentees juste en dessous.
-        */}
-        {/*
-          Strate 1 bis : la synthese executive du matin. Le briefing 30 s (en
-          cache 2 h) donne l'essentiel avant meme les objectifs. La Matinale
-          riche (priorite executive + actions) prendra le relais en phase 2, une
-          fois sa sortie persistee pour une lecture d'accueil peu couteuse.
-        */}
-        <DailyBriefing />
-
-        {/*
-          Strate 2 : notre propre voix d'abord. Le pilotage commence par ce que
-          l'ANSUT publie — l'information la plus pertinente et le signal le plus
-          direct de ses priorites — avant la presse exterieure.
-        */}
-        <ActiviteAnsut maxAgeHours={FENETRE_CE_MATIN_HEURES} />
-
-        <ObjectifsStrategiques
+        {/* Q2 — Qu'est-ce qui a changé depuis hier ? */}
+        <ChangementsDepuisHier
           actualites={sujets ?? []}
-          isLoading={sujetsLoading}
           prioritesActives={prioritesActives}
+          isLoading={sujetsLoading}
         />
 
-        {/* Strate 3 : les preuves, regroupees sous l'axe strategique impacte. */}
-        <PreuvesParAxe actualites={sujets ?? []} isLoading={sujetsLoading} />
+        {/* Q3 — Quel sujet mérite une attention humaine ? */}
+        <ASurveiller
+          actualites={sujets ?? []}
+          signauxCritiques={signauxCritiques}
+          prioritesActives={prioritesActives}
+          isLoading={sujetsLoading}
+        />
 
-        {/* Strate 4 : la prochaine action a mener. */}
+        {/* Q4 — Que faut-il faire aujourd'hui ? */}
         <ProchaineAction {...prochaineAction} />
 
-        {/* Acces secondaires, volontairement sous la ligne de flottaison. */}
+        {/* Accès secondaires, volontairement sous la ligne de flottaison. */}
         <section aria-labelledby="acces-titre" className="space-y-3">
           <h2 id="acces-titre" className="text-sm font-semibold text-muted-foreground">
             Aller plus loin

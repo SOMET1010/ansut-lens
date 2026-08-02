@@ -1,4 +1,5 @@
 import { piliersPourTexte } from '@/lib/missions';
+import { MISSIONS_STRATEGIQUES } from '@/config/missions';
 import type { PublicationAnsut } from '@/hooks/useAnsutPublications';
 
 /**
@@ -62,4 +63,29 @@ export function deriverAdnPublications(publications: PublicationAnsut[]): AdnPub
   );
 
   return { priorites, actifs, total: publications?.length ?? 0 };
+}
+
+/** Piliers que l'ANSUT porte structurellement (entité porteuse d'un projet). */
+export function piliersPorteurs(): Set<string> {
+  return new Set(MISSIONS_STRATEGIQUES.filter((m) => m.ansutPorteur).map((m) => m.id));
+}
+
+/**
+ * Priorités de l'ANSUT à retenir pour contextualiser la veille, avec repli.
+ *
+ * Idéalement on apprend les priorités de ce que l'ANSUT publie (ADN). Mais la
+ * collecte des réseaux officiels est encore partielle : quand aucune priorité
+ * n'émerge des publications, on retombe sur les piliers que l'ANSUT porte par
+ * mandat (P1 Connectivité, P6 Inclusion). L'accueil reste ainsi centré sur ce
+ * qui concerne l'ANSUT même sans données de publication.
+ */
+export function prioritesAvecRepli(publications: PublicationAnsut[]): {
+  priorites: Set<string>;
+  parPublications: boolean;
+} {
+  const adn = deriverAdnPublications(publications ?? []);
+  if (adn.actifs.size > 0) {
+    return { priorites: adn.actifs, parPublications: true };
+  }
+  return { priorites: piliersPorteurs(), parPublications: false };
 }

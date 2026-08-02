@@ -47,6 +47,18 @@ function absoluteUrl(src: string, base: string): string {
   try { return new URL(src, base).toString(); } catch { return src; }
 }
 
+// A guessed name "looks like an ID" when it's mostly a hex/numeric token rather
+// than a real masthead (Abidjan.net titrologie images are named by ID). In that
+// case we drop the guess entirely and rely on what the OCR reads on the masthead.
+function looksLikeId(name: string): boolean {
+  const s = (name || '').trim();
+  if (!s || s.toLowerCase() === 'journal') return true;
+  if (!/[a-zà-ÿ]{3,}/i.test(s)) return true;            // no real word of 3+ letters
+  if (/[0-9a-f]{8,}/i.test(s)) return true;             // long hex/id token
+  const digits = (s.match(/\d/g) || []).length;
+  return digits >= s.replace(/\s/g, '').length / 2;     // half or more digits
+}
+
 // Heuristic to guess journal name from filename / alt text
 function guessJournal(input: string): string {
   const cleaned = input
@@ -163,8 +175,9 @@ async function ocrAndAnalyze(une: RawUne): Promise<any> {
   const userParts: any[] = [
     {
       type: 'text',
-      text: `Analyse cette une de presse ivoirienne (journal: ${une.journal}). Titre indicatif : "${une.titre_une}".
+      text: `Analyse cette une de presse ivoirienne. Nom indicatif du journal (peu fiable, souvent un identifiant technique) : "${une.journal}". Titre indicatif : "${une.titre_une}".
 Tâches :
+0. Nom du journal : lis le bandeau-titre (le logo / masthead en haut de la une) et renvoie le nom EXACT du journal dans `journal` (ex. « Fraternité Matin », « Le Nouveau Réveil », « Soir Info »). N'utilise JAMAIS le nom indicatif s'il ressemble à un identifiant (suite de chiffres/lettres). Si le bandeau est illisible, renvoie null.
 1. OCR : extrait tous les titres visibles (gros titres, sous-titres). Renvoie le texte brut concaténé dans raw_ocr.
 2. Titre principal de la une.
 3. titres_secondaires : tableau des autres titres visibles (chapeaux, sous-titres, encadrés), un titre par item, déjà nettoyés.
@@ -232,6 +245,7 @@ Réponds via l'outil structurer_une.`,
         parameters: {
           type: 'object',
           properties: {
+            journal: { type: 'string', description: 'Nom exact du journal lu sur le bandeau-titre (masthead). Vide/null si illisible.' },
             raw_ocr: { type: 'string' },
             titre_principal: { type: 'string' },
             titres_secondaires: { type: 'array', items: { type: 'string' }, description: 'Titres secondaires lus sur la une (chacun séparé)' },
@@ -340,6 +354,13 @@ async function runCollecte(supabase: any, runId: string | undefined, today: stri
         const warnings: string[] = Array.isArray(analysis?.ocr_warnings) ? analysis.ocr_warnings : [];
         const titre = (analysis?.titre_principal || '').trim();
 
+        // Prefer the journal name read from the masthead. Only fall back to the
+        // filename guess when the OCR gave nothing AND the guess isn't an ID.
+        const journalOcr = (analysis?.journal || '').trim();
+        const journalFinal = journalOcr
+          ? journalOcr
+          : (looksLikeId(une.journal) ? 'Journal non identifié' : une.journal);
+
         let ocrFailed = false;
         let raison_code: OcrFailure['raison_code'] = 'LOW_CONFIDENCE';
         let reason = '';
@@ -353,7 +374,7 @@ async function runCollecte(supabase: any, runId: string | undefined, today: stri
 
         const row = {
           date_parution: today,
-          journal: une.journal,
+          journal: journalFinal,
           image_url: une.image_url || null,
           source_url: une.source_url || null,
           titre_une: titre || une.titre_une,
@@ -374,21 +395,22 @@ async function runCollecte(supabase: any, runId: string | undefined, today: stri
           if (ocrFailed) {
             if (stat) { stat.nombre_erreurs_ocr++; if (stat.statut === 'success') stat.statut = 'partial'; }
             failures.push({
-              journal: une.journal, source: sourceName, image_url: une.image_url || null,
+              journal: journalFinal, source: sourceName, image_url: une.image_url || null,
               ocr_confidence: conf, ocr_warnings: warnings, reason, raison_code,
             });
-            console.warn(`[Titrologie] OCR FAIL ${une.journal} (${raison_code}): ${reason}`);
+            console.warn(`[Titrologie] OCR FAIL ${journalFinal} (${raison_code}): ${reason}`);
           }
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (stat) { stat.nombre_erreurs_ocr++; if (stat.statut === 'success') stat.statut = 'partial'; }
+        const journalFallback = looksLikeId(une.journal) ? 'Journal non identifié' : une.journal;
         failures.push({
-          journal: une.journal, source: sourceName, image_url: une.image_url || null,
+          journal: journalFallback, source: sourceName, image_url: une.image_url || null,
           ocr_confidence: 0, ocr_warnings: [], reason: `Échec passerelle IA: ${msg.slice(0,160)}`,
           raison_code: 'GATEWAY_ERROR',
         });
-        console.error(`[Titrologie] Analyze failed for ${une.journal}:`, msg);
+        console.error(`[Titrologie] Analyze failed for ${journalFallback}:`, msg);
       }
 
       // Progressive run state update so admin can monitor progress live

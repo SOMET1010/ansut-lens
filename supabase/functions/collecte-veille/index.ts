@@ -107,6 +107,21 @@ function isValidUrl(urlStr: string): boolean {
   }
 }
 
+// Nom de source lisible dérivé du domaine, quand la source n'est pas nommée.
+// « https://news.abidjan.net/articles/... » -> « Abidjan.net ». Évite l'affichage
+// « Source inconnue » alors qu'on connaît le média via l'URL.
+function nomSourceDepuisUrl(urlStr: string | null): string | null {
+  if (!urlStr) return null;
+  try {
+    const host = new URL(urlStr).hostname.replace(/^www\./, '');
+    const parts = host.split('.');
+    const base = parts.length > 2 ? parts.slice(-2).join('.') : host; // abidjan.net
+    return base.charAt(0).toUpperCase() + base.slice(1);               // Abidjan.net
+  } catch (_e) {
+    return null;
+  }
+}
+
 // Quick HEAD check to verify URL exists (with timeout)
 async function verifyUrlExists(urlStr: string): Promise<boolean> {
   if (!isValidUrl(urlStr)) return false;
@@ -904,6 +919,9 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
         .sort((a, b) => b[1] - a[1])[0]?.[0] || 'market';
 
       const sourceUrl = (actu.url && isValidUrl(actu.url)) ? actu.url : null;
+      const sourceNom = (actu.source && actu.source.trim())
+        || nomSourceDepuisUrl(sourceUrl)
+        || 'Source non précisée';
 
       const { data: inserted, error: insertError } = await supabase
         .from('actualites')
@@ -911,7 +929,7 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
           titre: actu.titre,
           resume: actu.resume,
           contenu: actu.resume,
-          source_nom: actu.source,
+          source_nom: sourceNom,
           source_url: sourceUrl,
           source_type: actu.source_type,
           date_publication: actu.date_publication || new Date().toISOString(),

@@ -140,23 +140,41 @@ export function useIntelligenceFeed(limit: number = 50, maxAgeHours?: number) {
         return dateMs(y.date_publication) - dateMs(x.date_publication);
       });
 
-      return classes.slice(0, limit).map(a => ({
-        id: a.id,
-        titre: a.titre,
-        resume: a.resume || undefined,
-        contenu: a.contenu || undefined,
-        source_nom: a.source_nom || undefined,
-        source_url: a.source_url || undefined,
-        date_publication: a.date_publication || undefined,
-        importance: a.importance || 50,
-        score_pertinence: a.score_pertinence ?? undefined,
-        tags: a.tags || undefined,
-        categorie: a.categorie || undefined,
-        analyse_ia: a.analyse_ia || undefined,
-        pourquoi_important: a.pourquoi_important || undefined,
-        sentiment: a.sentiment ?? undefined,
-        impact_ansut: a.impact_ansut || undefined,
-      }));
+      return classes.slice(0, limit).map(a => {
+        // Colonnes d'alignement ajoutées après génération des types Supabase
+        // (types auto-générés, non modifiables) : on les lit via une extension
+        // typée plutôt qu'un `any`, pour garder le lint propre.
+        const ext = a as typeof a & {
+          pilier_id?: string | null;
+          piliers?: string[] | null;
+          action_suggeree?: string | null;
+          confiance_ia?: number | null;
+        };
+        return {
+          id: a.id,
+          titre: a.titre,
+          resume: a.resume || undefined,
+          contenu: a.contenu || undefined,
+          source_nom: a.source_nom || undefined,
+          source_url: a.source_url || undefined,
+          date_publication: a.date_publication || undefined,
+          importance: a.importance || 50,
+          score_pertinence: a.score_pertinence ?? undefined,
+          tags: a.tags || undefined,
+          categorie: a.categorie || undefined,
+          analyse_ia: a.analyse_ia || undefined,
+          pourquoi_important: a.pourquoi_important || undefined,
+          sentiment: a.sentiment ?? undefined,
+          impact_ansut: a.impact_ansut || undefined,
+          // Alignement stratégique persisté : rattachement pilier, action et
+          // confiance, pour que l'accueil lise « pourquoi/à quoi ça se rattache »
+          // sans recalcul côté client quand la donnée existe déjà.
+          pilier_id: ext.pilier_id || undefined,
+          piliers: ext.piliers || undefined,
+          action_suggeree: ext.action_suggeree || undefined,
+          confiance_ia: ext.confiance_ia ?? undefined,
+        };
+      });
     },
     refetchInterval: 60000
   });

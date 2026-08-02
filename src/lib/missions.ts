@@ -41,6 +41,23 @@ export function missionsDeLActualite(a: Actualite): string[] {
   return piliersPourTexte(`${a.titre ?? ''} ${a.resume ?? ''} ${(a.tags ?? []).join(' ')}`);
 }
 
+/**
+ * Piliers d'une actualité en privilégiant l'alignement IA persisté
+ * (`pilier_id` / `piliers`), avec repli sur l'appariement par mots-clés pour les
+ * articles collectés avant la mise en place de l'alignement.
+ */
+export function piliersDeLActu(a: Actualite): string[] {
+  if (a.pilier_id) return [a.pilier_id];
+  if (a.piliers && a.piliers.length > 0) return a.piliers;
+  return missionsDeLActualite(a);
+}
+
+/** Vrai si l'actualité touche au moins un des piliers donnés. */
+export function toucheUnPilier(a: Actualite, piliers: Set<string>): boolean {
+  if (piliers.size === 0) return false;
+  return piliersDeLActu(a).some((id) => piliers.has(id));
+}
+
 export interface GroupePreuves {
   /** Axe de rattachement principal, ou `undefined` pour les sujets hors axes. */
   mission?: MissionStrategique;
