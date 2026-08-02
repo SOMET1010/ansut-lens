@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -7,13 +8,16 @@ import {
   Linkedin,
   MessageCircle,
   Megaphone,
+  RefreshCw,
   Twitter,
   type LucideIcon,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { RelativeTime } from '@/components/ui/relative-time';
+import { supabase } from '@/integrations/supabase/client';
 import { nettoyerExtrait } from '@/lib/nettoyerExtrait';
 import { useAnsutPublications } from '@/hooks/useAnsutPublications';
 
@@ -40,7 +44,27 @@ interface Props {
 }
 
 export function ActiviteAnsut({ maxAgeHours = 24 }: Props) {
-  const { data: publications, isLoading } = useAnsutPublications(4, maxAgeHours);
+  const { data: publications, isLoading, refetch } = useAnsutPublications(4, maxAgeHours);
+  const [collecteEnCours, setCollecteEnCours] = useState(false);
+
+  const collecter = async () => {
+    setCollecteEnCours(true);
+    try {
+      const { error } = await supabase.functions.invoke('collecte-institutionnelle');
+      if (error) throw error;
+      toast.success('Collecte lancée', {
+        description: 'Les publications de l’ANSUT sont en cours de récupération.',
+      });
+      await refetch();
+    } catch (e) {
+      console.error('[ActiviteAnsut] collecte impossible :', e);
+      toast.error('La collecte n’a pas pu démarrer', {
+        description: 'Vérifiez les comptes ANSUT et la clé Firecrawl dans les réglages.',
+      });
+    } finally {
+      setCollecteEnCours(false);
+    }
+  };
 
   return (
     <section aria-labelledby="activite-ansut-titre" className="space-y-3">
@@ -73,11 +97,22 @@ export function ActiviteAnsut({ maxAgeHours = 24 }: Props) {
         </div>
       ) : (publications ?? []).length === 0 ? (
         <Card className="border-dashed">
-          <CardContent className="flex flex-col items-start gap-1 py-5">
-            <p className="text-sm font-medium">L’ANSUT n’a rien publié depuis 24 heures.</p>
+          <CardContent className="flex flex-col items-start gap-2 py-5">
+            <p className="text-sm font-medium">Aucune publication de l’ANSUT sur les dernières 24 heures.</p>
             <p className="text-xs text-muted-foreground">
-              Un silence est aussi un signal de visibilité. Voir la communication pour agir.
+              Soit rien n’a été publié (un silence est aussi un signal), soit la collecte des
+              réseaux ANSUT n’a pas encore tourné.
             </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-1 gap-2"
+              onClick={collecter}
+              disabled={collecteEnCours}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${collecteEnCours ? 'animate-spin' : ''}`} aria-hidden />
+              Collecter maintenant
+            </Button>
           </CardContent>
         </Card>
       ) : (

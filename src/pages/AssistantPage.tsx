@@ -18,6 +18,8 @@ import { ChatMessage } from '@/components/assistant/ChatMessage';
 import { ModeSelector, type AssistantMode } from '@/components/assistant/ModeSelector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MODELES_IA_UI, MODELE_IA_DEFAUT } from '@/config/modelesIa';
+import { Switch } from '@/components/ui/switch';
+import { rechercherSourcesPertinentes, formaterContexteRag } from '@/lib/ragRecherche';
 import { DocumentWorkspace, detectDocument, type GeneratedDocument } from '@/components/assistant/DocumentWorkspace';
 import { FrameworkPanel } from '@/components/assistant/FrameworkPanel';
 import { WelcomeScreen } from '@/components/assistant/WelcomeScreen';
@@ -176,6 +178,9 @@ export default function AssistantPage() {
   const { user } = useAuth();
   const [mode, setMode] = useState<AssistantMode>('redaction');
   const [modeleIa, setModeleIa] = useState<string>(MODELE_IA_DEFAUT);
+  // Ancrage automatique (RAG) : récupérer des sources réelles pour chaque
+  // question, contre l'hallucination. Actif par défaut.
+  const [ancrageAuto, setAncrageAuto] = useState(true);
   const [messages, setMessages] = useState<ConversationMessage[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -339,7 +344,8 @@ export default function AssistantPage() {
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
-    const userMessage: ConversationMessage = { role: 'user', content: input.trim() };
+    const question = input.trim();
+    const userMessage: ConversationMessage = { role: 'user', content: question };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInput('');
@@ -368,9 +374,22 @@ export default function AssistantPage() {
       }
     };
 
+    // Ancrage automatique (RAG) : on récupère des sources réelles pour la
+    // question et on les ajoute au contexte, afin que le modèle réponde sur des
+    // faits vérifiables et cite ses sources plutôt que d'halluciner.
+    let contexteEnvoye = context;
+    if (ancrageAuto) {
+      try {
+        const sources = await rechercherSourcesPertinentes(question, 8);
+        contexteEnvoye = `${context}${formaterContexteRag(sources)}`;
+      } catch (e) {
+        console.error('[RAG] ancrage non appliqué :', e);
+      }
+    }
+
     await streamChat({
       messages: newMessages.map(m => ({ role: m.role, content: m.content })),
-      context,
+      context: contexteEnvoye,
       mode,
       model: modeleIa,
       onDelta: updateAssistant,
@@ -525,6 +544,14 @@ export default function AssistantPage() {
                   ))}
                 </SelectContent>
               </Select>
+
+              <label
+                className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                title="Récupère des articles collectés pour ancrer la réponse et éviter l'hallucination"
+              >
+                <Switch checked={ancrageAuto} onCheckedChange={setAncrageAuto} aria-label="Ancrage sources" />
+                <span className="hidden sm:inline">Ancrage sources</span>
+              </label>
               
               {/* Context Indicator */}
               <Popover>
