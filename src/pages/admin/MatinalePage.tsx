@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -125,6 +126,26 @@ export default function MatinalePage() {
           </Button>
         </div>
       </div>
+
+      {/* Progression du job asynchrone */}
+      {(preview.isPending || send.isPending) && (
+        <Card className="glass border-primary/20">
+          <CardContent className="py-3 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                {(preview.isPending ? preview.job.step : send.job.step) || 'Traitement en cours…'}
+              </span>
+              <span className="font-mono text-xs text-muted-foreground">
+                {(preview.isPending ? preview.job.progress : send.job.progress)}%
+              </span>
+            </div>
+            <Progress value={preview.isPending ? preview.job.progress : send.job.progress} className="h-2" />
+          </CardContent>
+        </Card>
+      )}
+
+
 
       {/* Freshness control bar */}
       <TooltipProvider>

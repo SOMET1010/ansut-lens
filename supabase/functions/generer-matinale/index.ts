@@ -665,11 +665,30 @@ La Direction de la Communication ANSUT doit pouvoir, en 5 minutes, répondre à 
 - Si le contexte est pauvre : basculer en mode "tendances + idées de contenus génériques actualisés" (jamais "aucune actualité")`;
 
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+interface MatinaleParams {
+  previewOnly: boolean;
+  recipients: string[];
+  freshnessHours: number;
+}
 
+// Met à jour l'état d'un job (no-op en mode synchrone)
+async function updateJob(
+  jobId: string | null,
+  patch: Record<string, unknown>,
+): Promise<void> {
+  if (!jobId) return;
+  try {
+    const admin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+    await admin.from('matinale_jobs').update(patch).eq('id', jobId);
+  } catch (e) {
+    console.error('[Matinale/Job] update failed:', (e as Error).message);
+  }
+}
+
+async function runMatinale(params: MatinaleParams, jobId: string | null): Promise<Response> {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -681,42 +700,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Auth check (optional for cron, required for manual trigger)
-    const authHeader = req.headers.get('Authorization');
-    let isAuthenticated = false;
-
-    if (authHeader?.startsWith('Bearer ')) {
-      const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-      const userClient = createClient(supabaseUrl, anonKey, {
-        global: { headers: { Authorization: authHeader } },
-      });
-      const token = authHeader.replace('Bearer ', '');
-      const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-      if (!claimsError && claimsData?.claims) {
-        isAuthenticated = true;
-      }
-    }
-
-    // Parse request body
-    let sendEmail = true;
-    let previewOnly = false;
-    let recipients: string[] = [];
-    let freshnessHours = 24; // défaut : 24h
-
-    try {
-      const body = await req.json();
-      previewOnly = body.previewOnly === true;
-      if (body.recipients && Array.isArray(body.recipients)) {
-        recipients = body.recipients;
-      }
-      if (typeof body.freshnessHours === 'number' && [24, 48, 168].includes(body.freshnessHours)) {
-        freshnessHours = body.freshnessHours;
-      }
-    } catch {
-      // No body = cron trigger, send to all configured recipients
-    }
+    const previewOnly = params.previewOnly;
+    const freshnessHours = params.freshnessHours;
+    let recipients: string[] = [...params.recipients];
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    await updateJob(jobId, { status: 'running', step: 'Collecte des sources', progress: 10, started_at: new Date().toISOString() });
 
     // Charger les règles de scoring configurables (admin/scoring)
     const SCORING_DEFAULTS = {
@@ -1154,6 +1143,7 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
 
     const matinale = JSON.parse(toolCall.function.arguments);
     console.log('[Matinale] Generated successfully');
+    await updateJob(jobId, { step: 'Mise en forme du briefing', progress: 70 });
 
     // Post-process: Build sets of valid data for verification
     // Normalize URLs to make matching robust (trailing slash, tracking params, casing)
@@ -1708,6 +1698,7 @@ ${signaux.length ? `<tr><td style="padding:0 24px 20px;">
     }
 
     console.log(`[Matinale] Sending to ${recipients.length} recipients`);
+    await updateJob(jobId, { step: `Envoi à ${recipients.length} destinataire(s)`, progress: 85 });
 
     const subject = `📌 Matinale COM ANSUT — ${dateStr}`;
     let successCount = 0;
@@ -1746,4 +1737,106 @@ ${signaux.length ? `<tr><td style="padding:0 24px 20px;">
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
+}
+
+// Exécution en tâche de fond : persiste le résultat dans matinale_jobs
+async function processJob(params: MatinaleParams, jobId: string) {
+  try {
+    const res = await runMatinale(params, jobId);
+    const payload = await res.json().catch(() => ({}));
+    if (res.ok) {
+      await updateJob(jobId, {
+        status: 'completed', step: 'Terminé', progress: 100,
+        result: payload, finished_at: new Date().toISOString(),
+      });
+    } else {
+      await updateJob(jobId, {
+        status: 'failed', step: 'Échec', error: payload?.error || `HTTP ${res.status}`,
+        finished_at: new Date().toISOString(),
+      });
+    }
+  } catch (e) {
+    await updateJob(jobId, {
+      status: 'failed', step: 'Échec', error: (e as Error).message,
+      finished_at: new Date().toISOString(),
+    });
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const admin = createClient(supabaseUrl, supabaseServiceKey);
+
+  // Auth (optionnelle pour le cron)
+  const authHeader = req.headers.get('Authorization');
+  let userId: string | null = null;
+  if (authHeader?.startsWith('Bearer ')) {
+    try {
+      const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: claimsData } = await userClient.auth.getClaims(authHeader.replace('Bearer ', ''));
+      userId = (claimsData?.claims?.sub as string) ?? null;
+    } catch { /* ignore */ }
+  }
+
+  let body: Record<string, any> = {};
+  try { body = await req.json(); } catch { /* cron trigger */ }
+
+  // Consultation d'un job existant : { jobId: "..." }
+  if (typeof body.jobId === 'string' && body.jobId) {
+    const { data, error } = await admin
+      .from('matinale_jobs')
+      .select('*')
+      .eq('id', body.jobId)
+      .maybeSingle();
+    if (error || !data) {
+      return new Response(JSON.stringify({ error: 'Job introuvable' }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    return new Response(JSON.stringify(data), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const params: MatinaleParams = {
+    previewOnly: body.previewOnly === true,
+    recipients: Array.isArray(body.recipients) ? body.recipients : [],
+    freshnessHours: typeof body.freshnessHours === 'number' && [24, 48, 168].includes(body.freshnessHours)
+      ? body.freshnessHours
+      : 24,
+  };
+
+  // Mode asynchrone : { async: true } → création d'un job + traitement en tâche de fond
+  if (body.async === true) {
+    const { data: job, error } = await admin
+      .from('matinale_jobs')
+      .insert({ status: 'pending', step: 'En file d\'attente', progress: 0, params, created_by: userId })
+      .select('id')
+      .single();
+
+    if (error || !job) {
+      console.error('[Matinale/Job] creation failed:', error);
+      return new Response(JSON.stringify({ error: 'Impossible de créer le job' }), {
+        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // @ts-ignore EdgeRuntime global
+    EdgeRuntime.waitUntil(processJob(params, job.id));
+
+    return new Response(JSON.stringify({ jobId: job.id, status: 'pending' }), {
+      status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  // Mode synchrone (rétro-compatible)
+  return await runMatinale(params, null);
 });
