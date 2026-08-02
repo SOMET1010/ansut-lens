@@ -134,7 +134,7 @@ export default function VeillePage() {
       <div className="space-y-5">
         <PageHeader
           titre="Veille"
-          description="Tous les articles collect\u00e9s sur le secteur, regroup\u00e9s par sujet et class\u00e9s par pertinence."
+          description="Tous les articles collectés sur le secteur, regroupés par sujet et classés par pertinence."
           icon={Newspaper}
         />
 
@@ -158,7 +158,7 @@ export default function VeillePage() {
               onRefresh={rafraichir}
               onExport={() =>
                 toast.info(
-                  'L\u2019export n\u2019est pas encore disponible. Utilisez la page Publier pour produire une note.',
+                  'L’export n’est pas encore disponible. Utilisez la page Publier pour produire une note.',
                 )
               }
               isRefreshing={declencherCollecte.isPending}
@@ -177,7 +177,7 @@ export default function VeillePage() {
             {/* Analyse laterale : repliee sur mobile, colonne sur grand ecran. */}
             <div className="lg:hidden">
               <SectionRepliable
-                titre="Analyse de la p\u00e9riode"
+                titre="Analyse de la période"
                 indication={`${clusters.length} sujet${clusters.length > 1 ? 's' : ''}`}
                 icon={BarChart3}
                 toujoursOuvertDes="jamais"
@@ -198,13 +198,13 @@ export default function VeillePage() {
             <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
               <div className="min-w-0 flex-1 space-y-4">
                 <p className="text-xs text-muted-foreground">
-                  {clusters.length} sujet{clusters.length > 1 ? 's' : ''} regroup\u00e9
-                  {clusters.length > 1 ? 's' : ''}, tri\u00e9
+                  {clusters.length} sujet{clusters.length > 1 ? 's' : ''} regroupé
+                  {clusters.length > 1 ? 's' : ''}, trié
                   {clusters.length > 1 ? 's' : ''} par{' '}
                   <TermeMetier cle="resonance" discret>
-                    r\u00e9sonance
+                    résonance
                   </TermeMetier>{' '}
-                  et fra\u00eecheur.
+                  et fraîcheur.
                 </p>
 
                 {isLoading ? (
@@ -225,8 +225,8 @@ export default function VeillePage() {
                       <Newspaper className="h-12 w-12 text-muted-foreground/60" aria-hidden />
                       <p className="text-sm text-muted-foreground">
                         {termeRecherche || filtresActifs.length > 0
-                          ? 'Aucun article ne correspond \u00e0 vos crit\u00e8res.'
-                          : 'Aucune actualit\u00e9 collect\u00e9e sur cette p\u00e9riode.'}
+                          ? 'Aucun article ne correspond à vos critères.'
+                          : 'Aucune actualité collectée sur cette période.'}
                       </p>
                       <div className="flex flex-wrap justify-center gap-3">
                         {(termeRecherche || filtresActifs.length > 0) && (

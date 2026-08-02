@@ -54,7 +54,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     id: 'veille',
     label: 'Veille',
-    question: 'Que dit la presse aujourd\u2019hui ?',
+    question: 'Que dit la presse aujourd’hui ?',
     path: '/veille',
     icon: Newspaper,
     permission: 'view_radar',
@@ -84,7 +84,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     id: 'surveillance',
     label: 'Surveillance',
-    question: 'Qu\u2019est-ce que je surveille en continu ?',
+    question: 'Qu’est-ce que je surveille en continu ?',
     path: '/surveillance',
     icon: Radio,
     permission: 'create_flux',
@@ -93,7 +93,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     id: 'communication',
     label: 'Notre communication',
-    question: 'Comment l\u2019ANSUT est-elle visible ?',
+    question: 'Comment l’ANSUT est-elle visible ?',
     path: '/communication',
     icon: Megaphone,
     permission: 'use_assistant',
@@ -111,7 +111,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     id: 'assistant',
     label: 'Assistant',
-    question: 'Aide-moi \u00e0 analyser et r\u00e9diger',
+    question: 'Aide-moi à analyser et rédiger',
     path: '/assistant',
     icon: Bot,
     permission: 'use_assistant',
@@ -121,7 +121,7 @@ export const NAV_SECTIONS: NavSection[] = [
 
 export const ADMIN_SECTION: NavSection = {
   id: 'reglages',
-  label: 'R\u00e9glages',
+  label: 'Réglages',
   question: 'Configurer la plateforme',
   path: '/admin',
   icon: Settings,

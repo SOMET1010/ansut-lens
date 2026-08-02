@@ -122,7 +122,7 @@ export function SpotlightSearch({ open, onOpenChange }: SpotlightSearchProps) {
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandInput
-        placeholder="Rechercher un article, un acteur, une source, une note\u2026"
+        placeholder="Rechercher un article, un acteur, une source, une note…"
         value={query}
         onValueChange={setQuery}
       />
@@ -130,9 +130,9 @@ export function SpotlightSearch({ open, onOpenChange }: SpotlightSearchProps) {
         {enRecherche && !loading && nbResultats === 0 && (
           <CommandEmpty>
             <div className="space-y-1 py-4 text-center">
-              <p className="text-sm">Aucun r\u00e9sultat pour « {query} »</p>
+              <p className="text-sm">Aucun résultat pour « {query} »</p>
               <p className="text-xs text-muted-foreground">
-                Essayez un mot-cl\u00e9 plus court, ou lancez une recherche approfondie depuis la
+                Essayez un mot-clé plus court, ou lancez une recherche approfondie depuis la
                 section Recherche.
               </p>
             </div>
@@ -149,7 +149,7 @@ export function SpotlightSearch({ open, onOpenChange }: SpotlightSearchProps) {
 
         {!enRecherche && (
           <>
-            <CommandGroup heading="Aller \u00e0">
+            <CommandGroup heading="Aller à">
               {accesRapides.map((section) => (
                 <CommandItem key={section.id} onSelect={() => aller(section.path)}>
                   <section.icon className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
@@ -165,7 +165,7 @@ export function SpotlightSearch({ open, onOpenChange }: SpotlightSearchProps) {
                 <HelpCircle className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
                 <span>Glossaire des termes</span>
                 <span className="ml-auto pl-3 text-xs text-muted-foreground">
-                  SPDI, quadrant, titrologie\u2026
+                  SPDI, quadrant, titrologie…
                 </span>
               </CommandItem>
             </CommandGroup>

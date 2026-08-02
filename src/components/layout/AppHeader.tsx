@@ -73,9 +73,9 @@ export function AppHeader() {
             className="hidden min-h-9 items-center gap-2 rounded-md border border-border/60 bg-muted/40 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:flex lg:w-64"
           >
             <Search className="h-4 w-4 shrink-0" aria-hidden />
-            <span className="flex-1 text-left">Rechercher\u2026</span>
+            <span className="flex-1 text-left">Rechercher…</span>
             <kbd className="inline-flex h-5 items-center rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium">
-              \u2318K
+              ⌘K
             </kbd>
           </button>
 
@@ -176,7 +176,7 @@ export function AppHeader() {
                   className="cursor-pointer"
                 >
                   <LogOut className="mr-2 h-4 w-4" aria-hidden />
-                  D\u00e9connexion
+                  Déconnexion
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -187,15 +187,15 @@ export function AppHeader() {
       <AlertDialog open={confirmLogoutOpen} onOpenChange={setConfirmLogoutOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la d\u00e9connexion ?</AlertDialogTitle>
+            <AlertDialogTitle>Confirmer la déconnexion ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Vous serez d\u00e9connect\u00e9 de votre session. Vous devrez vous reconnecter pour
-              acc\u00e9der \u00e0 nouveau \u00e0 la plateforme.
+              Vous serez déconnecté de votre session. Vous devrez vous reconnecter pour
+              accéder à nouveau à la plateforme.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={signOut}>Se d\u00e9connecter</AlertDialogAction>
+            <AlertDialogAction onClick={signOut}>Se déconnecter</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

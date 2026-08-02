@@ -60,7 +60,7 @@ export default function AdminPage() {
               addSuffix: true,
               locale: fr,
             })
-          : 'jamais ex\u00e9cut\u00e9e';
+          : 'jamais exécutée';
       default:
         return undefined;
     }
@@ -99,8 +99,8 @@ export default function AdminPage() {
     <PageContainer>
       <div className="space-y-6">
         <PageHeader
-          titre="R\u00e9glages"
-          description="Configurer les acc\u00e8s, les sources surveill\u00e9es, le traitement des donn\u00e9es et les diffusions."
+          titre="Réglages"
+          description="Configurer les accès, les sources surveillées, le traitement des données et les diffusions."
           icon={Settings}
         />
 
@@ -121,16 +121,16 @@ export default function AdminPage() {
             <Input
               value={recherche}
               onChange={(event) => setRecherche(event.target.value)}
-              placeholder="Rechercher un r\u00e9glage\u2026"
-              aria-label="Rechercher un r\u00e9glage"
+              placeholder="Rechercher un réglage…"
+              aria-label="Rechercher un réglage"
               className="min-h-11 pl-9"
             />
           </div>
           {recherche && (
             <p className="text-xs text-muted-foreground" role="status">
               {nbVisibles === 0
-                ? 'Aucun r\u00e9glage ne correspond \u00e0 cette recherche.'
-                : `${nbVisibles} r\u00e9glage${nbVisibles > 1 ? 's' : ''} trouv\u00e9${nbVisibles > 1 ? 's' : ''}.`}
+                ? 'Aucun réglage ne correspond à cette recherche.'
+                : `${nbVisibles} réglage${nbVisibles > 1 ? 's' : ''} trouvé${nbVisibles > 1 ? 's' : ''}.`}
             </p>
           )}
         </div>
@@ -141,8 +141,8 @@ export default function AdminPage() {
               <SlidersHorizontal className="h-10 w-10 text-muted-foreground/60" aria-hidden />
               <p className="text-sm text-muted-foreground">
                 {recherche
-                  ? 'Essayez un autre mot, ou parcourez les groupes en effa\u00e7ant la recherche.'
-                  : 'Aucun r\u00e9glage accessible avec vos permissions actuelles.'}
+                  ? 'Essayez un autre mot, ou parcourez les groupes en effaçant la recherche.'
+                  : 'Aucun réglage accessible avec vos permissions actuelles.'}
               </p>
             </CardContent>
           </Card>
@@ -207,7 +207,7 @@ export default function AdminPage() {
 
         <footer className="border-t border-border pt-6 text-center">
           <p className="text-xs text-muted-foreground">
-            ANSUT Radar · h\u00e9berg\u00e9 sur Lovable Cloud ·{' '}
+            ANSUT Radar · hébergé sur Lovable Cloud ·{' '}
             <Link
               to="/admin/documentation"
               className="rounded-sm transition-colors hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

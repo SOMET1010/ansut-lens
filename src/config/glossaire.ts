@@ -58,13 +58,13 @@ export const GLOSSAIRE: TermeGlossaire[] = [
     cle: 'signal-faible',
     terme: 'Signal faible',
     definition:
-      'Information encore peu reprise mais qui presente les caracteristiques d\u2019un sujet susceptible de prendre de l\u2019ampleur.',
+      'Information encore peu reprise mais qui presente les caracteristiques d’un sujet susceptible de prendre de l’ampleur.',
   },
   {
     cle: 'titrologie',
     terme: 'Titrologie',
     definition:
-      'Revue des titres de la presse papier ivoirienne du jour, telle qu\u2019elle se pratique devant les kiosques a journaux.',
+      'Revue des titres de la presse papier ivoirienne du jour, telle qu’elle se pratique devant les kiosques a journaux.',
   },
   {
     cle: 'matinale',
@@ -76,7 +76,7 @@ export const GLOSSAIRE: TermeGlossaire[] = [
     cle: 'balayage',
     terme: 'Balayage',
     definition:
-      'Recherche approfondie sur un sujet unique, remontant jusqu\u2019a trente jours et interrogeant toutes les sources disponibles.',
+      'Recherche approfondie sur un sujet unique, remontant jusqu’a trente jours et interrogeant toutes les sources disponibles.',
   },
   {
     cle: 'capteur',
@@ -95,13 +95,13 @@ export const GLOSSAIRE: TermeGlossaire[] = [
     cle: 'sentiment',
     terme: 'Sentiment',
     definition:
-      'Tonalite generale d\u2019un contenu a l\u2019egard de son sujet : favorable, neutre ou defavorable.',
+      'Tonalite generale d’un contenu a l’egard de son sujet : favorable, neutre ou defavorable.',
   },
   {
     cle: 'resonance',
     terme: 'Resonance',
     definition:
-      'Ampleur de la reprise d\u2019un sujet par d\u2019autres sources apres sa premiere publication.',
+      'Ampleur de la reprise d’un sujet par d’autres sources apres sa premiere publication.',
   },
   {
     cle: 'shadow-tracker',
@@ -114,7 +114,7 @@ export const GLOSSAIRE: TermeGlossaire[] = [
     cle: 'coffre-contenu',
     terme: 'Coffre a contenus',
     definition:
-      'Reserve de contenus rediges a l\u2019avance, prets a etre publies lorsque le moment est opportun.',
+      'Reserve de contenus rediges a l’avance, prets a etre publies lorsque le moment est opportun.',
   },
   {
     cle: 'revue-stabilite',
@@ -126,7 +126,7 @@ export const GLOSSAIRE: TermeGlossaire[] = [
     cle: 'fraicheur',
     terme: 'Fraicheur',
     definition:
-      'Age maximal accepte pour qu\u2019une information soit consideree comme encore pertinente.',
+      'Age maximal accepte pour qu’une information soit consideree comme encore pertinente.',
   },
 ];
 

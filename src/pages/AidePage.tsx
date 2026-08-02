@@ -37,14 +37,14 @@ export default function AidePage() {
       <div className="space-y-8">
         <PageHeader
           titre="Aide et glossaire"
-          description="Le sens de chaque terme employ\u00e9 dans la plateforme, et o\u00f9 trouver chaque fonction."
+          description="Le sens de chaque terme employé dans la plateforme, et où trouver chaque fonction."
           icon={HelpCircle}
         />
 
         <section aria-labelledby="sections-titre" className="space-y-3">
           <h2 id="sections-titre" className="flex items-center gap-2 text-base font-semibold">
             <ArrowRight className="h-4 w-4 text-primary" aria-hidden />
-            O\u00f9 trouver quoi
+            Où trouver quoi
           </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {NAV_SECTIONS.map((section) => (
@@ -79,7 +79,7 @@ export default function AidePage() {
               <Input
                 value={recherche}
                 onChange={(event) => setRecherche(event.target.value)}
-                placeholder="Rechercher un terme\u2026"
+                placeholder="Rechercher un terme…"
                 aria-label="Rechercher un terme dans le glossaire"
                 className="min-h-11 pl-9"
               />
@@ -89,7 +89,7 @@ export default function AidePage() {
           {termesFiltres.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="py-10 text-center text-sm text-muted-foreground">
-                Aucun terme ne correspond \u00e0 cette recherche.
+                Aucun terme ne correspond à cette recherche.
               </CardContent>
             </Card>
           ) : (

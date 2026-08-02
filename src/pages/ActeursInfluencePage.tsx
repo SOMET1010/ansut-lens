@@ -19,8 +19,8 @@ import { PageContainer, PageHeader, TermeMetier } from '@/components/common';
  */
 const ONGLETS = [
   { value: 'cartographie', label: 'Cartographie' },
-  { value: 'spdi', label: 'Scores de pr\u00e9sence' },
-  { value: 'revue', label: 'Revue de stabilit\u00e9' },
+  { value: 'spdi', label: 'Scores de présence' },
+  { value: 'revue', label: 'Revue de stabilité' },
 ] as const;
 
 type ValeurOnglet = (typeof ONGLETS)[number]['value'];
@@ -50,7 +50,7 @@ export default function ActeursInfluencePage() {
       <div className="space-y-5">
         <PageHeader
           titre="Acteurs"
-          description="Qui parle et qui compte dans le secteur : cartographie, scores de pr\u00e9sence et suivi de stabilit\u00e9."
+          description="Qui parle et qui compte dans le secteur : cartographie, scores de présence et suivi de stabilité."
           icon={Users}
           actions={
             <>
@@ -76,9 +76,9 @@ export default function ActeursInfluencePage() {
           }
         >
           <p className="text-xs text-muted-foreground">
-            Les scores de pr\u00e9sence reposent sur le{' '}
-            <TermeMetier cle="spdi">SPDI</TermeMetier>, et les acteurs sont r\u00e9partis par{' '}
-            <TermeMetier cle="cercle">cercle</TermeMetier> de proximit\u00e9.
+            Les scores de présence reposent sur le{' '}
+            <TermeMetier cle="spdi">SPDI</TermeMetier>, et les acteurs sont répartis par{' '}
+            <TermeMetier cle="cercle">cercle</TermeMetier> de proximité.
           </p>
         </PageHeader>
 

@@ -27,13 +27,13 @@ export function AssistantFlottant() {
       <TooltipTrigger asChild>
         <Link
           to="/assistant"
-          aria-label="Ouvrir l\u2019assistant"
+          aria-label="Ouvrir l’assistant"
           className="fixed bottom-[4.5rem] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:bottom-6 md:right-6"
         >
           <Bot className="h-6 w-6" aria-hidden />
         </Link>
       </TooltipTrigger>
-      <TooltipContent side="left">Besoin d\u2019aide ? Demandez \u00e0 l\u2019assistant</TooltipContent>
+      <TooltipContent side="left">Besoin d’aide ? Demandez à l’assistant</TooltipContent>
     </Tooltip>
   );
 }

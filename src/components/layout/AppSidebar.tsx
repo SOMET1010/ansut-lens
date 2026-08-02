@@ -84,7 +84,7 @@ export function AppSidebar() {
               <span className="truncate text-xs tracking-wide text-muted-foreground">RADAR</span>
             </span>
           )}
-          <span className="sr-only">ANSUT Radar, retour \u00e0 l\u2019accueil</span>
+          <span className="sr-only">ANSUT Radar, retour à l’accueil</span>
         </NavLink>
       </SidebarHeader>
 
@@ -210,21 +210,21 @@ export function AppSidebar() {
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="min-h-11 justify-start gap-2">
                   <LogOut className="h-4 w-4 shrink-0" aria-hidden />
-                  {!collapsed && <span>D\u00e9connexion</span>}
-                  {collapsed && <span className="sr-only">D\u00e9connexion</span>}
+                  {!collapsed && <span>Déconnexion</span>}
+                  {collapsed && <span className="sr-only">Déconnexion</span>}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Confirmer la d\u00e9connexion ?</AlertDialogTitle>
+                  <AlertDialogTitle>Confirmer la déconnexion ?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Vous serez d\u00e9connect\u00e9 de votre session. Vous devrez vous reconnecter
-                    pour acc\u00e9der \u00e0 nouveau \u00e0 la plateforme.
+                    Vous serez déconnecté de votre session. Vous devrez vous reconnecter
+                    pour accéder à nouveau à la plateforme.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Annuler</AlertDialogCancel>
-                  <AlertDialogAction onClick={signOut}>Se d\u00e9connecter</AlertDialogAction>
+                  <AlertDialogAction onClick={signOut}>Se déconnecter</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

@@ -4,30 +4,30 @@ import { findSection, NAV_SECTIONS } from '@/config/navigation';
 
 /** Libelles lisibles pour les segments de route qui ne sont pas des sections. */
 const SEGMENT_LABELS: Record<string, string> = {
-  admin: 'R\u00e9glages',
+  admin: 'Réglages',
   users: 'Utilisateurs',
-  roles: 'R\u00f4les et permissions',
+  roles: 'Rôles et permissions',
   'audit-logs': 'Journal des actions',
-  'mots-cles': 'Mots-cl\u00e9s',
+  'mots-cles': 'Mots-clés',
   sources: 'Sources',
-  'import-acteurs': 'Import d\u2019acteurs',
-  'cron-jobs': 'T\u00e2ches programm\u00e9es',
-  'spdi-status': '\u00c9tat des scores',
+  'import-acteurs': 'Import d’acteurs',
+  'cron-jobs': 'Tâches programmées',
+  'spdi-status': 'État des scores',
   newsletters: 'Newsletters',
   diffusion: 'Diffusion',
   matinale: 'Matinale',
-  freshness: 'Fra\u00eecheur',
+  freshness: 'Fraîcheur',
   scoring: 'Calcul des scores',
-  evenements: '\u00c9v\u00e9nements',
-  'shadow-tracker': 'Veille discr\u00e8te',
-  'coffre-contenu': 'Coffre \u00e0 contenus',
-  'veille-semantique': 'Veille s\u00e9mantique',
+  evenements: 'Événements',
+  'shadow-tracker': 'Veille discrète',
+  'coffre-contenu': 'Coffre à contenus',
+  'veille-semantique': 'Veille sémantique',
   'auto-veille': 'Veille automatique',
-  credibilite: 'Cr\u00e9dibilit\u00e9 des sources',
+  credibilite: 'Crédibilité des sources',
   'connecteurs-sociaux': 'Connecteurs sociaux',
   'guide-com-api': 'Guide des API sociales',
   titrologie: 'Titrologie',
-  presentation: 'Pr\u00e9sentation',
+  presentation: 'Présentation',
   formation: 'Formation',
   documentation: 'Documentation technique',
   profile: 'Mon profil',
@@ -38,10 +38,10 @@ const SEGMENT_LABELS: Record<string, string> = {
 /** Libelles des onglets, pour que le fil d'Ariane suive aussi l'onglet actif. */
 const TAB_LABELS: Record<string, string> = {
   cartographie: 'Cartographie',
-  spdi: 'Scores de pr\u00e9sence',
-  revue: 'Revue de stabilit\u00e9',
-  cockpit: 'Vue d\u2019ensemble',
-  social: 'R\u00e9seaux sociaux',
+  spdi: 'Scores de présence',
+  revue: 'Revue de stabilité',
+  cockpit: 'Vue d’ensemble',
+  social: 'Réseaux sociaux',
   notes: 'Notes',
   newsletters: 'Newsletters',
   destinataires: 'Destinataires',
@@ -98,7 +98,7 @@ export function Breadcrumbs() {
   }
 
   return (
-    <nav aria-label="Fil d\u2019Ariane" className="hidden min-w-0 items-center gap-1 text-sm md:flex">
+    <nav aria-label="Fil d’Ariane" className="hidden min-w-0 items-center gap-1 text-sm md:flex">
       <Link
         to="/ce-matin"
         className="flex shrink-0 items-center gap-1 rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

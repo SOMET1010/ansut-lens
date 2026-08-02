@@ -73,14 +73,14 @@ export interface GroupeReglages {
 export const GROUPES_REGLAGES: GroupeReglages[] = [
   {
     id: 'acces',
-    titre: 'Personnes et acc\u00e8s',
+    titre: 'Personnes et accès',
     question: 'Qui peut utiliser la plateforme et avec quels droits ?',
     icon: Users,
     entrees: [
       {
         id: 'users',
         titre: 'Utilisateurs',
-        description: 'Inviter des collaborateurs, suspendre ou r\u00e9activer un acc\u00e8s.',
+        description: 'Inviter des collaborateurs, suspendre ou réactiver un accès.',
         path: '/admin/users',
         icon: Users,
         permission: 'manage_users',
@@ -88,8 +88,8 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
       },
       {
         id: 'roles',
-        titre: 'R\u00f4les et permissions',
-        description: 'D\u00e9finir ce que chaque r\u00f4le peut consulter, modifier ou supprimer.',
+        titre: 'Rôles et permissions',
+        description: 'Définir ce que chaque rôle peut consulter, modifier ou supprimer.',
         path: '/admin/roles',
         icon: Shield,
         permission: 'manage_roles',
@@ -98,17 +98,17 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
       {
         id: 'audit-logs',
         titre: 'Journal des actions',
-        description: 'Consulter l\u2019historique des op\u00e9rations effectu\u00e9es sur la plateforme.',
+        description: 'Consulter l’historique des opérations effectuées sur la plateforme.',
         path: '/admin/audit-logs',
         icon: ClipboardList,
         permission: 'view_audit_logs',
-        synonymes: ['audit', 'logs', 'tra\u00e7abilit\u00e9'],
+        synonymes: ['audit', 'logs', 'traçabilité'],
         statistique: 'actionsAudit24h',
       },
       {
         id: 'import-acteurs',
-        titre: 'Import d\u2019acteurs',
-        description: 'Ajouter des acteurs en masse depuis un fichier ou une g\u00e9n\u00e9ration assist\u00e9e.',
+        titre: 'Import d’acteurs',
+        description: 'Ajouter des acteurs en masse depuis un fichier ou une génération assistée.',
         path: '/admin/import-acteurs',
         icon: UserPlus,
         permission: 'import_actors',
@@ -119,13 +119,13 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
   {
     id: 'collecte',
     titre: 'Ce que la plateforme surveille',
-    question: 'Quelles sources et quels sujets sont collect\u00e9s ?',
+    question: 'Quelles sources et quels sujets sont collectés ?',
     icon: Database,
     entrees: [
       {
         id: 'sources',
-        titre: 'Sources et m\u00e9dias',
-        description: 'G\u00e9rer les sites, flux RSS et comptes sociaux interrog\u00e9s.',
+        titre: 'Sources et médias',
+        description: 'Gérer les sites, flux RSS et comptes sociaux interrogés.',
         path: '/admin/sources',
         icon: Database,
         permission: 'manage_sources',
@@ -133,8 +133,8 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
       },
       {
         id: 'mots-cles',
-        titre: 'Mots-cl\u00e9s et th\u00e8mes',
-        description: 'D\u00e9finir le vocabulaire qui d\u00e9clenche la d\u00e9tection des sujets.',
+        titre: 'Mots-clés et thèmes',
+        description: 'Définir le vocabulaire qui déclenche la détection des sujets.',
         path: '/admin/mots-cles',
         icon: Tag,
         permission: 'manage_keywords',
@@ -142,9 +142,9 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
       },
       {
         id: 'evenements',
-        titre: '\u00c9v\u00e9nements strat\u00e9giques',
+        titre: 'Événements stratégiques',
         description:
-          'Renseigner les salons et sommets pour intensifier la collecte sur ces p\u00e9riodes.',
+          'Renseigner les salons et sommets pour intensifier la collecte sur ces périodes.',
         path: '/admin/evenements',
         icon: CalendarDays,
         permission: 'manage_keywords',
@@ -152,9 +152,9 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
       },
       {
         id: 'veille-semantique',
-        titre: 'Veille s\u00e9mantique',
+        titre: 'Veille sémantique',
         description:
-          'Param\u00e9trer l\u2019analyse des territoires d\u2019expression et la d\u00e9tection d\u2019influenceurs.',
+          'Paramétrer l’analyse des territoires d’expression et la détection d’influenceurs.',
         path: '/admin/veille-semantique',
         icon: Radar,
         permission: 'manage_keywords',
@@ -163,7 +163,7 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
         id: 'titrologie',
         titre: 'Titrologie',
         description:
-          'Choisir les journaux d\u00e9pouill\u00e9s chaque matin et les seuils d\u2019alerte associ\u00e9s.',
+          'Choisir les journaux dépouillés chaque matin et les seuils d’alerte associés.',
         path: '/admin/titrologie',
         icon: Newspaper,
         permission: 'manage_newsletters',
@@ -172,7 +172,7 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
       {
         id: 'alertes',
         titre: 'Alertes',
-        description: 'R\u00e9gler la sensibilit\u00e9 de d\u00e9tection et consulter les alertes \u00e9mises.',
+        description: 'Régler la sensibilité de détection et consulter les alertes émises.',
         path: '/alertes',
         icon: Bell,
         permission: 'access_admin',
@@ -182,15 +182,15 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
   },
   {
     id: 'traitement',
-    titre: 'Comment l\u2019information est trait\u00e9e',
-    question: 'Quelles r\u00e8gles s\u2019appliquent aux donn\u00e9es collect\u00e9es ?',
+    titre: 'Comment l’information est traitée',
+    question: 'Quelles règles s’appliquent aux données collectées ?',
     icon: Sliders,
     entrees: [
       {
         id: 'scoring',
-        titre: 'R\u00e8gles de notation',
+        titre: 'Règles de notation',
         description:
-          'Fixer les seuils de criticit\u00e9 et le niveau de pertinence minimal des livrables.',
+          'Fixer les seuils de criticité et le niveau de pertinence minimal des livrables.',
         path: '/admin/scoring',
         icon: Sliders,
         permission: 'manage_newsletters',
@@ -198,18 +198,18 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
       },
       {
         id: 'freshness',
-        titre: 'Fra\u00eecheur des donn\u00e9es',
-        description: 'D\u00e9finir l\u2019\u00e2ge au-del\u00e0 duquel une information n\u2019est plus retenue.',
+        titre: 'Fraîcheur des données',
+        description: 'Définir l’âge au-delà duquel une information n’est plus retenue.',
         path: '/admin/freshness',
         icon: Clock,
         permission: 'manage_newsletters',
-        synonymes: ['anciennet\u00e9', 'date de publication'],
+        synonymes: ['ancienneté', 'date de publication'],
       },
       {
         id: 'spdi-status',
-        titre: '\u00c9tat du calcul des scores',
+        titre: 'État du calcul des scores',
         description:
-          'V\u00e9rifier que le calcul quotidien des scores de pr\u00e9sence digitale s\u2019est bien ex\u00e9cut\u00e9.',
+          'Vérifier que le calcul quotidien des scores de présence digitale s’est bien exécuté.',
         path: '/admin/spdi-status',
         icon: Activity,
         permission: 'manage_cron_jobs',
@@ -217,8 +217,8 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
       },
       {
         id: 'credibilite',
-        titre: 'Cr\u00e9dibilit\u00e9 des sources',
-        description: 'Consulter la m\u00e9thode d\u2019\u00e9valuation de la fiabilit\u00e9 des sources.',
+        titre: 'Crédibilité des sources',
+        description: 'Consulter la méthode d’évaluation de la fiabilité des sources.',
         path: '/admin/credibilite',
         icon: ShieldCheck,
         permission: 'access_admin',
@@ -234,7 +234,7 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
       {
         id: 'newsletters',
         titre: 'Newsletters',
-        description: 'Composer et programmer les lettres d\u2019information.',
+        description: 'Composer et programmer les lettres d’information.',
         path: '/admin/newsletters',
         icon: Mail,
         permission: 'manage_newsletters',
@@ -243,7 +243,7 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
       {
         id: 'matinale',
         titre: 'Matinale',
-        description: 'Configurer la note de synth\u00e8se diffus\u00e9e chaque matin aux d\u00e9cideurs.',
+        description: 'Configurer la note de synthèse diffusée chaque matin aux décideurs.',
         path: '/admin/matinale',
         icon: Newspaper,
         permission: 'manage_newsletters',
@@ -252,32 +252,32 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
       {
         id: 'diffusion',
         titre: 'Canaux de diffusion',
-        description: 'Choisir les canaux d\u2019envoi : courriel, SMS, Telegram.',
+        description: 'Choisir les canaux d’envoi : courriel, SMS, Telegram.',
         path: '/admin/diffusion',
         icon: Radio,
         permission: 'manage_newsletters',
       },
       {
         id: 'coffre-contenu',
-        titre: 'Coffre \u00e0 contenus',
-        description: 'Constituer une r\u00e9serve de publications pr\u00eates \u00e0 diffuser.',
+        titre: 'Coffre à contenus',
+        description: 'Constituer une réserve de publications prêtes à diffuser.',
         path: '/admin/coffre-contenu',
         icon: FileText,
         permission: 'manage_newsletters',
-        synonymes: ['coffre-fort', 'posts pr\u00e9-valid\u00e9s'],
+        synonymes: ['coffre-fort', 'posts pré-validés'],
       },
     ],
   },
   {
     id: 'visibilite',
-    titre: 'Suivi de notre visibilit\u00e9',
-    question: 'Comment l\u2019ANSUT et ses dirigeants sont-ils per\u00e7us ?',
+    titre: 'Suivi de notre visibilité',
+    question: 'Comment l’ANSUT et ses dirigeants sont-ils perçus ?',
     icon: Megaphone,
     entrees: [
       {
         id: 'auto-veille',
-        titre: 'R\u00e9sonance de nos publications',
-        description: 'Mesurer la reprise de nos communications et notre visibilit\u00e9 globale.',
+        titre: 'Résonance de nos publications',
+        description: 'Mesurer la reprise de nos communications et notre visibilité globale.',
         path: '/admin/auto-veille',
         icon: Megaphone,
         permission: 'manage_newsletters',
@@ -285,8 +285,8 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
       },
       {
         id: 'shadow-tracker',
-        titre: 'Veille discr\u00e8te des dirigeants',
-        description: 'Suivre les publications des directeurs sur les r\u00e9seaux sociaux.',
+        titre: 'Veille discrète des dirigeants',
+        description: 'Suivre les publications des directeurs sur les réseaux sociaux.',
         path: '/admin/shadow-tracker',
         icon: Eye,
         permission: 'manage_newsletters',
@@ -296,7 +296,7 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
         id: 'connecteurs-sociaux',
         titre: 'Connecteurs sociaux',
         description:
-          'V\u00e9rifier les autorisations d\u2019acc\u00e8s \u00e0 X, LinkedIn, Facebook, Telegram, YouTube et TikTok.',
+          'Vérifier les autorisations d’accès à X, LinkedIn, Facebook, Telegram, YouTube et TikTok.',
         path: '/admin/connecteurs-sociaux',
         icon: ShieldCheck,
         permission: 'manage_cron_jobs',
@@ -305,7 +305,7 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
       {
         id: 'guide-com-api',
         titre: 'Guide des API sociales',
-        description: 'Comprendre les limites et les co\u00fbts de chaque plateforme sociale.',
+        description: 'Comprendre les limites et les coûts de chaque plateforme sociale.',
         path: '/admin/guide-com-api',
         icon: FileCode,
         permission: 'manage_cron_jobs',
@@ -320,7 +320,7 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
     entrees: [
       {
         id: 'cron-jobs',
-        titre: 'T\u00e2ches programm\u00e9es',
+        titre: 'Tâches programmées',
         description: 'Superviser les collectes automatiques et leur planification.',
         path: '/admin/cron-jobs',
         icon: Clock,
@@ -340,22 +340,22 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
   },
   {
     id: 'accompagnement',
-    titre: 'Formation et pr\u00e9sentation',
+    titre: 'Formation et présentation',
     question: 'Comment expliquer la plateforme aux autres ?',
     icon: GraduationCap,
     entrees: [
       {
         id: 'formation',
         titre: 'Guides de formation',
-        description: 'T\u00e9l\u00e9charger les guides d\u2019utilisation par profil.',
+        description: 'Télécharger les guides d’utilisation par profil.',
         path: '/admin/formation',
         icon: GraduationCap,
         permission: 'access_admin',
       },
       {
         id: 'presentation',
-        titre: 'Support de pr\u00e9sentation',
-        description: 'R\u00e9cup\u00e9rer les diapositives de pr\u00e9sentation du projet.',
+        titre: 'Support de présentation',
+        description: 'Récupérer les diapositives de présentation du projet.',
         path: '/admin/presentation',
         icon: Presentation,
         permission: 'access_admin',

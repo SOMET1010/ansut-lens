@@ -43,11 +43,11 @@ const NB_SUJETS_ACCUEIL = 5;
  * Un nombre brut ne dit rien : c'est la tendance qui porte le sens.
  */
 function lireVolume(valeur: number, libelleUnite: string): string {
-  if (valeur === 0) return `Aucun\u00b7e ${libelleUnite} sur la p\u00e9riode`;
-  if (valeur < 10) return `Activit\u00e9 faible sur la p\u00e9riode`;
-  if (valeur < 40) return `Activit\u00e9 mod\u00e9r\u00e9e, dans la normale`;
-  if (valeur < 100) return `Activit\u00e9 soutenue, \u00e0 suivre`;
-  return `Volume inhabituel, m\u00e9rite une lecture attentive`;
+  if (valeur === 0) return `Aucun·e ${libelleUnite} sur la période`;
+  if (valeur < 10) return `Activité faible sur la période`;
+  if (valeur < 40) return `Activité modérée, dans la normale`;
+  if (valeur < 100) return `Activité soutenue, à suivre`;
+  return `Volume inhabituel, mérite une lecture attentive`;
 }
 
 function lireAlertes(valeur: number): string {
@@ -57,10 +57,10 @@ function lireAlertes(valeur: number): string {
 }
 
 function lireScore(valeur: number): string {
-  if (valeur >= 75) return 'Pr\u00e9sence digitale solide';
-  if (valeur >= 50) return 'Pr\u00e9sence digitale correcte, marge de progression';
-  if (valeur > 0) return 'Pr\u00e9sence digitale \u00e0 renforcer';
-  return 'Score non encore calcul\u00e9';
+  if (valeur >= 75) return 'Présence digitale solide';
+  if (valeur >= 50) return 'Présence digitale correcte, marge de progression';
+  if (valeur > 0) return 'Présence digitale à renforcer';
+  return 'Score non encore calculé';
 }
 
 /**
@@ -103,7 +103,7 @@ export default function CeMatinPage() {
     if (signauxCritiques.length > 0) {
       return {
         titre: 'Traiter les signaux critiques du jour',
-        raison: `${signauxCritiques.length} signal\u00b7aux class\u00e9\u00b7s critiques n\u2019ont pas encore \u00e9t\u00e9 trait\u00e9\u00b7s.`,
+        raison: `${signauxCritiques.length} signal·aux classé·s critiques n’ont pas encore été traité·s.`,
         actionLabel: 'Voir les signaux',
         to: '/veille?niveau=critical',
         icon: AlertTriangle,
@@ -122,18 +122,18 @@ export default function CeMatinPage() {
     }
     if (hasPermission('view_dossiers')) {
       return {
-        titre: 'Pr\u00e9parer la note de synth\u00e8se du jour',
+        titre: 'Préparer la note de synthèse du jour',
         raison:
-          'La veille des derni\u00e8res vingt-quatre heures est disponible et peut \u00eatre transform\u00e9e en note.',
-        actionLabel: 'Aller \u00e0 Publier',
+          'La veille des dernières vingt-quatre heures est disponible et peut être transformée en note.',
+        actionLabel: 'Aller à Publier',
         to: '/publier',
         icon: FileText,
         ton: 'neutre' as const,
       };
     }
     return {
-      titre: 'Explorer la veille de la journ\u00e9e',
-      raison: 'Les articles collect\u00e9s cette nuit sont pr\u00eats \u00e0 \u00eatre lus.',
+      titre: 'Explorer la veille de la journée',
+      raison: 'Les articles collectés cette nuit sont prêts à être lus.',
       actionLabel: 'Ouvrir la veille',
       to: '/veille',
       icon: Newspaper,
@@ -146,19 +146,19 @@ export default function CeMatinPage() {
       <div className="space-y-6">
         <PageHeader
           titre="Ce matin"
-          description={`Ce qu\u2019il faut savoir aujourd\u2019hui, ${format(new Date(), 'EEEE d MMMM yyyy', { locale: fr })}.`}
+          description={`Ce qu’il faut savoir aujourd’hui, ${format(new Date(), 'EEEE d MMMM yyyy', { locale: fr })}.`}
           icon={Home}
           actions={
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               {derniereCollecte && (
                 <span className="flex items-center gap-1.5">
                   <Clock className="h-4 w-4" aria-hidden />
-                  <span className="hidden sm:inline">Derni\u00e8re collecte</span>
+                  <span className="hidden sm:inline">Dernière collecte</span>
                   <RelativeTime date={derniereCollecte} />
                 </span>
               )}
               {kpisFetching && (
-                <RefreshCw className="h-4 w-4 animate-spin" aria-label="Mise \u00e0 jour" />
+                <RefreshCw className="h-4 w-4 animate-spin" aria-label="Mise à jour" />
               )}
             </div>
           }
@@ -175,12 +175,12 @@ export default function CeMatinPage() {
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-destructive">
                   {signauxCritiques.length === 1
-                    ? '1 signal critique d\u00e9tect\u00e9'
-                    : `${signauxCritiques.length} signaux critiques d\u00e9tect\u00e9s`}
+                    ? '1 signal critique détecté'
+                    : `${signauxCritiques.length} signaux critiques détectés`}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
                   {signauxCritiques[0]?.titre ??
-                    'Un sujet sensible requiert une attention imm\u00e9diate.'}
+                    'Un sujet sensible requiert une attention immédiate.'}
                 </p>
               </div>
             </div>
@@ -196,7 +196,7 @@ export default function CeMatinPage() {
         {/* Strate 2 : quatre chiffres cles, chacun accompagne de sa lecture. */}
         <section aria-labelledby="chiffres-titre" className="space-y-3">
           <h2 id="chiffres-titre" className="text-sm font-semibold text-muted-foreground">
-            Les chiffres des derni\u00e8res 24 heures
+            Les chiffres des dernières 24 heures
           </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <ChiffreCle
@@ -208,7 +208,7 @@ export default function CeMatinPage() {
               isLoading={kpisLoading}
             />
             <ChiffreCle
-              libelle="Articles collect\u00e9s"
+              libelle="Articles collectés"
               valeur={kpis?.articles ?? 0}
               lecture={lireVolume(kpis?.articles ?? 0, 'article')}
               icon={Newspaper}
@@ -225,7 +225,7 @@ export default function CeMatinPage() {
               alerte={alertesActives > 0}
             />
             <ChiffreCle
-              libelle="Score d\u2019influence"
+              libelle="Score d’influence"
               valeur={kpis?.scoreInfluence ?? 0}
               lecture={lireScore(kpis?.scoreInfluence ?? 0)}
               icon={Gauge}
@@ -234,8 +234,8 @@ export default function CeMatinPage() {
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            Le score d\u2019influence agr\u00e8ge les{' '}
-            <TermeMetier cle="spdi">scores de pr\u00e9sence digitale</TermeMetier> des acteurs
+            Le score d’influence agrège les{' '}
+            <TermeMetier cle="spdi">scores de présence digitale</TermeMetier> des acteurs
             suivis.
           </p>
         </section>
@@ -265,7 +265,7 @@ export default function CeMatinPage() {
               <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
                 <Newspaper className="h-10 w-10 text-muted-foreground/60" aria-hidden />
                 <p className="text-sm text-muted-foreground">
-                  Aucun sujet collect\u00e9 pour le moment.
+                  Aucun sujet collecté pour le moment.
                 </p>
                 <Button asChild size="sm" className="min-h-11 sm:min-h-9">
                   <Link to="/veille">Lancer une collecte</Link>
@@ -288,7 +288,7 @@ export default function CeMatinPage() {
                         {sujet.source_nom && <span className="truncate">{sujet.source_nom}</span>}
                         {sujet.date_publication && (
                           <>
-                            <span aria-hidden>\u00b7</span>
+                            <span aria-hidden>·</span>
                             <RelativeTime date={sujet.date_publication} />
                           </>
                         )}
@@ -346,7 +346,7 @@ export default function CeMatinPage() {
               <span className="min-w-0">
                 <span className="block text-sm font-medium">Publier une note</span>
                 <span className="block text-xs text-muted-foreground">
-                  Notes de synth\u00e8se et newsletters
+                  Notes de synthèse et newsletters
                 </span>
               </span>
             </Link>
