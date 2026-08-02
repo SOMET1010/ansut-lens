@@ -1183,6 +1183,45 @@ export type Database = {
         }
         Relationships: []
       }
+      perplexity_cache: {
+        Row: {
+          citations: Json
+          content: string | null
+          created_at: string
+          expires_at: string
+          hits: number
+          id: string
+          model: string
+          query_hash: string
+          query_text: string
+          updated_at: string
+        }
+        Insert: {
+          citations?: Json
+          content?: string | null
+          created_at?: string
+          expires_at: string
+          hits?: number
+          id?: string
+          model: string
+          query_hash: string
+          query_text: string
+          updated_at?: string
+        }
+        Update: {
+          citations?: Json
+          content?: string | null
+          created_at?: string
+          expires_at?: string
+          hits?: number
+          id?: string
+          model?: string
+          query_hash?: string
+          query_text?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       personnalites: {
         Row: {
           actif: boolean | null
