@@ -32,6 +32,7 @@ import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { ObjectifsStrategiques } from '@/components/radar/ObjectifsStrategiques';
 import { PreuvesParAxe } from '@/components/radar/PreuvesParAxe';
 import { DailyBriefing } from '@/components/radar/DailyBriefing';
+import { ActiviteAnsut } from '@/components/radar/ActiviteAnsut';
 
 /**
  * Taille du vivier d'actualites recentes charge pour l'accueil. Il alimente a la
@@ -265,6 +266,13 @@ export default function CeMatinPage() {
           fois sa sortie persistee pour une lecture d'accueil peu couteuse.
         */}
         <DailyBriefing />
+
+        {/*
+          Strate 2 : notre propre voix d'abord. Le pilotage commence par ce que
+          l'ANSUT publie — l'information la plus pertinente et le signal le plus
+          direct de ses priorites — avant la presse exterieure.
+        */}
+        <ActiviteAnsut maxAgeHours={FENETRE_CE_MATIN_HEURES} />
 
         <ObjectifsStrategiques actualites={sujets ?? []} isLoading={sujetsLoading} />
 
