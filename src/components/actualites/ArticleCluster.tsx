@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, ExternalLink, Share2, MessageSquare, Layers, User, Building, Sparkles, Loader2, ArrowRight, FileText, AlertCircle, Cpu, TrendingUp, Scale, Star } from 'lucide-react';
+import { ChevronDown, ChevronUp, ExternalLink, Share2, MessageSquare, Layers, User, Building, Sparkles, Loader2, ArrowRight, FileText, AlertCircle, Cpu, TrendingUp, Scale, Star, Smile, Frown, Meh } from 'lucide-react';
 import { FeedbackButtons } from './FeedbackButtons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { calculateFreshness, type Actualite } from '@/hooks/useActualites';
 import { nettoyerExtrait } from '@/lib/nettoyerExtrait';
 import { cn } from '@/lib/utils';
+import { TermeMetier } from '@/components/common/TermeMetier';
 
 // Interface pour le JSON d'analyse IA
 interface AnalyseIA {
@@ -81,25 +82,28 @@ export function ArticleCluster({
                 <TooltipTrigger asChild>
                   <span className={cn(
                     "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold",
-                    mainArticle.sentiment > 0.2 ? "bg-green-500/15 text-green-700 dark:text-green-400" :
-                    mainArticle.sentiment < -0.2 ? "bg-red-500/15 text-red-700 dark:text-red-400" :
+                    mainArticle.sentiment > 0.2 ? "bg-[hsl(var(--signal-positive))]/15 text-[hsl(var(--signal-positive))]" :
+                    mainArticle.sentiment < -0.2 ? "bg-[hsl(var(--signal-critical))]/15 text-[hsl(var(--signal-critical))]" :
                     "bg-muted text-muted-foreground"
                   )}>
-                    {mainArticle.sentiment > 0.2 ? '😊' : mainArticle.sentiment < -0.2 ? '😟' : '😐'}
+                    {mainArticle.sentiment > 0.2 ? <Smile className="h-3 w-3" aria-hidden="true" /> : mainArticle.sentiment < -0.2 ? <Frown className="h-3 w-3" aria-hidden="true" /> : <Meh className="h-3 w-3" aria-hidden="true" />}
+                    <span className="sr-only">
+                      {mainArticle.sentiment > 0.2 ? 'Sentiment positif' : mainArticle.sentiment < -0.2 ? 'Sentiment négatif' : 'Sentiment neutre'}
+                    </span>
                     {mainArticle.sentiment > 0 ? '+' : ''}{mainArticle.sentiment.toFixed(1)}
                   </span>
                 </TooltipTrigger>
-                <TooltipContent>Sentiment IA : {mainArticle.sentiment.toFixed(2)}</TooltipContent>
+                <TooltipContent><TermeMetier cle="sentiment">Sentiment</TermeMetier> IA : {mainArticle.sentiment.toFixed(2)}</TooltipContent>
               </Tooltip>
             ) : (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-[hsl(var(--signal-warning))]/10 text-[hsl(var(--signal-warning))] border border-[hsl(var(--signal-warning))]/20">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--signal-warning))] animate-pulse" aria-hidden="true" />
                     En attente
                   </span>
                 </TooltipTrigger>
-                <TooltipContent>Sentiment non encore analysé</TooltipContent>
+                <TooltipContent><TermeMetier cle="sentiment">Sentiment</TermeMetier> non encore analysé</TooltipContent>
               </Tooltip>
             )}
             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
@@ -114,10 +118,12 @@ export function ArticleCluster({
               size="sm"
               onClick={() => setIsExpanded(!isExpanded)}
               className="flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-md hover:bg-primary/20 transition-colors"
+              aria-expanded={isExpanded}
+              aria-label={isExpanded ? "Masquer les sources similaires" : "Afficher les sources similaires"}
             >
-              <Layers className="h-3.5 w-3.5" />
-              {relatedArticles.length} source{relatedArticles.length > 1 ? 's' : ''} similaire{relatedArticles.length > 1 ? 's' : ''}
-              {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              <Layers className="h-3.5 w-3.5" aria-hidden="true" />
+              {relatedArticles.length === 1 ? '1 source similaire' : `${relatedArticles.length} sources similaires`}
+              {isExpanded ? <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" /> : <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />}
             </Button>
           )}
         </div>
@@ -132,7 +138,8 @@ export function ArticleCluster({
           >
             <h3 className="text-lg font-bold text-foreground mb-2 leading-tight group-hover:text-primary transition-colors flex items-start gap-2">
               {mainArticle.titre}
-              <ExternalLink className="h-4 w-4 mt-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              <ExternalLink className="h-4 w-4 mt-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" aria-hidden="true" />
+              <span className="sr-only">(ouvre un nouvel onglet)</span>
             </h3>
           </a>
         ) : (
@@ -141,7 +148,7 @@ export function ArticleCluster({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border mt-0.5 shrink-0">
-                  <AlertCircle className="h-3 w-3" />
+                  <AlertCircle className="h-3 w-3" aria-hidden="true" />
                   Pas de lien
                 </span>
               </TooltipTrigger>
@@ -168,7 +175,7 @@ export function ArticleCluster({
               <Tooltip key={person}>
                 <TooltipTrigger asChild>
                   <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-accent text-accent-foreground text-xs font-medium border border-border cursor-default">
-                    <User className="h-3 w-3" /> {person}
+                    <User className="h-3 w-3" aria-hidden="true" /> {person}
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>Personne citée</TooltipContent>
@@ -178,7 +185,7 @@ export function ArticleCluster({
               <Tooltip key={company}>
                 <TooltipTrigger asChild>
                   <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-accent text-accent-foreground text-xs font-medium border border-border cursor-default">
-                    <Building className="h-3 w-3" /> {company}
+                    <Building className="h-3 w-3" aria-hidden="true" /> {company}
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>Entreprise / Organisation</TooltipContent>
@@ -226,8 +233,9 @@ export function ArticleCluster({
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-primary hover:text-primary/80 shrink-0"
+                  aria-label={`Ouvrir l'article ${article.titre} dans un nouvel onglet`}
                 >
-                  <ExternalLink className="h-3.5 w-3.5" />
+                  <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                 </a>
               )}
             </div>
@@ -241,7 +249,7 @@ export function ArticleCluster({
         <div className="flex gap-2 items-center">
           <FeedbackButtons actualiteId={mainArticle.id} compact />
           <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground">
-            <Share2 className="h-3.5 w-3.5 mr-1" /> Partager
+            <Share2 className="h-3.5 w-3.5 mr-1" aria-hidden="true" /> Partager
           </Button>
         </div>
         
@@ -257,9 +265,9 @@ export function ArticleCluster({
               className="text-xs text-primary hover:bg-primary/10"
             >
               {isEnriching ? (
-                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" aria-hidden="true" />
               ) : (
-                <Sparkles className="h-3.5 w-3.5 mr-1" />
+                <Sparkles className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
               )}
               {needsEnrichment ? "Enrichir" : "Ré-analyser"}
             </Button>
@@ -273,7 +281,7 @@ export function ArticleCluster({
             onClick={() => setIsAnalysisOpen(true)}
           >
             Lire l'analyse
-            <ArrowRight className="h-3.5 w-3.5" />
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Button>
         </div>
       </div>
@@ -283,7 +291,7 @@ export function ArticleCluster({
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
+              <FileText className="h-5 w-5" aria-hidden="true" />
               Analyse IA
             </DialogTitle>
           </DialogHeader>
@@ -335,14 +343,14 @@ export function ArticleCluster({
                       {/* Quadrants */}
                       {analyseData.quadrant_distribution && (
                         <div>
-                          <p className="text-xs text-muted-foreground mb-2">Répartition par quadrant</p>
+                          <p className="text-xs text-muted-foreground mb-2">Répartition par <TermeMetier cle="quadrant">quadrant</TermeMetier></p>
                           <div className="space-y-2">
                             {(() => {
                               const quadrantConfig: Record<string, { icon: React.ElementType; label: string }> = {
-                                tech: { icon: Cpu, label: 'Tech' },
-                                market: { icon: TrendingUp, label: 'Market' },
-                                regulation: { icon: Scale, label: 'Regulation' },
-                                reputation: { icon: Star, label: 'Reputation' }
+                                tech: { icon: Cpu, label: 'Technologie' },
+                                market: { icon: TrendingUp, label: 'Marché' },
+                                regulation: { icon: Scale, label: 'Régulation' },
+                                reputation: { icon: Star, label: 'Réputation' }
                               };
                               
                               return Object.entries(analyseData.quadrant_distribution).map(([quadrant, score]) => {
@@ -355,7 +363,7 @@ export function ArticleCluster({
                                 return (
                                   <div key={quadrant} className="flex items-center gap-2">
                                     <span className="w-28 text-xs flex items-center gap-1.5">
-                                      {IconComponent && <IconComponent className="h-3.5 w-3.5 text-muted-foreground" />}
+                                      {IconComponent && <IconComponent className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />}
                                       <span className="capitalize">{config.label}</span>
                                     </span>
                                     <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
@@ -393,7 +401,7 @@ export function ArticleCluster({
                 
                 return (
                   <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                    <AlertCircle className="h-8 w-8 mb-2" />
+                    <AlertCircle className="h-8 w-8 mb-2" aria-hidden="true" />
                     <p className="text-center">
                       Cet article n'a pas encore été analysé.<br />
                       Cliquez sur "Enrichir" pour générer l'analyse.

@@ -21,10 +21,10 @@ export function FeedbackButtons({ actualiteId, compact = false }: FeedbackButton
       {
         onSuccess: () => {
           const labels: Record<string, string> = {
-            pertinent: '👍 Marqué comme pertinent',
-            non_pertinent: '👎 Marqué non pertinent — RADAR apprend',
-            important: '⭐ Marqué important',
-            archive: '📁 Archivé',
+            pertinent: 'Marqué comme pertinent',
+            non_pertinent: 'Marqué non pertinent — RADAR apprend',
+            important: 'Marqué important',
+            archive: 'Archivé',
           };
           toast.success(labels[feedback] || 'Feedback enregistré');
         },
@@ -42,10 +42,11 @@ export function FeedbackButtons({ actualiteId, compact = false }: FeedbackButton
           <Button
             variant="ghost"
             size="icon"
-            className={cn(btnSize, currentFeedback === 'pertinent' && 'text-emerald-500 bg-emerald-500/10')}
+            // Remplacement des couleurs littérales par les tokens sémantiques
+            className={cn(btnSize, currentFeedback === 'pertinent' && 'text-[hsl(var(--signal-positive))] bg-[hsl(var(--signal-positive))]/10')}
             onClick={(e) => { e.stopPropagation(); handleFeedback('pertinent'); }}
-            disabled={submitFeedback.isPending} aria-label="Marquer comme utile">
-            <ThumbsUp className={size} />
+            disabled={submitFeedback.isPending} aria-label="Marquer comme pertinent">
+            <ThumbsUp className={size} aria-hidden="true" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Pertinent pour moi</TooltipContent>
@@ -56,10 +57,11 @@ export function FeedbackButtons({ actualiteId, compact = false }: FeedbackButton
           <Button
             variant="ghost"
             size="icon"
-            className={cn(btnSize, currentFeedback === 'non_pertinent' && 'text-red-500 bg-red-500/10')}
+            // Remplacement des couleurs littérales par les tokens sémantiques
+            className={cn(btnSize, currentFeedback === 'non_pertinent' && 'text-[hsl(var(--signal-critical))] bg-[hsl(var(--signal-critical))]/10')}
             onClick={(e) => { e.stopPropagation(); handleFeedback('non_pertinent'); }}
-            disabled={submitFeedback.isPending} aria-label="Marquer comme peu utile">
-            <ThumbsDown className={size} />
+            disabled={submitFeedback.isPending} aria-label="Marquer comme non pertinent">
+            <ThumbsDown className={size} aria-hidden="true" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>Non pertinent — RADAR apprend</TooltipContent>
@@ -72,10 +74,11 @@ export function FeedbackButtons({ actualiteId, compact = false }: FeedbackButton
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn(btnSize, currentFeedback === 'important' && 'text-amber-500 bg-amber-500/10')}
+                // Remplacement des couleurs littérales par les tokens sémantiques
+                className={cn(btnSize, currentFeedback === 'important' && 'text-[hsl(var(--signal-warning))] bg-[hsl(var(--signal-warning))]/10')}
                 onClick={(e) => { e.stopPropagation(); handleFeedback('important'); }}
-                disabled={submitFeedback.isPending} aria-label="Ajouter aux favoris">
-                <Star className={size} />
+                disabled={submitFeedback.isPending} aria-label="Marquer comme important">
+                <Star className={size} aria-hidden="true" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Important</TooltipContent>
@@ -86,10 +89,11 @@ export function FeedbackButtons({ actualiteId, compact = false }: FeedbackButton
               <Button
                 variant="ghost"
                 size="icon"
+                // Remplacement des couleurs littérales par les tokens sémantiques
                 className={cn(btnSize, currentFeedback === 'archive' && 'text-muted-foreground bg-muted')}
                 onClick={(e) => { e.stopPropagation(); handleFeedback('archive'); }}
                 disabled={submitFeedback.isPending} aria-label="Archiver">
-                <Archive className={size} />
+                <Archive className={size} aria-hidden="true" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Archiver</TooltipContent>

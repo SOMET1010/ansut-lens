@@ -25,7 +25,7 @@ const modeConfigs = {
     description: 'Analyser des tendances et données',
   },
   communication: {
-    label: 'Com',
+    label: 'Communication', // Remplacement de "Com" par "Communication" pour eviter le jargon
     icon: Megaphone,
     description: 'Préparer des contenus de communication',
   },
@@ -33,7 +33,7 @@ const modeConfigs = {
 
 export function ModeSelector({ mode, onModeChange }: ModeSelectorProps) {
   return (
-    <div className="flex bg-muted p-1 rounded-lg">
+    <div className="flex bg-muted p-1 rounded-lg" role="group" aria-label="Mode de l'assistant">
       {(Object.keys(modeConfigs) as AssistantMode[]).map((key) => {
         const config = modeConfigs[key];
         const Icon = config.icon;
@@ -50,9 +50,11 @@ export function ModeSelector({ mode, onModeChange }: ModeSelectorProps) {
                 : "text-muted-foreground hover:text-foreground"
             )}
             title={config.description}
+            aria-pressed={isActive} // Ajout de aria-pressed pour indiquer l'etat actif aux lecteurs d'ecran
           >
-            <Icon className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">{config.label}</span>
+            <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+            {/* Le texte est toujours present, on enleve le hidden sm:inline pour s'assurer qu'il est toujours visible */}
+            <span>{config.label}</span>
           </button>
         );
       })}

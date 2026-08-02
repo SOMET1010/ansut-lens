@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Newspaper, RefreshCw, ExternalLink, Globe, BarChart3 } from 'lucide-react';
+import { TermeMetier } from '@/components/common/TermeMetier';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,10 +18,11 @@ interface TitreJournal {
   type: string;
 }
 
+// Remplacement des couleurs Tailwind litterales par des classes semantiques du theme
 const typeConfig: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  nationale: { label: 'Presse Nationale', icon: <Newspaper className="h-3.5 w-3.5" />, color: 'bg-primary/10 text-primary' },
-  en_ligne: { label: 'Presse en Ligne', icon: <Globe className="h-3.5 w-3.5" />, color: 'bg-accent/10 text-accent-foreground' },
-  economique: { label: 'Économique & Tech', icon: <BarChart3 className="h-3.5 w-3.5" />, color: 'bg-secondary/80 text-secondary-foreground' },
+  nationale: { label: 'Presse Nationale', icon: <Newspaper className="h-3.5 w-3.5" aria-hidden />, color: 'bg-primary/10 text-primary' },
+  en_ligne: { label: 'Presse en Ligne', icon: <Globe className="h-3.5 w-3.5" aria-hidden />, color: 'bg-accent/10 text-accent-foreground' },
+  economique: { label: 'Économique & Tech', icon: <BarChart3 className="h-3.5 w-3.5" aria-hidden />, color: 'bg-muted text-muted-foreground' },
 };
 
 async function fetchTitrologie(): Promise<TitreJournal[]> {
@@ -82,17 +84,19 @@ export function TitrologieWidget() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
-            <Newspaper className="h-5 w-5 text-primary" />
+            <Newspaper className="h-5 w-5 text-primary" aria-hidden />
             Revue de Presse
           </CardTitle>
+          {/* Ajout d'un aria-label pour le bouton reduit a une icone */}
           <Button
             variant="ghost"
             size="sm"
             onClick={handleRefresh}
             disabled={isFetching}
             className="h-8 w-8 p-0"
+            aria-label="Actualiser la titrologie"
           >
-            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} aria-hidden />
           </Button>
         </div>
         <p className="text-xs text-muted-foreground capitalize">{dateStr}</p>
@@ -100,11 +104,12 @@ export function TitrologieWidget() {
       <CardContent className="space-y-4">
         {(!titres || titres.length === 0) ? (
           <div className="text-center py-6">
-            <Newspaper className="h-10 w-10 mx-auto text-muted-foreground/40 mb-2" />
+            <Newspaper className="h-10 w-10 mx-auto text-muted-foreground/40 mb-2" aria-hidden />
             <p className="text-sm text-muted-foreground">Aucun titre disponible</p>
-            <Button variant="outline" size="sm" className="mt-3" onClick={handleRefresh}>
-              Charger la titrologie
-            </Button>
+              {/* Enveloppement du terme metier "titrologie" */}
+              <Button variant="outline" size="sm" className="mt-3" onClick={handleRefresh}>
+                Charger la <TermeMetier cle="titrologie">titrologie</TermeMetier>
+              </Button>
           </div>
         ) : (
           Object.entries(grouped).map(([type, items]) => {
@@ -117,7 +122,10 @@ export function TitrologieWidget() {
                     {config.icon}
                     <span className="ml-1">{config.label}</span>
                   </Badge>
-                  <span className="text-[10px] text-muted-foreground">{items.length} titre{items.length > 1 ? 's' : ''}</span>
+                  {/* Suppression du point median et calcul de l'accord reel */}
+                  <span className="text-[10px] text-muted-foreground">
+                    {items.length === 1 ? '1 titre' : `${items.length} titres`}
+                  </span>
                 </div>
                 {items.map((t, i) => (
                   <div
@@ -125,7 +133,8 @@ export function TitrologieWidget() {
                     className="pl-3 border-l-2 border-primary/30 hover:border-primary transition-colors"
                   >
                     <p className="text-[11px] font-semibold text-primary">{t.journal}</p>
-                    <p className="text-sm font-medium leading-tight">{t.titre}</p>
+                    {/* Nettoyage du titre issu de la collecte */}
+                    <p className="text-sm font-medium leading-tight">{nettoyerExtrait(t.titre)}</p>
                     {t.resume && (
                       <p className="text-xs text-muted-foreground mt-0.5">{nettoyerExtrait(t.resume)}</p>
                     )}
@@ -136,7 +145,7 @@ export function TitrologieWidget() {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline mt-0.5"
                       >
-                        Lire <ExternalLink className="h-3 w-3" />
+                        Lire <ExternalLink className="h-3 w-3" aria-hidden />
                       </a>
                     )}
                   </div>

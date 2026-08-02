@@ -1,4 +1,4 @@
-import { Sparkles, Search, FileText, BarChart3, Megaphone, ArrowRight } from 'lucide-react';
+import { Sparkles, Search, FileText, BarChart3, Megaphone, ArrowRight, Lightbulb } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { AssistantMode } from './ModeSelector';
@@ -36,11 +36,12 @@ const PROMPTS_BY_MODE: Record<AssistantMode, { title: string; prompt: string; ic
   ],
 };
 
+// Remplacement des couleurs litterales par des classes semantiques
 const MODE_INFO: Record<AssistantMode, { label: string; tone: string; color: string }> = {
-  recherche: { label: 'Recherche', tone: 'Réponses synthétiques sourcées', color: 'bg-blue-500/10 text-blue-700 border-blue-200' },
-  redaction: { label: 'Rédaction', tone: 'Documents structurés exportables', color: 'bg-amber-500/10 text-amber-700 border-amber-200' },
-  analyse: { label: 'Analyse', tone: 'Tendances, signaux & risques', color: 'bg-emerald-500/10 text-emerald-700 border-emerald-200' },
-  communication: { label: 'Communication', tone: 'Posts, communiqués, Q&R', color: 'bg-rose-500/10 text-rose-700 border-rose-200' },
+  recherche: { label: 'Recherche', tone: 'Réponses synthétiques sourcées', color: 'bg-primary/10 text-primary border-primary/20' },
+  redaction: { label: 'Rédaction', tone: 'Documents structurés exportables', color: 'bg-accent/10 text-accent border-accent/20' },
+  analyse: { label: 'Analyse', tone: 'Tendances, signaux & risques', color: 'bg-muted text-muted-foreground border-border' },
+  communication: { label: 'Communication', tone: 'Posts, communiqués, Q&R', color: 'bg-card text-card-foreground border-border' },
 };
 
 export function WelcomeScreen({ mode, onPromptClick, contextStats }: WelcomeScreenProps) {
@@ -51,7 +52,7 @@ export function WelcomeScreen({ mode, onPromptClick, contextStats }: WelcomeScre
     <div className="max-w-3xl mx-auto py-6 px-2">
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md mb-4">
-          <Sparkles className="h-6 w-6" />
+          <Sparkles className="h-6 w-6" aria-hidden="true" />
         </div>
         <h1 className="text-2xl font-bold mb-2">Bonjour, je suis SUTA</h1>
         <p className="text-sm text-muted-foreground max-w-lg mx-auto">
@@ -62,7 +63,8 @@ export function WelcomeScreen({ mode, onPromptClick, contextStats }: WelcomeScre
             Mode {info.label}
           </Badge>
           <Badge variant="secondary" className="text-xs">
-            {contextStats.actualites} actualité{contextStats.actualites > 1 ? 's' : ''} • {contextStats.dossiers} dossier{contextStats.dossiers > 1 ? 's' : ''}
+            {/* Calcul de l'accord reel selon le nombre */}
+            {contextStats.actualites} {contextStats.actualites > 1 ? 'actualités' : 'actualité'} • {contextStats.dossiers} {contextStats.dossiers > 1 ? 'dossiers' : 'dossier'}
           </Badge>
         </div>
         <p className="text-xs text-muted-foreground mt-2 italic">{info.tone}</p>
@@ -78,20 +80,22 @@ export function WelcomeScreen({ mode, onPromptClick, contextStats }: WelcomeScre
               className="group cursor-pointer p-4 hover:border-primary/50 hover:shadow-md transition-all flex items-start gap-3"
             >
               <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                <Icon className="h-4 w-4" />
+                <Icon className="h-4 w-4" aria-hidden="true" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium leading-snug">{p.title}</p>
                 <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{p.prompt}</p>
               </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
+              <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0 mt-1" aria-hidden="true" />
             </Card>
           );
         })}
       </div>
 
-      <p className="text-[11px] text-center text-muted-foreground mt-6">
-        💡 Astuce : changez de mode en haut à droite pour adapter le ton et le format des réponses.
+      <p className="text-[11px] text-center text-muted-foreground mt-6 flex items-center justify-center gap-1">
+        {/* Remplacement de l'emoji par une icone Lucide */}
+        <Lightbulb className="h-3 w-3" aria-hidden="true" />
+        Astuce : changez de mode en haut à droite pour adapter le ton et le format des réponses.
       </p>
     </div>
   );

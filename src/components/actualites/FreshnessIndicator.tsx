@@ -1,7 +1,8 @@
-import { Clock, ExternalLink } from 'lucide-react';
+import { Clock, ExternalLink, CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
 import { calculateFreshness, type FreshnessInfo } from '@/hooks/useActualites';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { TermeMetier } from '@/components/common/TermeMetier';
 
 interface FreshnessIndicatorProps {
   datePublication: string | null;
@@ -18,14 +19,27 @@ export function FreshnessIndicator({
 }: FreshnessIndicatorProps) {
   const freshness = calculateFreshness(datePublication);
 
+  // Remplacement des emojis par des icônes Lucide pour l'accessibilité et la cohérence visuelle
   const getFreshnessIcon = (level: FreshnessInfo['level']) => {
     switch (level) {
       case 'fresh':
-        return '🟢';
+        return <CheckCircle2 className="h-3 w-3 text-[hsl(var(--signal-positive))]" aria-hidden="true" />;
       case 'recent':
-        return '🟡';
+        return <AlertCircle className="h-3 w-3 text-[hsl(var(--signal-warning))]" aria-hidden="true" />;
       case 'old':
-        return '🔴';
+        return <XCircle className="h-3 w-3 text-[hsl(var(--signal-critical))]" aria-hidden="true" />;
+    }
+  };
+
+  // Ajout d'un texte descriptif pour chaque niveau de fraîcheur (accessibilité)
+  const getFreshnessText = (level: FreshnessInfo['level']) => {
+    switch (level) {
+      case 'fresh':
+        return 'Très récent';
+      case 'recent':
+        return 'Récent';
+      case 'old':
+        return 'Ancien';
     }
   };
 
@@ -41,9 +55,12 @@ export function FreshnessIndicator({
   return (
     <div className={cn('flex items-center gap-2 text-sm', className)}>
       <span className="flex items-center gap-1">
-        <span>{getFreshnessIcon(freshness.level)}</span>
-        <Clock className="h-3 w-3" />
-        <span className={freshness.color}>{freshness.label}</span>
+        {getFreshnessIcon(freshness.level)}
+        <span className="sr-only">{getFreshnessText(freshness.level)}</span>
+        <Clock className="h-3 w-3" aria-hidden="true" />
+        <span className={freshness.color}>
+          <TermeMetier cle="fraicheur">{freshness.label}</TermeMetier>
+        </span>
       </span>
 
       {showScore && (
@@ -51,8 +68,9 @@ export function FreshnessIndicator({
           variant="outline" 
           className={cn(
             'text-xs',
-            freshness.level === 'fresh' && 'border-signal-positive text-signal-positive',
-            freshness.level === 'recent' && 'border-signal-warning text-signal-warning',
+            // Remplacement des couleurs Tailwind littérales par les tokens sémantiques
+            freshness.level === 'fresh' && 'border-[hsl(var(--signal-positive))] text-[hsl(var(--signal-positive))]',
+            freshness.level === 'recent' && 'border-[hsl(var(--signal-warning))] text-[hsl(var(--signal-warning))]',
             freshness.level === 'old' && 'border-muted-foreground text-muted-foreground'
           )}
         >
@@ -67,8 +85,10 @@ export function FreshnessIndicator({
           rel="noopener noreferrer"
           className="text-muted-foreground hover:text-primary transition-colors"
           onClick={(e) => e.stopPropagation()}
+          aria-label="Ouvrir la source dans un nouvel onglet"
+          title="Ouvrir la source"
         >
-          <ExternalLink className="h-3 w-3" />
+          <ExternalLink className="h-3 w-3" aria-hidden="true" />
         </a>
       )}
     </div>
@@ -95,11 +115,12 @@ export function CollecteStatus({ lastCollecteDate, status, nbResultats }: Collec
 
   return (
     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-      <Clock className="h-4 w-4" />
+      <Clock className="h-4 w-4" aria-hidden="true" />
       <span>Dernière collecte : {formatDate(lastCollecteDate)}</span>
       {status === 'success' && nbResultats !== undefined && (
         <Badge variant="secondary" className="text-xs">
-          {nbResultats} résultats
+          {/* Calcul de l'accord réel pour éviter le point médian */}
+          {nbResultats} {nbResultats > 1 ? 'résultats' : 'résultat'}
         </Badge>
       )}
       {status === 'error' && (

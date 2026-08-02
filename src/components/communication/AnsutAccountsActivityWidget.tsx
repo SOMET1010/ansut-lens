@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { TermeMetier } from '@/components/common';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
@@ -27,18 +28,18 @@ const PILIER_LABELS: Record<string, string> = {
 };
 
 function ScoreBadge({ score }: { score: number }) {
-  const color = score >= 70 ? 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30'
-    : score >= 50 ? 'bg-amber-500/15 text-amber-600 border-amber-500/30'
-    : 'bg-red-500/15 text-red-600 border-red-500/30';
+  const color = score >= 70 ? 'bg-[hsl(var(--signal-positive))] text-[hsl(var(--signal-positive))] border-[hsl(var(--signal-positive))]'
+    : score >= 50 ? 'bg-[hsl(var(--signal-warning))] text-[hsl(var(--signal-warning))] border-[hsl(var(--signal-warning))]'
+    : 'bg-[hsl(var(--signal-critical))] text-[hsl(var(--signal-critical))] border-[hsl(var(--signal-critical))]';
   const label = score >= 70 ? 'Bon' : score >= 50 ? 'Moyen' : 'Faible';
   return <Badge className={`${color} border`}>{score}/100 · {label}</Badge>;
 }
 
 function StatutBadge({ statut }: { statut: AccountActivity['statut_activite'] }) {
   const map = {
-    actif: { c: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30', l: 'Actif' },
-    faible: { c: 'bg-amber-500/10 text-amber-600 border-amber-500/30', l: 'Faible' },
-    dormant: { c: 'bg-red-500/10 text-red-600 border-red-500/30', l: 'Dormant' },
+    actif: { c: 'bg-[hsl(var(--signal-positive))] text-[hsl(var(--signal-positive))] border-[hsl(var(--signal-positive))]', l: 'Actif' },
+    faible: { c: 'bg-[hsl(var(--signal-warning))] text-[hsl(var(--signal-warning))] border-[hsl(var(--signal-warning))]', l: 'Faible' },
+    dormant: { c: 'bg-[hsl(var(--signal-critical))] text-[hsl(var(--signal-critical))] border-[hsl(var(--signal-critical))]', l: 'Dormant' },
   };
   const s = map[statut];
   return <Badge variant="outline" className={s.c}>{s.l}</Badge>;
@@ -71,7 +72,7 @@ function AccountRow({ account }: { account: AccountActivity }) {
         </div>
       </div>
       <div className="text-right shrink-0">
-        <div className={`text-xs font-semibold flex items-center gap-1 justify-end ${account.variation_vs_veille >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+        <div className={`text-xs font-semibold flex items-center gap-1 justify-end ${account.variation_vs_veille >= 0 ? 'text-[hsl(var(--signal-positive))]' : 'text-[hsl(var(--signal-critical))]'}`}>
           {account.variation_vs_veille >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
           {account.variation_vs_veille >= 0 ? '+' : ''}{account.variation_vs_veille}% vs veille
         </div>
@@ -184,7 +185,7 @@ export function AnsutAccountsActivityWidget() {
               <ScoreBadge score={data.visibilityScore} />
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
-              {data.totalPubs} pub/24h ({data.variationGlobale >= 0 ? '+' : ''}{data.variationGlobale}% vs veille) · {data.totalPubs7j} pub/7j · {data.accounts.length} comptes suivis · {data.inactiveCount} dormant{data.inactiveCount > 1 ? 's' : ''}
+              {data.totalPubs} pub/24h ({data.variationGlobale >= 0 ? '+' : ''}{data.variationGlobale}% vs veille) · {data.totalPubs7j} pub/7j · {data.accounts.length} comptes suivis · {data.inactiveCount} {data.inactiveCount > 1 ? 'dormants' : 'dormant'}
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -209,9 +210,9 @@ export function AnsutAccountsActivityWidget() {
           <div className="space-y-1.5">
             {data.alerts.map((a, i) => (
               <div key={i} className={`flex items-start gap-2 p-2 rounded-md text-xs border ${
-                a.niveau === 'critique' ? 'bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300'
-                : a.niveau === 'attention' ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300'
-                : 'bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-300'
+                a.niveau === 'critique' ? 'bg-[hsl(var(--signal-critical))] border-[hsl(var(--signal-critical))] text-[hsl(var(--signal-critical))]'
+                : a.niveau === 'attention' ? 'bg-[hsl(var(--signal-warning))] border-[hsl(var(--signal-warning))] text-[hsl(var(--signal-warning))]'
+                : 'bg-[hsl(var(--signal-neutral))] border-[hsl(var(--signal-neutral))] text-[hsl(var(--signal-neutral))]'
               }`}>
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                 <span className="font-medium">{a.message}</span>
@@ -254,7 +255,7 @@ export function AnsutAccountsActivityWidget() {
                   <div className="flex-1">
                     <p className="text-sm font-medium capitalize">{n.plateforme}</p>
                     <p className="text-xs text-muted-foreground">
-                      {n.publications} pub · {n.likes} ❤ · {n.comments} 💬 · {n.shares} 🔁 · {n.vues} 👁
+                      {n.publications} pub · {n.likes} likes · {n.comments} commentaires · {n.shares} partages · {n.vues} vues
                     </p>
                   </div>
                   <div className="text-right">
@@ -274,16 +275,16 @@ export function AnsutAccountsActivityWidget() {
               <>
                 <div className="space-y-2">
                   <div>
-                    <div className="flex justify-between text-xs mb-1"><span>🟢 Positif</span><span className="font-medium">{data.sentimentBreakdown.positif}%</span></div>
-                    <Progress value={data.sentimentBreakdown.positif} className="h-2 [&>div]:bg-emerald-500" />
+                    <div className="flex justify-between text-xs mb-1"><span>Positif</span><span className="font-medium">{data.sentimentBreakdown.positif}%</span></div>
+                    <Progress value={data.sentimentBreakdown.positif} className="h-2 [&>div]:bg-[hsl(var(--signal-positive))]" />
                   </div>
                   <div>
-                    <div className="flex justify-between text-xs mb-1"><span>🟠 Neutre</span><span className="font-medium">{data.sentimentBreakdown.neutre}%</span></div>
-                    <Progress value={data.sentimentBreakdown.neutre} className="h-2 [&>div]:bg-amber-500" />
+                    <div className="flex justify-between text-xs mb-1"><span>Neutre</span><span className="font-medium">{data.sentimentBreakdown.neutre}%</span></div>
+                    <Progress value={data.sentimentBreakdown.neutre} className="h-2 [&>div]:bg-[hsl(var(--signal-warning))]" />
                   </div>
                   <div>
-                    <div className="flex justify-between text-xs mb-1"><span>🔴 Négatif</span><span className="font-medium">{data.sentimentBreakdown.negatif}%</span></div>
-                    <Progress value={data.sentimentBreakdown.negatif} className="h-2 [&>div]:bg-red-500" />
+                    <div className="flex justify-between text-xs mb-1"><span>Négatif</span><span className="font-medium">{data.sentimentBreakdown.negatif}%</span></div>
+                    <Progress value={data.sentimentBreakdown.negatif} className="h-2 [&>div]:bg-[hsl(var(--signal-critical))]" />
                   </div>
                 </div>
                 <p className="text-[11px] text-muted-foreground">Basé sur {totalSentiment} publication(s) avec sentiment analysé sur 7 jours.</p>
@@ -335,9 +336,9 @@ export function AnsutAccountsActivityWidget() {
                 <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
                   <div className="flex items-center gap-2 mb-1">
                     <Badge variant="outline" className={
-                      analysis.niveau_alerte === 'rouge' ? 'border-red-500 text-red-600'
-                      : analysis.niveau_alerte === 'orange' ? 'border-amber-500 text-amber-600'
-                      : 'border-emerald-500 text-emerald-600'
+                      analysis.niveau_alerte === 'rouge' ? 'border-red-500 text-[hsl(var(--signal-critical))]'
+                      : analysis.niveau_alerte === 'orange' ? 'border-[hsl(var(--signal-warning))] text-[hsl(var(--signal-warning))]'
+                      : 'border-emerald-500 text-[hsl(var(--signal-positive))]'
                     }>{(analysis.niveau_alerte || '').toUpperCase()}</Badge>
                     <span className="font-medium">Verdict</span>
                   </div>
@@ -345,10 +346,10 @@ export function AnsutAccountsActivityWidget() {
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-3">
-                  <Section icon={CheckCircle2} title="Ce qui fonctionne" items={analysis.ce_qui_fonctionne} color="text-emerald-600" />
-                  <Section icon={AlertTriangle} title="Ce qui échoue" items={analysis.ce_qui_echoue} color="text-red-600" />
-                  <Section icon={Target} title="Manques critiques" items={analysis.manques_critiques} color="text-amber-600" />
-                  <Section icon={ShieldAlert} title="Risques réputation" items={analysis.risques_reputation} color="text-red-600" />
+                  <Section icon={CheckCircle2} title="Ce qui fonctionne" items={analysis.ce_qui_fonctionne} color="text-[hsl(var(--signal-positive))]" />
+                  <Section icon={AlertTriangle} title="Ce qui échoue" items={analysis.ce_qui_echoue} color="text-[hsl(var(--signal-critical))]" />
+                  <Section icon={Target} title="Manques critiques" items={analysis.manques_critiques} color="text-[hsl(var(--signal-warning))]" />
+                  <Section icon={ShieldAlert} title="Risques réputation" items={analysis.risques_reputation} color="text-[hsl(var(--signal-critical))]" />
                 </div>
 
                 <div className="p-3 rounded-lg border bg-muted/30">
@@ -357,9 +358,9 @@ export function AnsutAccountsActivityWidget() {
                     {(analysis.recommandations || []).map((r: any, i: number) => (
                       <div key={i} className="flex items-start gap-2 text-xs">
                         <Badge variant="outline" className={
-                          r.priorite === 'haute' ? 'border-red-500 text-red-600'
-                          : r.priorite === 'moyenne' ? 'border-amber-500 text-amber-600'
-                          : 'border-blue-500 text-blue-600'
+                          r.priorite === 'haute' ? 'border-red-500 text-[hsl(var(--signal-critical))]'
+                          : r.priorite === 'moyenne' ? 'border-[hsl(var(--signal-warning))] text-[hsl(var(--signal-warning))]'
+                          : 'border-[hsl(var(--signal-neutral))] text-[hsl(var(--signal-neutral))]'
                         }>{r.priorite}</Badge>
                         <span className="flex-1">{r.action}</span>
                         <span className="text-muted-foreground">{r.delai}</span>
@@ -422,18 +423,18 @@ function DiagnosticPanel({ diag, loading, onRun }: { diag: DiagResponse | null; 
   const s = diag.summary;
   const statusBadge = (g: DiagAccount['globalStatus']) => {
     const map = {
-      healthy: { c: 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30', l: 'Opérationnel' },
-      degraded: { c: 'bg-amber-500/15 text-amber-700 border-amber-500/30', l: 'Dégradé' },
-      blocked: { c: 'bg-red-500/15 text-red-700 border-red-500/30', l: 'Bloqué' },
-      no_data: { c: 'bg-slate-500/15 text-slate-700 border-slate-500/30', l: 'Sans données' },
+      healthy: { c: 'bg-[hsl(var(--signal-positive))] text-[hsl(var(--signal-positive))] border-[hsl(var(--signal-positive))]', l: 'Opérationnel' },
+      degraded: { c: 'bg-[hsl(var(--signal-warning))] text-[hsl(var(--signal-warning))] border-[hsl(var(--signal-warning))]', l: 'Dégradé' },
+      blocked: { c: 'bg-[hsl(var(--signal-critical))] text-[hsl(var(--signal-critical))] border-[hsl(var(--signal-critical))]', l: 'Bloqué' },
+      no_data: { c: 'bg-muted text-muted-foreground border-border', l: 'Sans données' },
     } as const;
     return <Badge variant="outline" className={`${map[g].c} border`}>{map[g].l}</Badge>;
   };
 
   const checkIcon = (st: DiagCheck['status']) => {
-    if (st === 'ok') return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />;
+    if (st === 'ok') return <CheckCircle2 className="h-3.5 w-3.5 text-[hsl(var(--signal-positive))] shrink-0" />;
     if (st === 'warn') return <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />;
-    if (st === 'fail') return <ShieldAlert className="h-3.5 w-3.5 text-red-600 shrink-0" />;
+    if (st === 'fail') return <ShieldAlert className="h-3.5 w-3.5 text-[hsl(var(--signal-critical))] shrink-0" />;
     return <Activity className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
   };
 
@@ -443,28 +444,28 @@ function DiagnosticPanel({ diag, loading, onRun }: { diag: DiagResponse | null; 
         <div className="p-2 rounded-md border bg-muted/30 text-center">
           <p className="text-lg font-bold">{s.total}</p><p className="text-[10px] text-muted-foreground">Comptes testés</p>
         </div>
-        <div className="p-2 rounded-md border bg-emerald-500/10 text-center">
-          <p className="text-lg font-bold text-emerald-700">{s.healthy}</p><p className="text-[10px] text-muted-foreground">Opérationnels</p>
+        <div className="p-2 rounded-md border bg-[hsl(var(--signal-positive))] text-center">
+          <p className="text-lg font-bold text-[hsl(var(--signal-positive))]">{s.healthy}</p><p className="text-[10px] text-muted-foreground">Opérationnels</p>
         </div>
-        <div className="p-2 rounded-md border bg-red-500/10 text-center">
-          <p className="text-lg font-bold text-red-700">{s.blocked}</p><p className="text-[10px] text-muted-foreground">Bloqués</p>
+        <div className="p-2 rounded-md border bg-[hsl(var(--signal-critical))] text-center">
+          <p className="text-lg font-bold text-[hsl(var(--signal-critical))]">{s.blocked}</p><p className="text-[10px] text-muted-foreground">Bloqués</p>
         </div>
-        <div className="p-2 rounded-md border bg-slate-500/10 text-center">
-          <p className="text-lg font-bold text-slate-700">{s.no_data}</p><p className="text-[10px] text-muted-foreground">Sans données</p>
+        <div className="p-2 rounded-md border bg-muted text-center">
+          <p className="text-lg font-bold text-muted-foreground">{s.no_data}</p><p className="text-[10px] text-muted-foreground">Sans données</p>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-1.5 text-[11px]">
-        <Badge variant="outline" className={s.firecrawl_configured ? 'border-emerald-500 text-emerald-700' : 'border-red-500 text-red-700'}>
+        <Badge variant="outline" className={s.firecrawl_configured ? 'border-emerald-500 text-[hsl(var(--signal-positive))]' : 'border-red-500 text-[hsl(var(--signal-critical))]'}>
           Firecrawl : {s.firecrawl_configured ? 'configuré' : 'absent'}
         </Badge>
-        <Badge variant="outline" className={s.twitter_api_configured ? 'border-emerald-500 text-emerald-700' : 'border-red-500 text-red-700'}>
+        <Badge variant="outline" className={s.twitter_api_configured ? 'border-emerald-500 text-[hsl(var(--signal-positive))]' : 'border-red-500 text-[hsl(var(--signal-critical))]'}>
           API X : {s.twitter_api_configured ? 'configurée' : 'absente'}
         </Badge>
-        <Badge variant="outline" className={s.linkedin_oauth_configured ? 'border-emerald-500 text-emerald-700' : 'border-red-500 text-red-700'}>
+        <Badge variant="outline" className={s.linkedin_oauth_configured ? 'border-emerald-500 text-[hsl(var(--signal-positive))]' : 'border-red-500 text-[hsl(var(--signal-critical))]'}>
           LinkedIn OAuth : {s.linkedin_oauth_configured ? 'configuré' : 'absent'}
         </Badge>
-        <Button variant="ghost" size="sm" className="h-6 ml-auto gap-1.5" onClick={onRun} disabled={loading}>
+        <Button variant="ghost" size="sm" className="h-6 ml-auto gap-1.5" onClick={onRun} disabled={loading} aria-label="Relancer le diagnostic">
           <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} /> Relancer
         </Button>
       </div>

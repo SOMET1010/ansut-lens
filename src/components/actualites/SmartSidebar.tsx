@@ -109,7 +109,7 @@ export function SmartSidebar({
       )}>
         <CardContent className="p-5">
           <h3 className="text-xs font-bold text-muted-foreground uppercase mb-3 flex items-center gap-2">
-            <Activity className="h-3.5 w-3.5" /> Moniteur Sentiment
+            <Activity className="h-3.5 w-3.5" /> Tonalité générale
             <Tooltip>
               <TooltipTrigger asChild>
                 <button type="button" className="text-muted-foreground/60 hover:text-primary transition-colors normal-case">
@@ -211,7 +211,7 @@ export function SmartSidebar({
       <Card className="border-border/50">
         <CardContent className="p-5 min-h-[140px]">
           <h3 className="text-xs font-bold text-muted-foreground uppercase mb-4 flex items-center gap-2">
-            <Hash className="h-3.5 w-3.5" /> Concepts Clés
+            <Hash className="h-3.5 w-3.5" /> Thèmes récurrents
           </h3>
           
           {topConcepts.length === 0 ? (
@@ -247,7 +247,7 @@ export function SmartSidebar({
       <Card className="border-border/50">
         <CardContent className="p-5">
           <h3 className="text-xs font-bold text-muted-foreground uppercase mb-3 flex items-center gap-2">
-            <Globe className="h-3.5 w-3.5" /> Top Sources (24h)
+            <Globe className="h-3.5 w-3.5" /> Sources les plus actives (24 h)
           </h3>
           <ul className="space-y-2.5">
             {topSources.slice(0, 5).map((source, i) => (
