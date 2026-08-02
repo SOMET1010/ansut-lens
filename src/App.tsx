@@ -67,6 +67,7 @@ const MotsClesPage = lazy(() => import('@/pages/admin/MotsClesPage'));
 const ImportActeursPage = lazy(() => import('@/pages/admin/ImportActeursPage'));
 const UsersPage = lazy(() => import('@/pages/admin/UsersPage'));
 const AuditLogsPage = lazy(() => import('@/pages/admin/AuditLogsPage'));
+const RevueConnaissancePage = lazy(() => import('@/pages/admin/RevueConnaissancePage'));
 const CronJobsPage = lazy(() => import('@/pages/admin/CronJobsPage'));
 const SpdiStatusPage = lazy(() => import('@/pages/admin/SpdiStatusPage'));
 const NewslettersPage = lazy(() => import('@/pages/admin/NewslettersPage'));
@@ -233,6 +234,7 @@ const App = () => (
 
                           <Route element={<PermissionRoute permission="access_admin" />}>
                             <Route path="/admin" element={<AdminPage />} />
+                            <Route path="/admin/connaissance" element={<RevueConnaissancePage />} />
 
                             <Route element={<PermissionRoute permission="manage_keywords" />}>
                               <Route path="/admin/mots-cles" element={<MotsClesPage />} />

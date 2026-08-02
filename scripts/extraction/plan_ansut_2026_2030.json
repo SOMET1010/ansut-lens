@@ -1,0 +1,113 @@
+{
+  "_comment": "Extraction structurée (assistée) du PPTX « Plan Stratégique ANSUT 2026-2030 ». Chaque élément porte sa preuve (diapositive + texte d'origine). TOUT est en statut 'a_valider' : rien n'est validé sans revue humaine. Ambiguïtés consignées dans le champ _note et dans le rapport de revue généré.",
+  "source": {
+    "key": "src-plan",
+    "titre": "Plan Stratégique ANSUT 2026-2030",
+    "type": "plan_strategique",
+    "reference": "ansut_strategic_plan_2026_2030.pptx",
+    "date_document": "2026-04-01"
+  },
+  "entities": [
+    { "key": "mission-su", "type": "mission", "libelle": "Mise en œuvre du Service Universel des Télécommunications", "description": "Mandat de l'ANSUT (Loi n°2024-352 du 6 juin 2024) : exécution des programmes de service universel pour le compte de l'État.", "slide": "Diapositive 5", "texte": "Mise en œuvre : Exécution des programmes de service universel pour le compte de l'État." },
+
+    { "key": "axe-p1", "type": "axe", "code": "P1", "libelle": "Connectivité Numérique Universelle", "description": "RNHD, RIA, centres de données ; infrastructures critiques ; couverture nationale.", "slide": "Diapositive 11", "texte": "P1 Connectivité Numérique Universelle — RNHD, RIA, Centres de données ; Infrastructures critiques ; Couverture nationale." },
+    { "key": "axe-p2", "type": "axe", "code": "P2", "libelle": "Services Numériques & Inclusion", "description": "e-Services publics ; entrepreneuriat digital ; inclusion sociale & financière.", "slide": "Diapositive 11", "texte": "P2 Services Numériques & Inclusion — e-Services publics ; Entrepreneuriat digital ; Inclusion sociale & financière." },
+    { "key": "axe-p3", "type": "axe", "code": "P3", "libelle": "Usages Digitaux & Compétences", "description": "Compétences & formation ; culture numérique ; accès aux terminaux.", "slide": "Diapositive 11", "texte": "P3 Usages Digitaux — Compétences & Formation ; Culture numérique ; Accès aux terminaux." },
+    { "key": "axe-p4", "type": "axe", "code": "P4", "libelle": "Excellence Opérationnelle", "description": "Gouvernance efficace ; communication stratégique ; mobilisation des ressources.", "slide": "Diapositive 11", "texte": "P4 Excellence Opérationnelle — Gouvernance efficace ; Communication stratégique ; Mobilisation des ressources." },
+
+    { "key": "obj-p1", "type": "objectif", "libelle": "Connectivité renforcée sur l'ensemble du territoire national", "slide": "Diapositive 12", "texte": "PILIER 1 — Impact visé : Connectivité renforcée sur l'ensemble du territoire national." },
+    { "key": "obj-p2", "type": "objectif", "libelle": "Écosystème numérique renforcé et services innovants pour tous", "slide": "Diapositive 13", "texte": "PILIER 2 — Impact visé : Écosystème numérique renforcé et services innovants pour tous." },
+    { "key": "obj-p3", "type": "objectif", "libelle": "Les populations maîtrisent et utilisent le numérique", "slide": "Diapositive 14", "texte": "PILIER 3 — Impact visé : Les populations maîtrisent et utilisent le numérique." },
+    { "key": "obj-p4", "type": "objectif", "libelle": "Gouvernance de l'ANSUT améliorée et rayonnement régional", "slide": "Diapositive 15", "texte": "PILIER 4 — Impact visé : Gouvernance de l'ANSUT améliorée · Rayonnement régional." },
+
+    { "key": "proj-bus", "type": "projet", "libelle": "BUS — Backbone Universel de Services", "description": "RNHD, RIA, last miles & allumage national.", "slide": "Diapositive 17", "texte": "BUS — Backbone Universel de Services : RNHD, RIA, Last miles & Allumage national." },
+    { "key": "proj-pu-rurale", "type": "projet", "libelle": "PU Rurale — Programme Universel de connectivité", "description": "Zones isolées et rurales.", "slide": "Diapositive 17", "texte": "PU Rurale — Programme Universel de connectivité pour les zones isolées et rurales." },
+    { "key": "proj-connectmyzone", "type": "projet", "libelle": "ConnectMyZone", "description": "Connectivité ciblée des zones blanches non couvertes par les opérateurs.", "slide": "Diapositive 17", "texte": "ConnectMyZone — Connectivité ciblée des zones blanches non couvertes par les opérateurs." },
+    { "key": "proj-econseil", "type": "projet", "libelle": "E-Conseil", "description": "Dématérialisation complète des conseils des ministres et processus gouvernementaux.", "slide": "Diapositive 17", "texte": "E-Conseil — Dématérialisation complète des conseils de ministres et processus gouvernementaux." },
+    { "key": "proj-nzassa-girl", "type": "projet", "libelle": "N'Zassa Girl", "description": "Programme phare d'inclusion numérique dédié aux femmes et jeunes filles.", "slide": "Diapositive 17", "texte": "N'Zassa Girl — Programme phare d'inclusion numérique dédié aux femmes et jeunes filles." },
+    { "key": "proj-abris-bus", "type": "projet", "libelle": "Abris BUS", "description": "Espaces numériques connectés de proximité pour les populations.", "slide": "Diapositive 17", "texte": "Abris BUS — Espaces numériques connectés de proximité pour les populations." },
+    { "key": "proj-devices", "type": "projet", "libelle": "Devices", "description": "Programme d'accès aux smartphones et équipements (crédit, subvention).", "slide": "Diapositive 17", "texte": "Devices — Programme massif d'accès aux smartphones et équipements (crédit, subvention)." },
+    { "key": "proj-cicn", "type": "projet", "libelle": "CICN — Centres d'Innovation et de Culture Numérique", "description": "Hubs locaux de formation.", "slide": "Diapositive 17", "texte": "CICN — Centres d'Innovation et de Culture Numérique : hubs locaux de formation." },
+    { "key": "proj-eca", "type": "projet", "libelle": "e-CA", "description": "Plateforme de gestion sécurisée et digitale du Conseil d'Administration.", "slide": "Diapositive 17", "texte": "e-CA — Plateforme de gestion sécurisée et digitale du Conseil d'Administration." },
+    { "key": "proj-cockpit", "type": "projet", "libelle": "Cockpit", "description": "Tableau de bord stratégique de pilotage de l'ANSUT en temps réel.", "slide": "Diapositive 17", "texte": "Cockpit — Tableau de bord stratégique de pilotage de l'ANSUT en temps réel." },
+
+    { "key": "part-bad", "type": "partenaire", "libelle": "BAD", "note_maturite": "partenaire financier cité globalement — rattachement à un projet non précisé", "slide": "Diapositive 19", "texte": "Diversification : Mobilisation active des bailleurs internationaux (PTF) : BAD, Banque Mondiale, AFD, KfW, UIT." },
+    { "key": "part-banque-mondiale", "type": "partenaire", "libelle": "Banque mondiale", "note_maturite": "partenaire financier cité globalement — à confirmer", "slide": "Diapositive 19", "texte": "Mobilisation active des bailleurs internationaux (PTF) : BAD, Banque Mondiale, AFD, KfW, UIT." },
+    { "key": "part-afd", "type": "partenaire", "libelle": "AFD", "note_maturite": "partenaire financier cité globalement — à confirmer", "slide": "Diapositive 19", "texte": "Mobilisation active des bailleurs internationaux (PTF) : BAD, Banque Mondiale, AFD, KfW, UIT." },
+    { "key": "part-kfw", "type": "partenaire", "libelle": "KfW", "note_maturite": "partenaire financier cité globalement — à confirmer", "slide": "Diapositive 19", "texte": "Mobilisation active des bailleurs internationaux (PTF) : BAD, Banque Mondiale, AFD, KfW, UIT." },
+    { "key": "part-uit", "type": "partenaire", "libelle": "UIT", "note_maturite": "partenaire cité globalement — à confirmer", "slide": "Diapositive 19", "texte": "Mobilisation active des bailleurs internationaux (PTF) : BAD, Banque Mondiale, AFD, KfW, UIT." },
+    { "key": "part-artci", "type": "partenaire", "libelle": "ARTCI", "note_maturite": "partenaire institutionnel (régulation) — à confirmer", "slide": "Diapositive 19", "texte": "Institutionnels : Ministères sectoriels (Santé, Éducation, Agriculture) pour les usages, ARTCI pour la régulation." },
+    { "key": "part-min-sante", "type": "partenaire", "libelle": "Ministère de la Santé", "note_maturite": "partenaire institutionnel (usages) — à confirmer", "slide": "Diapositive 19", "texte": "Ministères sectoriels (Santé, Éducation, Agriculture) pour les usages." },
+    { "key": "part-min-education", "type": "partenaire", "libelle": "Ministère de l'Éducation", "note_maturite": "partenaire institutionnel (usages) — à confirmer", "slide": "Diapositive 19", "texte": "Ministères sectoriels (Santé, Éducation, Agriculture) pour les usages." },
+    { "key": "part-min-agriculture", "type": "partenaire", "libelle": "Ministère de l'Agriculture", "note_maturite": "partenaire institutionnel (usages) — à confirmer", "slide": "Diapositive 19", "texte": "Ministères sectoriels (Santé, Éducation, Agriculture) pour les usages." }
+  ],
+  "relations": [
+    { "parent": "mission-su", "enfant": "axe-p1", "type": "contient", "validation": "a_valider" },
+    { "parent": "mission-su", "enfant": "axe-p2", "type": "contient", "validation": "a_valider" },
+    { "parent": "mission-su", "enfant": "axe-p3", "type": "contient", "validation": "a_valider" },
+    { "parent": "mission-su", "enfant": "axe-p4", "type": "contient", "validation": "a_valider" },
+
+    { "parent": "axe-p1", "enfant": "obj-p1", "type": "contient", "validation": "a_valider" },
+    { "parent": "axe-p2", "enfant": "obj-p2", "type": "contient", "validation": "a_valider" },
+    { "parent": "axe-p3", "enfant": "obj-p3", "type": "contient", "validation": "a_valider" },
+    { "parent": "axe-p4", "enfant": "obj-p4", "type": "contient", "validation": "a_valider" },
+
+    { "parent": "axe-p1", "enfant": "proj-bus", "type": "contient", "validation": "a_valider" },
+    { "parent": "axe-p1", "enfant": "proj-pu-rurale", "type": "contient", "validation": "a_valider" },
+    { "parent": "axe-p1", "enfant": "proj-connectmyzone", "type": "contient", "validation": "a_valider" },
+    { "parent": "axe-p2", "enfant": "proj-econseil", "type": "contient", "validation": "a_valider" },
+    { "parent": "axe-p2", "enfant": "proj-nzassa-girl", "type": "contient", "validation": "a_valider" },
+    { "parent": "axe-p2", "enfant": "proj-abris-bus", "type": "contient", "validation": "a_valider" },
+    { "parent": "axe-p3", "enfant": "proj-devices", "type": "contient", "validation": "a_valider" },
+    { "parent": "axe-p3", "enfant": "proj-cicn", "type": "contient", "validation": "a_valider" },
+    { "parent": "axe-p4", "enfant": "proj-eca", "type": "contient", "validation": "a_valider" },
+    { "parent": "axe-p4", "enfant": "proj-cockpit", "type": "contient", "validation": "a_valider" },
+
+    { "parent": "axe-p4", "enfant": "part-bad", "type": "partenaire_de", "validation": "suppose" },
+    { "parent": "axe-p4", "enfant": "part-banque-mondiale", "type": "partenaire_de", "validation": "suppose" },
+    { "parent": "axe-p4", "enfant": "part-afd", "type": "partenaire_de", "validation": "suppose" },
+    { "parent": "axe-p4", "enfant": "part-kfw", "type": "partenaire_de", "validation": "suppose" },
+    { "parent": "axe-p4", "enfant": "part-uit", "type": "partenaire_de", "validation": "suppose" },
+    { "parent": "mission-su", "enfant": "part-artci", "type": "partenaire_de", "validation": "suppose" },
+    { "parent": "axe-p2", "enfant": "part-min-sante", "type": "partenaire_de", "validation": "suppose" },
+    { "parent": "axe-p2", "enfant": "part-min-education", "type": "partenaire_de", "validation": "suppose" },
+    { "parent": "axe-p2", "enfant": "part-min-agriculture", "type": "partenaire_de", "validation": "suppose" }
+  ],
+  "indicators": [
+    { "entity": "obj-p1", "libelle": "Backbone national RNHD déjà déployé (socle de départ)", "valeur_actuelle": "5 207 km", "note": "Valeur de référence 2022-2025 (socle) — NE PAS confondre avec la cible 2030 (34 821 km allumés).", "slide": "Diapositive 4", "texte": "Infrastructure Existante : 5 207 km de Backbone national (RNHD) déjà déployés comme socle." },
+    { "entity": "obj-p1", "libelle": "Fibre optique allumée (total)", "valeur_cible": "34 821 km", "echeance": "2030", "slide": "Diapositive 12", "texte": "34 821 km de fibre optique allumée au total." },
+    { "entity": "obj-p1", "libelle": "Backbone supplémentaire", "valeur_cible": "3 562 km", "echeance": "2030", "slide": "Diapositive 12", "texte": "3 562 km de fibre optique backbone supplémentaires." },
+    { "entity": "obj-p1", "libelle": "Fibre métropolitaine", "valeur_cible": "2 080 km", "echeance": "2030", "slide": "Diapositive 12", "texte": "2 080 km de fibre optique métropolitaine." },
+    { "entity": "obj-p1", "libelle": "Fibre last mile", "valeur_cible": "7 452 km", "echeance": "2030", "slide": "Diapositive 12", "texte": "7 452 km de fibre optique last mile." },
+    { "entity": "obj-p1", "libelle": "Établissements scolaires et universitaires connectés", "valeur_cible": "356", "echeance": "2030", "slide": "Diapositive 12", "texte": "356 établissements scolaires et universitaires connectés." },
+    { "entity": "obj-p1", "libelle": "Administrations connectées au haut débit", "valeur_cible": "480", "echeance": "2030", "slide": "Diapositive 12", "texte": "480 Administrations connectées au haut débit." },
+    { "entity": "obj-p1", "libelle": "Établissements sanitaires connectés", "valeur_cible": "65 %", "echeance": "2030", "slide": "Diapositive 12", "texte": "65% Établissements sanitaires connectés." },
+    { "entity": "obj-p1", "libelle": "Frontières connectées au backbone national", "valeur_cible": "5", "echeance": "2030", "slide": "Diapositive 12", "texte": "5 Frontières connectées au backbone national." },
+    { "entity": "obj-p1", "libelle": "Utilisation minimale du backbone par les opérateurs", "valeur_cible": "40 %", "echeance": "2030", "slide": "Diapositive 12", "texte": "40% Utilisation minimale backbone par les opérateurs." },
+
+    { "entity": "obj-p2", "libelle": "e-Services et plateformes sectorielles déployés", "valeur_cible": "24", "echeance": "2030", "slide": "Diapositive 13", "texte": "24 e-Services et plateformes sectorielles déployés." },
+    { "entity": "obj-p2", "libelle": "Services prioritaires de l'État entièrement dématérialisés", "valeur_cible": "5", "echeance": "2030", "slide": "Diapositive 13", "texte": "5 Services prioritaires de l'État entièrement dématérialisés." },
+    { "entity": "obj-p2", "libelle": "Points d'accès universels dans les zones isolées", "valeur_cible": "125", "echeance": "2030", "slide": "Diapositive 13", "texte": "125 Points d'accès universels dans les zones isolées." },
+    { "entity": "obj-p2", "libelle": "Personnes accompagnées en zone rurale", "valeur_cible": "10 000", "echeance": "2030", "slide": "Diapositive 13", "texte": "10 000 Personnes accompagnées en zone rurale." },
+    { "entity": "obj-p2", "libelle": "Jeunes formés aux métiers du numérique", "valeur_cible": "6 500", "echeance": "2030", "slide": "Diapositive 13", "texte": "6 500 Jeunes formés aux métiers du numérique." },
+    { "entity": "obj-p2", "libelle": "Femmes bénéficiaires de programmes dédiés", "valeur_cible": "2 500", "echeance": "2030", "slide": "Diapositive 13", "texte": "2 500 Femmes bénéficiaires de programmes dédiés." },
+    { "entity": "obj-p2", "libelle": "Start-ups numériques accompagnées", "valeur_cible": "10", "echeance": "2030", "slide": "Diapositive 13", "texte": "10 Start-ups numériques accompagnées." },
+
+    { "entity": "obj-p3", "libelle": "Personnes sensibilisées chaque année", "valeur_cible": "20 000", "echeance": "2030", "slide": "Diapositive 14", "texte": "20 000 Personnes sensibilisées chaque année." },
+    { "entity": "obj-p3", "libelle": "Personnes formées au numérique", "valeur_cible": "112 000", "echeance": "2030", "slide": "Diapositive 14", "texte": "112 000 Personnes formées au numérique (2030)." },
+    { "entity": "obj-p3", "libelle": "Taux d'accès visé aux smartphones", "valeur_cible": "80 %", "echeance": "2030", "slide": "Diapositive 14", "texte": "80% Taux d'accès visé aux smartphones." },
+
+    { "entity": "obj-p4", "libelle": "Taux d'exécution du plan d'audit annuel", "valeur_cible": "100 %", "echeance": "2030", "slide": "Diapositive 15", "texte": "100% Taux d'exécution du plan d'audit annuel." },
+    { "entity": "obj-p4", "libelle": "Score de notoriété auprès du public cible", "valeur_cible": "80 %", "echeance": "2030", "slide": "Diapositive 15", "texte": "80% Score de notoriété auprès du public cible." },
+    { "entity": "obj-p4", "libelle": "Taux de couverture des besoins financiers", "valeur_cible": "80 %", "echeance": "2030", "slide": "Diapositive 15", "texte": "80% Taux de couverture des besoins financiers." },
+    { "entity": "obj-p4", "libelle": "Organes de gouvernance fonctionnels", "valeur_cible": "100 %", "echeance": "2030", "slide": "Diapositive 15", "texte": "100% Organes de gouvernance fonctionnels." }
+  ],
+  "ambiguites": [
+    "Le plan parle de « Projets Majeurs » (diapo 17) sans distinguer clairement le niveau « programme » du niveau « projet ». Tous les livrables ont été typés `projet` — à trancher lors de la revue.",
+    "Aucune direction responsable n'est indiquée dans le document pour les projets/axes : le champ `direction_responsable` reste vide (à compléter par l'ANSUT).",
+    "Les partenaires (diapo 19) sont cités globalement (bailleurs, ministères) sans rattachement à un projet précis : les relations partenaire↔axe sont marquées `suppose`.",
+    "La mission est modélisée comme une entité unique (mandat SU) alors que la diapo 5 liste 5 attributions (Mise en œuvre, Élaboration, Suivi & Contrôle, Gestion financière, Investissements) : à décider si l'on veut 5 sous-missions.",
+    "Les objectifs sont dérivés de la formule « Impact visé » de chaque pilier ; le plan peut comporter des objectifs plus fins non repris ici.",
+    "Le socle existant « 5 207 km de Backbone national (RNHD) déjà déployés » (diapo 4) n'a pas été saisi comme indicateur de départ : à ajouter si utile comme valeur_actuelle."
+  ]
+}
