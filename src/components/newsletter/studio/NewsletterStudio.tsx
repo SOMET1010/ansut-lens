@@ -390,7 +390,7 @@ export function NewsletterStudio({ newsletter, onBack, onSaved }: NewsletterStud
           <div 
             className="mx-auto shadow-xl rounded-lg overflow-hidden transition-all duration-300"
             style={{ maxWidth: viewportWidths[previewViewport] }}
-            dangerouslySetInnerHTML={{ __html: previewHtml }}
+            dangerouslySetInnerHTML={{ __html: safePreviewHtml }}
           />
         </div>
       ) : (
