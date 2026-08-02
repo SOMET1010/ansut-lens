@@ -71,7 +71,7 @@ export default function EchoResonanceWidget() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Radio className="h-4 w-4 text-primary" />
-            Écho & Résonance
+            Portée de nos publications
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -88,7 +88,7 @@ export default function EchoResonanceWidget() {
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <Radio className="h-4 w-4 text-primary" />
-          Écho & Résonance
+          Portée de nos publications
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Send, Bot, Loader2, RefreshCw, Settings2, History, Sparkles, AlertTriangle, X, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PageContainer, PageHeader, SectionRepliable } from '@/components/common';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -430,10 +431,16 @@ export default function AssistantPage() {
 
   return (
     <TooltipProvider>
-      <div className="w-full h-[calc(100vh-6rem)] flex gap-4 p-4 lg:p-6 animate-fade-in">
+      <PageContainer>
+      <div className="w-full h-[calc(100vh-6rem)] flex gap-4 animate-fade-in">
 
         {/* MAIN CHAT ZONE — flexible width */}
         <div className="flex-1 min-w-0 flex flex-col bg-card rounded-2xl border shadow-sm overflow-hidden">
+          <PageHeader
+            titre="Assistant"
+            description="Posez une question sur la veille, ou demandez la rédaction d'une note appuyée sur les sources collectées."
+            icon={Sparkles}
+          />
 
           {/* Header with Mode Selector */}
           <div className="px-4 lg:px-6 py-3 border-b bg-muted/30 flex flex-wrap gap-3 justify-between items-center">
@@ -441,7 +448,7 @@ export default function AssistantPage() {
               {/* History Button (always visible) */}
               <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9" title="Historique des conversations" aria-label="Afficher l'historique">
+                  <Button variant="ghost" size="icon" className="h-9 w-9 min-h-11 sm:min-h-9" title="Historique des conversations" aria-label="Afficher l'historique">
                     <History className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
@@ -489,13 +496,9 @@ export default function AssistantPage() {
                 </SheetContent>
               </Sheet>
 
-              <div className="bg-primary text-primary-foreground p-2 rounded-lg shrink-0">
-                <Sparkles className="h-4 w-4" />
-              </div>
               <div className="min-w-0">
-                <h2 className="font-bold text-sm">Assistant SUTA</h2>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <span className="w-2 h-2 bg-[hsl(var(--signal-positive))] rounded-full animate-pulse" />
                   En ligne • {contextStats.actualites + contextStats.dossiers} sources
                 </div>
               </div>
@@ -550,9 +553,9 @@ export default function AssistantPage() {
           </div>
           
           {citationWarning && citationWarning.invalid_citations.length > 0 && (
-            <div className="mx-4 lg:mx-6 mt-3 rounded-lg border border-warning/40 bg-warning/10">
+            <div className="mx-4 lg:mx-6 mt-3 rounded-lg border border-[hsl(var(--signal-warning))]/40 bg-[hsl(var(--signal-warning))]/10">
               <div className="flex items-start gap-2 px-3 py-2">
-                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-warning" />
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-[hsl(var(--signal-warning))]" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-foreground">
                     {citationWarning.invalid_citations.length} citation(s) invalide(s)
@@ -578,7 +581,7 @@ export default function AssistantPage() {
                     ))}
                   </ul>
                 </div>
-                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setCitationWarning(null)} aria-label="Fermer">
+                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 min-h-11 sm:min-h-9" onClick={() => setCitationWarning(null)} aria-label="Fermer l'avertissement">
                   <X className="h-3.5 w-3.5" />
                 </Button>
               </div>
@@ -637,7 +640,7 @@ export default function AssistantPage() {
               <div className="absolute right-2 bottom-2 flex gap-1">
                 <Button 
                   size="icon" 
-                  className="h-8 w-8"
+                  className="h-8 w-8 min-h-11 sm:min-h-9"
                   onClick={handleSend}
                   disabled={isLoading || !input.trim()}
                   aria-label={isLoading ? 'Envoi en cours' : 'Envoyer le message'}>
@@ -668,6 +671,30 @@ export default function AssistantPage() {
         </div>
 
         {/* RIGHT COLUMN — Workspace + Framework Panel (xl+ only) */}
+        <div className="xl:hidden">
+          <SectionRepliable titre="Espace de travail" toujoursOuvertDes="xl">
+            <div className="flex flex-col gap-4">
+              <div className="min-h-[300px]">
+                <DocumentWorkspace
+                  document={generatedDocument}
+                  isGenerating={isLoading && mode === 'redaction'}
+                  onClose={() => setGeneratedDocument(null)}
+                  onSuggestionClick={handleSuggestionClick}
+                />
+              </div>
+              <div className="h-[300px] shrink-0">
+                <FrameworkPanel
+                  query={[...realMessages].reverse().find(m => m.role === 'user')?.content ?? ''}
+                  response={[...realMessages].reverse().find(m => m.role === 'assistant')?.content ?? ''}
+                  contextActuIds={Array.from(selectedActualites)}
+                  contextDossierIds={Array.from(selectedDossiers)}
+                  contextActuTitles={Object.fromEntries(availableActualites.map(a => [a.id, a.titre]))}
+                  contextDossierTitles={Object.fromEntries(availableDossiers.map(d => [d.id, d.titre]))}
+                />
+              </div>
+            </div>
+          </SectionRepliable>
+        </div>
         <div className="hidden xl:flex xl:flex-col gap-4 shrink-0" style={{ width: workspaceResize.width }}>
           <div className="flex-1 min-h-0">
             <DocumentWorkspace
@@ -689,6 +716,7 @@ export default function AssistantPage() {
           </div>
         </div>
       </div>
+      </PageContainer>
     </TooltipProvider>
   );
 }

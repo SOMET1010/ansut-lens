@@ -120,7 +120,7 @@ export function ReactionAnalyzerSection() {
       <div>
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <Search className="h-5 w-5 text-primary" />
-          Analyseur de Réactions
+          Analyser les réactions à une publication
         </h2>
         <p className="text-sm text-muted-foreground">
           Collez l'URL d'un post ou article pour analyser les réactions du public

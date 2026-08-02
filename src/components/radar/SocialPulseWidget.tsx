@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { nettoyerExtrait } from '@/lib/nettoyerExtrait';
 import { 
   Newspaper, 
   MessagesSquare, 
@@ -108,7 +109,9 @@ function InsightCard({ insight }: { insight: SocialInsight }) {
                 variant="outline" 
                 className={cn(
                   'text-xs px-1.5 py-0',
-                  sentimentValue > 0 ? 'text-green-600 border-green-300' : 'text-red-600 border-red-300'
+                  sentimentValue > 0
+                    ? 'text-[hsl(var(--signal-positive))] border-[hsl(var(--signal-positive))]/30'
+                    : 'text-destructive border-destructive/30'
                 )}
               >
                 {sentimentValue > 0 ? (
@@ -120,8 +123,12 @@ function InsightCard({ insight }: { insight: SocialInsight }) {
               </Badge>
             )}
           </div>
+          {/*
+            Le contenu provient de la collecte et arrive charge de balisage
+            Markdown, d'images et d'URL en clair : il s'affichait tel quel.
+          */}
           <p className="text-sm line-clamp-2 text-foreground/90">
-            {insight.contenu}
+            {nettoyerExtrait(insight.contenu)}
           </p>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             {insight.hashtags && insight.hashtags.length > 0 && (
@@ -274,7 +281,13 @@ export function SocialPulseWidget() {
             <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm font-medium">
-                {stats.critical} signal{stats.critical > 1 ? 'aux' : ''} critique{stats.critical > 1 ? 's' : ''} ANSUT à traiter
+                {/*
+                  Le pluriel de « signal » est « signaux » : la construction par
+                  concatenation produisait le mot inexistant « signalaux ».
+                */}
+                {stats.critical === 1
+                  ? 'Un signal critique concernant l’ANSUT à traiter'
+                  : `${stats.critical} signaux critiques concernant l’ANSUT à traiter`}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Mentions critiques liées à l'ANSUT, à l'écosystème télécoms ivoirien

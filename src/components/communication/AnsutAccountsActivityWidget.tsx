@@ -180,7 +180,7 @@ export function AnsutAccountsActivityWidget() {
           <div>
             <CardTitle className="text-base flex items-center gap-2 flex-wrap">
               <Activity className="h-5 w-5 text-primary" />
-              Cockpit Réputationnel ANSUT — 24h / 7j
+              Activité de nos comptes — 24 heures et 7 jours
               <ScoreBadge score={data.visibilityScore} />
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">

@@ -109,7 +109,7 @@ export function SujetsValorisationSection({ onGeneratePost }: Props) {
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-primary" />
-            Sujets à Valoriser
+            Sujets à mettre en avant
           </h2>
           <p className="text-sm text-muted-foreground">
             Thématiques porteuses identifiées par l'IA à partir de l'actualité

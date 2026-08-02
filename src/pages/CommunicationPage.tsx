@@ -14,6 +14,7 @@ import { MatinaleHistoryWidget } from '@/components/communication/MatinaleHistor
 import { SujetsValorisationSection } from '@/components/communication/SujetsValorisationSection';
 import { PostsAmplifierSection } from '@/components/communication/PostsAmplifierSection';
 import { NavLink } from 'react-router-dom';
+import { PageContainer, PageHeader, TermeMetier } from '@/components/common';
 import {
   MediaImpactWidget,
   SocialPulseWidget,
@@ -43,8 +44,8 @@ function CopyButton({ text, label }: { text: string; label: string }) {
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5">
-      {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+    <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5 min-h-11 sm:min-h-9" aria-label={`Copier ${label}`}>
+      {copied ? <Check className="h-3.5 w-3.5 text-[hsl(var(--signal-positive))]" /> : <Copy className="h-3.5 w-3.5" />}
       {copied ? 'Copié' : 'Copier'}
     </Button>
   );
@@ -52,9 +53,9 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 
 function TonaliteBadge({ tonalite }: { tonalite: string }) {
   const config = {
-    positif: { label: '✅ Positif', variant: 'default' as const, className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
-    negatif: { label: '🔴 Négatif', variant: 'destructive' as const, className: '' },
-    neutre: { label: '🟡 Neutre', variant: 'secondary' as const, className: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
+    positif: { label: 'Positif', variant: 'default' as const, className: 'bg-[hsl(var(--signal-positive))]/10 text-[hsl(var(--signal-positive))] border-[hsl(var(--signal-positive))]/20' },
+    negatif: { label: 'Négatif', variant: 'destructive' as const, className: '' },
+    neutre: { label: 'Neutre', variant: 'secondary' as const, className: 'bg-[hsl(var(--signal-warning))]/10 text-[hsl(var(--signal-warning))] border-[hsl(var(--signal-warning))]/20' },
   }[tonalite] || { label: tonalite, variant: 'secondary' as const, className: '' };
   return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
 }
@@ -85,14 +86,19 @@ function MatinaleBriefingSection() {
             <AlertDialogTrigger asChild>
               <Button disabled={isSending} variant="default" className="gap-2">
                 {isSending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                {isSending ? 'Envoi…' : 'Envoyer la Matinale'}
+                {/*
+                  Le libelle etait ecrit sous la forme d'une chaine contenant du
+                  JSX litteral, qui se serait affichee telle quelle a l'ecran.
+                  Un composant ne peut pas figurer dans une chaine de caracteres.
+                */}
+                {isSending ? 'Envoi…' : 'Envoyer la matinale'}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Confirmer l'envoi de la Matinale</AlertDialogTitle>
+                <AlertDialogTitle>Confirmer l’envoi de la matinale</AlertDialogTitle>
                 <AlertDialogDescription>
-                  La Matinale sera envoyée par email à tous les destinataires actifs. Cette action est irréversible.
+                  La <TermeMetier cle="matinale">Matinale</TermeMetier> sera envoyée par email à tous les destinataires actifs. Cette action est irréversible.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -123,7 +129,7 @@ function MatinaleBriefingSection() {
           {/* Flash Info */}
           <div>
             <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
-              ⚡ Flash Info <Badge variant="secondary">{data.matinale.flash_info.length}</Badge>
+              Flash info <Badge variant="secondary">{data.matinale.flash_info.length}</Badge>
             </h3>
             <div className="grid gap-3 md:grid-cols-3">
               {data.matinale.flash_info.map((item, i) => (
@@ -135,6 +141,7 @@ function MatinaleBriefingSection() {
                       <span className="text-[10px] text-muted-foreground/70">Source : {item.source}</span>
                       {item.source_url && (
                         <a
+                          aria-label="Voir la source"
                           href={item.source_url}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -156,7 +163,7 @@ function MatinaleBriefingSection() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm flex items-center gap-1.5">
-                  🎯 Veille Réputation ANSUT
+                  Ce que l’on dit de l’ANSUT
                 </CardTitle>
                 <TonaliteBadge tonalite={data.matinale.veille_reputation.tonalite} />
               </div>
@@ -173,10 +180,10 @@ function MatinaleBriefingSection() {
                   </p>
                   {data.matinale.veille_reputation.preuves.map((preuve, i) => {
                     const sentColor = preuve.sentiment_article === 'positif' 
-                      ? 'border-l-emerald-500' 
+                      ? 'border-l-[hsl(var(--signal-positive))]' 
                       : preuve.sentiment_article === 'negatif' 
                         ? 'border-l-destructive' 
-                        : 'border-l-amber-500';
+                        : 'border-l-[hsl(var(--signal-warning))]';
                     return (
                       <div key={i} className={`p-3 rounded-lg bg-muted/50 border-l-4 ${sentColor}`}>
                         <div className="flex items-start justify-between gap-2">
@@ -190,6 +197,7 @@ function MatinaleBriefingSection() {
                           </div>
                           {preuve.url && (
                             <a
+                              aria-label="Voir l'article source"
                               href={preuve.url}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -205,8 +213,8 @@ function MatinaleBriefingSection() {
                   })}
                 </div>
               ) : (
-                <div className="p-3 rounded-lg bg-amber-500/5 border border-dashed border-amber-500/20">
-                  <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                <div className="p-3 rounded-lg bg-[hsl(var(--signal-warning))]/5 border border-dashed border-[hsl(var(--signal-warning))]/20">
+                  <p className="text-xs text-[hsl(var(--signal-warning))]  flex items-center gap-1.5">
                     <AlertCircle className="h-3.5 w-3.5" />
                     Aucune mention directe de l'ANSUT détectée dans les médias sur les dernières 24h
                   </p>
@@ -226,22 +234,24 @@ function MatinaleBriefingSection() {
           {/* Posts prêts à publier */}
           <div>
             <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
-              📝 Prêt-à-Poster
+              Publications prêtes à diffuser
             </h3>
             <div className="grid gap-4 md:grid-cols-2">
               {/* LinkedIn */}
-              <Card className="border-l-4 border-l-blue-600">
+              <Card className="border-l-4 border-l-[hsl(var(--signal-neutral))]">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm flex items-center gap-1.5">
-                      <Linkedin className="h-4 w-4 text-blue-600" /> LinkedIn
+                      <Linkedin className="h-4 w-4 text-[hsl(var(--signal-neutral))]" /> LinkedIn
                     </CardTitle>
                     <CopyButton text={data.matinale.pret_a_poster.linkedin} label="Post LinkedIn" />
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <p className="text-sm whitespace-pre-line mb-2">{data.matinale.pret_a_poster.linkedin}</p>
-                  <p className="text-xs text-muted-foreground italic">💡 {data.matinale.pret_a_poster.angle}</p>
+                  <p className="text-xs italic text-muted-foreground">
+                    Angle proposé : {data.matinale.pret_a_poster.angle}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -280,7 +290,7 @@ function MatinaleBriefingSection() {
           <CardContent className="py-12 text-center">
             <Newspaper className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
             <p className="text-sm text-muted-foreground">
-              Cliquez sur « Générer le briefing » pour obtenir votre matinale du jour
+              Cliquez sur « Générer le briefing » pour obtenir votre <TermeMetier cle="matinale">matinale</TermeMetier> du jour
             </p>
           </CardContent>
         </Card>
@@ -353,10 +363,10 @@ function ContentGeneratorSection({ sujetRef }: { sujetRef?: React.MutableRefObje
       <div>
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <Megaphone className="h-5 w-5 text-primary" />
-          Kit Communication
+          Préparer un dossier de communication
         </h2>
         <p className="text-sm text-muted-foreground">
-          Décrivez un sujet ou un projet à valoriser, l'IA prépare un dossier complet
+          Décrivez un sujet à mettre en avant : messages clés, publications et courriel sont préparés pour vous
         </p>
       </div>
 
@@ -387,7 +397,7 @@ function ContentGeneratorSection({ sujetRef }: { sujetRef?: React.MutableRefObje
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm">📋 Dossier Communication</CardTitle>
+              <CardTitle className="text-sm">Dossier de communication</CardTitle>
               <CopyButton text={result} label="Dossier" />
             </div>
           </CardHeader>
@@ -405,8 +415,8 @@ function ContentGeneratorSection({ sujetRef }: { sujetRef?: React.MutableRefObje
 // --- Section 3: Quick Tools ---
 function QuickToolsSection() {
   const shortcuts = [
-    { label: 'Studio Publication', icon: FileText, to: '/publier', desc: 'Notes et dossiers' },
-    { label: 'Assistant IA', icon: MessageSquare, to: '/assistant', desc: 'Copilote intelligence' },
+    { label: 'Publier', icon: FileText, to: '/publier', desc: 'Notes de synthèse et lettres d’information' },
+    { label: 'Assistant', icon: MessageSquare, to: '/assistant', desc: 'Analyser et rédiger avec de l’aide' },
     { label: 'Accueil', icon: Newspaper, to: '/ce-matin', desc: 'Flux en temps réel' },
   ];
 
@@ -414,7 +424,7 @@ function QuickToolsSection() {
     <div className="space-y-4">
       <h2 className="text-lg font-semibold flex items-center gap-2">
         <Lightbulb className="h-5 w-5 text-primary" />
-        Accès rapide
+        Aller plus loin
       </h2>
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
         {shortcuts.map(s => (
@@ -446,12 +456,12 @@ import { nettoyerExtrait } from '@/lib/nettoyerExtrait';
 export default function CommunicationPage() {
   const sujetSetterRef = useRef<((text: string) => void) | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const VALID_TABS = ['cockpit', 'social'] as const;
+  const VALID_TABS = ['tableau-de-bord', 'social'] as const;
   type TabValue = typeof VALID_TABS[number];
 
   const tabFromUrl = searchParams.get('tab');
   const tabFromStorage = typeof window !== 'undefined' ? window.localStorage.getItem('communication.activeTab') : null;
-  const initialTab: TabValue = (VALID_TABS.includes(tabFromUrl as TabValue) ? tabFromUrl : VALID_TABS.includes(tabFromStorage as TabValue) ? tabFromStorage : 'cockpit') as TabValue;
+  const initialTab: TabValue = (VALID_TABS.includes(tabFromUrl as TabValue) ? tabFromUrl : VALID_TABS.includes(tabFromStorage as TabValue) ? tabFromStorage : 'tableau-de-bord') as TabValue;
   const [activeTab, setActiveTab] = useState<TabValue>(initialTab);
 
   // Sync URL → state (back/forward navigation)
@@ -465,11 +475,11 @@ export default function CommunicationPage() {
   // Ensure URL reflects initial tab (so reload preserves it even if loaded from localStorage)
   React.useEffect(() => {
     const urlTab = searchParams.get('tab');
-    if (activeTab !== 'cockpit' && urlTab !== activeTab) {
+    if (activeTab !== 'tableau-de-bord' && urlTab !== activeTab) {
       const next = new URLSearchParams(searchParams);
       next.set('tab', activeTab);
       setSearchParams(next, { replace: true });
-    } else if (activeTab === 'cockpit' && urlTab) {
+    } else if (activeTab === 'tableau-de-bord' && urlTab) {
       const next = new URLSearchParams(searchParams);
       next.delete('tab');
       setSearchParams(next, { replace: true });
@@ -491,39 +501,36 @@ export default function CommunicationPage() {
   };
 
   return (
-    <div className="w-full space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Megaphone className="h-6 w-6 text-primary" />
-          Communication 360°
-        </h1>
-        <p className="text-muted-foreground">
-          Cockpit unifié : briefing quotidien, génération de contenus & suivi des réseaux sociaux ANSUT
-        </p>
-      </div>
+    <PageContainer>
+      <PageHeader
+        titre="Notre communication"
+        description="Comment l'ANSUT est visible : portée de nos publications, activité de nos comptes et réputation dans les médias."
+        icon={Megaphone}
+      />
+      <div className="w-full space-y-6 mt-6">
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList>
-          <TabsTrigger value="cockpit" className="gap-2">
+          <TabsTrigger value="tableau-de-bord" className="gap-2">
             <Megaphone className="h-4 w-4" />
-            Cockpit Communication
+            Tableau de bord
           </TabsTrigger>
           <TabsTrigger value="social" className="gap-2">
             <Globe className="h-4 w-4" />
-            Réseaux Sociaux
+            Réseaux sociaux
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="cockpit" className="space-y-8 mt-0">
-          {/* E-Réputation & Médias Sociaux */}
+        <TabsContent value="tableau-de-bord" className="space-y-8 mt-0">
+          {/* Notre présence en ligne */}
           <div className="space-y-4">
             <div>
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <Globe className="h-5 w-5 text-primary" />
-                E-Réputation & Médias Sociaux
+                Notre présence en ligne
               </h2>
               <p className="text-sm text-muted-foreground">
-                Suivi quotidien de votre présence en ligne et couverture médiatique
+                Ce que l’on dit de l’ANSUT chaque jour, dans la presse et sur les réseaux
               </p>
             </div>
             <AnsutAccountsActivityWidget />
@@ -555,5 +562,6 @@ export default function CommunicationPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </PageContainer>
   );
 }

@@ -1,27 +1,46 @@
-import { Megaphone, ExternalLink, MessageSquare, RefreshCw } from 'lucide-react';
+import {
+  Facebook,
+  FileText,
+  Globe,
+  Linkedin,
+  Megaphone,
+  ExternalLink,
+  MessageSquare,
+  Newspaper,
+  RefreshCw,
+  Twitter,
+  type LucideIcon,
+} from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { nettoyerExtrait } from '@/lib/nettoyerExtrait';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSocialInsights } from '@/hooks/useSocialInsights';
 import { useCollectSocial } from '@/hooks/useSocialInsights';
 
-const platformIcons: Record<string, string> = {
-  linkedin: '🔗',
-  twitter: '𝕏',
-  facebook: '📘',
-  blog: '📝',
-  news: '📰',
-  forum: '💬',
+/**
+ * Les plateformes etaient identifiees par des emojis, qui se rendent
+ * differemment selon le systeme d'exploitation et sont annonces de facon
+ * imprevisible par les lecteurs d'ecran. Des icones vectorielles offrent un
+ * rendu stable et se colorent avec le theme.
+ */
+const ICONES_PLATEFORME: Record<string, LucideIcon> = {
+  linkedin: Linkedin,
+  twitter: Twitter,
+  facebook: Facebook,
+  blog: FileText,
+  news: Newspaper,
+  forum: MessageSquare,
 };
 
 const platformColors: Record<string, string> = {
-  linkedin: 'border-l-blue-600',
+  linkedin: 'border-l-primary',
   twitter: 'border-l-foreground',
-  facebook: 'border-l-blue-500',
-  blog: 'border-l-emerald-500',
-  news: 'border-l-amber-500',
-  forum: 'border-l-purple-500',
+  facebook: 'border-l-primary',
+  blog: 'border-l-[hsl(var(--signal-positive))]',
+  news: 'border-l-[hsl(var(--signal-warning))]',
+  forum: 'border-l-[hsl(var(--signal-neutral))]',
 };
 
 interface Props {
@@ -44,13 +63,19 @@ export function PostsAmplifierSection({ onPrepareResponse }: Props) {
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Megaphone className="h-5 w-5 text-primary" />
-            Posts à Amplifier
+            Publications à relayer
           </h2>
           <p className="text-sm text-muted-foreground">
-            Publications de l'écosystème méritant un partage ou un engagement
+            Publications du secteur qui méritent un partage ou une réaction de l'ANSUT
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => collectSocial()} disabled={collecting} className="gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => collectSocial()}
+          disabled={collecting}
+          className="gap-2 min-h-11 sm:min-h-9"
+        >
           <RefreshCw className={`h-3.5 w-3.5 ${collecting ? 'animate-spin' : ''}`} />
           Actualiser
         </Button>
@@ -77,18 +102,27 @@ export function PostsAmplifierSection({ onPrepareResponse }: Props) {
               <CardContent className="p-4 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-base">{platformIcons[post.plateforme] || '📌'}</span>
+                    {(() => {
+                      const IconePlateforme = ICONES_PLATEFORME[post.plateforme] ?? Globe;
+                      return (
+                        <IconePlateforme className="h-4 w-4 text-muted-foreground" aria-hidden />
+                      );
+                    })()}
                     <span className="text-xs font-medium capitalize">{post.plateforme}</span>
                     {post.auteur && (
                       <span className="text-xs text-muted-foreground">• {post.auteur}</span>
                     )}
                   </div>
                   <Badge variant="outline" className="text-[10px]">
-                    ⚡ {post.engagement_score}
+                    {post.engagement_score} points d’engagement
                   </Badge>
                 </div>
 
-                <p className="text-sm line-clamp-3">{post.contenu}</p>
+                {/*
+                  Le contenu collecte contient du balisage Markdown et des URL en
+                  clair, qui s'affichaient tels quels.
+                */}
+                <p className="text-sm line-clamp-3">{nettoyerExtrait(post.contenu)}</p>
 
                 {post.hashtags && post.hashtags.length > 0 && (
                   <div className="flex flex-wrap gap-1">
