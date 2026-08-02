@@ -366,8 +366,7 @@ export function NewsletterEditor({ newsletter, onBack, onSaved }: NewsletterEdit
                 variant="ghost" 
                 size="icon" 
                 onClick={() => removeAVenir(index)}
-                className="text-destructive"
-              >
+                className="text-destructive" aria-label="Supprimer">
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>

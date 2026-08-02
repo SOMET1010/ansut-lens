@@ -1,43 +1,72 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Newspaper, Users, Radio, FolderOpen, Radar, Bot, Search } from 'lucide-react';
-import { CommandDialog, CommandInput, CommandList, CommandGroup, CommandItem, CommandEmpty } from '@/components/ui/command';
+import { FolderOpen, HelpCircle, Newspaper, Radio, Users } from 'lucide-react';
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
+import { NAV_SECTIONS } from '@/config/navigation';
+import { useUserPermissions } from '@/hooks/useUserPermissions';
 
 interface SearchResults {
   actualites: { id: string; titre: string; source_nom: string | null }[];
-  personnalites: { id: string; nom: string; prenom: string | null; fonction: string | null; organisation: string | null }[];
+  personnalites: {
+    id: string;
+    nom: string;
+    prenom: string | null;
+    fonction: string | null;
+    organisation: string | null;
+  }[];
   sources: { id: string; nom: string; type: string }[];
   dossiers: { id: string; titre: string; categorie: string }[];
 }
 
-const emptyResults: SearchResults = { actualites: [], personnalites: [], sources: [], dossiers: [] };
-
-const quickActions = [
-  { label: 'Accueil', icon: Radar, path: '/radar' },
-  { label: 'Flux d\'actualités', icon: Newspaper, path: '/radar?tab=flux' },
-  { label: 'Acteurs & Influence', icon: Users, path: '/acteurs' },
-  { label: 'Dossiers', icon: FolderOpen, path: '/dossiers' },
-  { label: 'Assistant IA', icon: Bot, path: '/assistant' },
-];
+const emptyResults: SearchResults = {
+  actualites: [],
+  personnalites: [],
+  sources: [],
+  dossiers: [],
+};
 
 interface SpotlightSearchProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+/**
+ * Recherche globale, ouverte au clavier ou depuis l'en-tete.
+ *
+ * Deux corrections issues de l'audit sont appliquees ici.
+ *
+ * Les acces rapides etaient une liste codee en dur, qui portait encore les
+ * anciens libelles et n'etait pas filtree par permission : un utilisateur
+ * pouvait s'y voir proposer une section a laquelle il n'avait pas droit. Ils
+ * proviennent desormais du registre central `src/config/navigation.ts`, filtres
+ * par permission comme la barre laterale.
+ *
+ * Les resultats renvoyaient tous vers la page de section, sans identifiant :
+ * chercher un acteur precis amenait sur la liste complete, a charge pour
+ * l'utilisateur de le retrouver. Chaque resultat cible maintenant sa fiche.
+ */
 export function SpotlightSearch({ open, onOpenChange }: SpotlightSearchProps) {
   const navigate = useNavigate();
+  const { hasPermission } = useUserPermissions();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResults>(emptyResults);
   const [loading, setLoading] = useState(false);
 
-  // Global Cmd+K / Ctrl+K
+  const accesRapides = NAV_SECTIONS.filter((section) => hasPermission(section.permission));
+
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
         onOpenChange(!open);
       }
     };
@@ -45,7 +74,6 @@ export function SpotlightSearch({ open, onOpenChange }: SpotlightSearchProps) {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [open, onOpenChange]);
 
-  // Debounced search
   useEffect(() => {
     if (!query.trim()) {
       setResults(emptyResults);
@@ -53,79 +81,131 @@ export function SpotlightSearch({ open, onOpenChange }: SpotlightSearchProps) {
     }
     const timer = setTimeout(async () => {
       setLoading(true);
-      const q = `%${query.trim()}%`;
-      const [act, pers, src, dos] = await Promise.all([
-        supabase.from('actualites').select('id, titre, source_nom').ilike('titre', q).limit(5),
-        supabase.from('personnalites').select('id, nom, prenom, fonction, organisation').or(`nom.ilike.${q},fonction.ilike.${q},organisation.ilike.${q}`).limit(5),
-        supabase.from('sources_media').select('id, nom, type').ilike('nom', q).limit(5),
-        supabase.from('dossiers').select('id, titre, categorie').ilike('titre', q).limit(5),
+      const motif = `%${query.trim()}%`;
+      const [actualites, personnalites, sources, dossiers] = await Promise.all([
+        supabase.from('actualites').select('id, titre, source_nom').ilike('titre', motif).limit(5),
+        supabase
+          .from('personnalites')
+          .select('id, nom, prenom, fonction, organisation')
+          .or(`nom.ilike.${motif},fonction.ilike.${motif},organisation.ilike.${motif}`)
+          .limit(5),
+        supabase.from('sources_media').select('id, nom, type').ilike('nom', motif).limit(5),
+        supabase.from('dossiers').select('id, titre, categorie').ilike('titre', motif).limit(5),
       ]);
       setResults({
-        actualites: act.data ?? [],
-        personnalites: pers.data ?? [],
-        sources: src.data ?? [],
-        dossiers: dos.data ?? [],
+        actualites: actualites.data ?? [],
+        personnalites: personnalites.data ?? [],
+        sources: sources.data ?? [],
+        dossiers: dossiers.data ?? [],
       });
       setLoading(false);
     }, 300);
     return () => clearTimeout(timer);
   }, [query]);
 
-  const go = useCallback((path: string) => {
-    onOpenChange(false);
-    setQuery('');
-    navigate(path);
-  }, [navigate, onOpenChange]);
+  const aller = useCallback(
+    (path: string) => {
+      onOpenChange(false);
+      setQuery('');
+      navigate(path);
+    },
+    [navigate, onOpenChange],
+  );
 
-  const hasResults = results.actualites.length + results.personnalites.length + results.sources.length + results.dossiers.length > 0;
-  const isSearching = query.trim().length > 0;
+  const nbResultats =
+    results.actualites.length +
+    results.personnalites.length +
+    results.sources.length +
+    results.dossiers.length;
+  const enRecherche = query.trim().length > 0;
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Rechercher actualités, acteurs, sources, dossiers…" value={query} onValueChange={setQuery} />
+      <CommandInput
+        placeholder="Rechercher un article, un acteur, une source, une note\u2026"
+        value={query}
+        onValueChange={setQuery}
+      />
       <CommandList>
-        {isSearching && !loading && !hasResults && (
-          <CommandEmpty>Aucun résultat pour « {query} »</CommandEmpty>
+        {enRecherche && !loading && nbResultats === 0 && (
+          <CommandEmpty>
+            <div className="space-y-1 py-4 text-center">
+              <p className="text-sm">Aucun r\u00e9sultat pour « {query} »</p>
+              <p className="text-xs text-muted-foreground">
+                Essayez un mot-cl\u00e9 plus court, ou lancez une recherche approfondie depuis la
+                section Recherche.
+              </p>
+            </div>
+          </CommandEmpty>
         )}
 
         {loading && (
-          <div className="p-4 space-y-2">
-            {[1, 2, 3].map(i => <Skeleton key={i} className="h-8 w-full" />)}
+          <div className="space-y-2 p-4">
+            {[1, 2, 3].map((index) => (
+              <Skeleton key={index} className="h-8 w-full" />
+            ))}
           </div>
         )}
 
-        {!isSearching && (
-          <CommandGroup heading="Accès rapide">
-            {quickActions.map(a => (
-              <CommandItem key={a.path} onSelect={() => go(a.path)}>
-                <a.icon className="mr-2 h-4 w-4 text-muted-foreground" />
-                {a.label}
+        {!enRecherche && (
+          <>
+            <CommandGroup heading="Aller \u00e0">
+              {accesRapides.map((section) => (
+                <CommandItem key={section.id} onSelect={() => aller(section.path)}>
+                  <section.icon className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span>{section.label}</span>
+                  <span className="ml-auto truncate pl-3 text-xs text-muted-foreground">
+                    {section.question}
+                  </span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandGroup heading="Aide">
+              <CommandItem onSelect={() => aller('/aide')}>
+                <HelpCircle className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                <span>Glossaire des termes</span>
+                <span className="ml-auto pl-3 text-xs text-muted-foreground">
+                  SPDI, quadrant, titrologie\u2026
+                </span>
               </CommandItem>
-            ))}
-          </CommandGroup>
+            </CommandGroup>
+          </>
         )}
 
         {results.actualites.length > 0 && (
-          <CommandGroup heading="Actualités">
-            {results.actualites.map(a => (
-              <CommandItem key={a.id} onSelect={() => go('/radar?tab=flux')}>
-                <Newspaper className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span className="truncate">{a.titre}</span>
-                {a.source_nom && <span className="ml-auto text-xs text-muted-foreground">{a.source_nom}</span>}
+          <CommandGroup heading="Articles">
+            {results.actualites.map((actualite) => (
+              <CommandItem
+                key={actualite.id}
+                onSelect={() => aller(`/veille?article=${actualite.id}`)}
+              >
+                <Newspaper className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">{actualite.titre}</span>
+                {actualite.source_nom && (
+                  <span className="ml-auto shrink-0 pl-3 text-xs text-muted-foreground">
+                    {actualite.source_nom}
+                  </span>
+                )}
               </CommandItem>
             ))}
           </CommandGroup>
         )}
 
         {results.personnalites.length > 0 && (
-          <CommandGroup heading="Personnalités">
-            {results.personnalites.map(p => (
-              <CommandItem key={p.id} onSelect={() => go('/acteurs')}>
-                <Users className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span className="truncate">{p.prenom ? `${p.prenom} ` : ''}{p.nom}</span>
-                {(p.fonction || p.organisation) && (
-                  <span className="ml-auto text-xs text-muted-foreground truncate max-w-[200px]">
-                    {[p.fonction, p.organisation].filter(Boolean).join(' · ')}
+          <CommandGroup heading="Acteurs">
+            {results.personnalites.map((personnalite) => (
+              <CommandItem
+                key={personnalite.id}
+                onSelect={() => aller(`/acteurs?id=${personnalite.id}`)}
+              >
+                <Users className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">
+                  {personnalite.prenom ? `${personnalite.prenom} ` : ''}
+                  {personnalite.nom}
+                </span>
+                {(personnalite.fonction || personnalite.organisation) && (
+                  <span className="ml-auto max-w-[200px] shrink-0 truncate pl-3 text-xs text-muted-foreground">
+                    {[personnalite.fonction, personnalite.organisation].filter(Boolean).join(' · ')}
                   </span>
                 )}
               </CommandItem>
@@ -134,24 +214,28 @@ export function SpotlightSearch({ open, onOpenChange }: SpotlightSearchProps) {
         )}
 
         {results.sources.length > 0 && (
-          <CommandGroup heading="Sources Média">
-            {results.sources.map(s => (
-              <CommandItem key={s.id} onSelect={() => go('/admin/sources')}>
-                <Radio className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span className="truncate">{s.nom}</span>
-                <span className="ml-auto text-xs text-muted-foreground">{s.type}</span>
+          <CommandGroup heading="Sources">
+            {results.sources.map((source) => (
+              <CommandItem key={source.id} onSelect={() => aller(`/admin/sources?id=${source.id}`)}>
+                <Radio className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">{source.nom}</span>
+                <span className="ml-auto shrink-0 pl-3 text-xs text-muted-foreground">
+                  {source.type}
+                </span>
               </CommandItem>
             ))}
           </CommandGroup>
         )}
 
         {results.dossiers.length > 0 && (
-          <CommandGroup heading="Dossiers">
-            {results.dossiers.map(d => (
-              <CommandItem key={d.id} onSelect={() => go('/dossiers')}>
-                <FolderOpen className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span className="truncate">{d.titre}</span>
-                <span className="ml-auto text-xs text-muted-foreground">{d.categorie}</span>
+          <CommandGroup heading="Notes et dossiers">
+            {results.dossiers.map((dossier) => (
+              <CommandItem key={dossier.id} onSelect={() => aller(`/publier?id=${dossier.id}`)}>
+                <FolderOpen className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">{dossier.titre}</span>
+                <span className="ml-auto shrink-0 pl-3 text-xs text-muted-foreground">
+                  {dossier.categorie}
+                </span>
               </CommandItem>
             ))}
           </CommandGroup>

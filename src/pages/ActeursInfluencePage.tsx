@@ -1,76 +1,112 @@
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Users, HelpCircle } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { GitCompare, HelpCircle, Users } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import PersonnalitesPage from '@/pages/PersonnalitesPage';
 import PresenceDigitalePage from '@/pages/PresenceDigitalePage';
 import SpdiReviewPage from '@/pages/SpdiReviewPage';
 import { SPDIBenchmarkPanel } from '@/components/spdi';
 import { ActeursQuickTour } from '@/components/acteurs/ActeursQuickTour';
-import { useState } from 'react';
+import { PageContainer, PageHeader, TermeMetier } from '@/components/common';
 
-const TABS = [
+/**
+ * Onglets de la section Acteurs.
+ *
+ * Les libelles precedents empruntaient au vocabulaire interne
+ * (« Dashboard SPDI », « Revue Stabilite »). Ils sont reformules en francais
+ * courant, le sigle restant explique par une infobulle sous l'en-tete.
+ */
+const ONGLETS = [
   { value: 'cartographie', label: 'Cartographie' },
-  { value: 'spdi', label: 'Dashboard SPDI' },
-  { value: 'revue', label: 'Revue Stabilité' },
-  { value: 'benchmark', label: 'Benchmark' },
+  { value: 'spdi', label: 'Scores de pr\u00e9sence' },
+  { value: 'revue', label: 'Revue de stabilit\u00e9' },
 ] as const;
 
-type TabValue = typeof TABS[number]['value'];
+type ValeurOnglet = (typeof ONGLETS)[number]['value'];
 
+/**
+ * Section Acteurs.
+ *
+ * L'audit a identifie ici un defaut de previsibilite : l'onglet « Benchmark »
+ * etait presente au meme niveau que les trois autres, mais ouvrait un panneau
+ * lateral au lieu d'afficher un contenu d'onglet. Le controle ne se
+ * selectionnait donc jamais, et l'utilisateur ne pouvait pas anticiper l'effet
+ * de son clic. La comparaison devient un bouton d'action distinct, ce qui rend
+ * son comportement conforme a son apparence.
+ */
 export default function ActeursInfluencePage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const currentTab = (searchParams.get('tab') as TabValue) || 'cartographie';
-  const [benchmarkOpen, setBenchmarkOpen] = useState(false);
-  const [tourOpen, setTourOpen] = useState(false);
+  const ongletActif = (searchParams.get('tab') as ValeurOnglet) || 'cartographie';
+  const [comparaisonOuverte, setComparaisonOuverte] = useState(false);
+  const [visiteOuverte, setVisiteOuverte] = useState(false);
 
-  const handleTabChange = (value: string) => {
-    if (value === 'benchmark') {
-      setBenchmarkOpen(true);
-      return;
-    }
-    setSearchParams({ tab: value }, { replace: true });
+  const changerOnglet = (valeur: string) => {
+    setSearchParams({ tab: valeur }, { replace: true });
   };
 
   return (
-    <div className="w-full space-y-6 animate-fade-in">
-      <Tabs value={currentTab} onValueChange={handleTabChange}>
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 mr-auto">
-            <Users className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold">Acteurs & Influence</h1>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setTourOpen(true)}>
-              <HelpCircle className="h-4 w-4 text-muted-foreground" />
-            </Button>
-          </div>
+    <PageContainer>
+      <div className="space-y-5">
+        <PageHeader
+          titre="Acteurs"
+          description="Qui parle et qui compte dans le secteur : cartographie, scores de pr\u00e9sence et suivi de stabilit\u00e9."
+          icon={Users}
+          actions={
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="min-h-11 sm:min-h-9"
+                onClick={() => setComparaisonOuverte(true)}
+              >
+                <GitCompare className="mr-1.5 h-4 w-4" aria-hidden />
+                Comparer des acteurs
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 sm:h-9 sm:w-9"
+                onClick={() => setVisiteOuverte(true)}
+                aria-label="Comment utiliser cette section"
+              >
+                <HelpCircle className="h-4 w-4 text-muted-foreground" aria-hidden />
+              </Button>
+            </>
+          }
+        >
+          <p className="text-xs text-muted-foreground">
+            Les scores de pr\u00e9sence reposent sur le{' '}
+            <TermeMetier cle="spdi">SPDI</TermeMetier>, et les acteurs sont r\u00e9partis par{' '}
+            <TermeMetier cle="cercle">cercle</TermeMetier> de proximit\u00e9.
+          </p>
+        </PageHeader>
+
+        <Tabs value={ongletActif} onValueChange={changerOnglet}>
           <TabsList>
-            {TABS.map((tab) => (
-              <TabsTrigger key={tab.value} value={tab.value}>
-                {tab.label}
+            {ONGLETS.map((onglet) => (
+              <TabsTrigger key={onglet.value} value={onglet.value}>
+                {onglet.label}
               </TabsTrigger>
             ))}
           </TabsList>
-        </div>
 
-        <TabsContent value="cartographie" className="mt-6">
-          <PersonnalitesPage />
-        </TabsContent>
+          <TabsContent value="cartographie" className="mt-5">
+            <PersonnalitesPage />
+          </TabsContent>
 
-        <TabsContent value="spdi" className="mt-6">
-          <PresenceDigitalePage />
-        </TabsContent>
+          <TabsContent value="spdi" className="mt-5">
+            <PresenceDigitalePage />
+          </TabsContent>
 
-        <TabsContent value="revue" className="mt-6">
-          <SpdiReviewPage />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="revue" className="mt-5">
+            <SpdiReviewPage />
+          </TabsContent>
+        </Tabs>
+      </div>
 
-      <SPDIBenchmarkPanel
-        open={benchmarkOpen}
-        onOpenChange={setBenchmarkOpen}
-      />
-
-      <ActeursQuickTour forceOpen={tourOpen} onOpenChange={setTourOpen} />
-    </div>
+      <SPDIBenchmarkPanel open={comparaisonOuverte} onOpenChange={setComparaisonOuverte} />
+      <ActeursQuickTour forceOpen={visiteOuverte} onOpenChange={setVisiteOuverte} />
+    </PageContainer>
   );
 }

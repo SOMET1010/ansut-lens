@@ -78,7 +78,7 @@ export default function RolesPage() {
     <div className="w-full space-y-8 animate-fade-in">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link to="/admin"><Button variant="ghost" size="icon"><ArrowLeft size={20} /></Button></Link>
+        <Link to="/admin"><Button variant="ghost" size="icon" aria-label="Revenir"><ArrowLeft size={20} /></Button></Link>
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <Shield className="h-8 w-8 text-primary" />

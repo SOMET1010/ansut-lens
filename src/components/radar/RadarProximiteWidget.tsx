@@ -325,7 +325,7 @@ export default function RadarProximiteWidget() {
               Radar de Proximité
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-5 w-5">
+                  <Button variant="ghost" size="icon" className="h-5 w-5" aria-label="Afficher l'aide">
                     <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
                   </Button>
                 </PopoverTrigger>

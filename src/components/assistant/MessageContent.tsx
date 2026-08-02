@@ -23,7 +23,7 @@ function extractCitations(content: string): { text: string; citations: Citation[
 
 function CitationBadge({ c }: { c: Citation }) {
   const isActu = c.type === 'ACTU';
-  const href = isActu ? `/radar?tab=flux&id=${c.id}` : `/dossiers?id=${c.id}`;
+  const href = isActu ? `/veille?article=${c.id}` : `/publier?id=${c.id}`;
   const Icon = isActu ? Newspaper : FileText;
   const cls = isActu
     ? 'text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border-blue-200'

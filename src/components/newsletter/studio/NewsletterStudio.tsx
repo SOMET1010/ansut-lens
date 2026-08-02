@@ -282,8 +282,7 @@ export function NewsletterStudio({ newsletter, onBack, onSaved }: NewsletterStud
               size="icon"
               className="h-8 w-8"
               onClick={() => setPreviewViewport('desktop')}
-              title="Desktop (650px)"
-            >
+              title="Desktop (650px)" aria-label="Apercu sur ordinateur">
               <Monitor className="h-4 w-4" />
             </Button>
             <Button
@@ -291,8 +290,7 @@ export function NewsletterStudio({ newsletter, onBack, onSaved }: NewsletterStud
               size="icon"
               className="h-8 w-8"
               onClick={() => setPreviewViewport('tablet')}
-              title="Tablette (768px)"
-            >
+              title="Tablette (768px)" aria-label="Apercu sur tablette">
               <Tablet className="h-4 w-4" />
             </Button>
             <Button
@@ -300,8 +298,7 @@ export function NewsletterStudio({ newsletter, onBack, onSaved }: NewsletterStud
               size="icon"
               className="h-8 w-8"
               onClick={() => setPreviewViewport('mobile')}
-              title="Mobile (375px)"
-            >
+              title="Mobile (375px)" aria-label="Apercu sur telephone">
               <Smartphone className="h-4 w-4" />
             </Button>
           </div>

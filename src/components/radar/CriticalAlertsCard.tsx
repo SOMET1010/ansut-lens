@@ -41,10 +41,10 @@ function resolveTarget(alert: CriticalAlert): string {
   const t = alert.type?.toLowerCase() ?? '';
 
   if (refType.includes('personnalite') || refType.includes('acteur') || t.includes('personnalite') || t.includes('vip')) {
-    return alert.reference_id ? `/personnalites?id=${alert.reference_id}` : '/personnalites';
+    return alert.reference_id ? `/acteurs?id=${alert.reference_id}` : '/acteurs';
   }
   // Default: news/actualités
-  return alert.reference_id ? `/radar?tab=flux&id=${alert.reference_id}` : '/radar?tab=flux';
+  return alert.reference_id ? `/veille?article=${alert.reference_id}` : '/veille';
 }
 
 export default function CriticalAlertsCard() {
@@ -87,7 +87,7 @@ export default function CriticalAlertsCard() {
           <ul className="space-y-2">
             {data.map((alert) => {
               const target = resolveTarget(alert);
-              const isPersonnalite = target.startsWith('/personnalites');
+              const isPersonnalite = target.startsWith('/acteurs');
               return (
                 <li key={alert.id}>
                   <button

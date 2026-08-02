@@ -99,7 +99,7 @@ export function ConversationHistory({
                   <AlertDialogTrigger asChild>
                     <Button
                       variant="ghost"
-                      size="icon"
+                      size="icon" aria-label="Supprimer"
                       className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={(e) => e.stopPropagation()}
                     >

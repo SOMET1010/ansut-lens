@@ -207,8 +207,7 @@ export function DestinataireManager() {
                             variant="ghost"
                             size="icon"
                             onClick={() => deleteDestinataire.mutate(dest.id)}
-                            className="text-destructive hover:text-destructive h-8 w-8"
-                          >
+                            className="text-destructive hover:text-destructive h-8 w-8" aria-label="Supprimer">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>

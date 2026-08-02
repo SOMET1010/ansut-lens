@@ -48,7 +48,7 @@ export default function FluxDetailPage() {
   if (isErrorFlux) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" onClick={() => navigate('/flux')}>
+        <Button variant="ghost" onClick={() => navigate('/surveillance')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Retour aux flux
         </Button>
@@ -65,7 +65,7 @@ export default function FluxDetailPage() {
   if (!flux) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" onClick={() => navigate('/flux')}>
+        <Button variant="ghost" onClick={() => navigate('/surveillance')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Retour aux flux
         </Button>
@@ -85,7 +85,7 @@ export default function FluxDetailPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/flux')} className="mb-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/surveillance')} className="mb-2">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Retour aux flux
           </Button>

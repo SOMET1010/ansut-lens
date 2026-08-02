@@ -266,7 +266,7 @@ export function SmartActeurCard({
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                size="icon"
+                size="icon" aria-label="Autres actions"
                 className="h-8 w-8 text-muted-foreground/50 hover:text-foreground shrink-0"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -275,7 +275,7 @@ export function SmartActeurCard({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
               {onEdit && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }} aria-label="Autres actions">
                   <Pencil className="h-4 w-4 mr-2" />
                   Modifier
                 </DropdownMenuItem>

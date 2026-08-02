@@ -55,7 +55,8 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/radar';
+  // La destination par defaut suit le renommage de la section d'accueil.
+  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/ce-matin';
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -346,14 +347,21 @@ export default function AuthPage() {
             </span>
           </div>
 
+          {/*
+            L'intitule seul ne disait pas ce qui allait se passer. La phrase
+            explicative evite a l'utilisateur d'avoir a cliquer pour comprendre.
+          */}
           <Button
             variant="outline"
-            className="w-full"
+            className="min-h-11 w-full"
             onClick={() => handleModeChange('magic-link')}
           >
             <Sparkles className="mr-2 h-4 w-4 text-primary" />
-            Connexion sans mot de passe
+            Recevoir un lien de connexion par email
           </Button>
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            Aucun mot de passe à retenir : vous recevez un lien valable une heure.
+          </p>
         </CardContent>
       </Card>
     </div>

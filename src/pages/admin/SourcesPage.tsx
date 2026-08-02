@@ -168,7 +168,7 @@ export default function SourcesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/admin"><Button variant="ghost" size="icon"><ArrowLeft size={20} /></Button></Link>
+          <Link to="/admin"><Button variant="ghost" size="icon" aria-label="Revenir"><ArrowLeft size={20} /></Button></Link>
           <div>
             <h1 className="text-3xl font-bold">Sources Média</h1>
           <p className="text-muted-foreground">
@@ -356,14 +356,14 @@ export default function SourcesPage() {
                           <div className="flex justify-end gap-1">
                             <Button
                               variant="ghost"
-                              size="icon"
+                              size="icon" aria-label="Modifier"
                               onClick={() => openEditDialog(source)}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
-                              size="icon"
+                              size="icon" aria-label="Supprimer"
                               onClick={() => {
                                 setDeletingSource(source);
                                 setDeleteDialogOpen(true);

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { Send, Bot, Loader2, RefreshCw, Settings2, History, Sparkles, Paperclip, AlertTriangle, X, ExternalLink } from 'lucide-react';
+import { Send, Bot, Loader2, RefreshCw, Settings2, History, Sparkles, AlertTriangle, X, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -441,7 +441,7 @@ export default function AssistantPage() {
               {/* History Button (always visible) */}
               <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9" title="Historique des conversations">
+                  <Button variant="ghost" size="icon" className="h-9 w-9" title="Historique des conversations" aria-label="Afficher l'historique">
                     <History className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
@@ -628,22 +628,19 @@ export default function AssistantPage() {
                 className="min-h-[60px] pr-24 resize-none bg-muted/50 border-border"
                 disabled={isLoading}
               />
+              {/*
+                Le bouton de piece jointe etait affiche en permanence, desactive,
+                avec la mention « bientot ». Un controle inerte occupe l'attention
+                sans rien permettre : il est retire jusqu'a ce que la fonction
+                existe reellement.
+              */}
               <div className="absolute right-2 bottom-2 flex gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 text-muted-foreground hover:text-primary"
-                  disabled
-                  title="Joindre un fichier (bientôt)"
-                >
-                  <Paperclip className="h-4 w-4" />
-                </Button>
                 <Button 
                   size="icon" 
                   className="h-8 w-8"
                   onClick={handleSend}
                   disabled={isLoading || !input.trim()}
-                >
+                  aria-label={isLoading ? 'Envoi en cours' : 'Envoyer le message'}>
                   {isLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (

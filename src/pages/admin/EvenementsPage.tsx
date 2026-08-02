@@ -83,7 +83,7 @@ export default function EvenementsPage() {
     <div className="w-full space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
+          <Button variant="ghost" size="icon" aria-label="Revenir" onClick={() => navigate('/admin')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -180,7 +180,7 @@ export default function EvenementsPage() {
                           </div>
                           <Button
                             variant="ghost"
-                            size="icon"
+                            size="icon" aria-label="Supprimer"
                             className="h-7 w-7 text-destructive"
                             onClick={() => deleteMut.mutate(evt.id)}
                           >

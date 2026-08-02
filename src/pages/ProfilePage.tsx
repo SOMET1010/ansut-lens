@@ -42,7 +42,7 @@ export default function ProfilePage() {
     <div className="w-full py-8">
       <div className="mb-6">
         <Button variant="ghost" asChild className="gap-2 -ml-2">
-          <Link to="/radar">
+          <Link to="/ce-matin">
             <ArrowLeft className="h-4 w-4" />
             Retour au tableau de bord
           </Link>

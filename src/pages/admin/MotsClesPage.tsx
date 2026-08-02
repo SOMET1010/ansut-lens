@@ -153,7 +153,7 @@ export default function MotsClesPage() {
     <div className="w-full space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/admin"><Button variant="ghost" size="icon"><ArrowLeft size={20} /></Button></Link>
+          <Link to="/admin"><Button variant="ghost" size="icon" aria-label="Revenir"><ArrowLeft size={20} /></Button></Link>
           <div>
             <h1 className="text-3xl font-bold">Mots-Clés de Veille</h1>
           <p className="text-muted-foreground">

@@ -35,8 +35,8 @@ function extractCitations(content: string): CitationItem[] {
         id,
         label,
         url: isActu
-          ? `${APP_BASE}/radar?tab=flux&id=${encodeURIComponent(id)}`
-          : `${APP_BASE}/dossiers?id=${encodeURIComponent(id)}`,
+          ? `${APP_BASE}/veille?article=${encodeURIComponent(id)}`
+          : `${APP_BASE}/publier?id=${encodeURIComponent(id)}`,
       });
     } else if (m[5]) {
       const num = m[6];

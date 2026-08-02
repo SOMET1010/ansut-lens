@@ -405,9 +405,9 @@ function ContentGeneratorSection({ sujetRef }: { sujetRef?: React.MutableRefObje
 // --- Section 3: Quick Tools ---
 function QuickToolsSection() {
   const shortcuts = [
-    { label: 'Studio Publication', icon: FileText, to: '/dossiers', desc: 'Notes et dossiers' },
+    { label: 'Studio Publication', icon: FileText, to: '/publier', desc: 'Notes et dossiers' },
     { label: 'Assistant IA', icon: MessageSquare, to: '/assistant', desc: 'Copilote intelligence' },
-    { label: 'Accueil', icon: Newspaper, to: '/radar', desc: 'Flux en temps réel' },
+    { label: 'Accueil', icon: Newspaper, to: '/ce-matin', desc: 'Flux en temps réel' },
   ];
 
   return (

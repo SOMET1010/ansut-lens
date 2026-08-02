@@ -61,7 +61,7 @@ export function UnifiedFilterBar({
         {filters.search && (
           <Button
             variant="ghost"
-            size="icon"
+            size="icon" aria-label="Fermer"
             className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
             onClick={() => onFiltersChange({ ...filters, search: undefined })}
           >
@@ -110,7 +110,7 @@ export function UnifiedFilterBar({
                   ? 'bg-background text-foreground shadow-sm' 
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               )}
-            >
+             aria-label="Fermer">
               <div className={cn('h-2 w-2 rounded-full', color)} />
               <span className="hidden sm:inline">C</span>{cercle}
               <span className={cn(

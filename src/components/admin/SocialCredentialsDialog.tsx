@@ -478,8 +478,7 @@ export function SocialCredentialsDialog({
                         size="icon"
                         type="button"
                         onClick={() => handleDelete(s.name)}
-                        title="Supprimer ce secret"
-                      >
+                        title="Supprimer ce secret" aria-label="Supprimer">
                         <Trash2 className="h-4 w-4 text-red-600" />
                       </Button>
                     )}

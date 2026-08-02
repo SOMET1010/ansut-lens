@@ -87,7 +87,7 @@ export default function TechDocPage() {
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
-            size="icon"
+            size="icon" aria-label="Revenir"
             onClick={() => navigate('/admin')}
           >
             <ArrowLeft className="h-5 w-5" />

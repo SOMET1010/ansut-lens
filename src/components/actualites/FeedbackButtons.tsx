@@ -44,8 +44,7 @@ export function FeedbackButtons({ actualiteId, compact = false }: FeedbackButton
             size="icon"
             className={cn(btnSize, currentFeedback === 'pertinent' && 'text-emerald-500 bg-emerald-500/10')}
             onClick={(e) => { e.stopPropagation(); handleFeedback('pertinent'); }}
-            disabled={submitFeedback.isPending}
-          >
+            disabled={submitFeedback.isPending} aria-label="Marquer comme utile">
             <ThumbsUp className={size} />
           </Button>
         </TooltipTrigger>
@@ -59,8 +58,7 @@ export function FeedbackButtons({ actualiteId, compact = false }: FeedbackButton
             size="icon"
             className={cn(btnSize, currentFeedback === 'non_pertinent' && 'text-red-500 bg-red-500/10')}
             onClick={(e) => { e.stopPropagation(); handleFeedback('non_pertinent'); }}
-            disabled={submitFeedback.isPending}
-          >
+            disabled={submitFeedback.isPending} aria-label="Marquer comme peu utile">
             <ThumbsDown className={size} />
           </Button>
         </TooltipTrigger>
@@ -76,8 +74,7 @@ export function FeedbackButtons({ actualiteId, compact = false }: FeedbackButton
                 size="icon"
                 className={cn(btnSize, currentFeedback === 'important' && 'text-amber-500 bg-amber-500/10')}
                 onClick={(e) => { e.stopPropagation(); handleFeedback('important'); }}
-                disabled={submitFeedback.isPending}
-              >
+                disabled={submitFeedback.isPending} aria-label="Ajouter aux favoris">
                 <Star className={size} />
               </Button>
             </TooltipTrigger>
@@ -91,8 +88,7 @@ export function FeedbackButtons({ actualiteId, compact = false }: FeedbackButton
                 size="icon"
                 className={cn(btnSize, currentFeedback === 'archive' && 'text-muted-foreground bg-muted')}
                 onClick={(e) => { e.stopPropagation(); handleFeedback('archive'); }}
-                disabled={submitFeedback.isPending}
-              >
+                disabled={submitFeedback.isPending} aria-label="Archiver">
                 <Archive className={size} />
               </Button>
             </TooltipTrigger>

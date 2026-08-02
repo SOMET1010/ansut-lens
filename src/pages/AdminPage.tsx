@@ -1,366 +1,222 @@
-import { Users, Shield, ClipboardList, Tag, Database, Bell, Mail, Presentation, GraduationCap, Clock, UserPlus, FileCode, Radio, Activity, Newspaper, CalendarDays, Eye, FileText, Radar, Megaphone, Sliders, ShieldCheck } from 'lucide-react';
-import { useAdminStats } from '@/hooks/useAdminStats';
-import { SystemHealthWidget } from '@/components/admin/SystemHealthWidget';
-import { AdminNavCard } from '@/components/admin/AdminNavCard';
-import { PermissionGate } from '@/components/auth';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ChevronRight, Search, Settings, SlidersHorizontal } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { SystemHealthWidget } from '@/components/admin/SystemHealthWidget';
+import { PageContainer, PageHeader } from '@/components/common';
+import { useAdminStats } from '@/hooks/useAdminStats';
+import { useUserPermissions } from '@/hooks/useUserPermissions';
+import { GROUPES_REGLAGES, type EntreeReglage } from '@/config/reglages';
 
+/**
+ * Page des reglages, anciennement « Administration ».
+ *
+ * L'audit d'experience a releve vingt-cinq cartes reparties dans quatre
+ * sections dont le classement pretait a confusion : la formation, la
+ * presentation et la documentation technique se trouvaient sous
+ * « Communication », les reglages de fraicheur et de notation sous
+ * « Communication » egalement, alors qu'ils concernent le traitement des
+ * donnees. Chaque carte occupait par ailleurs une surface importante, imposant
+ * un defilement long sans possibilite de recherche.
+ *
+ * La refonte apporte trois changements. Les entrees sont regroupees par
+ * question metier plutot que par module technique. Une recherche filtre
+ * l'ensemble, en tenant compte des anciens noms pour que les habitues
+ * retrouvent leurs reperes. Enfin les cartes deviennent des lignes compactes,
+ * ce qui permet d'embrasser un groupe entier d'un seul regard.
+ */
 export default function AdminPage() {
   const { data: stats, isLoading } = useAdminStats();
+  const { hasPermission } = useUserPermissions();
+  const [recherche, setRecherche] = useState('');
 
-  const collecteLabel = stats?.derniereCollecte
-    ? formatDistanceToNow(new Date(stats.derniereCollecte), { addSuffix: true, locale: fr })
-    : 'Jamais';
+  /** Formate la pastille de statistique associee a une entree. */
+  const pastille = (entree: EntreeReglage): string | undefined => {
+    if (!entree.statistique || !stats) return undefined;
+    switch (entree.statistique) {
+      case 'usersActifs':
+        return stats.usersActifs ? `${stats.usersActifs} actifs` : undefined;
+      case 'actionsAudit24h':
+        return stats.actionsAudit24h ? `${stats.actionsAudit24h} sur 24 h` : undefined;
+      case 'motsClesActifs':
+        return stats.motsClesActifs ? `${stats.motsClesActifs} actifs` : undefined;
+      case 'sourcesActives':
+        return stats.sourcesActives ? `${stats.sourcesActives} actives` : undefined;
+      case 'alertesNonLues':
+        return stats.alertesNonLues ? `${stats.alertesNonLues} non lues` : undefined;
+      case 'totalActeurs':
+        return stats.totalActeurs ? `${stats.totalActeurs} acteurs` : undefined;
+      case 'newslettersEnAttente':
+        return stats.newslettersEnAttente
+          ? `${stats.newslettersEnAttente} en attente`
+          : undefined;
+      case 'derniereCollecte':
+        return stats.derniereCollecte
+          ? formatDistanceToNow(new Date(stats.derniereCollecte), {
+              addSuffix: true,
+              locale: fr,
+            })
+          : 'jamais ex\u00e9cut\u00e9e';
+      default:
+        return undefined;
+    }
+  };
+
+  /** Une pastille d'alerte se distingue visuellement d'une simple information. */
+  const estAlerte = (entree: EntreeReglage): boolean => {
+    if (entree.statistique === 'alertesNonLues') return (stats?.alertesNonLues ?? 0) > 0;
+    if (entree.statistique === 'newslettersEnAttente')
+      return (stats?.newslettersEnAttente ?? 0) > 0;
+    if (entree.statistique === 'derniereCollecte') return !stats?.derniereCollecte;
+    return false;
+  };
+
+  const groupesVisibles = useMemo(() => {
+    const terme = recherche.trim().toLowerCase();
+
+    return GROUPES_REGLAGES.map((groupe) => ({
+      ...groupe,
+      entrees: groupe.entrees.filter((entree) => {
+        if (!hasPermission(entree.permission)) return false;
+        if (!terme) return true;
+        return (
+          entree.titre.toLowerCase().includes(terme) ||
+          entree.description.toLowerCase().includes(terme) ||
+          groupe.titre.toLowerCase().includes(terme) ||
+          (entree.synonymes ?? []).some((synonyme) => synonyme.toLowerCase().includes(terme))
+        );
+      }),
+    })).filter((groupe) => groupe.entrees.length > 0);
+  }, [recherche, hasPermission, stats]);
+
+  const nbVisibles = groupesVisibles.reduce((total, groupe) => total + groupe.entrees.length, 0);
 
   return (
-    <div className="w-full space-y-8 animate-fade-in">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Administration</h1>
-        <p className="text-muted-foreground">
-          Configuration globale, sécurité et maintenance de la plateforme.
-        </p>
-      </div>
+    <PageContainer>
+      <div className="space-y-6">
+        <PageHeader
+          titre="R\u00e9glages"
+          description="Configurer les acc\u00e8s, les sources surveill\u00e9es, le traitement des donn\u00e9es et les diffusions."
+          icon={Settings}
+        />
 
-      {/* System Health Widget */}
-      <SystemHealthWidget
-        lastCollecteTime={stats?.derniereCollecte ?? null}
-        lastCollecteStatus={stats?.lastCollecteStatus ?? null}
-        lastCollecteDuration={stats?.lastCollecteDuration ?? null}
-        articlesLast24h={stats?.articlesLast24h ?? 0}
-        isLoading={isLoading}
-      />
+        <SystemHealthWidget
+          lastCollecteTime={stats?.derniereCollecte ?? null}
+          lastCollecteStatus={stats?.lastCollecteStatus ?? null}
+          lastCollecteDuration={stats?.lastCollecteDuration ?? null}
+          articlesLast24h={stats?.articlesLast24h ?? 0}
+          isLoading={isLoading}
+        />
 
-      {/* Section: Organisation */}
-      <section className="space-y-4">
-        <h2 className="text-sm font-bold text-muted-foreground uppercase flex items-center gap-2">
-          <Users size={16} /> Organisation
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <PermissionGate permission="manage_users">
-            <AdminNavCard
-              color="blue"
-              icon={<Users size={24} />}
-              title="Utilisateurs"
-              badge={stats?.usersActifs ? `${stats.usersActifs} actifs` : undefined}
-              badgeVariant="success"
-              subtitle="Invitez des collaborateurs et gérez les accès à la plateforme."
-              to="/admin/users"
-              loading={isLoading}
+        <div className="space-y-2">
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
             />
-          </PermissionGate>
-          <PermissionGate permission="manage_roles">
-            <AdminNavCard
-              color="purple"
-              icon={<Shield size={24} />}
-              title="Rôles & Permissions"
-              badge="RBAC"
-              badgeVariant="info"
-              subtitle="Définissez finement qui peut voir, éditer ou supprimer les données."
-              to="/admin/roles"
-              loading={isLoading}
+            <Input
+              value={recherche}
+              onChange={(event) => setRecherche(event.target.value)}
+              placeholder="Rechercher un r\u00e9glage\u2026"
+              aria-label="Rechercher un r\u00e9glage"
+              className="min-h-11 pl-9"
             />
-          </PermissionGate>
-          <PermissionGate permission="view_audit_logs">
-            <AdminNavCard
-              color="blue"
-              icon={<ClipboardList size={24} />}
-              title="Audit Logs"
-              badge={stats?.actionsAudit24h ? `${stats.actionsAudit24h}/24h` : undefined}
-              badgeVariant="default"
-              subtitle="Traçabilité complète des actions effectuées sur le système."
-              to="/admin/audit-logs"
-              loading={isLoading}
-            />
-          </PermissionGate>
+          </div>
+          {recherche && (
+            <p className="text-xs text-muted-foreground" role="status">
+              {nbVisibles === 0
+                ? 'Aucun r\u00e9glage ne correspond \u00e0 cette recherche.'
+                : `${nbVisibles} r\u00e9glage${nbVisibles > 1 ? 's' : ''} trouv\u00e9${nbVisibles > 1 ? 's' : ''}.`}
+            </p>
+          )}
         </div>
-      </section>
 
-      {/* Section: Moteur de Veille */}
-      <section className="space-y-4">
-        <h2 className="text-sm font-bold text-muted-foreground uppercase flex items-center gap-2">
-          <Database size={16} /> Moteur de Veille
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <PermissionGate permission="manage_keywords">
-            <AdminNavCard
-              color="orange"
-              icon={<Tag size={24} />}
-              title="Mots-clés & Thèmes"
-              badge={stats?.motsClesActifs ? `${stats.motsClesActifs} actifs` : undefined}
-              badgeVariant="info"
-              subtitle="Gérez le dictionnaire sémantique utilisé par l'IA."
-              to="/admin/mots-cles"
-              loading={isLoading}
-            />
-          </PermissionGate>
-          <PermissionGate permission="manage_sources">
-            <AdminNavCard
-              color="emerald"
-              icon={<Database size={24} />}
-              title="Sources & Médias"
-              badge={stats?.sourcesActives ? `${stats.sourcesActives} actives` : undefined}
-              badgeVariant="success"
-              subtitle="Configurez les URLs cibles, flux RSS et comptes sociaux."
-              to="/admin/sources"
-              loading={isLoading}
-            />
-          </PermissionGate>
-          <PermissionGate permission="access_admin">
-            <AdminNavCard
-              color="orange"
-              icon={<Bell size={24} />}
-              title="Alertes"
-              badge={stats?.alertesNonLues ? `${stats.alertesNonLues} non lues` : undefined}
-              badgeVariant={stats?.alertesNonLues && stats.alertesNonLues > 0 ? 'warning' : 'default'}
-              subtitle="Définissez la sensibilité de détection des crises."
-              to="/alertes"
-              loading={isLoading}
-            />
-          </PermissionGate>
-          <PermissionGate permission="import_actors">
-            <AdminNavCard
-              color="emerald"
-              icon={<UserPlus size={24} />}
-              title="Import Acteurs"
-              badge={stats?.totalActeurs ? `${stats.totalActeurs} acteurs` : undefined}
-              badgeVariant="info"
-              subtitle="Import et génération d'acteurs via Perplexity IA."
-              to="/admin/import-acteurs"
-              loading={isLoading}
-            />
-          </PermissionGate>
-          <PermissionGate permission="manage_keywords">
-            <AdminNavCard
-              color="purple"
-              icon={<CalendarDays size={24} />}
-              title="Événements Stratégiques"
-              badge="Boost"
-              badgeVariant="warning"
-              subtitle="Calendrier MWC, Gitex, etc. avec mode Boost de collecte."
-              to="/admin/evenements"
-              loading={isLoading}
-            />
-          </PermissionGate>
-          <PermissionGate permission="manage_keywords">
-            <AdminNavCard
-              color="purple"
-              icon={<Radar size={24} />}
-              title="Veille Sémantique"
-              badge="IA Multimodale"
-              badgeVariant="info"
-              subtitle="Territoires d'expression, influenceurs, analyse visuelle et radar de proximité."
-              to="/admin/veille-semantique"
-              loading={isLoading}
-            />
-          </PermissionGate>
-        </div>
-      </section>
+        {groupesVisibles.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+              <SlidersHorizontal className="h-10 w-10 text-muted-foreground/60" aria-hidden />
+              <p className="text-sm text-muted-foreground">
+                {recherche
+                  ? 'Essayez un autre mot, ou parcourez les groupes en effa\u00e7ant la recherche.'
+                  : 'Aucun r\u00e9glage accessible avec vos permissions actuelles.'}
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-8">
+            {groupesVisibles.map((groupe) => (
+              <section key={groupe.id} aria-labelledby={`groupe-${groupe.id}`} className="space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <groupe.icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+                  <div className="min-w-0">
+                    <h2 id={`groupe-${groupe.id}`} className="text-sm font-semibold">
+                      {groupe.titre}
+                    </h2>
+                    <p className="text-xs text-muted-foreground">{groupe.question}</p>
+                  </div>
+                </div>
 
-      {/* Section: Communication */}
-      <section className="space-y-4">
-        <h2 className="text-sm font-bold text-muted-foreground uppercase flex items-center gap-2">
-          <Mail size={16} /> Communication
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <PermissionGate permission="manage_newsletters">
-            <AdminNavCard
-              color="blue"
-              icon={<Megaphone size={24} />}
-              title="Auto-Veille Institutionnelle"
-              badge="Miroir"
-              badgeVariant="info"
-              subtitle="Mesurez la résonance de vos publications, visibilité globale et VIP tracker."
-              to="/admin/auto-veille"
-              loading={isLoading}
-            />
-          </PermissionGate>
-          <PermissionGate permission="manage_newsletters">
-            <AdminNavCard
-              color="orange"
-              icon={<Eye size={24} />}
-              title="Shadow Tracker VIP"
-              badge="Temps réel"
-              badgeVariant="warning"
-              subtitle="Surveillance des publications des directeurs sur les réseaux sociaux."
-              to="/admin/shadow-tracker"
-              loading={isLoading}
-            />
-          </PermissionGate>
-          <PermissionGate permission="manage_newsletters">
-            <AdminNavCard
-              color="emerald"
-              icon={<FileText size={24} />}
-              title="Coffre-fort Contenus"
-              badge="Libre-service"
-              badgeVariant="success"
-              subtitle="Bibliothèque de posts pré-validés pour les directeurs."
-              to="/admin/coffre-contenu"
-              loading={isLoading}
-            />
-          </PermissionGate>
-          <PermissionGate permission="manage_newsletters">
-            <AdminNavCard
-              color="orange"
-              icon={<Radio size={24} />}
-              title="Diffusion Multicanale"
-              badge="SMS / Telegram / Email"
-              badgeVariant="info"
-              subtitle="Programmez l'envoi des résumés par SMS, Telegram et Email."
-              to="/admin/diffusion"
-              loading={isLoading}
-            />
-          </PermissionGate>
-          <PermissionGate permission="manage_newsletters">
-            <AdminNavCard
-              color="purple"
-              icon={<Newspaper size={24} />}
-              title="Matinale Com"
-              badge="Quotidien"
-              badgeVariant="info"
-              subtitle="Briefing matinal IA avec Flash Info, Réputation et Post LinkedIn prêt-à-poster."
-              to="/admin/matinale"
-              loading={isLoading}
-            />
-          </PermissionGate>
-          <PermissionGate permission="manage_newsletters">
-            <AdminNavCard
-              color="emerald"
-              icon={<Clock size={24} />}
-              title="Fraîcheur des données"
-              badge="Configuration"
-              badgeVariant="info"
-              subtitle="Pédagogie created_at vs date_publication, métriques de filtrage et paramètres."
-              to="/admin/freshness"
-              loading={isLoading}
-            />
-            <AdminNavCard
-              color="orange"
-              icon={<Sliders size={24} />}
-              title="Règles de scoring"
-              badge="Intelligence exécutive"
-              badgeVariant="info"
-              subtitle="Seuils ROUGE/ORANGE/VERT/BLEU, pertinence min et volumes minimaux des livrables."
-              to="/admin/scoring"
-              loading={isLoading}
-            />
-            <AdminNavCard
-              color="purple"
-              icon={<Newspaper size={24} />}
-              title="Titrologie"
-              badge="Service Universel"
-              badgeVariant="info"
-              subtitle="Sources scannées, fréquence, seuils d'alerte et catalogue de mots-clés (fibre, 5G, IA, cybersécurité…)."
-              to="/admin/titrologie"
-              loading={isLoading}
-            />
-          </PermissionGate>
-          <PermissionGate permission="manage_newsletters">
-            <AdminNavCard
-              color="blue"
-              icon={<Mail size={24} />}
-              title="Newsletters"
-              badge={stats?.newslettersEnAttente ? `${stats.newslettersEnAttente} en attente` : undefined}
-              badgeVariant={stats?.newslettersEnAttente && stats.newslettersEnAttente > 0 ? 'warning' : 'default'}
-              subtitle="Génération IA de newsletters à partir des actualités."
-              to="/admin/newsletters"
-              loading={isLoading}
-            />
-          </PermissionGate>
-          <PermissionGate permission="access_admin">
-            <AdminNavCard
-              color="emerald"
-              icon={<GraduationCap size={24} />}
-              title="Formation"
-              badge="2 guides"
-              badgeVariant="info"
-              subtitle="Guides PDF pour les différents profils utilisateurs."
-              to="/admin/formation"
-              loading={isLoading}
-            />
-          </PermissionGate>
-          <PermissionGate permission="access_admin">
-            <AdminNavCard
-              color="purple"
-              icon={<Presentation size={24} />}
-              title="Présentation"
-              badge="11 slides"
-              badgeVariant="info"
-              subtitle="Slides PDF pour présenter le projet ANSUT Radar."
-              to="/admin/presentation"
-              loading={isLoading}
-            />
-          </PermissionGate>
-          <PermissionGate permission="access_admin">
-            <AdminNavCard
-              color="slate"
-              icon={<FileCode size={24} />}
-              title="Documentation Technique"
-              badge="PDF"
-              badgeVariant="info"
-              subtitle="Manuel technique complet de la plateforme."
+                <ul className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+                  {groupe.entrees.map((entree) => {
+                    const valeur = pastille(entree);
+                    return (
+                      <li key={entree.id}>
+                        <Link
+                          to={entree.path}
+                          className="flex min-h-11 items-start gap-3 rounded-xl border bg-card p-3.5 transition-colors hover:border-primary/40 hover:bg-accent/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <span
+                            className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+                            aria-hidden
+                          >
+                            <entree.icon className="h-4.5 w-4.5" />
+                          </span>
+                          <span className="min-w-0 flex-1 space-y-0.5">
+                            <span className="flex flex-wrap items-center gap-2">
+                              <span className="text-sm font-medium">{entree.titre}</span>
+                              {valeur && (
+                                <Badge
+                                  variant={estAlerte(entree) ? 'destructive' : 'secondary'}
+                                  className="shrink-0 text-[10px] font-normal"
+                                >
+                                  {valeur}
+                                </Badge>
+                              )}
+                            </span>
+                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                              {entree.description}
+                            </span>
+                          </span>
+                          <ChevronRight
+                            className="mt-2 h-4 w-4 shrink-0 text-muted-foreground/50"
+                            aria-hidden
+                          />
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ))}
+          </div>
+        )}
+
+        <footer className="border-t border-border pt-6 text-center">
+          <p className="text-xs text-muted-foreground">
+            ANSUT Radar · h\u00e9berg\u00e9 sur Lovable Cloud ·{' '}
+            <Link
               to="/admin/documentation"
-              loading={isLoading}
-            />
-          </PermissionGate>
-        </div>
-      </section>
-
-      {/* Section: Supervision Technique */}
-      <section className="space-y-4">
-        <h2 className="text-sm font-bold text-muted-foreground uppercase flex items-center gap-2">
-          <Clock size={16} /> Supervision Technique
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <PermissionGate permission="manage_cron_jobs">
-            <AdminNavCard
-              color="slate"
-              icon={<Clock size={24} />}
-              title="Tâches CRON"
-              badge={collecteLabel}
-              badgeVariant="default"
-              subtitle="Collecte automatisée et planification des tâches système."
-              to="/admin/cron-jobs"
-              loading={isLoading}
-            />
-          </PermissionGate>
-          <PermissionGate permission="manage_cron_jobs">
-            <AdminNavCard
-              color="purple"
-              icon={<Activity size={24} />}
-              title="Statut SPDI Batch"
-              badge="Quotidien"
-              badgeVariant="info"
-              subtitle="Suivi du calcul automatique quotidien du SPDI."
-              to="/admin/spdi-status"
-              loading={isLoading}
-            />
-          </PermissionGate>
-          <PermissionGate permission="manage_cron_jobs">
-            <AdminNavCard
-              color="blue"
-              icon={<ShieldCheck size={24} />}
-              title="Connecteurs sociaux"
-              badge="Sécurité"
-              badgeVariant="info"
-              subtitle="État des secrets et autorisations pour X, LinkedIn, Facebook, Telegram, YouTube, TikTok."
-              to="/admin/connecteurs-sociaux"
-              loading={isLoading}
-            />
-          </PermissionGate>
-        </div>
-      </section>
-
-      {/* Footer Technique */}
-      <footer className="pt-8 border-t border-border text-center">
-        <p className="text-xs text-muted-foreground">
-          ANSUT RADAR v2.1.0 • Hébergé sur Lovable Cloud •{' '}
-          <a href="/docs" className="hover:text-primary hover:underline transition-colors">
-            Documentation Technique
-          </a>
-        </p>
-      </footer>
-    </div>
+              className="rounded-sm transition-colors hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              documentation technique
+            </Link>
+          </p>
+        </footer>
+      </div>
+    </PageContainer>
   );
 }

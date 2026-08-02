@@ -1,6 +1,6 @@
 /**
  * Couche de mapping unique reliant chaque CTA "Voir le détail" du Daily Briefing
- * aux fiches correspondantes dans /actualites, /radar et /dossiers.
+ * aux fiches correspondantes dans /veille, /ce-matin et /publier.
  *
  * Paramètres URL standardisés :
  *   - q     : terme de recherche libre (filtre principal côté liste)
@@ -19,15 +19,15 @@ interface BuildLinkInput {
 }
 
 const SECTION_ROUTES: Record<BriefingSectionKey, string> = {
-  retenir: '/actualites',
-  impact: '/radar',
-  recommandation: '/dossiers',
+  retenir: '/veille',
+  impact: '/ce-matin',
+  recommandation: '/publier',
 };
 
 const QUERY_PARAM_BY_ROUTE: Record<string, 'q' | 'focus'> = {
-  '/actualites': 'q',
-  '/dossiers': 'q',
-  '/radar': 'focus',
+  '/veille': 'q',
+  '/publier': 'q',
+  '/ce-matin': 'focus',
 };
 
 export function cleanBriefingText(text: string): string {

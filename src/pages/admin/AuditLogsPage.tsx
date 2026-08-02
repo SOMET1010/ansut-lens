@@ -284,7 +284,7 @@ export default function AuditLogsPage() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link to="/admin">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="Revenir">
             <ArrowLeft className="h-5 w-5" />
           </Button>
         </Link>

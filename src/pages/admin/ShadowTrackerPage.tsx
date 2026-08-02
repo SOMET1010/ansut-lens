@@ -61,7 +61,7 @@ export default function ShadowTrackerPage() {
     <div className="w-full space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/admin"><Button variant="ghost" size="icon"><ArrowLeft size={20} /></Button></Link>
+          <Link to="/admin"><Button variant="ghost" size="icon" aria-label="Revenir"><ArrowLeft size={20} /></Button></Link>
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2"><Eye size={24} /> Shadow Tracker VIP</h1>
             <p className="text-muted-foreground">Surveillance des publications des directeurs et VIP internes</p>

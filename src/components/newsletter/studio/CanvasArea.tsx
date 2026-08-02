@@ -78,7 +78,7 @@ function SortableBlock({
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
         <Button
-          size="icon"
+          size="icon" aria-label="Replier"
           variant="ghost"
           className="h-7 w-7"
           onClick={(e) => { e.stopPropagation(); onMove('up'); }}
@@ -87,7 +87,7 @@ function SortableBlock({
           <ChevronUp className="h-4 w-4" />
         </Button>
         <Button
-          size="icon"
+          size="icon" aria-label="Deplier"
           variant="ghost"
           className="h-7 w-7"
           onClick={(e) => { e.stopPropagation(); onMove('down'); }}
@@ -104,7 +104,7 @@ function SortableBlock({
         }`}
       >
         <Button
-          size="icon"
+          size="icon" aria-label="Copier"
           variant="ghost"
           className="h-7 w-7"
           onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
@@ -112,7 +112,7 @@ function SortableBlock({
           <Copy className="h-4 w-4" />
         </Button>
         <Button
-          size="icon"
+          size="icon" aria-label="Supprimer"
           variant="ghost"
           className="h-7 w-7 text-destructive hover:text-destructive"
           onClick={(e) => { e.stopPropagation(); onDelete(); }}

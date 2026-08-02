@@ -42,7 +42,7 @@ const AccessDeniedPage = () => {
           </p>
           
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <Button onClick={() => navigate('/radar')} className="gap-2">
+            <Button onClick={() => navigate('/ce-matin')} className="gap-2">
               <Home className="h-4 w-4" />
               Tableau de bord
             </Button>

@@ -165,7 +165,7 @@ export function SPDIRecommandations({ recommandations, compact = false }: SPDIRe
                 {!reco.vue && (
                   <Button
                     variant="ghost"
-                    size="icon"
+                    size="icon" aria-label="Valider"
                     className="h-8 w-8 shrink-0"
                     onClick={() => marquerVue.mutate(reco.id)}
                   >

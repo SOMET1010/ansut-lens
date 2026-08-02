@@ -297,8 +297,7 @@ export function DailyBriefing() {
                 variant="ghost" size="icon"
                 className="h-7 w-7 text-muted-foreground hover:text-destructive"
                 onClick={() => setReportOpen(true)}
-                title="Signaler une erreur"
-              >
+                title="Signaler une erreur" aria-label="Signaler">
                 <Flag className="h-3.5 w-3.5" />
               </Button>
             )}
@@ -311,8 +310,7 @@ export function DailyBriefing() {
               variant="ghost" size="icon" className="h-7 w-7"
               onClick={() => { setReported(false); regenerate(); }}
               disabled={isGenerating}
-              title="Régénérer"
-            >
+              title="Régénérer" aria-label="Actualiser">
               <RefreshCw className={cn('h-3.5 w-3.5 text-muted-foreground', isGenerating && 'animate-spin')} />
             </Button>
           </div>

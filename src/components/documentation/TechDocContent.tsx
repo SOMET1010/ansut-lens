@@ -34,16 +34,25 @@ La plateforme répond à 5 objectifs majeurs :
 | 4 | **Alertes temps réel** | Notification instantanée des événements critiques |
 | 5 | **Diffusion structurée** | Newsletters et dossiers stratégiques |
 
-## 1.3 Les 7 Modules Métier
+## 1.3 Les modules métier
 
 | Module | Route | Description |
 |--------|-------|-------------|
-| **Accueil** | \`/radar\` | Synthèse + flux d'actualités complet (onglets) |
-| **Flux personnalisés** | \`/flux\` | Canaux de veille configurables par utilisateur |
-| **Personnalités** | \`/personnalites\` | Annuaire des acteurs avec score d'influence |
-| **Dossiers** | \`/dossiers\` | Notes stratégiques et briefings |
-| **Assistant IA** | \`/assistant\` | Interface conversationnelle intelligente |
+| **Ce matin** | \`/ce-matin\` | Synthèse du jour : alertes, chiffres clés, sujets, prochaine action |
+| **Veille** | \`/veille\` | Flux complet des articles collectés, regroupés par sujet |
+| **Recherche** | \`/recherche\` | Balayage approfondi sur trente jours |
+| **Acteurs** | \`/acteurs\` | Annuaire des acteurs avec score de présence digitale |
+| **Surveillance** | \`/surveillance\` | Capteurs de veille configurables par utilisateur |
+| **Notre communication** | \`/communication\` | Visibilité institutionnelle et réseaux sociaux |
+| **Publier** | \`/publier\` | Notes de synthèse, dossiers et newsletters |
+| **Assistant** | \`/assistant\` | Interface conversationnelle d'aide à l'analyse |
 | **Alertes** | \`/alertes\` | Historique et gestion des notifications |
+| **Aide et glossaire** | \`/aide\` | Définition des termes métier et carte des sections |
+
+Les anciennes adresses (\`/radar\`, \`/flux\`, \`/dossiers\`, \`/balayage\`,
+\`/personnalites\`, \`/actualites\`, \`/medias\`, \`/presence-digitale\`,
+\`/spdi-review\`, \`/reseaux-sociaux\`) sont redirigées vers les nouvelles :
+les liens déjà partagés restent valides.
 
 ## 1.4 Profils Utilisateurs
 
@@ -331,7 +340,7 @@ Toutes les tables sont protégées par RLS avec les patterns suivants :
 // Composants de protection
 <ProtectedRoute>      // Authentification requise
   <PermissionRoute permission="view_radar">
-    <RadarPage />     // Permission spécifique
+    <CeMatinPage />   // Permission spécifique
   </PermissionRoute>
 </ProtectedRoute>
 \`\`\`

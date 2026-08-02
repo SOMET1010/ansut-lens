@@ -242,7 +242,7 @@ export function UserCard({
         {!isCurrentUser && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-8 w-8">
+              <Button variant="ghost" size="icon" aria-label="Autres actions" className="absolute top-2 right-2 h-8 w-8">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -394,7 +394,7 @@ export function UserCard({
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
-                      size="icon"
+                      size="icon" aria-label="Actualiser"
                       className="h-7 w-7 text-muted-foreground hover:text-primary"
                       onClick={() => onResendInvite?.(user.id, user.full_name || 'Utilisateur', user.role)}
                     >

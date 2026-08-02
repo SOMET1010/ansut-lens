@@ -121,7 +121,7 @@ export default function CronJobsPage() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link to="/admin">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="Revenir">
             <ArrowLeft className="h-5 w-5" />
           </Button>
         </Link>
@@ -213,7 +213,7 @@ export default function CronJobsPage() {
                           <TooltipTrigger asChild>
                             <Button
                               variant="outline"
-                              size="icon"
+                              size="icon" aria-label="Ouvrir les reglages"
                               onClick={() => handleEditSchedule(job)}
                             >
                               <Settings2 className="h-4 w-4" />
@@ -225,7 +225,7 @@ export default function CronJobsPage() {
                           <TooltipTrigger asChild>
                             <Button
                               variant="outline"
-                              size="icon"
+                              size="icon" aria-label="Lancer"
                               onClick={() => handleRunNow(job.jobid)}
                               disabled={runNow.isPending}
                             >

@@ -64,8 +64,7 @@ export function NewsletterHistoryItem({ newsletter, onClick }: NewsletterHistory
       <Button 
         variant="ghost" 
         size="icon"
-        className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-      >
+        className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0" aria-label="Modifier">
         <Edit3 className="h-4 w-4" />
       </Button>
     </div>

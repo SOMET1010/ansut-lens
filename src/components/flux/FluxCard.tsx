@@ -128,16 +128,14 @@ export function FluxCard({ flux, actualitesCount = 0, newCount = 0, onEdit, onDe
               variant="ghost" 
               size="icon"
               onClick={() => onEdit(flux)}
-              title="Modifier"
-            >
+              title="Modifier" aria-label="Modifier">
               <Pencil className="h-4 w-4" />
             </Button>
             <Button 
               variant="ghost" 
               size="icon"
               onClick={() => onDelete(flux)}
-              title="Supprimer"
-            >
+              title="Supprimer" aria-label="Supprimer">
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
           </div>

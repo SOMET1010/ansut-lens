@@ -115,7 +115,7 @@ export function AgendaBlock({ block, isSelected, onSelect, onUpdate }: BlockProp
                   className="w-28"
                 />
                 <Button 
-                  size="icon" 
+                  size="icon" aria-label="Supprimer" 
                   variant="ghost" 
                   className="text-destructive"
                   onClick={() => removeItem(index)}
@@ -131,7 +131,7 @@ export function AgendaBlock({ block, isSelected, onSelect, onUpdate }: BlockProp
                 <div className="flex-1">
                   <div className="font-semibold text-foreground text-sm">{item.titre}</div>
                   {item.date && (
-                    <div className="text-xs text-muted-foreground">{item.date}</div>
+                    <div className="text-xs text-muted-foreground" aria-label="Supprimer">{item.date}</div>
                   )}
                 </div>
               </>

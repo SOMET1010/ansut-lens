@@ -410,7 +410,7 @@ export default function ResetPasswordPage() {
           <CardContent>
             <Button
               className="w-full gap-2"
-              onClick={() => navigate('/radar')}
+              onClick={() => navigate('/ce-matin')}
             >
               Accéder à l'application
               <ArrowRight className="h-4 w-4" />

@@ -98,7 +98,7 @@ export function AppHeader() {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-11 w-11 sm:h-9 sm:w-9" asChild>
+              <Button variant="ghost" size="icon" className="h-11 w-11 sm:h-9 sm:w-9" asChild aria-label="Afficher l'aide">
                 <NavLink to="/aide" aria-label="Aide et glossaire des termes">
                   <HelpCircle className="h-5 w-5 sm:h-4 sm:w-4" aria-hidden />
                 </NavLink>

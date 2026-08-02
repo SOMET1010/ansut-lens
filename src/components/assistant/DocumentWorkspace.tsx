@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FileText, Copy, RefreshCw, X, Download, ChevronRight, Loader2, Check, Save, AlertTriangle, Settings2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -41,6 +42,7 @@ export function DocumentWorkspace({
   onSuggestionClick 
 }: DocumentWorkspaceProps) {
   const [copied, setCopied] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exportState, setExportState] = useState<{
     status: 'idle' | 'loading' | 'error';
@@ -203,8 +205,8 @@ export function DocumentWorkspace({
       const numRefUrls = extractNumericReferenceUrls(document.content);
 
       const citationUrl = (variant: 'actu' | 'dossier' | 'num', idOrNum: string): string | null => {
-        if (variant === 'actu') return `${APP_BASE}/radar?tab=flux&id=${encodeURIComponent(idOrNum)}`;
-        if (variant === 'dossier') return `${APP_BASE}/dossiers?id=${encodeURIComponent(idOrNum)}`;
+        if (variant === 'actu') return `${APP_BASE}/veille?article=${encodeURIComponent(idOrNum)}`;
+        if (variant === 'dossier') return `${APP_BASE}/publier?id=${encodeURIComponent(idOrNum)}`;
         return numRefUrls[idOrNum] || null;
       };
 
@@ -631,8 +633,8 @@ export function DocumentWorkspace({
       // Parse numeric reference URLs once for the whole document
       const numRefUrlsDocx = extractNumericReferenceUrls(document.content);
       const docxCitationUrl = (variant: 'actu' | 'dossier' | 'num', id: string): string | null => {
-        if (variant === 'actu') return `${APP_BASE}/radar?tab=flux&id=${encodeURIComponent(id)}`;
-        if (variant === 'dossier') return `${APP_BASE}/dossiers?id=${encodeURIComponent(id)}`;
+        if (variant === 'actu') return `${APP_BASE}/veille?article=${encodeURIComponent(id)}`;
+        if (variant === 'dossier') return `${APP_BASE}/publier?id=${encodeURIComponent(id)}`;
         return numRefUrlsDocx[id] || null;
       };
 
@@ -785,8 +787,66 @@ export function DocumentWorkspace({
     saveAs(blob, `${safeName}.docx`);
   };
 
-  const handleSaveDraft = () => {
-    toast.success('Brouillon enregistré (fonctionnalité à venir)');
+  /**
+   * Enregistre le document en cours comme brouillon.
+   *
+   * Cette action affichait un message de succes suivi de la mention
+   * « fonctionnalite a venir », alors que rien n'etait enregistre. Un
+   * utilisateur pouvait donc fermer l'espace de travail en croyant son texte
+   * conserve, et le perdre definitivement. Le document est desormais ecrit dans
+   * la table `dossiers` avec le statut `brouillon`, et le message indique ou le
+   * retrouver. En cas d'echec, l'utilisateur est explicitement invite a copier
+   * ou exporter son texte avant de fermer.
+   */
+  const handleSaveDraft = async () => {
+    if (!document) return;
+
+    setSavingDraft(true);
+    try {
+      const { data: session } = await supabase.auth.getUser();
+
+      // Un resume court facilite le reperage du brouillon dans la liste.
+      const resume = document.content
+        .replace(/[#*_`>-]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 240);
+
+      const { data, error } = await supabase
+        .from('dossiers')
+        .insert({
+          titre: baseTitle || 'Document sans titre',
+          contenu: document.content,
+          resume: resume || null,
+          categorie: document.type,
+          statut: 'brouillon',
+          auteur_id: session.user?.id ?? null,
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Brouillon enregistré', {
+        description: 'Vous le retrouverez dans la section Publier.',
+        action: data
+          ? {
+              label: 'Ouvrir',
+              onClick: () => {
+                window.location.assign(`/publier?id=${data.id}`);
+              },
+            }
+          : undefined,
+      });
+    } catch (error) {
+      console.error('[Brouillon] enregistrement impossible :', error);
+      toast.error("Le brouillon n'a pas pu être enregistré", {
+        description:
+          "Votre texte reste affiché ici. Copiez-le ou exportez-le avant de fermer l'espace de travail.",
+      });
+    } finally {
+      setSavingDraft(false);
+    }
   };
 
   // Empty state
@@ -852,8 +912,7 @@ export function DocumentWorkspace({
             size="icon" 
             className="h-8 w-8"
             onClick={handleCopy}
-            title="Copier"
-          >
+            title="Copier" aria-label="Valider">
             {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
           </Button>
           {onRegenerate && (
@@ -862,8 +921,7 @@ export function DocumentWorkspace({
               size="icon" 
               className="h-8 w-8"
               onClick={onRegenerate}
-              title="Régénérer"
-            >
+              title="Régénérer" aria-label="Actualiser">
               <RefreshCw className="h-4 w-4" />
             </Button>
           )}
@@ -872,8 +930,7 @@ export function DocumentWorkspace({
             size="icon" 
             className="h-8 w-8"
             onClick={onClose}
-            title="Fermer"
-          >
+            title="Fermer" aria-label="Fermer">
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -942,11 +999,15 @@ export function DocumentWorkspace({
           variant="outline"
           size="sm"
           onClick={handleSaveDraft}
-          disabled={exportState.status === 'loading'}
+          disabled={exportState.status === 'loading' || savingDraft || !document}
           className="text-xs"
         >
-          <Save className="h-3.5 w-3.5 mr-1.5" />
-          Enregistrer
+          {savingDraft ? (
+            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" aria-hidden />
+          ) : (
+            <Save className="h-3.5 w-3.5 mr-1.5" aria-hidden />
+          )}
+          {savingDraft ? 'Enregistrement…' : 'Enregistrer le brouillon'}
         </Button>
         <Button size="sm" onClick={handleOpenSettings} disabled={exportState.status === 'loading'} className="text-xs min-w-[140px]">
           {exportState.status === 'loading' ? (
