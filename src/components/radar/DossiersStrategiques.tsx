@@ -15,20 +15,32 @@ import type { Actualite } from '@/types';
 import type { PublicationAnsut } from '@/hooks/useAnsutPublications';
 
 /**
- * « Dossiers stratégiques de l'ANSUT » — section 1 de « Ce matin ».
+ * « Axes stratégiques suivis » — section 1 de « Ce matin ».
  *
  * On ne montre plus une pile de publications réseaux triées par date. On montre
- * les DOSSIERS de l'ANSUT (ses piliers, issus du Plan Stratégique 2026-2030) et,
- * pour chacun, ce qui le fait vivre — en séparant explicitement trois couches :
- *   1. Connaissance institutionnelle : le pilier et son objectif (référentiel).
+ * les AXES de l'ANSUT et, pour chacun, ce qui le fait vivre — en séparant
+ * explicitement trois couches :
+ *   1. Connaissance : l'axe et son objectif (référentiel).
  *   2. Communication ANSUT : la dernière communication propre encore vivante
  *      (datée réellement, dans son TTL) — sinon rien.
  *   3. Veille externe : le nombre de nouveaux éléments (72 h) qui le touchent.
  *
- * Le briefing RELIE ces couches, il ne les fond pas. Chaque rattachement est
- * explicable (« Pourquoi ? »). Le silence est autorisé : aucune information
- * ancienne (CAN, GITEX passé…) n'est ressortie pour combler un vide.
+ * IMPORTANT (règle de preuve) : tant que le VRAI plan stratégique de l'ANSUT
+ * n'est pas intégré comme couche de connaissance, ces axes sont un MODÈLE
+ * PROVISOIRE. Le système ne doit pas affirmer « les piliers du plan ». La
+ * maturité de chaque élément est affichée (validé / déduit) et chaque
+ * rattachement est explicable (« Pourquoi ? » : règle de décision, pas seulement
+ * mots-clés). Le silence est autorisé.
  */
+
+/**
+ * Le vrai plan stratégique n'est pas encore intégré comme base de connaissance
+ * structurée (mission → programme → projet → partenaire → objectif → indicateur).
+ * Les axes restent donc un modèle de travail provisoire. Passera à `true` le jour
+ * où le plan officiel sera intégré et validé — le titre et la maturité
+ * basculeront alors automatiquement, sans autre changement.
+ */
+const PLAN_INTEGRE = false;
 
 interface Props {
   /** Publications ANSUT (fenêtre large ; le TTL décide de ce qui est vivant). */
@@ -52,7 +64,35 @@ function ageLabel(ageJours: number): string {
   return `il y a ${Math.round(ageJours)} j`;
 }
 
-/** Petite bulle « Pourquoi ? » exposant la règle de rattachement. */
+/**
+ * Fiabilité heuristique d'une déduction par appariement lexical : plus il y a de
+ * mots-clés distincts détectés, plus le rattachement est solide. Reste une
+ * ESTIMATION (à valider), jamais une certitude.
+ */
+function fiabiliteLexicale(nbMots: number): number {
+  return Math.min(0.95, 0.55 + 0.1 * nbMots);
+}
+
+type NiveauMaturite = 'valide' | 'communication' | 'veille' | 'provisoire';
+
+const MATURITE: Record<NiveauMaturite, { couleur: string; texte: string }> = {
+  valide: { couleur: 'bg-[hsl(var(--signal-positive))]', texte: 'Validé par document institutionnel' },
+  communication: { couleur: 'bg-[hsl(var(--signal-warning))]', texte: 'Déduit des communications ANSUT' },
+  veille: { couleur: 'bg-blue-500', texte: 'Déduit de la veille' },
+  provisoire: { couleur: 'bg-[hsl(var(--signal-warning))]', texte: 'Modèle provisoire (non validé)' },
+};
+
+function Maturite({ niveau }: { niveau: NiveauMaturite }) {
+  const cfg = MATURITE[niveau];
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${cfg.couleur}`} aria-hidden />
+      {cfg.texte}
+    </span>
+  );
+}
+
+/** Bulle « Pourquoi ? » exposant la règle de décision (pas seulement les mots). */
 function Pourquoi({ lignes }: { lignes: string[] }) {
   return (
     <Tooltip>
@@ -66,8 +106,8 @@ function Pourquoi({ lignes }: { lignes: string[] }) {
           Pourquoi ?
         </button>
       </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-xs">
-        <ul className="space-y-0.5 text-[11px]">
+      <TooltipContent side="top" className="max-w-sm">
+        <ul className="space-y-1 text-[11px] leading-relaxed">
           {lignes.map((l, i) => (
             <li key={i}>{l}</li>
           ))}
@@ -100,7 +140,7 @@ export function DossiersStrategiques({ publications, externes, maintenantMs, isL
       <section className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-xl" />
+            <Skeleton key={i} className="h-36 rounded-xl" />
           ))}
         </div>
       </section>
@@ -116,11 +156,12 @@ export function DossiersStrategiques({ publications, externes, maintenantMs, isL
             className="flex items-center gap-2 text-base font-semibold text-foreground"
           >
             <Radar className="h-4 w-4 text-primary" aria-hidden />
-            Dossiers stratégiques de l’ANSUT
+            {PLAN_INTEGRE ? 'Dossiers stratégiques de l’ANSUT' : 'Axes stratégiques suivis'}
           </h2>
           <p className="text-xs text-muted-foreground">
-            Piliers du Plan Stratégique 2026-2030. Les rattachements des communications et de la
-            veille sont déduits automatiquement (voir « Pourquoi ? »).
+            {PLAN_INTEGRE
+              ? 'Piliers du Plan Stratégique ANSUT 2026-2030. Rattachements explicables (« Pourquoi ? »).'
+              : 'Modèle provisoire, en attendant l’intégration du plan stratégique officiel. Les axes et rattachements sont déduits et explicables (« Pourquoi ? »).'}
           </p>
         </div>
         <Button asChild variant="link" size="sm" className="h-auto shrink-0 p-0">
@@ -131,6 +172,16 @@ export function DossiersStrategiques({ publications, externes, maintenantMs, isL
         </Button>
       </div>
 
+      {/* Légende de maturité : distinguer l'officiel de l'interprétation moteur. */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg bg-muted/40 px-3 py-1.5">
+        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+          Maturité
+        </span>
+        <Maturite niveau="valide" />
+        <Maturite niveau="communication" />
+        <Maturite niveau="veille" />
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2">
         {MISSIONS_STRATEGIQUES.map((pilier) => {
           const comm = commParPilier.get(pilier.id);
@@ -139,7 +190,7 @@ export function DossiersStrategiques({ publications, externes, maintenantMs, isL
 
           return (
             <div key={pilier.id} className="flex flex-col gap-2.5 rounded-xl border bg-card p-4">
-              {/* Couche 1 — Connaissance institutionnelle (référentiel). */}
+              {/* Couche 1 — Connaissance (axe + objectif). */}
               <div>
                 <div className="flex items-center gap-2">
                   <span
@@ -159,6 +210,9 @@ export function DossiersStrategiques({ publications, externes, maintenantMs, isL
                 <p className="mt-1 line-clamp-2 pl-4 text-xs text-muted-foreground">
                   {pilier.objectif}
                 </p>
+                <div className="mt-1 pl-4">
+                  <Maturite niveau={PLAN_INTEGRE ? 'valide' : 'provisoire'} />
+                </div>
               </div>
 
               {/* Couche 2 — Communication ANSUT (datée, vivante). */}
@@ -166,46 +220,53 @@ export function DossiersStrategiques({ publications, externes, maintenantMs, isL
                 <Megaphone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
                 <div className="min-w-0 flex-1">
                   {comm ? (
-                    <>
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
-                        <span className="font-medium">
-                          Communication ANSUT {ageLabel(comm.ageJours)}
-                        </span>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {CATEGORIE_LABEL[comm.categorie]}
-                        </Badge>
-                        <Pourquoi
-                          lignes={[
-                            `Rattaché à ${pilier.code} par mots-clés : ${
-                              motsClesDetectes(comm.publication.contenu ?? '', pilier.id)
-                                .slice(0, 4)
-                                .join(', ') || '—'
-                            }`,
-                            `Date de publication réelle : ${
-                              comm.publication.date_publication
-                                ? format(new Date(comm.publication.date_publication), 'd MMM yyyy', { locale: fr })
-                                : 'inconnue'
-                            }`,
-                            `Durée de vie appliquée : ${CATEGORIE_LABEL[comm.categorie].toLowerCase()}`,
-                            'Classement : communication vivante la plus récente sur ce pilier',
-                          ]}
-                        />
-                      </div>
-                      <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                        {nettoyerExtrait(comm.publication.contenu)}
-                      </p>
-                      {comm.publication.url_original && (
-                        <a
-                          href={comm.publication.url_original}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
-                        >
-                          Voir la source
-                          <ExternalLink className="h-3 w-3" aria-hidden />
-                        </a>
-                      )}
-                    </>
+                    (() => {
+                      const mots = motsClesDetectes(comm.publication.contenu ?? '', pilier.id);
+                      const conf = fiabiliteLexicale(mots.length);
+                      const dateReelle = comm.publication.date_publication
+                        ? format(new Date(comm.publication.date_publication), 'd MMM yyyy', { locale: fr })
+                        : 'inconnue';
+                      return (
+                        <>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+                            <span className="font-medium">
+                              Communication ANSUT {ageLabel(comm.ageJours)}
+                            </span>
+                            <Badge variant="secondary" className="text-[10px]">
+                              {CATEGORIE_LABEL[comm.categorie]}
+                            </Badge>
+                            <Pourquoi
+                              lignes={[
+                                `Rattaché à ${pilier.code} — ${pilier.nom} : le contenu mentionne ${
+                                  mots.slice(0, 4).map((m) => `« ${m} »`).join(', ') || '—'
+                                }.`,
+                                'Règle appliquée : appariement lexical au référentiel provisoire (RL-1).',
+                                `Fiabilité estimée : ${conf.toFixed(2).replace('.', ',')} (déduction lexicale, à valider).`,
+                                `Durée de vie : ${CATEGORIE_LABEL[comm.categorie].toLowerCase()}. Passé ce délai, l’élément nourrit la connaissance mais ne s’affiche plus.`,
+                                `Date de publication réelle : ${dateReelle}.`,
+                              ]}
+                            />
+                          </div>
+                          <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                            {nettoyerExtrait(comm.publication.contenu)}
+                          </p>
+                          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <Maturite niveau="communication" />
+                            {comm.publication.url_original && (
+                              <a
+                                href={comm.publication.url_original}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                              >
+                                Voir la source
+                                <ExternalLink className="h-3 w-3" aria-hidden />
+                              </a>
+                            )}
+                          </div>
+                        </>
+                      );
+                    })()
                   ) : (
                     <p className="text-xs text-muted-foreground">
                       Aucune communication stratégique récente de l’ANSUT.
@@ -215,22 +276,29 @@ export function DossiersStrategiques({ publications, externes, maintenantMs, isL
               </div>
 
               {/* Couche 3 — Veille externe (nouveaux éléments). */}
-              <div className="flex items-center gap-2 border-t border-border/50 pt-2">
-                <Layers className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-                {nouveaux.length > 0 ? (
-                  <Link
-                    to={`/veille?mission=${pilier.id}`}
-                    className="text-xs font-medium text-primary hover:underline"
-                  >
-                    {nouveaux.length === 1
-                      ? '1 nouvel élément externe (72 h)'
-                      : `${nouveaux.length} nouveaux éléments externes (72 h)`}
-                  </Link>
-                ) : (
-                  <span className="text-xs text-muted-foreground">
-                    Aucun changement externe depuis 72 h.
-                  </span>
-                )}
+              <div className="flex items-start gap-2 border-t border-border/50 pt-2">
+                <Layers className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                <div className="min-w-0 flex-1">
+                  {nouveaux.length > 0 ? (
+                    <>
+                      <Link
+                        to={`/veille?mission=${pilier.id}`}
+                        className="text-xs font-medium text-primary hover:underline"
+                      >
+                        {nouveaux.length === 1
+                          ? '1 nouvel élément externe (72 h)'
+                          : `${nouveaux.length} nouveaux éléments externes (72 h)`}
+                      </Link>
+                      <div className="mt-1">
+                        <Maturite niveau="veille" />
+                      </div>
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      Aucun changement externe depuis 72 h.
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           );
