@@ -7,6 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -14,7 +16,7 @@ import {
 import {
   Newspaper, Send, Eye, Loader2, Target, MessageSquare,
   CheckCircle2, XCircle, Clock, ArrowLeft, CalendarClock, Info,
-  FileText, ListChecks, Building2, AlertTriangle, Lightbulb, BarChart3, ExternalLink, Download,
+  FileText, ListChecks, Building2, AlertTriangle, Lightbulb, BarChart3, ExternalLink, Download, RefreshCw,
 } from 'lucide-react';
 import { exportMatinalePDF } from '@/utils/exportMatinalePDF';
 import { toast } from 'sonner';
@@ -58,9 +60,10 @@ export default function MatinalePage() {
   const [titrologie, setTitrologie] = useState<import('@/types/matinale').TitrologieData | null>(null);
   const [freshnessMeta, setFreshnessMeta] = useState<any>(null);
   const [freshness, setFreshness] = useState<FreshnessWindow>(24);
+  const [forceRefresh, setForceRefresh] = useState(false);
 
   const handlePreview = async () => {
-    const result = await preview.mutateAsync(freshness);
+    const result = await preview.mutateAsync({ freshnessHours: freshness, forceRefresh });
     setPreviewHtml(result.html || null);
     setMatinaleData(result.matinale);
     setTitrologie(result.titrologie || null);
@@ -68,7 +71,7 @@ export default function MatinalePage() {
   };
 
   const handleSend = async () => {
-    await send.mutateAsync({ freshnessHours: freshness });
+    await send.mutateAsync({ freshnessHours: freshness, forceRefresh });
   };
 
   const handleExportPDF = () => {
@@ -182,6 +185,28 @@ export default function MatinalePage() {
                 </p>
               </TooltipContent>
             </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="force-refresh"
+                    checked={forceRefresh}
+                    onCheckedChange={setForceRefresh}
+                  />
+                  <Label htmlFor="force-refresh" className="text-xs flex items-center gap-1 cursor-pointer">
+                    <RefreshCw className="h-3 w-3" />
+                    Forcer le rafraîchissement
+                  </Label>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs">
+                Ignore le cache des recherches (valable 3 h) et relance toutes les
+                requêtes de veille en temps réel. Génération plus lente.
+              </TooltipContent>
+            </Tooltip>
+
+
 
             {freshnessMeta && (
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground ml-auto">

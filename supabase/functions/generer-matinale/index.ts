@@ -103,7 +103,7 @@ async function setCachedPerplexity(
 }
 
 // Fetch real-time news from Perplexity to ground the briefing in verified sources
-async function fetchPerplexityNews(): Promise<{ articles: Array<{ titre: string; resume: string; source: string; url: string }>; citations: string[] }> {
+async function fetchPerplexityNews(forceRefresh = false): Promise<{ articles: Array<{ titre: string; resume: string; source: string; url: string }>; citations: string[] }> {
   const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
   if (!PERPLEXITY_API_KEY) {
     console.warn('[Matinale] PERPLEXITY_API_KEY not configured, skipping real-time search');
@@ -136,7 +136,7 @@ async function fetchPerplexityNews(): Promise<{ articles: Array<{ titre: string;
       let citations: string[] = [];
 
       // 1) Cache : réutilise une réponse récente (même modèle + même requête)
-      const cached = await getCachedPerplexity(model, query);
+      const cached = forceRefresh ? null : await getCachedPerplexity(model, query);
       if (cached) {
         content = cached.content;
         citations = cached.citations;
@@ -766,6 +766,7 @@ interface MatinaleParams {
   previewOnly: boolean;
   recipients: string[];
   freshnessHours: number;
+  forceRefresh?: boolean;
 }
 
 // Met à jour l'état d'un job (no-op en mode synchrone)
@@ -836,7 +837,7 @@ async function runMatinale(params: MatinaleParams, jobId: string | null): Promis
     console.log('[Matinale/Scoring] config:', scoring);
 
     // Fetch real-time news + titrologie from Perplexity (runs in parallel with DB queries)
-    const perplexityPromise = fetchPerplexityNews();
+    const perplexityPromise = fetchPerplexityNews(params.forceRefresh === true);
     const titrologiePromise = fetchTitrologie();
 
     // Fetch articles within freshness window
@@ -1909,7 +1910,9 @@ Deno.serve(async (req) => {
     freshnessHours: typeof body.freshnessHours === 'number' && [24, 48, 168].includes(body.freshnessHours)
       ? body.freshnessHours
       : 24,
+    forceRefresh: body.forceRefresh === true,
   };
+
 
   // Mode asynchrone : { async: true } → création d'un job + traitement en tâche de fond
   if (body.async === true) {
