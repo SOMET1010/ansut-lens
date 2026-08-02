@@ -36,6 +36,18 @@ export function piliersPourTexte(texte: string): string[] {
     .map((m) => m.id);
 }
 
+/**
+ * Mots-clés d'un pilier effectivement détectés dans un texte. Sert à rendre le
+ * rattachement EXPLICABLE (« pourquoi cette information est rattachée à ce
+ * pilier ? ») plutôt qu'opaque.
+ */
+export function motsClesDetectes(texte: string, pilierId: string): string[] {
+  const contenu = normaliser(texte ?? '');
+  const mission = MISSIONS_STRATEGIQUES.find((m) => m.id === pilierId);
+  if (!mission) return [];
+  return mission.motsCles.filter((kw) => contientTerme(contenu, kw));
+}
+
 /** Identifiants des missions auxquelles une actualité se rattache. */
 export function missionsDeLActualite(a: Actualite): string[] {
   return piliersPourTexte(`${a.titre ?? ''} ${a.resume ?? ''} ${(a.tags ?? []).join(' ')}`);
