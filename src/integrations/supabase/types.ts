@@ -2436,6 +2436,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_cron_manager: { Args: never; Returns: boolean }
       toggle_cron_job: { Args: { job_id: number }; Returns: undefined }
       update_cron_schedule: {
         Args: { job_id: number; new_schedule: string }

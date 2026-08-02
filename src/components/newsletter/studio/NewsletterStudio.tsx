@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { toast } from 'sonner';
+import DOMPurify from 'dompurify';
 
 import { BlockToolbar } from './BlockToolbar';
 import { CanvasArea } from './CanvasArea';
@@ -232,6 +233,12 @@ export function NewsletterStudio({ newsletter, onBack, onSaved }: NewsletterStud
 
   const selectedBlock = document.blocks.find(b => b.id === selectedBlockId) || null;
   const previewHtml = exportToHtml(document);
+  // Défense en profondeur : l'aperçu est toujours nettoyé côté client (anti-XSS)
+  const safePreviewHtml = DOMPurify.sanitize(previewHtml, {
+    USE_PROFILES: { html: true },
+    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'formaction'],
+  });
 
   return (
     <div className="h-[calc(100vh-120px)] flex flex-col">
@@ -383,7 +390,7 @@ export function NewsletterStudio({ newsletter, onBack, onSaved }: NewsletterStud
           <div 
             className="mx-auto shadow-xl rounded-lg overflow-hidden transition-all duration-300"
             style={{ maxWidth: viewportWidths[previewViewport] }}
-            dangerouslySetInnerHTML={{ __html: previewHtml }}
+            dangerouslySetInnerHTML={{ __html: safePreviewHtml }}
           />
         </div>
       ) : (
