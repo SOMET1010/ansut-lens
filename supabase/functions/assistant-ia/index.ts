@@ -1,6 +1,7 @@
 // Using native Deno.serve - no import needed
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { consolidateActualites } from "../_shared/dedup-actualites.ts";
+import { resolveModeleGateway } from "../_shared/modeles.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -91,7 +92,9 @@ Deno.serve(async (req) => {
     // --- End Authentication ---
     const userId = claimsData.claims.sub as string;
 
-    const { messages, context, mode } = await req.json();
+    const { messages, context, mode, model } = await req.json();
+    // Modèle choisi par l'utilisateur (id du registre) ; repli sur GPT-5 mini.
+    const modeleGateway = resolveModeleGateway(model, 'openai/gpt-5-mini');
     
     // Validate messages input
     if (!Array.isArray(messages) || messages.length === 0) {
@@ -246,7 +249,7 @@ Règles :
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'openai/gpt-5-mini',
+        model: modeleGateway,
         messages: [
           { role: 'system', content: contextualPrompt },
           ...messages,

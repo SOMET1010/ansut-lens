@@ -1,5 +1,6 @@
 // Using native Deno.serve
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveModeleGateway } from "../_shared/modeles.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -60,6 +61,7 @@ async function alignerLot(
   piliers: Pilier[],
   offset: number,
   apiKey: string,
+  modele: string,
 ): Promise<AlignementIA[]> {
   const referentiel = piliers
     .map((p) => {
@@ -97,7 +99,7 @@ Réponds UNIQUEMENT par un tableau JSON : [{"index":0,"pilier_id":"...","alignem
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
+      model: modele,
       temperature: 0.2,
       messages: [
         { role: 'system', content: systeme },
@@ -149,6 +151,8 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const ids: string[] | undefined = Array.isArray(body?.ids) ? body.ids : undefined;
     const limit: number = Math.min(Math.max(Number(body?.limit) || 30, 1), 100);
+    // Modèle : celui demandé (registre), sinon le modèle par défaut du registre.
+    const modele = resolveModeleGateway(body?.model);
 
     // Référentiel des piliers actifs.
     const { data: piliersData, error: pErr } = await supabase
@@ -186,7 +190,7 @@ Deno.serve(async (req) => {
     const TAILLE_LOT = 12;
     for (let debut = 0; debut < cibles.length; debut += TAILLE_LOT) {
       const lot = cibles.slice(debut, debut + TAILLE_LOT);
-      const resultats = await alignerLot(lot, piliers, debut, LOVABLE_API_KEY);
+      const resultats = await alignerLot(lot, piliers, debut, LOVABLE_API_KEY, modele);
 
       for (const r of resultats) {
         const article = cibles[r.index];

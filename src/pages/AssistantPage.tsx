@@ -16,6 +16,8 @@ import { ContextSelector } from '@/components/assistant/ContextSelector';
 import { ConversationHistory } from '@/components/assistant/ConversationHistory';
 import { ChatMessage } from '@/components/assistant/ChatMessage';
 import { ModeSelector, type AssistantMode } from '@/components/assistant/ModeSelector';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MODELES_IA_UI, MODELE_IA_DEFAUT } from '@/config/modelesIa';
 import { DocumentWorkspace, detectDocument, type GeneratedDocument } from '@/components/assistant/DocumentWorkspace';
 import { FrameworkPanel } from '@/components/assistant/FrameworkPanel';
 import { WelcomeScreen } from '@/components/assistant/WelcomeScreen';
@@ -48,6 +50,7 @@ async function streamChat({
   messages,
   context,
   mode,
+  model,
   onDelta,
   onDone,
   onError,
@@ -56,6 +59,7 @@ async function streamChat({
   messages: ConversationMessage[];
   context: string;
   mode: AssistantMode;
+  model: string;
   onDelta: (deltaText: string) => void;
   onDone: () => void;
   onError: (error: string) => void;
@@ -73,7 +77,7 @@ async function streamChat({
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ messages, context, mode }),
+      body: JSON.stringify({ messages, context, mode, model }),
     });
 
     if (!resp.ok) {
@@ -171,6 +175,7 @@ async function streamChat({
 export default function AssistantPage() {
   const { user } = useAuth();
   const [mode, setMode] = useState<AssistantMode>('redaction');
+  const [modeleIa, setModeleIa] = useState<string>(MODELE_IA_DEFAUT);
   const [messages, setMessages] = useState<ConversationMessage[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -367,6 +372,7 @@ export default function AssistantPage() {
       messages: newMessages.map(m => ({ role: m.role, content: m.content })),
       context,
       mode,
+      model: modeleIa,
       onDelta: updateAssistant,
       onCitationWarning: (w) => {
         setCitationWarning(w);
@@ -506,6 +512,19 @@ export default function AssistantPage() {
             
             <div className="flex items-center gap-2">
               <ModeSelector mode={mode} onModeChange={setMode} />
+
+              <Select value={modeleIa} onValueChange={setModeleIa}>
+                <SelectTrigger className="h-9 w-[150px]" aria-label="Modèle IA">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MODELES_IA_UI.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               
               {/* Context Indicator */}
               <Popover>
