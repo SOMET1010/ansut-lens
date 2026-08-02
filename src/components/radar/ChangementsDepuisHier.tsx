@@ -27,6 +27,10 @@ interface Props {
   /** Piliers actuellement portés par l'ANSUT (ADN ou repli porteurs). */
   prioritesActives: Set<string>;
   isLoading?: boolean;
+  /** Titre de section (par défaut « Ce qui a changé depuis hier »). */
+  titre?: string;
+  /** Sous-titre de section. */
+  sousTitre?: string;
 }
 
 const MAX_LIGNES = 5;
@@ -36,7 +40,13 @@ function codePilier(id: string | undefined): string | null {
   return MISSIONS_STRATEGIQUES.find((m) => m.id === id)?.code ?? null;
 }
 
-export function ChangementsDepuisHier({ actualites, prioritesActives, isLoading }: Props) {
+export function ChangementsDepuisHier({
+  actualites,
+  prioritesActives,
+  isLoading,
+  titre = 'Ce qui a changé depuis hier',
+  sousTitre = 'Nouvelles informations externes des dernières 24 h, sur les thèmes que l’ANSUT porte.',
+}: Props) {
   // 1) Veille EXTERNE uniquement (la voix de l'ANSUT vit en section 1), et
   //    seulement ce qui touche une priorité active de l'ANSUT.
   const pertinents = useMemo(
@@ -60,11 +70,9 @@ export function ChangementsDepuisHier({ actualites, prioritesActives, isLoading 
             className="flex items-center gap-2 text-base font-semibold text-foreground"
           >
             <Sparkle className="h-4 w-4 text-primary" aria-hidden />
-            Ce qui a changé depuis hier
+            {titre}
           </h2>
-          <p className="text-xs text-muted-foreground">
-            Nouvelles informations externes des dernières 24 h, sur les thèmes que l’ANSUT porte.
-          </p>
+          <p className="text-xs text-muted-foreground">{sousTitre}</p>
         </div>
         <Button asChild variant="link" size="sm" className="h-auto shrink-0 p-0">
           <Link to="/veille">
