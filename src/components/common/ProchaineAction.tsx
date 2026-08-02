@@ -11,8 +11,17 @@ interface ProchaineActionProps {
   raison: string;
   /** Libelle du bouton, formule comme un verbe d'action. */
   actionLabel: string;
-  /** Destination interne du bouton. */
-  to: string;
+  /**
+   * Destination interne du bouton, lorsque l'action consiste a changer d'ecran.
+   * Exclusif avec `onAction`.
+   */
+  to?: string;
+  /**
+   * Action a executer sur place, lorsque l'information demandee peut etre
+   * fournie sans quitter l'ecran courant. Preferable a une navigation quand
+   * elle evite a l'utilisateur de perdre son contexte de lecture.
+   */
+  onAction?: () => void;
   icon?: LucideIcon;
   ton?: TonProchaineAction;
 }
@@ -49,6 +58,7 @@ export function ProchaineAction({
   raison,
   actionLabel,
   to,
+  onAction,
   icon: Icon,
   ton = 'neutre',
 }: ProchaineActionProps) {
@@ -78,12 +88,19 @@ export function ProchaineAction({
           <p className="text-xs leading-relaxed text-muted-foreground">{raison}</p>
         </div>
       </div>
-      <Button asChild size="sm" className="min-h-11 shrink-0 sm:min-h-9">
-        <Link to={to}>
+      {to ? (
+        <Button asChild size="sm" className="min-h-11 shrink-0 sm:min-h-9">
+          <Link to={to}>
+            {actionLabel}
+            <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden />
+          </Link>
+        </Button>
+      ) : (
+        <Button size="sm" className="min-h-11 shrink-0 sm:min-h-9" onClick={onAction}>
           {actionLabel}
           <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden />
-        </Link>
-      </Button>
+        </Button>
+      )}
     </section>
   );
 }

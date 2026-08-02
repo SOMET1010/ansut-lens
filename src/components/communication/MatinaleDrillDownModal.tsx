@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ExternalLink, Clock, Star, TrendingUp, Tag, Database } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { nettoyerExtrait } from '@/lib/nettoyerExtrait';
 
 interface Props {
   open: boolean;
@@ -204,7 +205,7 @@ export function MatinaleDrillDownModal({
                           )}
                           {a.resume && (
                             <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                              {a.resume}
+                              {nettoyerExtrait(a.resume)}
                             </p>
                           )}
                         </div>

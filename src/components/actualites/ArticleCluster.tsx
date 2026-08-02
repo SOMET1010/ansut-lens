@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { calculateFreshness, type Actualite } from '@/hooks/useActualites';
+import { nettoyerExtrait } from '@/lib/nettoyerExtrait';
 import { cn } from '@/lib/utils';
 
 // Interface pour le JSON d'analyse IA
@@ -149,9 +150,14 @@ export function ArticleCluster({
           </h3>
         )}
         
-        {mainArticle.resume && (
+        {/*
+          Le resume est assaini avant affichage : les extraits collectes
+          arrivaient charges de balisage Markdown et d'URL affiches en clair,
+          rendant le texte illisible.
+        */}
+        {nettoyerExtrait(mainArticle.resume) && (
           <p className="text-muted-foreground text-sm mb-4 leading-relaxed line-clamp-2">
-            {mainArticle.resume}
+            {nettoyerExtrait(mainArticle.resume)}
           </p>
         )}
 

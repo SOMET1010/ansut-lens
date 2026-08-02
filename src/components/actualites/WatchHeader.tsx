@@ -51,15 +51,17 @@ export function WatchHeader({
 
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Actualités & Veille</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          {newArticlesCount > 0 
-            ? `${newArticlesCount} article${newArticlesCount > 1 ? 's' : ''} collecté${newArticlesCount > 1 ? 's' : ''}`
-            : 'Aucun nouvel article'
-          }
-        </p>
-      </div>
+      {/*
+        Ce bloc portait un titre « Actualites & Veille » en text-2xl. Depuis que
+        la page Veille possede un `PageHeader` unifie, l'ecran affichait deux
+        titres concurrents empiles. Seul le compteur d'articles est conserve :
+        c'est une information de contexte, pas un titre.
+      */}
+      <p className="text-muted-foreground text-sm">
+        {newArticlesCount > 0
+          ? `${newArticlesCount} article${newArticlesCount > 1 ? 's' : ''} collecté${newArticlesCount > 1 ? 's' : ''} sur la période`
+          : 'Aucun article collecté sur la période'}
+      </p>
 
       <div className="flex gap-3 w-full md:w-auto flex-wrap">
         {/* Sélecteur de période */}

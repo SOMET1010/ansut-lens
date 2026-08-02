@@ -6,6 +6,7 @@ import { useRecommendations, useTrackInteraction } from '@/hooks/useUserIntellig
 import { FeedbackButtons } from './FeedbackButtons';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { nettoyerExtrait } from '@/lib/nettoyerExtrait';
 
 export function PourVousFeed() {
   const { data: recommendations, isLoading } = useRecommendations();
@@ -73,7 +74,7 @@ export function PourVousFeed() {
                   </h4>
                   <FeedbackButtons actualiteId={item.id} compact />
                 </div>
-                <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{item.resume}</p>
+                <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{nettoyerExtrait(item.resume)}</p>
                 <div className="flex items-center gap-2 mt-2">
                   {item.categorie && (
                     <Badge variant="outline" className="text-xs">{item.categorie}</Badge>

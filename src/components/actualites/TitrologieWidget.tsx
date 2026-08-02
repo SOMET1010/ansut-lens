@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { nettoyerExtrait } from '@/lib/nettoyerExtrait';
 
 interface TitreJournal {
   journal: string;
@@ -126,7 +127,7 @@ export function TitrologieWidget() {
                     <p className="text-[11px] font-semibold text-primary">{t.journal}</p>
                     <p className="text-sm font-medium leading-tight">{t.titre}</p>
                     {t.resume && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{t.resume}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{nettoyerExtrait(t.resume)}</p>
                     )}
                     {t.url && (
                       <a

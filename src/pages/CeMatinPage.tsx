@@ -1,10 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
   ArrowRight,
   BellRing,
   CalendarCheck,
+  ChevronDown,
   Clock,
   FileText,
   Gauge,
@@ -41,9 +42,15 @@ const NB_SUJETS_ACCUEIL = 5;
 /**
  * Formule une phrase de lecture pour un volume de mentions.
  * Un nombre brut ne dit rien : c'est la tendance qui porte le sens.
+ *
+ * `phraseZero` est fourni par l'appelant plutot que construit ici : une formule
+ * generique obligerait a inserer un point median pour couvrir les deux genres,
+ * ce qui produit un texte illisible pour un lecteur peu familier de l'ecrit
+ * administratif. Le public de la plateforme inclut des agents dont la maitrise
+ * de l'ecrit varie, l'accord doit donc etre juste et non contourne.
  */
-function lireVolume(valeur: number, libelleUnite: string): string {
-  if (valeur === 0) return `Aucun·e ${libelleUnite} sur la période`;
+function lireVolume(valeur: number, phraseZero: string): string {
+  if (valeur === 0) return phraseZero;
   if (valeur < 10) return `Activité faible sur la période`;
   if (valeur < 40) return `Activité modérée, dans la normale`;
   if (valeur < 100) return `Activité soutenue, à suivre`;
@@ -80,6 +87,9 @@ function lireScore(valeur: number): string {
  * clic depuis des liens explicites.
  */
 export default function CeMatinPage() {
+  /** Depliage des signaux critiques directement dans la barre d'alerte. */
+  const [signauxDeplies, setSignauxDeplies] = useState(false);
+
   const { data: kpis, isLoading: kpisLoading, isFetching: kpisFetching } = useRadarKPIs('24h');
   const { data: signaux } = useRadarSignaux();
   const { data: sujets, isLoading: sujetsLoading } = useIntelligenceFeed(NB_SUJETS_ACCUEIL);
@@ -103,9 +113,12 @@ export default function CeMatinPage() {
     if (signauxCritiques.length > 0) {
       return {
         titre: 'Traiter les signaux critiques du jour',
-        raison: `${signauxCritiques.length} signal·aux classé·s critiques n’ont pas encore été traité·s.`,
-        actionLabel: 'Voir les signaux',
-        to: '/veille?niveau=critical',
+        raison:
+          signauxCritiques.length === 1
+            ? 'Un signal critique n’a pas encore été traité.'
+            : `${signauxCritiques.length} signaux critiques n’ont pas encore été traités.`,
+        actionLabel: 'Examiner les signaux',
+        onAction: () => setSignauxDeplies(true),
         icon: AlertTriangle,
         ton: 'urgent' as const,
       };
@@ -164,32 +177,76 @@ export default function CeMatinPage() {
           }
         />
 
-        {/* Strate 1 : alerte critique, affichee seulement si necessaire. */}
+        {/*
+          Strate 1 : alerte critique, affichee seulement si necessaire.
+
+          Cette barre pointait initialement vers `/veille?niveau=critical`. La
+          recette a montre que la promesse ne pouvait pas etre tenue : les
+          signaux proviennent de la table `signaux`, tandis que la page Veille
+          lit la table `actualites`. Aucun champ commun ne permet de filtrer
+          l'une par la criticite de l'autre, si bien que l'utilisateur cliquait
+          sur « Examiner » et recevait la liste complete des articles.
+
+          Plutot que de simuler un filtre, les signaux sont depliables sur place.
+          L'information demandee est ainsi obtenue sans changer d'ecran ni
+          perdre le contexte.
+        */}
         {signauxCritiques.length > 0 && (
           <div
             role="alert"
-            className="flex flex-col gap-3 rounded-xl border border-destructive/40 bg-destructive/[0.06] p-4 sm:flex-row sm:items-center sm:justify-between"
+            className="rounded-xl border border-destructive/40 bg-destructive/[0.06] p-4"
           >
-            <div className="flex min-w-0 items-start gap-3">
-              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden />
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-destructive">
-                  {signauxCritiques.length === 1
-                    ? '1 signal critique détecté'
-                    : `${signauxCritiques.length} signaux critiques détectés`}
-                </p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {signauxCritiques[0]?.titre ??
-                    'Un sujet sensible requiert une attention immédiate.'}
-                </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-destructive">
+                    {signauxCritiques.length === 1
+                      ? 'Un signal critique détecté'
+                      : `${signauxCritiques.length} signaux critiques détectés`}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {signauxCritiques.length === 1
+                      ? 'Ce sujet requiert votre attention aujourd’hui.'
+                      : 'Ces sujets requièrent votre attention aujourd’hui.'}
+                  </p>
+                </div>
               </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="min-h-11 shrink-0 sm:min-h-9"
+                onClick={() => setSignauxDeplies((ouvert) => !ouvert)}
+                aria-expanded={signauxDeplies}
+              >
+                {signauxDeplies ? 'Masquer' : 'Examiner'}
+                <ChevronDown
+                  className={`ml-1.5 h-4 w-4 transition-transform ${
+                    signauxDeplies ? 'rotate-180' : ''
+                  }`}
+                  aria-hidden
+                />
+              </Button>
             </div>
-            <Button asChild variant="destructive" size="sm" className="min-h-11 shrink-0 sm:min-h-9">
-              <Link to="/veille?niveau=critical">
-                Examiner
-                <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden />
-              </Link>
-            </Button>
+
+            {signauxDeplies && (
+              <ul className="mt-3 space-y-2 border-t border-destructive/20 pt-3">
+                {signauxCritiques.map((signal) => (
+                  <li key={signal.id} className="rounded-lg bg-background/70 p-3">
+                    <p className="text-sm font-medium leading-snug">{signal.titre}</p>
+                    {signal.description && (
+                      <p className="mt-1 text-xs text-muted-foreground">{signal.description}</p>
+                    )}
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      Détecté <RelativeTime date={signal.date_detection} />
+                      {typeof signal.score_impact === 'number' && signal.score_impact > 0 && (
+                        <> · impact estimé {signal.score_impact}/100</>
+                      )}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
 
@@ -202,7 +259,7 @@ export default function CeMatinPage() {
             <ChiffreCle
               libelle="Mentions"
               valeur={kpis?.mentions ?? 0}
-              lecture={lireVolume(kpis?.mentions ?? 0, 'mention')}
+              lecture={lireVolume(kpis?.mentions ?? 0, 'Aucune mention sur la période')}
               icon={MessageSquare}
               to="/veille"
               isLoading={kpisLoading}
@@ -210,7 +267,7 @@ export default function CeMatinPage() {
             <ChiffreCle
               libelle="Articles collectés"
               valeur={kpis?.articles ?? 0}
-              lecture={lireVolume(kpis?.articles ?? 0, 'article')}
+              lecture={lireVolume(kpis?.articles ?? 0, 'Aucun article collecté sur la période')}
               icon={Newspaper}
               to="/veille"
               isLoading={kpisLoading}

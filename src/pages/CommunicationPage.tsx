@@ -130,7 +130,7 @@ function MatinaleBriefingSection() {
                 <Card key={i} className="border-l-4 border-l-primary">
                   <CardContent className="p-4">
                     <p className="font-medium text-sm mb-1">{item.titre}</p>
-                    <p className="text-xs text-muted-foreground mb-2">{item.resume}</p>
+                    <p className="text-xs text-muted-foreground mb-2">{nettoyerExtrait(item.resume)}</p>
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground/70">Source : {item.source}</span>
                       {item.source_url && (
@@ -441,6 +441,7 @@ function QuickToolsSection() {
 // --- Main Page ---
 import { useSearchParams } from 'react-router-dom';
 import ReseauxSociauxPage from '@/pages/ReseauxSociauxPage';
+import { nettoyerExtrait } from '@/lib/nettoyerExtrait';
 
 export default function CommunicationPage() {
   const sujetSetterRef = useRef<((text: string) => void) | null>(null);

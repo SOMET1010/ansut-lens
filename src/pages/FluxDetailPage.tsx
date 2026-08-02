@@ -10,6 +10,7 @@ import { SectionEmptyState } from '@/components/radar/SectionEmptyState';
 import { toErrorMessage } from '@/utils/errors';
 import { useState } from 'react';
 import { FluxFormDialog } from '@/components/flux';
+import { nettoyerExtrait } from '@/lib/nettoyerExtrait';
 
 const frequenceLabels: Record<string, string> = {
   instantane: 'Instantané',
@@ -217,7 +218,7 @@ export default function FluxDetailPage() {
                 <CardContent>
                   {actu.resume && (
                     <p className="text-sm text-muted-foreground line-clamp-2">
-                      {actu.resume}
+                      {nettoyerExtrait(actu.resume)}
                     </p>
                   )}
                   <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50">
