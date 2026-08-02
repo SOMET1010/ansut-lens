@@ -104,8 +104,13 @@ function useMatinaleJobRunner() {
 export function useMatinalePreview() {
   const { job, run, reset } = useMatinaleJobRunner();
   const mutation = useMutation({
-    mutationFn: async (freshnessHours: FreshnessWindow = 24): Promise<MatinaleResponse> =>
-      run({ previewOnly: true, freshnessHours }),
+    mutationFn: async (
+      params?: FreshnessWindow | { freshnessHours?: FreshnessWindow; forceRefresh?: boolean },
+    ): Promise<MatinaleResponse> => {
+      const freshnessHours = typeof params === 'number' ? params : params?.freshnessHours ?? 24;
+      const forceRefresh = typeof params === 'object' ? params?.forceRefresh === true : false;
+      return run({ previewOnly: true, freshnessHours, forceRefresh });
+    },
     onError: (err: Error) => {
       reset();
       toast.error(`Erreur de génération : ${err.message}`);
@@ -117,10 +122,15 @@ export function useMatinalePreview() {
 export function useMatinaleSend() {
   const { job, run, reset } = useMatinaleJobRunner();
   const mutation = useMutation({
-    mutationFn: async (params?: { recipients?: string[]; freshnessHours?: FreshnessWindow }): Promise<MatinaleResponse> => {
+    mutationFn: async (params?: { recipients?: string[]; freshnessHours?: FreshnessWindow; forceRefresh?: boolean }): Promise<MatinaleResponse> => {
       const recipients = params?.recipients;
       const freshnessHours = params?.freshnessHours ?? 24;
-      return run({ previewOnly: false, freshnessHours, ...(recipients ? { recipients } : {}) });
+      return run({
+        previewOnly: false,
+        freshnessHours,
+        forceRefresh: params?.forceRefresh === true,
+        ...(recipients ? { recipients } : {}),
+      });
     },
     onSuccess: (data) => {
       if (data?.sent !== undefined) {
