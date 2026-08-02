@@ -8,9 +8,7 @@ import {
   ChevronDown,
   Clock,
   FileText,
-  Gauge,
   Home,
-  MessageSquare,
   Newspaper,
   RefreshCw,
   Users,
@@ -22,11 +20,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RelativeTime } from '@/components/ui/relative-time';
 import {
-  ChiffreCle,
   PageContainer,
   PageHeader,
   ProchaineAction,
-  TermeMetier,
 } from '@/components/common';
 import {
   useIntelligenceFeed,
@@ -36,39 +32,28 @@ import {
 } from '@/hooks/useRadarData';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { nettoyerTitre } from '@/lib/nettoyerExtrait';
+import { ObjectifsStrategiques } from '@/components/radar/ObjectifsStrategiques';
 
 /** Nombre de sujets presentes sur l'accueil. Volontairement bas. */
 const NB_SUJETS_ACCUEIL = 5;
 
 /**
- * Formule une phrase de lecture pour un volume de mentions.
- * Un nombre brut ne dit rien : c'est la tendance qui porte le sens.
- *
- * `phraseZero` est fourni par l'appelant plutot que construit ici : une formule
- * generique obligerait a inserer un point median pour couvrir les deux genres,
- * ce qui produit un texte illisible pour un lecteur peu familier de l'ecrit
- * administratif. Le public de la plateforme inclut des agents dont la maitrise
- * de l'ecrit varie, l'accord doit donc etre juste et non contourne.
+ * Taille du vivier d'actualites recentes charge pour l'accueil. Il alimente a la
+ * fois la repartition par mission (« objectifs impactes ») et les sujets en tete
+ * de liste, sans multiplier les requetes.
  */
-function lireVolume(valeur: number, phraseZero: string): string {
-  if (valeur === 0) return phraseZero;
-  if (valeur < 10) return `Activité faible sur la période`;
-  if (valeur < 40) return `Activité modérée, dans la normale`;
-  if (valeur < 100) return `Activité soutenue, à suivre`;
-  return `Volume inhabituel, mérite une lecture attentive`;
-}
+const TAILLE_VIVIER_ACCUEIL = 40;
 
+/**
+ * Formule une phrase de lecture pour un volume d'alertes en attente.
+ * L'accord est ecrit selon le nombre plutot que contourne par un point median :
+ * le public de la plateforme inclut des agents dont la maitrise de l'ecrit
+ * varie, l'accord doit donc etre juste et lisible.
+ */
 function lireAlertes(valeur: number): string {
   if (valeur === 0) return 'Aucune alerte en attente de traitement';
   if (valeur === 1) return 'Une alerte attend votre traitement';
   return `${valeur} alertes attendent votre traitement`;
-}
-
-function lireScore(valeur: number): string {
-  if (valeur >= 75) return 'Présence digitale solide';
-  if (valeur >= 50) return 'Présence digitale correcte, marge de progression';
-  if (valeur > 0) return 'Présence digitale à renforcer';
-  return 'Score non encore calculé';
 }
 
 /**
@@ -81,8 +66,13 @@ function lireScore(valeur: number): string {
  *
  * Ce nouvel ecran repond a une seule question : que dois-je savoir maintenant ?
  * Il tient sans onglet et se lit de haut en bas en quatre strates de priorite
- * decroissante : alerte critique s'il y en a une, quatre chiffres cles
- * interpretes, les cinq sujets qui comptent, puis la prochaine action a mener.
+ * decroissante : alerte critique s'il y en a une, les objectifs strategiques
+ * impactes (ce qui bouge sur les missions de l'ANSUT), les sujets qui comptent
+ * comme preuves, puis la prochaine action a mener.
+ *
+ * Les chiffres bruts d'antan (mentions, articles, alertes, score) ont ete
+ * remplaces par cette lecture par mission : l'article devient une preuve
+ * rattachee a un objectif, plutot que le contenu principal.
  *
  * Tout le reste a migre vers les pages Veille et Recherche, accessibles en un
  * clic depuis des liens explicites.
@@ -91,9 +81,9 @@ export default function CeMatinPage() {
   /** Depliage des signaux critiques directement dans la barre d'alerte. */
   const [signauxDeplies, setSignauxDeplies] = useState(false);
 
-  const { data: kpis, isLoading: kpisLoading, isFetching: kpisFetching } = useRadarKPIs('24h');
+  const { data: kpis, isFetching: kpisFetching } = useRadarKPIs('24h');
   const { data: signaux } = useRadarSignaux();
-  const { data: sujets, isLoading: sujetsLoading } = useIntelligenceFeed(NB_SUJETS_ACCUEIL);
+  const { data: sujets, isLoading: sujetsLoading } = useIntelligenceFeed(TAILLE_VIVIER_ACCUEIL);
   const { data: derniereCollecte } = useLastCollecteTime();
   const { hasPermission } = useUserPermissions();
 
@@ -251,52 +241,17 @@ export default function CeMatinPage() {
           </div>
         )}
 
-        {/* Strate 2 : quatre chiffres cles, chacun accompagne de sa lecture. */}
-        <section aria-labelledby="chiffres-titre" className="space-y-3">
-          <h2 id="chiffres-titre" className="text-sm font-semibold text-muted-foreground">
-            Les chiffres des dernières 24 heures
-          </h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <ChiffreCle
-              libelle="Mentions"
-              valeur={kpis?.mentions ?? 0}
-              lecture={lireVolume(kpis?.mentions ?? 0, 'Aucune mention sur la période')}
-              icon={MessageSquare}
-              to="/veille"
-              isLoading={kpisLoading}
-            />
-            <ChiffreCle
-              libelle="Articles collectés"
-              valeur={kpis?.articles ?? 0}
-              lecture={lireVolume(kpis?.articles ?? 0, 'Aucun article collecté sur la période')}
-              icon={Newspaper}
-              to="/veille"
-              isLoading={kpisLoading}
-            />
-            <ChiffreCle
-              libelle="Alertes actives"
-              valeur={alertesActives}
-              lecture={lireAlertes(alertesActives)}
-              icon={BellRing}
-              to="/alertes"
-              isLoading={kpisLoading}
-              alerte={alertesActives > 0}
-            />
-            <ChiffreCle
-              libelle="Score d’influence"
-              valeur={kpis?.scoreInfluence ?? 0}
-              lecture={lireScore(kpis?.scoreInfluence ?? 0)}
-              icon={Gauge}
-              to="/acteurs?tab=spdi"
-              isLoading={kpisLoading}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Le score d’influence agrège les{' '}
-            <TermeMetier cle="spdi">scores de présence digitale</TermeMetier> des acteurs
-            suivis.
-          </p>
-        </section>
+        {/*
+          Strate 2 : les objectifs strategiques impactes.
+
+          Les quatre chiffres bruts (mentions, articles, alertes, score) ont ete
+          remplaces : a 8 h du matin, un decideur ne veut pas un decompte, il
+          veut savoir ce qui bouge sur les missions de l'ANSUT. Les actualites
+          recentes sont reparties par mission, chaque carte portant un niveau
+          d'attention et l'information la plus alignee du moment. Les articles
+          deviennent les preuves, presentees juste en dessous.
+        */}
+        <ObjectifsStrategiques actualites={sujets ?? []} isLoading={sujetsLoading} />
 
         {/* Strate 3 : les sujets qui comptent, reduits a l'essentiel. */}
         <section aria-labelledby="sujets-titre" className="space-y-3">
