@@ -35,6 +35,7 @@ import {
   useRadarSignaux,
 } from '@/hooks/useRadarData';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
+import { nettoyerTitre } from '@/lib/nettoyerExtrait';
 
 /** Nombre de sujets presentes sur l'accueil. Volontairement bas. */
 const NB_SUJETS_ACCUEIL = 5;
@@ -339,7 +340,7 @@ export default function CeMatinPage() {
                   >
                     <span className="min-w-0 flex-1 space-y-1">
                       <span className="line-clamp-2 block text-sm font-medium leading-snug">
-                        {sujet.titre}
+                        {nettoyerTitre(sujet.titre)}
                       </span>
                       <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                         {sujet.source_nom && <span className="truncate">{sujet.source_nom}</span>}
