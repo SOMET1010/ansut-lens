@@ -41,14 +41,22 @@ export function missionsDeLActualite(a: Actualite): string[] {
   return piliersPourTexte(`${a.titre ?? ''} ${a.resume ?? ''} ${(a.tags ?? []).join(' ')}`);
 }
 
+const IDS_VALIDES = new Set(MISSIONS_STRATEGIQUES.map((m) => m.id));
+
 /**
  * Piliers d'une actualité en privilégiant l'alignement IA persisté
- * (`pilier_id` / `piliers`), avec repli sur l'appariement par mots-clés pour les
- * articles collectés avant la mise en place de l'alignement.
+ * (`pilier_id` / `piliers`), avec repli sur l'appariement par mots-clés.
+ *
+ * On ne fait confiance à un identifiant persisté que s'il appartient au
+ * référentiel courant : après un changement de référentiel (bascule vers les
+ * piliers propres de l'ANSUT), d'anciens articles portent encore des
+ * identifiants obsolètes. Dans ce cas on ignore la valeur persistée et on
+ * recalcule par mots-clés, le temps que la ré-collecte/ré-alignement rattrape.
  */
 export function piliersDeLActu(a: Actualite): string[] {
-  if (a.pilier_id) return [a.pilier_id];
-  if (a.piliers && a.piliers.length > 0) return a.piliers;
+  if (a.pilier_id && IDS_VALIDES.has(a.pilier_id)) return [a.pilier_id];
+  const persistes = (a.piliers ?? []).filter((id) => IDS_VALIDES.has(id));
+  if (persistes.length > 0) return persistes;
   return missionsDeLActualite(a);
 }
 
