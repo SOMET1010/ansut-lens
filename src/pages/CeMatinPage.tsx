@@ -27,7 +27,7 @@ import {
 } from '@/hooks/useRadarData';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { AnalyseCommunication } from '@/components/radar/AnalyseCommunication';
-import { DossiersStrategiques } from '@/components/radar/DossiersStrategiques';
+import { NotreCommunication } from '@/components/radar/NotreCommunication';
 import { ChangementsDepuisHier } from '@/components/radar/ChangementsDepuisHier';
 import { ASurveiller } from '@/components/radar/ASurveiller';
 import { useAnsutPublications } from '@/hooks/useAnsutPublications';
@@ -220,19 +220,16 @@ export default function CeMatinPage() {
           isLoading={sujetsLoading}
         />
 
-        {/* 1 — Dossiers stratégiques de l'ANSUT (connaissance + communication + veille). */}
-        <DossiersStrategiques
-          publications={publications ?? []}
-          externes={externes}
-          maintenantMs={maintenantMs}
-          isLoading={sujetsLoading}
-        />
+        {/* Couche 1 — Notre communication (thèmes portés par l'ANSUT). */}
+        <NotreCommunication />
 
-        {/* 2 — Ce qui a changé depuis hier (veille externe 24 h, rattachée aux piliers). */}
+        {/* Couche 2 — L'écosystème (veille externe récente, rattachée aux thèmes). */}
         <ChangementsDepuisHier
           actualites={externes24h}
           prioritesActives={PILIERS_ANSUT}
           isLoading={sujetsLoading}
+          titre="L’écosystème"
+          sousTitre="Les sujets qui bougent dans le secteur ces dernières 24 h."
         />
 
         {/* 3 — À arbitrer (sujets externes méritant une attention humaine). */}
