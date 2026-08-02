@@ -7,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Badge } from '@/components/ui/badge';
 import type { Actualite } from '@/hooks/useActualites';
 import type { Dossier } from '@/hooks/useDossiers';
+import { nettoyerTitre } from '@/lib/nettoyerExtrait';
 
 interface ContextSelectorProps {
   actualites: Actualite[];
@@ -101,7 +102,7 @@ export function ContextSelector({
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium truncate leading-tight group-hover:text-primary transition-colors">
-                        {actu.titre}
+                        {nettoyerTitre(actu.titre)}
                       </p>
                       {actu.source_nom && (
                         <p className="text-[10px] text-muted-foreground truncate">

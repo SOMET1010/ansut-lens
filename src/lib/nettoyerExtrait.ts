@@ -22,9 +22,12 @@
 /** Longueur au-dela de laquelle l'extrait est coupe sur une frontiere de mot. */
 const LONGUEUR_MAX = 320;
 
-export function nettoyerExtrait(brut: string | null | undefined): string {
-  if (!brut) return '';
-
+/**
+ * Retire le balisage (Markdown, HTML, URL nues) d'un fragment de texte et
+ * normalise les espaces, sans le tronquer. Cœur commun aux extraits et aux
+ * titres.
+ */
+function retirerBalisage(brut: string): string {
   let texte = brut;
 
   // Images Markdown : supprimees, leur texte alternatif n'apporte rien au sens.
@@ -61,7 +64,25 @@ export function nettoyerExtrait(brut: string | null | undefined): string {
   texte = texte.replace(/([:;,.!?])\s*\1+/g, '$1');
 
   // Espaces multiples et sauts de ligne ramenes a un espace simple.
-  texte = texte.replace(/\s+/g, ' ').trim();
+  return texte.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Nettoie un titre d'article ou de publication pour l'affichage.
+ *
+ * Les titres issus de la collecte automatique arrivent parfois charges de
+ * balisage (« [**Journee Mondiale... », « # e-Services »). Contrairement a un
+ * extrait, un titre n'est pas tronque : il doit rester lisible en entier.
+ */
+export function nettoyerTitre(brut: string | null | undefined): string {
+  if (!brut) return '';
+  return retirerBalisage(brut);
+}
+
+export function nettoyerExtrait(brut: string | null | undefined): string {
+  if (!brut) return '';
+
+  const texte = retirerBalisage(brut);
 
   if (texte.length <= LONGUEUR_MAX) return texte;
 

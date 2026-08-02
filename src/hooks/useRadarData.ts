@@ -104,15 +104,32 @@ export function useIntelligenceFeed(limit: number = 50) {
   return useQuery({
     queryKey: ['intelligence-feed', limit],
     queryFn: async (): Promise<Actualite[]> => {
+      // « Les sujets qui comptent » doit refléter la pertinence pour l'ANSUT,
+      // pas seulement la fraîcheur. On récupère un vivier d'articles récents,
+      // puis on le classe par pertinence (score_pertinence, sinon importance),
+      // la fraîcheur ne servant qu'à départager. Auparavant, le tri se faisait
+      // uniquement par date, si bien qu'un article récent mais hors sujet
+      // (cybercriminalité, etc.) passait devant un sujet central plus ancien.
+      const vivier = Math.max(limit, 40);
       const { data, error } = await supabase
         .from('actualites')
         .select('*')
         .order('date_publication', { ascending: false })
-        .limit(limit);
+        .limit(vivier);
 
       if (error) throw error;
-      
-      return (data || []).map(a => ({
+
+      const pertinence = (a: { score_pertinence: number | null; importance: number | null }) =>
+        a.score_pertinence ?? a.importance ?? 0;
+      const dateMs = (d: string | null) => (d ? new Date(d).getTime() : 0);
+
+      const classes = (data || []).slice().sort((x, y) => {
+        const diff = pertinence(y) - pertinence(x);
+        if (diff !== 0) return diff;
+        return dateMs(y.date_publication) - dateMs(x.date_publication);
+      });
+
+      return classes.slice(0, limit).map(a => ({
         id: a.id,
         titre: a.titre,
         resume: a.resume || undefined,
@@ -121,6 +138,7 @@ export function useIntelligenceFeed(limit: number = 50) {
         source_url: a.source_url || undefined,
         date_publication: a.date_publication || undefined,
         importance: a.importance || 50,
+        score_pertinence: a.score_pertinence ?? undefined,
         tags: a.tags || undefined,
         categorie: a.categorie || undefined,
         analyse_ia: a.analyse_ia || undefined,

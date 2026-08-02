@@ -8,9 +8,7 @@ import {
   ChevronDown,
   Clock,
   FileText,
-  Gauge,
   Home,
-  MessageSquare,
   Newspaper,
   RefreshCw,
   Users,
@@ -18,15 +16,11 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { RelativeTime } from '@/components/ui/relative-time';
 import {
-  ChiffreCle,
   PageContainer,
   PageHeader,
   ProchaineAction,
-  TermeMetier,
 } from '@/components/common';
 import {
   useIntelligenceFeed,
@@ -35,39 +29,27 @@ import {
   useRadarSignaux,
 } from '@/hooks/useRadarData';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
-
-/** Nombre de sujets presentes sur l'accueil. Volontairement bas. */
-const NB_SUJETS_ACCUEIL = 5;
+import { ObjectifsStrategiques } from '@/components/radar/ObjectifsStrategiques';
+import { PreuvesParAxe } from '@/components/radar/PreuvesParAxe';
+import { DailyBriefing } from '@/components/radar/DailyBriefing';
 
 /**
- * Formule une phrase de lecture pour un volume de mentions.
- * Un nombre brut ne dit rien : c'est la tendance qui porte le sens.
- *
- * `phraseZero` est fourni par l'appelant plutot que construit ici : une formule
- * generique obligerait a inserer un point median pour couvrir les deux genres,
- * ce qui produit un texte illisible pour un lecteur peu familier de l'ecrit
- * administratif. Le public de la plateforme inclut des agents dont la maitrise
- * de l'ecrit varie, l'accord doit donc etre juste et non contourne.
+ * Taille du vivier d'actualites recentes charge pour l'accueil. Il alimente a la
+ * fois la repartition par mission (« objectifs impactes ») et les sujets en tete
+ * de liste, sans multiplier les requetes.
  */
-function lireVolume(valeur: number, phraseZero: string): string {
-  if (valeur === 0) return phraseZero;
-  if (valeur < 10) return `Activité faible sur la période`;
-  if (valeur < 40) return `Activité modérée, dans la normale`;
-  if (valeur < 100) return `Activité soutenue, à suivre`;
-  return `Volume inhabituel, mérite une lecture attentive`;
-}
+const TAILLE_VIVIER_ACCUEIL = 40;
 
+/**
+ * Formule une phrase de lecture pour un volume d'alertes en attente.
+ * L'accord est ecrit selon le nombre plutot que contourne par un point median :
+ * le public de la plateforme inclut des agents dont la maitrise de l'ecrit
+ * varie, l'accord doit donc etre juste et lisible.
+ */
 function lireAlertes(valeur: number): string {
   if (valeur === 0) return 'Aucune alerte en attente de traitement';
   if (valeur === 1) return 'Une alerte attend votre traitement';
   return `${valeur} alertes attendent votre traitement`;
-}
-
-function lireScore(valeur: number): string {
-  if (valeur >= 75) return 'Présence digitale solide';
-  if (valeur >= 50) return 'Présence digitale correcte, marge de progression';
-  if (valeur > 0) return 'Présence digitale à renforcer';
-  return 'Score non encore calculé';
 }
 
 /**
@@ -80,8 +62,13 @@ function lireScore(valeur: number): string {
  *
  * Ce nouvel ecran repond a une seule question : que dois-je savoir maintenant ?
  * Il tient sans onglet et se lit de haut en bas en quatre strates de priorite
- * decroissante : alerte critique s'il y en a une, quatre chiffres cles
- * interpretes, les cinq sujets qui comptent, puis la prochaine action a mener.
+ * decroissante : alerte critique s'il y en a une, les objectifs strategiques
+ * impactes (ce qui bouge sur les missions de l'ANSUT), les sujets qui comptent
+ * comme preuves, puis la prochaine action a mener.
+ *
+ * Les chiffres bruts d'antan (mentions, articles, alertes, score) ont ete
+ * remplaces par cette lecture par mission : l'article devient une preuve
+ * rattachee a un objectif, plutot que le contenu principal.
  *
  * Tout le reste a migre vers les pages Veille et Recherche, accessibles en un
  * clic depuis des liens explicites.
@@ -90,9 +77,9 @@ export default function CeMatinPage() {
   /** Depliage des signaux critiques directement dans la barre d'alerte. */
   const [signauxDeplies, setSignauxDeplies] = useState(false);
 
-  const { data: kpis, isLoading: kpisLoading, isFetching: kpisFetching } = useRadarKPIs('24h');
+  const { data: kpis, isFetching: kpisFetching } = useRadarKPIs('24h');
   const { data: signaux } = useRadarSignaux();
-  const { data: sujets, isLoading: sujetsLoading } = useIntelligenceFeed(NB_SUJETS_ACCUEIL);
+  const { data: sujets, isLoading: sujetsLoading } = useIntelligenceFeed(TAILLE_VIVIER_ACCUEIL);
   const { data: derniereCollecte } = useLastCollecteTime();
   const { hasPermission } = useUserPermissions();
 
@@ -250,117 +237,28 @@ export default function CeMatinPage() {
           </div>
         )}
 
-        {/* Strate 2 : quatre chiffres cles, chacun accompagne de sa lecture. */}
-        <section aria-labelledby="chiffres-titre" className="space-y-3">
-          <h2 id="chiffres-titre" className="text-sm font-semibold text-muted-foreground">
-            Les chiffres des dernières 24 heures
-          </h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <ChiffreCle
-              libelle="Mentions"
-              valeur={kpis?.mentions ?? 0}
-              lecture={lireVolume(kpis?.mentions ?? 0, 'Aucune mention sur la période')}
-              icon={MessageSquare}
-              to="/veille"
-              isLoading={kpisLoading}
-            />
-            <ChiffreCle
-              libelle="Articles collectés"
-              valeur={kpis?.articles ?? 0}
-              lecture={lireVolume(kpis?.articles ?? 0, 'Aucun article collecté sur la période')}
-              icon={Newspaper}
-              to="/veille"
-              isLoading={kpisLoading}
-            />
-            <ChiffreCle
-              libelle="Alertes actives"
-              valeur={alertesActives}
-              lecture={lireAlertes(alertesActives)}
-              icon={BellRing}
-              to="/alertes"
-              isLoading={kpisLoading}
-              alerte={alertesActives > 0}
-            />
-            <ChiffreCle
-              libelle="Score d’influence"
-              valeur={kpis?.scoreInfluence ?? 0}
-              lecture={lireScore(kpis?.scoreInfluence ?? 0)}
-              icon={Gauge}
-              to="/acteurs?tab=spdi"
-              isLoading={kpisLoading}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Le score d’influence agrège les{' '}
-            <TermeMetier cle="spdi">scores de présence digitale</TermeMetier> des acteurs
-            suivis.
-          </p>
-        </section>
+        {/*
+          Strate 2 : les objectifs strategiques impactes.
 
-        {/* Strate 3 : les sujets qui comptent, reduits a l'essentiel. */}
-        <section aria-labelledby="sujets-titre" className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <h2 id="sujets-titre" className="text-sm font-semibold text-muted-foreground">
-              Les sujets qui comptent
-            </h2>
-            <Button asChild variant="link" size="sm" className="h-auto p-0">
-              <Link to="/veille">
-                Toute la veille
-                <ArrowRight className="ml-1 h-3.5 w-3.5" aria-hidden />
-              </Link>
-            </Button>
-          </div>
+          Les quatre chiffres bruts (mentions, articles, alertes, score) ont ete
+          remplaces : a 8 h du matin, un decideur ne veut pas un decompte, il
+          veut savoir ce qui bouge sur les missions de l'ANSUT. Les actualites
+          recentes sont reparties par mission, chaque carte portant un niveau
+          d'attention et l'information la plus alignee du moment. Les articles
+          deviennent les preuves, presentees juste en dessous.
+        */}
+        {/*
+          Strate 1 bis : la synthese executive du matin. Le briefing 30 s (en
+          cache 2 h) donne l'essentiel avant meme les objectifs. La Matinale
+          riche (priorite executive + actions) prendra le relais en phase 2, une
+          fois sa sortie persistee pour une lecture d'accueil peu couteuse.
+        */}
+        <DailyBriefing />
 
-          {sujetsLoading ? (
-            <div className="space-y-2">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <Skeleton key={index} className="h-16 rounded-xl" />
-              ))}
-            </div>
-          ) : (sujets ?? []).length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-                <Newspaper className="h-10 w-10 text-muted-foreground/60" aria-hidden />
-                <p className="text-sm text-muted-foreground">
-                  Aucun sujet collecté pour le moment.
-                </p>
-                <Button asChild size="sm" className="min-h-11 sm:min-h-9">
-                  <Link to="/veille">Lancer une collecte</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <ul className="space-y-2">
-              {(sujets ?? []).slice(0, NB_SUJETS_ACCUEIL).map((sujet) => (
-                <li key={sujet.id}>
-                  <Link
-                    to={`/veille?article=${sujet.id}`}
-                    className="flex min-h-11 items-start gap-3 rounded-xl border bg-card p-3.5 transition-colors hover:border-primary/40 hover:bg-accent/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <span className="min-w-0 flex-1 space-y-1">
-                      <span className="line-clamp-2 block text-sm font-medium leading-snug">
-                        {sujet.titre}
-                      </span>
-                      <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                        {sujet.source_nom && <span className="truncate">{sujet.source_nom}</span>}
-                        {sujet.date_publication && (
-                          <>
-                            <span aria-hidden>·</span>
-                            <RelativeTime date={sujet.date_publication} />
-                          </>
-                        )}
-                      </span>
-                    </span>
-                    <ArrowRight
-                      className="mt-1 h-4 w-4 shrink-0 text-muted-foreground/50"
-                      aria-hidden
-                    />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <ObjectifsStrategiques actualites={sujets ?? []} isLoading={sujetsLoading} />
+
+        {/* Strate 3 : les preuves, regroupees sous l'axe strategique impacte. */}
+        <PreuvesParAxe actualites={sujets ?? []} isLoading={sujetsLoading} />
 
         {/* Strate 4 : la prochaine action a mener. */}
         <ProchaineAction {...prochaineAction} />

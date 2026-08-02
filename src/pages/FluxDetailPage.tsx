@@ -10,7 +10,7 @@ import { SectionEmptyState } from '@/components/radar/SectionEmptyState';
 import { toErrorMessage } from '@/utils/errors';
 import { useState } from 'react';
 import { FluxFormDialog } from '@/components/flux';
-import { nettoyerExtrait } from '@/lib/nettoyerExtrait';
+import { nettoyerExtrait, nettoyerTitre } from '@/lib/nettoyerExtrait';
 import { PageContainer, PageHeader } from '@/components/common';
 
 const frequenceLabels: Record<string, string> = {
@@ -209,12 +209,12 @@ export default function FluxDetailPage() {
                             className="group"
                           >
                             <CardTitle className="text-lg leading-tight group-hover:text-primary transition-colors flex items-center gap-2">
-                              {actu.titre}
+                              {nettoyerTitre(actu.titre)}
                               <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden />
                             </CardTitle>
                           </a>
                         ) : (
-                          <CardTitle className="text-lg leading-tight">{actu.titre}</CardTitle>
+                          <CardTitle className="text-lg leading-tight">{nettoyerTitre(actu.titre)}</CardTitle>
                         )}
                       </div>
                     </div>

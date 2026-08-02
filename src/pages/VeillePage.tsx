@@ -21,6 +21,11 @@ import {
 } from '@/hooks/useActualites';
 import { useArticleClusters } from '@/hooks/useArticleClusters';
 import { useSidebarAnalytics } from '@/hooks/useSidebarAnalytics';
+import { MISSIONS_STRATEGIQUES } from '@/config/missions';
+import { missionsDeLActualite } from '@/lib/missions';
+import type { Actualite } from '@/types';
+import { X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { ArticleCluster } from '@/components/actualites/ArticleCluster';
 import { SmartSidebar } from '@/components/actualites/SmartSidebar';
 import { WatchHeader } from '@/components/actualites/WatchHeader';
@@ -63,6 +68,29 @@ export default function VeillePage() {
 
   const ongletActif = searchParams.get('tab') === 'pour-vous' ? 'pour-vous' : 'tout';
 
+  // Filtre par pilier stratégique (lien depuis « Ce matin »). On préfère le
+  // rattachement persisté (pilier_id / piliers) dès qu'il existe en base, avec
+  // repli sur le calcul par mots-clés côté client pour les articles anciens.
+  const missionParam = searchParams.get('mission');
+  const missionActive = MISSIONS_STRATEGIQUES.find((m) => m.id === missionParam);
+  const articleDansMission = useCallback((actu: Actualite, missionId: string) => {
+    const persiste = actu as Actualite & { pilier_id?: string; piliers?: string[] };
+    if (persiste.pilier_id) return persiste.pilier_id === missionId;
+    if (persiste.piliers?.length) return persiste.piliers.includes(missionId);
+    return missionsDeLActualite(actu).includes(missionId);
+  }, []);
+
+  const effacerMission = useCallback(() => {
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        p.delete('mission');
+        return p;
+      },
+      { replace: true },
+    );
+  }, [setSearchParams]);
+
   const { data: actualites, isLoading, refetch } = useActualites({
     maxAgeHours: PERIODES[periode],
   });
@@ -90,9 +118,10 @@ export default function VeillePage() {
         );
         if (!correspond) return false;
       }
+      if (missionActive && !articleDansMission(actu, missionActive.id)) return false;
       return true;
     });
-  }, [actualites, termeRecherche, filtresActifs]);
+  }, [actualites, termeRecherche, filtresActifs, missionActive, articleDansMission]);
 
   const clusters = useArticleClusters(actualitesFiltrees);
   const analytics = useSidebarAnalytics(actualitesFiltrees, articlesHier, filtresActifs);
@@ -137,6 +166,25 @@ export default function VeillePage() {
           description="Tous les articles collectés sur le secteur, regroupés par sujet et classés par pertinence."
           icon={Newspaper}
         />
+
+        {missionActive && (
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2">
+            <span className="text-xs text-muted-foreground">Filtré par l’objectif</span>
+            <Badge variant="secondary" className="gap-1">
+              <span className="text-muted-foreground/70">{missionActive.code}</span>
+              {missionActive.nom}
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto h-7 gap-1 px-2 text-xs"
+              onClick={effacerMission}
+            >
+              <X className="h-3.5 w-3.5" aria-hidden />
+              Retirer le filtre
+            </Button>
+          </div>
+        )}
 
         <Tabs value={ongletActif} onValueChange={changerOnglet}>
           <TabsList>

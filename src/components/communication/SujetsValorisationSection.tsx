@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { TrendingUp, Sparkles, RefreshCw, ArrowRight } from 'lucide-react';
+import { TrendingUp, Sparkles, RefreshCw, ArrowRight, Compass, Lightbulb } from 'lucide-react';
+import { nettoyerTitre } from '@/lib/nettoyerExtrait';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -141,14 +142,20 @@ export function SujetsValorisationSection({ onGeneratePost }: Props) {
             <Card key={i} className="border-l-4 border-l-primary">
               <CardContent className="p-4 space-y-2">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="font-medium text-sm">{s.titre}</p>
+                  <p className="font-medium text-sm">{nettoyerTitre(s.titre)}</p>
                   <Badge variant="outline" className={`text-[10px] shrink-0 ${prioriteColors[s.priorite] || prioriteColors.moyenne}`}>
                     {s.priorite}
                   </Badge>
                 </div>
-                <p className="text-xs text-muted-foreground">📐 Angle : {s.angle}</p>
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Compass className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  Angle : {s.angle}
+                </p>
                 {s.pourquoi && (
-                  <p className="text-xs text-muted-foreground italic">💡 {s.pourquoi}</p>
+                  <p className="text-xs text-muted-foreground italic flex items-center gap-1.5">
+                    <Lightbulb className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    {s.pourquoi}
+                  </p>
                 )}
                 {onGeneratePost && (
                   <Button

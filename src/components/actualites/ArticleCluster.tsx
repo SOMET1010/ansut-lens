@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { calculateFreshness, type Actualite } from '@/hooks/useActualites';
-import { nettoyerExtrait } from '@/lib/nettoyerExtrait';
+import { nettoyerExtrait, nettoyerTitre } from '@/lib/nettoyerExtrait';
 import { cn } from '@/lib/utils';
 import { TermeMetier } from '@/components/common/TermeMetier';
 
@@ -137,14 +137,14 @@ export function ArticleCluster({
             className="group"
           >
             <h3 className="text-lg font-bold text-foreground mb-2 leading-tight group-hover:text-primary transition-colors flex items-start gap-2">
-              {mainArticle.titre}
+              {nettoyerTitre(mainArticle.titre)}
               <ExternalLink className="h-4 w-4 mt-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" aria-hidden="true" />
               <span className="sr-only">(ouvre un nouvel onglet)</span>
             </h3>
           </a>
         ) : (
           <h3 className="text-lg font-bold text-foreground mb-2 leading-tight flex items-start gap-2">
-            {mainArticle.titre}
+            {nettoyerTitre(mainArticle.titre)}
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border mt-0.5 shrink-0">
@@ -224,7 +224,7 @@ export function ArticleCluster({
                   {article.source_nom}
                 </span>
                 <span className="text-foreground truncate font-medium">
-                  {article.titre}
+                  {nettoyerTitre(article.titre)}
                 </span>
               </div>
               {article.source_url && (
@@ -233,7 +233,7 @@ export function ArticleCluster({
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-primary hover:text-primary/80 shrink-0"
-                  aria-label={`Ouvrir l'article ${article.titre} dans un nouvel onglet`}
+                  aria-label={`Ouvrir l'article ${nettoyerTitre(article.titre)} dans un nouvel onglet`}
                 >
                   <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                 </a>
@@ -297,7 +297,7 @@ export function ArticleCluster({
           </DialogHeader>
           
           <div className="space-y-4">
-            <h3 className="font-bold text-lg leading-tight">{mainArticle.titre}</h3>
+            <h3 className="font-bold text-lg leading-tight">{nettoyerTitre(mainArticle.titre)}</h3>
             
             <div className="border-t pt-4">
               {(() => {

@@ -16,6 +16,9 @@ Bienvenue dans la documentation technique du projet ANSUT RADAR, plateforme de v
 | [Contribution](./CONTRIBUTING.md) | Guide Git, conventions de code |
 | [Déploiement](./DEPLOYMENT.md) | Lovable Cloud, variables, CRON |
 | [Dépannage](./TROUBLESHOOTING.md) | FAQ, erreurs courantes, debug |
+| [Refonte UX](./REFONTE-UX.md) | Rapport d'audit et guide de reprise de la refonte |
+| [Vision pilotage stratégique](./VISION-PILOTAGE-STRATEGIQUE.md) | ADN stratégique, alignement, feuille de route « Ce matin » |
+| [Charte de design](./CHARTE-DESIGN.md) | Contrat de design opposable ANSUT |
 
 ### Guides Utilisateurs
 

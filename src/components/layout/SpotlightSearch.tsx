@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { NAV_SECTIONS } from '@/config/navigation';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
+import { nettoyerTitre } from '@/lib/nettoyerExtrait';
 
 interface SearchResults {
   actualites: { id: string; titre: string; source_nom: string | null }[];
@@ -180,7 +181,7 @@ export function SpotlightSearch({ open, onOpenChange }: SpotlightSearchProps) {
                 onSelect={() => aller(`/veille?article=${actualite.id}`)}
               >
                 <Newspaper className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="truncate">{actualite.titre}</span>
+                <span className="truncate">{nettoyerTitre(actualite.titre)}</span>
                 {actualite.source_nom && (
                   <span className="ml-auto shrink-0 pl-3 text-xs text-muted-foreground">
                     {actualite.source_nom}

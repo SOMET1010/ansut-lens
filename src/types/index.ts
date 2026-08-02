@@ -44,6 +44,7 @@ export interface Actualite {
   source_url?: string;
   date_publication?: string;
   importance: number;
+  score_pertinence?: number;
   tags?: string[];
   categorie?: string;
   analyse_ia?: string;
