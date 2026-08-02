@@ -10,6 +10,8 @@ import { calculateFreshness, type Actualite } from '@/hooks/useActualites';
 import { nettoyerExtrait, nettoyerTitre } from '@/lib/nettoyerExtrait';
 import { cn } from '@/lib/utils';
 import { TermeMetier } from '@/components/common/TermeMetier';
+import { Target } from 'lucide-react';
+import { MISSIONS_STRATEGIQUES } from '@/config/missions';
 
 // Interface pour le JSON d'analyse IA
 interface AnalyseIA {
@@ -38,6 +40,10 @@ interface ArticleClusterProps {
     entites_personnes?: string[];
     entites_entreprises?: string[];
     score_pertinence?: number;
+    pilier_id?: string;
+    pourquoi_important?: string;
+    action_suggeree?: string;
+    confiance_ia?: number;
   };
   relatedArticles: Actualite[];
   onEnrich?: (id: string) => void;
@@ -74,7 +80,7 @@ export function ArticleCluster({
                 score >= 80 ? "bg-primary" : score >= 60 ? "bg-primary/80" : "bg-muted-foreground"
               )}
             >
-              {score}% Pertinence
+              {score}% Alignement
             </Badge>
             {/* Sentiment indicator */}
             {mainArticle.sentiment != null ? (
@@ -166,6 +172,40 @@ export function ArticleCluster({
           <p className="text-muted-foreground text-sm mb-4 leading-relaxed line-clamp-2">
             {nettoyerExtrait(mainArticle.resume)}
           </p>
+        )}
+
+        {/*
+          Lecture stratégique : pilier impacté, raison et action suggérée,
+          remplis par l'alignement IA. Affiché seulement s'il existe, pour ne
+          pas encombrer les articles non encore analysés.
+        */}
+        {(mainArticle.pourquoi_important || mainArticle.action_suggeree || mainArticle.pilier_id) && (
+          <div className="mb-4 space-y-1.5 rounded-lg border border-primary/20 bg-primary/[0.04] p-3">
+            {(() => {
+              const pilier = MISSIONS_STRATEGIQUES.find((m) => m.id === mainArticle.pilier_id);
+              return pilier ? (
+                <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium text-primary">
+                  <Target className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  Impacte {pilier.code} — {pilier.nom}
+                  {mainArticle.confiance_ia != null && (
+                    <span className="font-normal text-muted-foreground">
+                      · confiance {mainArticle.confiance_ia}%
+                    </span>
+                  )}
+                </div>
+              ) : null;
+            })()}
+            {mainArticle.pourquoi_important && (
+              <p className="text-xs text-foreground/80">
+                <span className="font-medium">Pourquoi :</span> {mainArticle.pourquoi_important}
+              </p>
+            )}
+            {mainArticle.action_suggeree && (
+              <p className="text-xs text-foreground/80">
+                <span className="font-medium">Action :</span> {mainArticle.action_suggeree}
+              </p>
+            )}
+          </div>
         )}
 
         {/* Entités extraites */}
