@@ -47,12 +47,16 @@ async function fetchPerplexityNews(): Promise<{ articles: Array<{ titre: string;
   const allArticles: Array<{ titre: string; resume: string; source: string; url: string }> = [];
   const allCitations: string[] = [];
 
-  for (let qi = 0; qi < queries.length; qi++) {
+  // Exécution EN PARALLÈLE (avant : séquentiel → dépassait le timeout 150s de l'edge runtime)
+  const runQuery = async (qi: number) => {
     const query = queries[qi];
     const isEventQuery = qi === 0 || qi === 3 || qi === 5; // événements & agenda
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 60_000);
     try {
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
+        signal: ctrl.signal,
         headers: {
           'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
           'Content-Type': 'application/json',
@@ -84,7 +88,7 @@ RÈGLES STRICTES :
       if (!response.ok) {
         const body = await response.text();
         console.error(`[Matinale/Perplexity] Error ${response.status} for query: ${query} | body: ${body.slice(0, 300)}`);
-        continue;
+        return;
       }
 
       const data = await response.json();
@@ -134,8 +138,13 @@ RÈGLES STRICTES :
       console.log(`[Matinale/Perplexity] Q${qi} (${isEventQuery ? 'EVT' : 'STD'}): parsed=${parsedCount}, citations=${citations.length}, content.len=${content.length}`);
     } catch (e) {
       console.error(`[Matinale/Perplexity] Fetch error for query "${query}":`, e);
+    } finally {
+      clearTimeout(timer);
     }
-  }
+  };
+
+  await Promise.all(queries.map((_, qi) => runQuery(qi)));
+
 
   // Reject homepage URLs (no real path) and titles that look like source/SEO descriptions
   const isHomepageUrl = (u: string): boolean => {
