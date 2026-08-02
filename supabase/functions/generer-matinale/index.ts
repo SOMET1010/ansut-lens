@@ -25,6 +25,83 @@ async function sendViaGateway(to: string, subject: string, htmlContent: string) 
   return response;
 }
 
+// ---------------------------------------------------------------------------
+// Cache Perplexity (table public.perplexity_cache)
+// Réutilise les réponses récentes pour éviter de refaire les mêmes requêtes.
+// ---------------------------------------------------------------------------
+const PERPLEXITY_CACHE_TTL_MINUTES = 180; // 3h : les requêtes sont datées du jour
+
+function cacheAdminClient() {
+  return createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  );
+}
+
+async function hashQuery(model: string, query: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${model}::${query}`));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function getCachedPerplexity(
+  model: string,
+  query: string,
+): Promise<{ content: string; citations: string[] } | null> {
+  try {
+    const hash = await hashQuery(model, query);
+    const admin = cacheAdminClient();
+    const { data } = await admin
+      .from('perplexity_cache')
+      .select('id, content, citations, hits, expires_at')
+      .eq('query_hash', hash)
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
+    if (!data) return null;
+    // Compteur de réutilisation (best effort)
+    admin.from('perplexity_cache').update({ hits: (data.hits ?? 0) + 1 }).eq('id', data.id).then(
+      () => {},
+      () => {},
+    );
+    return {
+      content: data.content ?? '',
+      citations: Array.isArray(data.citations) ? (data.citations as string[]) : [],
+    };
+  } catch (e) {
+    console.error('[Matinale/Cache] read failed:', (e as Error).message);
+    return null;
+  }
+}
+
+async function setCachedPerplexity(
+  model: string,
+  query: string,
+  content: string,
+  citations: string[],
+): Promise<void> {
+  try {
+    const hash = await hashQuery(model, query);
+    const expires = new Date(Date.now() + PERPLEXITY_CACHE_TTL_MINUTES * 60_000).toISOString();
+    const admin = cacheAdminClient();
+    await admin.from('perplexity_cache').upsert(
+      {
+        query_hash: hash,
+        query_text: query,
+        model,
+        content,
+        citations,
+        hits: 0,
+        expires_at: expires,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'query_hash' },
+    );
+    // Purge opportuniste des entrées expirées
+    await admin.from('perplexity_cache').delete().lt('expires_at', new Date().toISOString());
+  } catch (e) {
+    console.error('[Matinale/Cache] write failed:', (e as Error).message);
+  }
+}
+
 // Fetch real-time news from Perplexity to ground the briefing in verified sources
 async function fetchPerplexityNews(): Promise<{ articles: Array<{ titre: string; resume: string; source: string; url: string }>; citations: string[] }> {
   const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
