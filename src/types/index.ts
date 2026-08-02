@@ -51,6 +51,14 @@ export interface Actualite {
   pourquoi_important?: string;
   sentiment?: SentimentValue;
   impact_ansut?: string;
+  /** Pilier stratégique principal impacté (alignement IA persisté). */
+  pilier_id?: string;
+  /** Tous les piliers impactés. */
+  piliers?: string[];
+  /** Action suggérée par l'alignement IA. */
+  action_suggeree?: string;
+  /** Confiance de l'alignement IA (0-100). */
+  confiance_ia?: number;
 }
 
 export interface Mention {
