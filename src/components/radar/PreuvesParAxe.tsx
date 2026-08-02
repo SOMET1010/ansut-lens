@@ -82,9 +82,11 @@ export function PreuvesParAxe({ actualites, isLoading }: Props) {
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
             <Newspaper className="h-10 w-10 text-muted-foreground/60" aria-hidden />
-            <p className="text-sm text-muted-foreground">Aucun sujet collecté pour le moment.</p>
-            <Button asChild size="sm" className="min-h-11 sm:min-h-9">
-              <Link to="/veille">Lancer une collecte</Link>
+            <p className="text-sm text-muted-foreground">
+              Rien de neuf ce matin. Rien de nouveau n’a été collecté sur les dernières 24 heures.
+            </p>
+            <Button asChild variant="outline" size="sm" className="min-h-11 sm:min-h-9">
+              <Link to="/veille">Voir toute la veille</Link>
             </Button>
           </CardContent>
         </Card>

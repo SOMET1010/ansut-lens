@@ -35,10 +35,18 @@ import { DailyBriefing } from '@/components/radar/DailyBriefing';
 
 /**
  * Taille du vivier d'actualites recentes charge pour l'accueil. Il alimente a la
- * fois la repartition par mission (« objectifs impactes ») et les sujets en tete
- * de liste, sans multiplier les requetes.
+ * fois la repartition par mission (« objectifs impactes ») et les preuves, sans
+ * multiplier les requetes.
  */
 const TAILLE_VIVIER_ACCUEIL = 40;
+
+/**
+ * Fenetre « ce matin » : l'accueil ne considere que l'actualite des dernieres
+ * 24 h. La page promet « ce qu'il faut savoir aujourd'hui » — elle ne doit donc
+ * pas afficher d'articles anciens sous ce bandeau. En l'absence d'actualite
+ * fraiche, l'ecran le dit honnetement plutot que de remonter du contenu perime.
+ */
+const FENETRE_CE_MATIN_HEURES = 24;
 
 /**
  * Formule une phrase de lecture pour un volume d'alertes en attente.
@@ -79,7 +87,10 @@ export default function CeMatinPage() {
 
   const { data: kpis, isFetching: kpisFetching } = useRadarKPIs('24h');
   const { data: signaux } = useRadarSignaux();
-  const { data: sujets, isLoading: sujetsLoading } = useIntelligenceFeed(TAILLE_VIVIER_ACCUEIL);
+  const { data: sujets, isLoading: sujetsLoading } = useIntelligenceFeed(
+    TAILLE_VIVIER_ACCUEIL,
+    FENETRE_CE_MATIN_HEURES,
+  );
   const { data: derniereCollecte } = useLastCollecteTime();
   const { hasPermission } = useUserPermissions();
 
