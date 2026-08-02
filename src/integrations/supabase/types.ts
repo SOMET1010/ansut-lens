@@ -803,6 +803,51 @@ export type Database = {
         }
         Relationships: []
       }
+      matinale_jobs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          params: Json
+          progress: number
+          result: Json | null
+          started_at: string | null
+          status: string
+          step: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          params?: Json
+          progress?: number
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+          step?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          params?: Json
+          progress?: number
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+          step?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mentions: {
         Row: {
           auteur: string | null
