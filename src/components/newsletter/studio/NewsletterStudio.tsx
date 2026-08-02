@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { toast } from 'sonner';
+import DOMPurify from 'dompurify';
 
 import { BlockToolbar } from './BlockToolbar';
 import { CanvasArea } from './CanvasArea';
