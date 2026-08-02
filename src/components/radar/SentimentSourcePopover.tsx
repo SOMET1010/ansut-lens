@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ExternalLink, MessageSquare, TrendingUp, TrendingDown, Minus, ArrowUpDown, Sparkles, Loader2, Eye, RefreshCw } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { nettoyerTitre } from '@/lib/nettoyerExtrait';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -721,7 +722,7 @@ function SentimentContent({
                   )}
                 </div>
 
-                <p className="text-xs font-medium line-clamp-2 leading-snug">{article.titre}</p>
+                <p className="text-xs font-medium line-clamp-2 leading-snug">{nettoyerTitre(article.titre)}</p>
 
                 <Progress value={sentimentPct} className="h-1" />
 

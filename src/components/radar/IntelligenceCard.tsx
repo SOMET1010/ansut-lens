@@ -1,6 +1,7 @@
 import { ExternalLink, Bookmark, Share2, Globe, Clock, Zap, Target } from 'lucide-react';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { cn } from '@/lib/utils';
+import { nettoyerTitre } from '@/lib/nettoyerExtrait';
 import { Actualite } from '@/types';
 
 interface IntelligenceCardProps {
@@ -111,7 +112,7 @@ export function IntelligenceCard({ actualite, onOpenSource, onSave, onShare }: I
           className="text-base font-bold text-foreground mb-2 group-hover:text-primary cursor-pointer leading-tight"
           onClick={() => actualite.source_url && onOpenSource?.(actualite.source_url)}
         >
-          {actualite.titre}
+          {nettoyerTitre(actualite.titre)}
         </h3>
 
         {/* Summary */}
