@@ -36,6 +36,49 @@ export function missionsDeLActualite(a: Actualite): string[] {
     .map((m) => m.id);
 }
 
+export interface GroupePreuves {
+  /** Axe de rattachement principal, ou `undefined` pour les sujets hors axes. */
+  mission?: MissionStrategique;
+  articles: Actualite[];
+}
+
+/**
+ * Regroupe les actualités par axe pour les présenter comme preuves : chaque
+ * article est rattaché à son axe *principal* (le premier apparié, dans l'ordre
+ * du référentiel) pour n'apparaître qu'une fois. Les sujets sans axe forment un
+ * groupe « Autres sujets » en fin de liste. Les groupes non vides sont classés
+ * par volume décroissant ; le groupe hors axes reste toujours dernier.
+ */
+export function grouperPreuvesParMission(actualites: Actualite[]): GroupePreuves[] {
+  const parId = new Map<string, Actualite[]>();
+  const hors: Actualite[] = [];
+
+  for (const a of actualites) {
+    const ids = missionsDeLActualite(a);
+    if (ids.length === 0) {
+      hors.push(a);
+      continue;
+    }
+    const principal = ids[0];
+    if (!parId.has(principal)) parId.set(principal, []);
+    parId.get(principal)!.push(a);
+  }
+
+  const groupes: GroupePreuves[] = MISSIONS_STRATEGIQUES
+    .filter((m) => parId.has(m.id))
+    .map((m) => ({
+      mission: m,
+      articles: (parId.get(m.id) ?? []).sort((x, y) => alignement(y) - alignement(x)),
+    }))
+    .sort((a, b) => b.articles.length - a.articles.length);
+
+  if (hors.length > 0) {
+    groupes.push({ articles: hors.sort((x, y) => alignement(y) - alignement(x)) });
+  }
+
+  return groupes;
+}
+
 export type NiveauAttention = 'calme' | 'a-noter' | 'a-surveiller' | 'priorite';
 
 export interface MissionImpactee {

@@ -16,8 +16,6 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { RelativeTime } from '@/components/ui/relative-time';
 import {
   PageContainer,
@@ -31,11 +29,9 @@ import {
   useRadarSignaux,
 } from '@/hooks/useRadarData';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
-import { nettoyerTitre } from '@/lib/nettoyerExtrait';
 import { ObjectifsStrategiques } from '@/components/radar/ObjectifsStrategiques';
-
-/** Nombre de sujets presentes sur l'accueil. Volontairement bas. */
-const NB_SUJETS_ACCUEIL = 5;
+import { PreuvesParAxe } from '@/components/radar/PreuvesParAxe';
+import { DailyBriefing } from '@/components/radar/DailyBriefing';
 
 /**
  * Taille du vivier d'actualites recentes charge pour l'accueil. Il alimente a la
@@ -251,72 +247,18 @@ export default function CeMatinPage() {
           d'attention et l'information la plus alignee du moment. Les articles
           deviennent les preuves, presentees juste en dessous.
         */}
+        {/*
+          Strate 1 bis : la synthese executive du matin. Le briefing 30 s (en
+          cache 2 h) donne l'essentiel avant meme les objectifs. La Matinale
+          riche (priorite executive + actions) prendra le relais en phase 2, une
+          fois sa sortie persistee pour une lecture d'accueil peu couteuse.
+        */}
+        <DailyBriefing />
+
         <ObjectifsStrategiques actualites={sujets ?? []} isLoading={sujetsLoading} />
 
-        {/* Strate 3 : les sujets qui comptent, reduits a l'essentiel. */}
-        <section aria-labelledby="sujets-titre" className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <h2 id="sujets-titre" className="text-sm font-semibold text-muted-foreground">
-              Les sujets qui comptent
-            </h2>
-            <Button asChild variant="link" size="sm" className="h-auto p-0">
-              <Link to="/veille">
-                Toute la veille
-                <ArrowRight className="ml-1 h-3.5 w-3.5" aria-hidden />
-              </Link>
-            </Button>
-          </div>
-
-          {sujetsLoading ? (
-            <div className="space-y-2">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <Skeleton key={index} className="h-16 rounded-xl" />
-              ))}
-            </div>
-          ) : (sujets ?? []).length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-                <Newspaper className="h-10 w-10 text-muted-foreground/60" aria-hidden />
-                <p className="text-sm text-muted-foreground">
-                  Aucun sujet collecté pour le moment.
-                </p>
-                <Button asChild size="sm" className="min-h-11 sm:min-h-9">
-                  <Link to="/veille">Lancer une collecte</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <ul className="space-y-2">
-              {(sujets ?? []).slice(0, NB_SUJETS_ACCUEIL).map((sujet) => (
-                <li key={sujet.id}>
-                  <Link
-                    to={`/veille?article=${sujet.id}`}
-                    className="flex min-h-11 items-start gap-3 rounded-xl border bg-card p-3.5 transition-colors hover:border-primary/40 hover:bg-accent/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <span className="min-w-0 flex-1 space-y-1">
-                      <span className="line-clamp-2 block text-sm font-medium leading-snug">
-                        {nettoyerTitre(sujet.titre)}
-                      </span>
-                      <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                        {sujet.source_nom && <span className="truncate">{sujet.source_nom}</span>}
-                        {sujet.date_publication && (
-                          <>
-                            <span aria-hidden>·</span>
-                            <RelativeTime date={sujet.date_publication} />
-                          </>
-                        )}
-                      </span>
-                    </span>
-                    <ArrowRight
-                      className="mt-1 h-4 w-4 shrink-0 text-muted-foreground/50"
-                      aria-hidden
-                    />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        {/* Strate 3 : les preuves, regroupees sous l'axe strategique impacte. */}
+        <PreuvesParAxe actualites={sujets ?? []} isLoading={sujetsLoading} />
 
         {/* Strate 4 : la prochaine action a mener. */}
         <ProchaineAction {...prochaineAction} />
