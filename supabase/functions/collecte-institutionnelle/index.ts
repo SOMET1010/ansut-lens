@@ -11,6 +11,21 @@ function extractTitle(contenu: string): string {
   return firstLine.length > 10 ? firstLine.substring(0, 150) : contenu.substring(0, 150);
 }
 
+// Helper: valider une date de publication extraite.
+// On ne FABRIQUE jamais de date : si l'extraction n'a pas fourni de date réelle
+// et vérifiable, on renvoie null. Afficher l'heure de collecte comme date de
+// publication faisait passer des vidéos vieilles d'un an pour « il y a 39 min ».
+// On rejette aussi les dates futures ou absurdes (< 2000).
+function parseDatePub(raw?: string | null): string | null {
+  if (!raw) return null;
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return null;
+  const now = Date.now();
+  if (d.getTime() > now + 24 * 3600 * 1000) return null; // pas de futur
+  if (d.getFullYear() < 2000) return null; // pas d'aberration
+  return d.toISOString();
+}
+
 // Helper: inject publication into actualites table
 async function injectIntoActualites(supabase: any, pub: {
   contenu: string;
@@ -112,8 +127,11 @@ Deno.serve(async (req) => {
                       plateforme: compte.plateforme,
                       type_contenu: post.type || "post",
                       contenu: post.contenu,
-                      url_original: profileUrl,
-                      date_publication: post.date_estimee || new Date().toISOString(),
+                      // URL de la publication elle-même quand l'extraction l'a
+                      // trouvée, sinon repli sur le profil. On ne prétend pas
+                      // connaître la date si elle n'a pas été lue (null honnête).
+                      url_original: (post.url && /^https?:\/\//.test(post.url)) ? post.url : profileUrl,
+                      date_publication: parseDatePub(post.date_estimee),
                       auteur: compte.nom,
                       est_officiel: compte.fonction?.toLowerCase().includes("officiel") || false,
                       hashtags: post.hashtags || [],
@@ -159,7 +177,7 @@ Deno.serve(async (req) => {
               type_contenu: "article",
               contenu,
               url_original: article.url || "https://www.ansut.ci",
-              date_publication: article.date_estimee || new Date().toISOString(),
+              date_publication: parseDatePub(article.date_estimee),
               auteur: "ANSUT",
               est_officiel: true,
               hashtags: [] as string[],
@@ -203,9 +221,12 @@ async function extractPostsWithAI(apiKey: string, markdown: string, plateforme: 
       messages: [
         {
           role: "system",
-          content: `Tu es un extracteur de publications sociales. Extrais les posts récents (dernières 48h) du contenu scrappé d'un profil ${plateforme}.
-Retourne un JSON array avec pour chaque post: { "contenu": "texte du post", "date_estimee": "ISO date", "hashtags": ["..."], "type": "post|article|partage" }
-Si aucun post récent, retourne [].`,
+          content: `Tu es un extracteur de publications sociales. Extrais les posts du contenu scrappé d'un profil ${plateforme}.
+Pour chaque post: { "contenu": "texte du post", "date_estimee": "date ISO", "url": "lien direct du post/vidéo", "hashtags": ["..."], "type": "post|article|partage" }.
+RÈGLES STRICTES :
+- date_estimee : ne la renseigne QUE si une date de publication réelle est explicitement visible dans le contenu (ex. « 12 mars 2026 », « il y a 2 jours » converti en date). N'INVENTE JAMAIS de date ; si aucune date fiable n'apparaît, OMETS complètement le champ.
+- url : le lien direct de la publication/vidéo si présent, sinon omets-le.
+Si aucun post, retourne [].`,
         },
         { role: "user", content: markdown.substring(0, 8000) },
       ],
@@ -223,7 +244,8 @@ Si aucun post récent, retourne [].`,
                   type: "object",
                   properties: {
                     contenu: { type: "string" },
-                    date_estimee: { type: "string" },
+                    date_estimee: { type: "string", description: "Date ISO réelle si explicitement visible, sinon omettre" },
+                    url: { type: "string", description: "Lien direct de la publication si présent" },
                     hashtags: { type: "array", items: { type: "string" } },
                     type: { type: "string" },
                   },
