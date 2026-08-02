@@ -126,6 +126,26 @@ export default function MatinalePage() {
         </div>
       </div>
 
+      {/* Progression du job asynchrone */}
+      {(preview.isPending || send.isPending) && (
+        <Card className="glass border-primary/20">
+          <CardContent className="py-3 space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                {(preview.isPending ? preview.job.step : send.job.step) || 'Traitement en cours…'}
+              </span>
+              <span className="font-mono text-xs text-muted-foreground">
+                {(preview.isPending ? preview.job.progress : send.job.progress)}%
+              </span>
+            </div>
+            <Progress value={preview.isPending ? preview.job.progress : send.job.progress} className="h-2" />
+          </CardContent>
+        </Card>
+      )}
+
+
+
       {/* Freshness control bar */}
       <TooltipProvider>
         <Card className="glass border-primary/20">
