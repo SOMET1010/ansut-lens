@@ -1,5 +1,5 @@
 import { forwardRef, ReactNode } from 'react';
-import logoAnsut from '@/assets/logo-ansut.jpg';
+import logoAnsut from '@/assets/logo-ansut.png';
 
 interface GuidePDFLayoutProps {
   title: string;

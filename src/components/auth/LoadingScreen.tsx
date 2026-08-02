@@ -1,4 +1,4 @@
-import logoAnsut from '@/assets/logo-ansut.jpg';
+import logoAnsut from '@/assets/logo-ansut.png';
 import { Loader2 } from 'lucide-react';
 
 export function LoadingScreen() {

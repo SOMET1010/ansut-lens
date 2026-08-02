@@ -1,16 +1,4 @@
-import { 
-  Radar,
-  Newspaper, 
-  Users, 
-  FileText,
-  Bot, 
-  Settings,
-  LogOut,
-  User,
-  Rss,
-  Megaphone,
-  Satellite,
-} from 'lucide-react';
+import { HelpCircle, LogOut, User } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -44,74 +32,34 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { getInitials } from '@/utils/activity-status';
-import logoAnsut from '@/assets/logo-ansut.jpg';
+import { ADMIN_SECTION, NAV_SECTIONS } from '@/config/navigation';
+import logoMark from '@/assets/logo-ansut-mark.png';
 
-// Menu avec permissions associées
-const menuItems = [
-  { 
-    title: 'Accueil', 
-    url: '/radar', 
-    icon: Radar,
-    description: 'Synthèse, flux & alertes',
-    permission: 'view_radar'
-  },
-  { 
-    title: 'Balayage 30 jours', 
-    url: '/balayage', 
-    icon: Satellite,
-    description: 'Un sujet, toutes les sources',
-    permission: 'view_radar'
-  },
-  { 
-    title: 'Capteurs Stratégiques', 
-    url: '/flux', 
-    icon: Rss,
-    description: 'Dispositifs de surveillance numérique',
-    permission: 'create_flux'
-  },
-  { 
-    title: 'Acteurs & Influence', 
-    url: '/acteurs', 
-    icon: Users,
-    description: 'Cartographie, SPDI & benchmark',
-    permission: 'view_personnalites'
-  },
-  { 
-    title: 'Communication 360°', 
-    url: '/communication', 
-    icon: Megaphone,
-    description: 'Cockpit, réseaux sociaux & contenus',
-    permission: 'use_assistant'
-  },
-  { 
-    title: 'Studio Publication', 
-    url: '/dossiers', 
-    icon: FileText,
-    description: 'Notes et newsletters',
-    permission: 'view_dossiers'
-  },
-  { 
-    title: 'Assistant IA', 
-    url: '/assistant', 
-    icon: Bot,
-    description: 'Copilote intelligence',
-    permission: 'use_assistant'
-  },
-];
-
+/**
+ * Barre laterale de navigation.
+ *
+ * La refonte apporte trois changements par rapport a la version precedente.
+ *
+ * Le libelle de chaque entree repond desormais a une question metier plutot
+ * qu'a un nom de module : « Veille » au lieu de « Capteurs Strategiques »,
+ * « Recherche » au lieu de « Balayage 30 jours ». La question complete est
+ * affichee en sous-titre, ce qui supprime le besoin de deviner.
+ *
+ * La liste des entrees provient du registre central `src/config/navigation.ts`,
+ * partage avec le fil d'Ariane, la recherche globale et la navigation mobile.
+ *
+ * Une entree d'aide permanente donne acces au glossaire, absent auparavant.
+ */
 export function AppSidebar() {
   const location = useLocation();
   const { state } = useSidebar();
-  const { isAdmin, signOut, user } = useAuth();
+  const { signOut, user } = useAuth();
   const { profile } = useUserProfile();
   const { hasPermission, isLoading: permissionsLoading } = useUserPermissions();
   const collapsed = state === 'collapsed';
-  
-  // Filtrer les éléments de menu selon les permissions
-  const visibleMenuItems = menuItems.filter(item => hasPermission(item.permission));
-  
-  // Vérifier si l'utilisateur a accès à l'administration
-  const hasAdminAccess = hasPermission('access_admin');
+
+  const visibleSections = NAV_SECTIONS.filter((section) => hasPermission(section.permission));
+  const hasAdminAccess = hasPermission(ADMIN_SECTION.permission);
 
   const getSidebarInitials = (name?: string | null, email?: string) => {
     if (name) return getInitials(name);
@@ -119,62 +67,66 @@ export function AppSidebar() {
     return '?';
   };
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/50">
+    <Sidebar collapsible="icon" className="border-r border-border/60">
       <SidebarHeader className="p-4">
-        <div className="flex items-center gap-3">
-          <img 
-            src={logoAnsut} 
-            alt="ANSUT" 
-            className="w-10 h-10 rounded-lg object-contain bg-white"
-          />
+        <NavLink
+          to="/ce-matin"
+          className="flex items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <img src={logoMark} alt="" aria-hidden className="h-9 w-9 shrink-0 object-contain" />
           {!collapsed && (
-            <div className="flex flex-col">
-              <span className="font-bold text-primary">ANSUT</span>
-              <span className="text-xs text-muted-foreground">RADAR</span>
-            </div>
+            <span className="flex min-w-0 flex-col leading-tight">
+              <span className="truncate font-bold text-primary">ANSUT</span>
+              <span className="truncate text-xs tracking-wide text-muted-foreground">RADAR</span>
+            </span>
           )}
-        </div>
+          <span className="sr-only">ANSUT Radar, retour \u00e0 l\u2019accueil</span>
+        </NavLink>
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Menu fonctionnel - filtré par permissions */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {permissionsLoading ? (
-                // Skeletons pendant le chargement
-                [...Array(4)].map((_, i) => (
-                  <SidebarMenuItem key={i}>
-                    <div className="flex items-center gap-3 px-3 py-2">
-                      <Skeleton className="h-5 w-5 rounded" />
-                      {!collapsed && <Skeleton className="h-4 w-24" />}
-                    </div>
-                  </SidebarMenuItem>
-                ))
-              ) : (
-                visibleMenuItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
-                      asChild 
-                      isActive={isActive(item.url)}
-                      tooltip={item.title}
-                    >
-                      <NavLink to={item.url} className="flex items-center gap-3">
-                        <item.icon className="h-5 w-5" />
-                        {!collapsed && <span>{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))
-              )}
+              {permissionsLoading
+                ? Array.from({ length: 5 }).map((_, index) => (
+                    <SidebarMenuItem key={index}>
+                      <div className="flex items-center gap-3 px-3 py-2">
+                        <Skeleton className="h-5 w-5 rounded" />
+                        {!collapsed && <Skeleton className="h-4 w-28" />}
+                      </div>
+                    </SidebarMenuItem>
+                  ))
+                : visibleSections.map((section) => (
+                    <SidebarMenuItem key={section.id}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive(section.path)}
+                        tooltip={`${section.label} — ${section.question}`}
+                        className="h-auto py-2"
+                      >
+                        <NavLink to={section.path} className="flex items-start gap-3">
+                          <section.icon className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+                          {!collapsed && (
+                            <span className="flex min-w-0 flex-col gap-0.5 leading-tight">
+                              <span className="truncate text-sm font-medium">{section.label}</span>
+                              <span className="truncate text-[11px] text-muted-foreground">
+                                {section.question}
+                              </span>
+                            </span>
+                          )}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Section Administration - visible si permissions admin */}
         {!permissionsLoading && hasAdminAccess && (
           <>
             <SidebarSeparator className="my-2" />
@@ -187,14 +139,14 @@ export function AppSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
-                      asChild 
-                      isActive={isActive('/admin')}
-                      tooltip="Administration"
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(ADMIN_SECTION.path)}
+                      tooltip={`${ADMIN_SECTION.label} — ${ADMIN_SECTION.question}`}
                     >
-                      <NavLink to="/admin" className="flex items-center gap-3">
-                        <Settings className="h-5 w-5" />
-                        {!collapsed && <span>Administration</span>}
+                      <NavLink to={ADMIN_SECTION.path} className="flex items-center gap-3">
+                        <ADMIN_SECTION.icon className="h-5 w-5 shrink-0" aria-hidden />
+                        {!collapsed && <span className="text-sm">{ADMIN_SECTION.label}</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -203,55 +155,76 @@ export function AppSidebar() {
             </SidebarGroup>
           </>
         )}
+
+        <SidebarSeparator className="my-2" />
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive('/aide')}
+                  tooltip="Aide et glossaire des termes"
+                >
+                  <NavLink to="/aide" className="flex items-center gap-3">
+                    <HelpCircle className="h-5 w-5 shrink-0" aria-hidden />
+                    {!collapsed && <span className="text-sm">Aide et glossaire</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter className="p-4">
         {user && (
-          <div className="flex flex-col gap-3">
-            <NavLink 
-              to="/profile" 
-              className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/50 transition-colors"
+          <div className="flex flex-col gap-2">
+            <NavLink
+              to="/profile"
+              className="flex min-h-11 items-center gap-3 rounded-lg p-2 transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || 'Avatar'} />
-                <AvatarFallback className="text-xs bg-primary/10 text-primary">
+              <Avatar className="h-8 w-8 shrink-0">
+                <AvatarImage
+                  src={profile?.avatar_url || undefined}
+                  alt={profile?.full_name || 'Avatar'}
+                />
+                <AvatarFallback className="bg-primary/10 text-xs text-primary">
                   {getSidebarInitials(profile?.full_name, user.email)}
                 </AvatarFallback>
               </Avatar>
               {!collapsed && (
-                <div className="flex flex-col min-w-0">
-                  <span className="text-sm font-medium truncate">
+                <span className="flex min-w-0 flex-col leading-tight">
+                  <span className="truncate text-sm font-medium">
                     {profile?.full_name || user.email}
                   </span>
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <User className="h-3 w-3" />
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <User className="h-3 w-3" aria-hidden />
                     Mon profil
                   </span>
-                </div>
+                </span>
               )}
             </NavLink>
-            
+
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="justify-start gap-2"
-                >
-                  <LogOut className="h-4 w-4" />
-                  {!collapsed && <span>Déconnexion</span>}
+                <Button variant="ghost" size="sm" className="min-h-11 justify-start gap-2">
+                  <LogOut className="h-4 w-4 shrink-0" aria-hidden />
+                  {!collapsed && <span>D\u00e9connexion</span>}
+                  {collapsed && <span className="sr-only">D\u00e9connexion</span>}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Confirmer la déconnexion ?</AlertDialogTitle>
+                  <AlertDialogTitle>Confirmer la d\u00e9connexion ?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Vous serez déconnecté de votre session. Vous devrez vous reconnecter pour accéder à nouveau à la plateforme.
+                    Vous serez d\u00e9connect\u00e9 de votre session. Vous devrez vous reconnecter
+                    pour acc\u00e9der \u00e0 nouveau \u00e0 la plateforme.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Annuler</AlertDialogCancel>
-                  <AlertDialogAction onClick={signOut}>Se déconnecter</AlertDialogAction>
+                  <AlertDialogAction onClick={signOut}>Se d\u00e9connecter</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

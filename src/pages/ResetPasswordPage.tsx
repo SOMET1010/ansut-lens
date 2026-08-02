@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Eye, EyeOff, CheckCircle, KeyRound, ArrowRight, ShieldCheck, AlertTriangle, Mail } from 'lucide-react';
-import logoAnsut from '@/assets/logo-ansut.jpg';
+import logoAnsut from '@/assets/logo-ansut.png';
 
 // ── Schemas ──────────────────────────────────────────
 const resetPasswordSchema = z.object({

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Moon, Sun, LogOut, User } from 'lucide-react';
+import { HelpCircle, LogOut, Moon, Search, Sun, User } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -21,15 +21,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useTheme } from 'next-themes';
 import { NotificationCenter } from '@/components/notifications';
 import { SpotlightSearch } from './SpotlightSearch';
+import { Breadcrumbs } from './Breadcrumbs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { getInitials } from '@/utils/activity-status';
-import logoAnsut from '@/assets/logo-ansut.jpg';
 
+/**
+ * En-tete de l'application.
+ *
+ * Trois corrections issues de l'audit sont appliquees ici.
+ *
+ * Le fil d'Ariane remplace l'ancien vide informationnel : l'utilisateur sait en
+ * permanence dans quelle section il se trouve et peut remonter d'un niveau.
+ *
+ * Le logo, qui apparaissait a la fois dans la barre laterale et dans l'en-tete,
+ * n'est plus duplique ici. Il ne subsiste que dans la barre laterale.
+ *
+ * La recherche globale reste accessible par raccourci clavier mais devient
+ * egalement un bouton visible et libelle, y compris sur mobile ou elle n'etait
+ * pas atteignable.
+ */
 export function AppHeader() {
   const { theme, setTheme } = useTheme();
   const [spotlightOpen, setSpotlightOpen] = useState(false);
@@ -37,55 +53,98 @@ export function AppHeader() {
   const { user, signOut } = useAuth();
   const { profile } = useUserProfile();
 
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
   const headerInitials = profile?.full_name
     ? getInitials(profile.full_name)
-    : user?.email?.[0]?.toUpperCase() ?? '?';
+    : (user?.email?.[0]?.toUpperCase() ?? '?');
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-14 items-center gap-4 px-4">
-        <SidebarTrigger className="-ml-1" />
+    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+      <div className="flex h-14 items-center gap-2 px-3 sm:gap-3 sm:px-4">
+        <SidebarTrigger className="-ml-1 hidden md:inline-flex" />
 
-        {/* Search Trigger */}
-        <button
-          onClick={() => setSpotlightOpen(true)}
-          className="flex-1 max-w-md flex items-center gap-2 rounded-md border border-border/50 bg-muted/50 px-3 py-2 text-sm text-muted-foreground hover:bg-muted transition-colors cursor-pointer"
-        >
-          <Search className="h-4 w-4" />
-          <span className="flex-1 text-left">Rechercher…</span>
-          <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-            ⌘K
-          </kbd>
-        </button>
+        <Breadcrumbs />
 
-        <SpotlightSearch open={spotlightOpen} onOpenChange={setSpotlightOpen} />
+        <div className="ml-auto flex items-center gap-1 sm:gap-2">
+          {/* Recherche : bouton libelle sur grand ecran, icone sur mobile. */}
+          <button
+            onClick={() => setSpotlightOpen(true)}
+            className="hidden min-h-9 items-center gap-2 rounded-md border border-border/60 bg-muted/40 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:flex lg:w-64"
+          >
+            <Search className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="flex-1 text-left">Rechercher\u2026</span>
+            <kbd className="inline-flex h-5 items-center rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium">
+              \u2318K
+            </kbd>
+          </button>
 
-        <div className="flex items-center gap-2 ml-auto">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 lg:hidden"
+                onClick={() => setSpotlightOpen(true)}
+                aria-label="Rechercher dans la plateforme"
+              >
+                <Search className="h-5 w-5" aria-hidden />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Rechercher</TooltipContent>
+          </Tooltip>
 
-          {/* Theme Toggle */}
-          <Button variant="ghost" size="icon" onClick={toggleTheme}>
-            {theme === 'dark' ? (
-              <Sun className="h-4 w-4" />
-            ) : (
-              <Moon className="h-4 w-4" />
-            )}
-          </Button>
+          <SpotlightSearch open={spotlightOpen} onOpenChange={setSpotlightOpen} />
 
-          {/* Notifications */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-11 w-11 sm:h-9 sm:w-9" asChild>
+                <NavLink to="/aide" aria-label="Aide et glossaire des termes">
+                  <HelpCircle className="h-5 w-5 sm:h-4 sm:w-4" aria-hidden />
+                </NavLink>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Aide et glossaire</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 sm:h-9 sm:w-9"
+                onClick={toggleTheme}
+                aria-label={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+              >
+                {theme === 'dark' ? (
+                  <Sun className="h-5 w-5 sm:h-4 sm:w-4" aria-hidden />
+                ) : (
+                  <Moon className="h-5 w-5 sm:h-4 sm:w-4" aria-hidden />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
+            </TooltipContent>
+          </Tooltip>
+
           <NotificationCenter />
 
-          {/* Profil utilisateur */}
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 p-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-11 w-11 rounded-full p-0 sm:h-9 sm:w-9"
+                  aria-label="Mon compte"
+                >
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || 'Avatar'} />
-                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                    <AvatarImage
+                      src={profile?.avatar_url || undefined}
+                      alt={profile?.full_name || 'Avatar'}
+                    />
+                    <AvatarFallback className="bg-primary/10 text-xs text-primary">
                       {headerInitials}
                     </AvatarFallback>
                   </Avatar>
@@ -93,49 +152,50 @@ export function AppHeader() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel className="flex flex-col gap-0.5">
-                  <span className="text-sm font-medium truncate">
+                  <span className="truncate text-sm font-medium">
                     {profile?.full_name || user.email}
                   </span>
-                  <span className="text-xs text-muted-foreground truncate">
-                    {user.email}
-                  </span>
+                  <span className="truncate text-xs text-muted-foreground">{user.email}</span>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <NavLink to="/profile" className="flex items-center gap-2 cursor-pointer">
-                    <User className="h-4 w-4" />
+                  <NavLink to="/profile" className="flex cursor-pointer items-center gap-2">
+                    <User className="h-4 w-4" aria-hidden />
                     Mon profil
                   </NavLink>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <NavLink to="/aide" className="flex cursor-pointer items-center gap-2">
+                    <HelpCircle className="h-4 w-4" aria-hidden />
+                    Aide et glossaire
+                  </NavLink>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setConfirmLogoutOpen(true)} className="cursor-pointer">
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Déconnexion
+                <DropdownMenuItem
+                  onClick={() => setConfirmLogoutOpen(true)}
+                  className="cursor-pointer"
+                >
+                  <LogOut className="mr-2 h-4 w-4" aria-hidden />
+                  D\u00e9connexion
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-
-          {/* Logo ANSUT (à droite) */}
-          <img
-            src={logoAnsut}
-            alt="ANSUT"
-            className="h-9 w-9 rounded-lg object-contain bg-white ml-1"
-          />
         </div>
       </div>
 
       <AlertDialog open={confirmLogoutOpen} onOpenChange={setConfirmLogoutOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la déconnexion ?</AlertDialogTitle>
+            <AlertDialogTitle>Confirmer la d\u00e9connexion ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Vous serez déconnecté de votre session. Vous devrez vous reconnecter pour accéder à nouveau à la plateforme.
+              Vous serez d\u00e9connect\u00e9 de votre session. Vous devrez vous reconnecter pour
+              acc\u00e9der \u00e0 nouveau \u00e0 la plateforme.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={signOut}>Se déconnecter</AlertDialogAction>
+            <AlertDialogAction onClick={signOut}>Se d\u00e9connecter</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

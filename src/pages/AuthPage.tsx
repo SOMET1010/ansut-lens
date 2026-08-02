@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Loader2, Mail, KeyRound, Sparkles } from 'lucide-react';
-import logoAnsut from '@/assets/logo-ansut.jpg';
+import logoAnsut from '@/assets/logo-ansut.png';
 
 // ── Schemas ──────────────────────────────────────────
 const loginSchema = z.object({
