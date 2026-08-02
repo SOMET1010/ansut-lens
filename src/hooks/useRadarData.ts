@@ -100,9 +100,9 @@ export function useRadarTimeline() {
   });
 }
 
-export function useIntelligenceFeed(limit: number = 50) {
+export function useIntelligenceFeed(limit: number = 50, maxAgeHours?: number) {
   return useQuery({
-    queryKey: ['intelligence-feed', limit],
+    queryKey: ['intelligence-feed', limit, maxAgeHours ?? null],
     queryFn: async (): Promise<Actualite[]> => {
       // « Les sujets qui comptent » doit refléter la pertinence pour l'ANSUT,
       // pas seulement la fraîcheur. On récupère un vivier d'articles récents,
@@ -110,12 +110,23 @@ export function useIntelligenceFeed(limit: number = 50) {
       // la fraîcheur ne servant qu'à départager. Auparavant, le tri se faisait
       // uniquement par date, si bien qu'un article récent mais hors sujet
       // (cybercriminalité, etc.) passait devant un sujet central plus ancien.
+      //
+      // `maxAgeHours` borne la fenêtre : l'accueil « Ce matin » ne doit montrer
+      // que l'actualité réellement récente, pas les articles anciens sous un
+      // bandeau « aujourd'hui ».
       const vivier = Math.max(limit, 40);
-      const { data, error } = await supabase
+      let query = supabase
         .from('actualites')
         .select('*')
-        .order('date_publication', { ascending: false })
-        .limit(vivier);
+        .order('date_publication', { ascending: false });
+
+      if (maxAgeHours) {
+        const cutoff = new Date();
+        cutoff.setHours(cutoff.getHours() - maxAgeHours);
+        query = query.gte('date_publication', cutoff.toISOString());
+      }
+
+      const { data, error } = await query.limit(vivier);
 
       if (error) throw error;
 
@@ -144,7 +155,7 @@ export function useIntelligenceFeed(limit: number = 50) {
         analyse_ia: a.analyse_ia || undefined,
         pourquoi_important: a.pourquoi_important || undefined,
         sentiment: a.sentiment ?? undefined,
-        impact_ansut: (a as any).impact_ansut || undefined,
+        impact_ansut: a.impact_ansut || undefined,
       }));
     },
     refetchInterval: 60000

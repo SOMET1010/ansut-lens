@@ -32,13 +32,24 @@ import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { ObjectifsStrategiques } from '@/components/radar/ObjectifsStrategiques';
 import { PreuvesParAxe } from '@/components/radar/PreuvesParAxe';
 import { DailyBriefing } from '@/components/radar/DailyBriefing';
+import { ActiviteAnsut } from '@/components/radar/ActiviteAnsut';
+import { useAnsutPublications } from '@/hooks/useAnsutPublications';
+import { deriverAdnPublications } from '@/lib/prioritesAnsut';
 
 /**
  * Taille du vivier d'actualites recentes charge pour l'accueil. Il alimente a la
- * fois la repartition par mission (« objectifs impactes ») et les sujets en tete
- * de liste, sans multiplier les requetes.
+ * fois la repartition par mission (« objectifs impactes ») et les preuves, sans
+ * multiplier les requetes.
  */
 const TAILLE_VIVIER_ACCUEIL = 40;
+
+/**
+ * Fenetre « ce matin » : l'accueil ne considere que l'actualite des dernieres
+ * 24 h. La page promet « ce qu'il faut savoir aujourd'hui » — elle ne doit donc
+ * pas afficher d'articles anciens sous ce bandeau. En l'absence d'actualite
+ * fraiche, l'ecran le dit honnetement plutot que de remonter du contenu perime.
+ */
+const FENETRE_CE_MATIN_HEURES = 24;
 
 /**
  * Formule une phrase de lecture pour un volume d'alertes en attente.
@@ -79,7 +90,19 @@ export default function CeMatinPage() {
 
   const { data: kpis, isFetching: kpisFetching } = useRadarKPIs('24h');
   const { data: signaux } = useRadarSignaux();
-  const { data: sujets, isLoading: sujetsLoading } = useIntelligenceFeed(TAILLE_VIVIER_ACCUEIL);
+  const { data: sujets, isLoading: sujetsLoading } = useIntelligenceFeed(
+    TAILLE_VIVIER_ACCUEIL,
+    FENETRE_CE_MATIN_HEURES,
+  );
+
+  // ADN appris des publications de l'ANSUT sur ~2 mois : quels axes l'agence
+  // porte-t-elle activement en ce moment ? Ces priorités contextualisent la
+  // lecture de la veille (« touche-t-elle une priorité actuelle de l'ANSUT ? »).
+  const { data: publicationsAdn } = useAnsutPublications(200, 60 * 24);
+  const prioritesActives = useMemo(
+    () => deriverAdnPublications(publicationsAdn ?? []).actifs,
+    [publicationsAdn],
+  );
   const { data: derniereCollecte } = useLastCollecteTime();
   const { hasPermission } = useUserPermissions();
 
@@ -255,7 +278,18 @@ export default function CeMatinPage() {
         */}
         <DailyBriefing />
 
-        <ObjectifsStrategiques actualites={sujets ?? []} isLoading={sujetsLoading} />
+        {/*
+          Strate 2 : notre propre voix d'abord. Le pilotage commence par ce que
+          l'ANSUT publie — l'information la plus pertinente et le signal le plus
+          direct de ses priorites — avant la presse exterieure.
+        */}
+        <ActiviteAnsut maxAgeHours={FENETRE_CE_MATIN_HEURES} />
+
+        <ObjectifsStrategiques
+          actualites={sujets ?? []}
+          isLoading={sujetsLoading}
+          prioritesActives={prioritesActives}
+        />
 
         {/* Strate 3 : les preuves, regroupees sous l'axe strategique impacte. */}
         <PreuvesParAxe actualites={sujets ?? []} isLoading={sujetsLoading} />

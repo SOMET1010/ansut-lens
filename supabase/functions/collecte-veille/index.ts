@@ -980,6 +980,32 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
       console.log('[collecte-veille] LOVABLE_API_KEY absente, sentiment skippé');
     }
 
+    // 4c. Alignement stratégique IA des articles fraîchement collectés.
+    // Best-effort : ne doit jamais interrompre la collecte. La fonction dédiée
+    // `aligner-actualites` score l'alignement aux piliers et remplit
+    // pourquoi_important / action_suggeree / confiance_ia.
+    if (LOVABLE_API_KEY && insertedArticles.length > 0) {
+      try {
+        const ids = insertedArticles.map((a) => a.id);
+        const alignResp = await fetch(`${SUPABASE_URL}/functions/v1/aligner-actualites`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ids, limit: ids.length }),
+        });
+        if (alignResp.ok) {
+          const r = await alignResp.json().catch(() => ({}));
+          console.log(`[collecte-veille] Alignement stratégique: ${r?.aligned ?? '?'} articles`);
+        } else {
+          console.error('[collecte-veille] Alignement non-ok:', alignResp.status);
+        }
+      } catch (alignErr) {
+        console.error('[collecte-veille] Erreur alignement (non-bloquante):', alignErr);
+      }
+    }
+
     // 5. Matcher les actualités avec les flux utilisateurs
     console.log('[collecte-veille] Matching flux utilisateurs...');
     const { data: fluxActifs } = await supabase

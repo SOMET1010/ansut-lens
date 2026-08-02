@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Target } from 'lucide-react';
+import { ArrowRight, Megaphone, Target } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { nettoyerTitre } from '@/lib/nettoyerExtrait';
@@ -48,10 +48,22 @@ function phraseVolume(nombre: number): string {
 interface Props {
   actualites: Actualite[];
   isLoading?: boolean;
+  /** Piliers que l'ANSUT communique activement (ADN appris de ses publications). */
+  prioritesActives?: Set<string>;
 }
 
-export function ObjectifsStrategiques({ actualites, isLoading }: Props) {
+export function ObjectifsStrategiques({ actualites, isLoading, prioritesActives }: Props) {
   const missions = repartirParMission(actualites ?? []);
+
+  // Les axes que l'ANSUT porte activement (d'après ses propres publications)
+  // remontent en tête : la veille est lue à travers le prisme de ses priorités
+  // du moment.
+  if (prioritesActives && prioritesActives.size > 0) {
+    missions.sort(
+      (a, b) =>
+        Number(prioritesActives.has(b.mission.id)) - Number(prioritesActives.has(a.mission.id)),
+    );
+  }
 
   return (
     <section aria-labelledby="objectifs-titre" className="space-y-3">
@@ -84,22 +96,33 @@ export function ObjectifsStrategiques({ actualites, isLoading }: Props) {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {missions.map(({ mission, nombre, niveau, tete }) => {
             const style = NIVEAU[niveau];
+            const estActif = prioritesActives?.has(mission.id) ?? false;
             return (
               <Link
                 key={mission.id}
                 to={`/veille?mission=${mission.id}`}
-                className="group flex min-h-11 flex-col rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className={`group flex min-h-11 flex-col rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  estActif ? 'border-primary/40 ring-1 ring-primary/20' : ''
+                }`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="min-w-0 space-y-0.5">
                     <span className="block text-sm font-semibold leading-snug">
                       <span className="text-muted-foreground/70">{mission.code}</span> {mission.nom}
                     </span>
-                    {mission.ansutPorteur && (
-                      <span className="inline-block rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                        ANSUT porteur
-                      </span>
-                    )}
+                    <span className="flex flex-wrap gap-1">
+                      {mission.ansutPorteur && (
+                        <span className="inline-block rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                          ANSUT porteur
+                        </span>
+                      )}
+                      {estActif && (
+                        <span className="inline-flex items-center gap-1 rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                          <Megaphone className="h-2.5 w-2.5" aria-hidden />
+                          Priorité active
+                        </span>
+                      )}
+                    </span>
                   </span>
                   <span
                     className={`mt-0.5 inline-flex shrink-0 items-center gap-1 text-[11px] font-medium ${style.texte}`}
