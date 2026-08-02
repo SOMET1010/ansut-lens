@@ -815,6 +815,20 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
       .limit(5000);
     const titresConnus = new Set<string>((titresRecents || []).map(r => cleDedup(r.titre)));
 
+    // Référentiel des piliers stratégiques (Feuille de route MTNIT) : chaque
+    // article est rattaché aux piliers qu'il impacte, le premier servant de
+    // pilier principal. Le rattachement est ainsi persisté et requêtable, plutôt
+    // que recalculé à l'affichage.
+    const { data: piliersData } = await supabase
+      .from('piliers_strategiques')
+      .select('id, mots_cles, ordre')
+      .eq('actif', true)
+      .order('ordre', { ascending: true });
+    const piliers: { id: string; mots_cles: string[] }[] = (piliersData || []).map(p => ({
+      id: p.id as string,
+      mots_cles: (p.mots_cles as string[]) || [],
+    }));
+
     for (const actu of articlesToProcess) {
       if (!actu.titre) continue;
 
@@ -830,6 +844,14 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
       titresConnus.add(cleTitre);
 
       const contenuNorm = normaliserTexte(`${actu.titre} ${actu.resume}`);
+
+      // Rattachement aux piliers stratégiques impactés (frontière de mot). Le
+      // premier pilier apparié sert de pilier principal.
+      const piliersImpactes = piliers
+        .filter(p => p.mots_cles.some(kw => contientTerme(contenuNorm, kw)))
+        .map(p => p.id);
+      const pilierPrincipal = piliersImpactes[0] ?? null;
+
       const matchedKeywords: string[] = [];
       let maxCriticite = 0;
       const quadrantScores: Record<string, number> = { tech: 0, regulation: 0, market: 0, reputation: 0 };
@@ -897,6 +919,8 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
           categorie: dominantCategory || (isSemanticMatch ? 'Sujet Connexe' : 'Actualités sectorielles'),
           importance,
           score_pertinence: scorePertinence,
+          pilier_id: pilierPrincipal,
+          piliers: piliersImpactes,
           analyse_ia: JSON.stringify({
             mots_cles_detectes: matchedKeywords,
             quadrant_dominant: dominantQuadrant,
