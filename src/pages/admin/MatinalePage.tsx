@@ -58,9 +58,10 @@ export default function MatinalePage() {
   const [titrologie, setTitrologie] = useState<import('@/types/matinale').TitrologieData | null>(null);
   const [freshnessMeta, setFreshnessMeta] = useState<any>(null);
   const [freshness, setFreshness] = useState<FreshnessWindow>(24);
+  const [forceRefresh, setForceRefresh] = useState(false);
 
   const handlePreview = async () => {
-    const result = await preview.mutateAsync(freshness);
+    const result = await preview.mutateAsync({ freshnessHours: freshness, forceRefresh });
     setPreviewHtml(result.html || null);
     setMatinaleData(result.matinale);
     setTitrologie(result.titrologie || null);
@@ -68,7 +69,7 @@ export default function MatinalePage() {
   };
 
   const handleSend = async () => {
-    await send.mutateAsync({ freshnessHours: freshness });
+    await send.mutateAsync({ freshnessHours: freshness, forceRefresh });
   };
 
   const handleExportPDF = () => {
