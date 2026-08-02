@@ -28,12 +28,17 @@ export function alignement(a: Actualite): number {
   return a.score_pertinence ?? a.importance ?? 0;
 }
 
-/** Identifiants des missions auxquelles une actualité se rattache. */
-export function missionsDeLActualite(a: Actualite): string[] {
-  const contenu = normaliser(`${a.titre ?? ''} ${a.resume ?? ''} ${(a.tags ?? []).join(' ')}`);
+/** Identifiants des piliers auxquels un texte libre se rattache. */
+export function piliersPourTexte(texte: string): string[] {
+  const contenu = normaliser(texte ?? '');
   return MISSIONS_STRATEGIQUES
     .filter((m) => m.motsCles.some((kw) => contientTerme(contenu, kw)))
     .map((m) => m.id);
+}
+
+/** Identifiants des missions auxquelles une actualité se rattache. */
+export function missionsDeLActualite(a: Actualite): string[] {
+  return piliersPourTexte(`${a.titre ?? ''} ${a.resume ?? ''} ${(a.tags ?? []).join(' ')}`);
 }
 
 export interface GroupePreuves {
