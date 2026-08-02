@@ -204,15 +204,20 @@ export default function AdminRevueConnaissancePage() {
                           </div>
                         )}
 
-                        {/* Indicateurs rattachés */}
+                        {/* Indicateurs rattachés — valeurs DOCUMENTAIRES de référence.
+                            RADAR ne les pilote pas (pas de jauge, pas de % d'avancement) :
+                            le suivi des KPI relève du Cockpit. */}
                         {indics.length > 0 && (
                           <div className="overflow-x-auto">
+                            <p className="mb-1 text-[10px] italic text-muted-foreground/70">
+                              Indicateurs de référence (documentaires) — non suivis par RADAR.
+                            </p>
                             <table className="w-full text-[11px]">
                               <thead>
                                 <tr className="text-left text-muted-foreground">
                                   <th className="py-1 pr-2 font-medium">Indicateur</th>
-                                  <th className="py-1 pr-2 font-medium">Cible 2030</th>
-                                  <th className="py-1 pr-2 font-medium">Réf./actuel</th>
+                                  <th className="py-1 pr-2 font-medium">Valeur cible (réf.)</th>
+                                  <th className="py-1 pr-2 font-medium">Valeur de départ (réf.)</th>
                                 </tr>
                               </thead>
                               <tbody>

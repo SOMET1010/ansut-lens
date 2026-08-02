@@ -26,6 +26,7 @@ import {
   useRadarSignaux,
 } from '@/hooks/useRadarData';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
+import { AnalyseCommunication } from '@/components/radar/AnalyseCommunication';
 import { DossiersStrategiques } from '@/components/radar/DossiersStrategiques';
 import { ChangementsDepuisHier } from '@/components/radar/ChangementsDepuisHier';
 import { ASurveiller } from '@/components/radar/ASurveiller';
@@ -208,6 +209,15 @@ export default function CeMatinPage() {
               )}
             </div>
           }
+        />
+
+        {/* Couche 3 (progressive) — Analyse : notre communication vs écosystème.
+            Ajoutée en tête ; les sections existantes restent le temps de la
+            transition vers le briefing de communication. */}
+        <AnalyseCommunication
+          publications={publications ?? []}
+          externes={externes}
+          isLoading={sujetsLoading}
         />
 
         {/* 1 — Dossiers stratégiques de l'ANSUT (connaissance + communication + veille). */}
