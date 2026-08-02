@@ -830,8 +830,8 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
       .limit(5000);
     const titresConnus = new Set<string>((titresRecents || []).map(r => cleDedup(r.titre)));
 
-    // Référentiel des piliers stratégiques (Feuille de route MTNIT) : chaque
-    // article est rattaché aux piliers qu'il impacte, le premier servant de
+    // Référentiel des piliers stratégiques (Plan Stratégique ANSUT 2026-2030) :
+    // chaque article est rattaché aux piliers qu'il impacte, le premier servant de
     // pilier principal. Le rattachement est ainsi persisté et requêtable, plutôt
     // que recalculé à l'affichage.
     const { data: piliersData } = await supabase

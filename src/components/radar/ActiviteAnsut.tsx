@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowRight,
   CalendarClock,
+  ExternalLink,
   Facebook,
   Globe,
   Handshake,
@@ -47,7 +48,41 @@ const ICONES: Record<string, LucideIcon> = {
   youtube: Youtube,
   site: Globe,
   web: Globe,
+  website: Globe,
 };
+
+const LABELS: Record<string, string> = {
+  linkedin: 'LinkedIn',
+  twitter: 'X',
+  x: 'X',
+  facebook: 'Facebook',
+  youtube: 'YouTube',
+  site: 'Site ANSUT',
+  web: 'Site ANSUT',
+  website: 'Site ANSUT',
+};
+
+/**
+ * Choix d'affichage de la date, honnête par construction.
+ *
+ * On ne dispose pas toujours de la date de publication d'origine (les réseaux
+ * scrappés ne l'exposent pas toujours). Quand elle est connue et nettement
+ * antérieure à la collecte, on l'affiche (« Publié … »). Sinon on n'invente
+ * rien : on indique la date de COLLECTE (« Collecté … ») en précisant que la
+ * date d'origine n'est pas vérifiée. Fini les vidéos d'un an affichées « il y a
+ * 39 minutes ».
+ */
+function choisirDate(pub: {
+  date_publication: string | null;
+  collecte_le: string | null;
+}): { mode: 'publie' | 'collecte'; date: string } | null {
+  const pubMs = pub.date_publication ? new Date(pub.date_publication).getTime() : NaN;
+  const colMs = pub.collecte_le ? new Date(pub.collecte_le).getTime() : NaN;
+  const dateReelle = !Number.isNaN(pubMs) && (Number.isNaN(colMs) || colMs - pubMs > 24 * 3600 * 1000);
+  if (dateReelle) return { mode: 'publie', date: pub.date_publication as string };
+  if (!Number.isNaN(colMs)) return { mode: 'collecte', date: pub.collecte_le as string };
+  return null;
+}
 
 interface Props {
   /** Fenêtre de fraîcheur, en jours. */
@@ -188,44 +223,64 @@ export function ActiviteAnsut({ joursFenetre = 30 }: Props) {
             </div>
           )}
 
-          {/* Publications récentes, adossées à leur source datée. */}
+          {/* Publications récentes : plateforme, date honnête et source visible. */}
           <div className="grid gap-3 sm:grid-cols-2">
             {(publications ?? []).map((pub) => {
-              const Icone = ICONES[(pub.plateforme || '').toLowerCase()] ?? Globe;
+              const plateforme = (pub.plateforme || '').toLowerCase();
+              const Icone = ICONES[plateforme] ?? Globe;
+              const label = LABELS[plateforme] ?? 'Source ANSUT';
               const lien = pub.url_original;
-              const contenu = (
-                <CardContent className="space-y-2 p-4">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Icone className="h-4 w-4 shrink-0" aria-hidden />
-                    <span className="truncate font-medium text-foreground">
-                      {pub.auteur || 'ANSUT'}
-                    </span>
-                    {pub.date_publication && (
-                      <>
-                        <span aria-hidden>·</span>
-                        <RelativeTime date={pub.date_publication} />
-                      </>
+              const dateInfo = choisirDate(pub);
+              return (
+                <Card key={pub.id}>
+                  <CardContent className="space-y-2 p-4">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                      <Icone className="h-4 w-4 shrink-0" aria-hidden />
+                      <span className="font-medium text-foreground">{pub.auteur || 'ANSUT'}</span>
+                      <span aria-hidden>·</span>
+                      <span>{label}</span>
+                      {dateInfo && (
+                        <>
+                          <span aria-hidden>·</span>
+                          <span className="inline-flex items-center gap-1">
+                            {dateInfo.mode === 'publie' ? 'Publié' : 'Collecté'}{' '}
+                            <RelativeTime date={dateInfo.date} />
+                          </span>
+                        </>
+                      )}
+                    </div>
+
+                    {dateInfo?.mode === 'collecte' && (
+                      <p className="text-[10px] italic text-muted-foreground/70">
+                        Date d’origine non vérifiée.
+                      </p>
                     )}
-                  </div>
-                  <p className="line-clamp-3 text-sm">{nettoyerExtrait(pub.contenu)}</p>
-                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                    <span className="inline-flex items-center gap-1">
-                      <Heart className="h-3 w-3" aria-hidden /> {pub.likes_count}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <MessageCircle className="h-3 w-3" aria-hidden /> {pub.comments_count}
-                    </span>
-                  </div>
-                </CardContent>
-              );
-              return lien ? (
-                <Card key={pub.id} className="transition-colors hover:border-primary/40">
-                  <a href={lien} target="_blank" rel="noopener noreferrer" className="block">
-                    {contenu}
-                  </a>
+
+                    <p className="line-clamp-3 text-sm">{nettoyerExtrait(pub.contenu)}</p>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                      <div className="flex items-center gap-3">
+                        <span className="inline-flex items-center gap-1">
+                          <Heart className="h-3 w-3" aria-hidden /> {pub.likes_count}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <MessageCircle className="h-3 w-3" aria-hidden /> {pub.comments_count}
+                        </span>
+                      </div>
+                      {lien && (
+                        <a
+                          href={lien}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+                        >
+                          Voir sur {label}
+                          <ExternalLink className="h-3 w-3" aria-hidden />
+                        </a>
+                      )}
+                    </div>
+                  </CardContent>
                 </Card>
-              ) : (
-                <Card key={pub.id}>{contenu}</Card>
               );
             })}
           </div>

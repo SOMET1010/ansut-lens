@@ -12,7 +12,7 @@ const corsHeaders = {
  *
  * La veille de l'ANSUT ne demande pas « cette information est-elle importante ? »
  * mais « touche-t-elle une priorité actuelle de l'ANSUT ? ». Cette fonction lit
- * le référentiel des piliers (Feuille de route MTNIT 2026-2028, table
+ * le référentiel des piliers (Plan Stratégique ANSUT 2026-2030, 4 piliers, table
  * `piliers_strategiques`) et, pour chaque article, demande au modèle :
  *   - le pilier stratégique principal impacté (ou aucun) ;
  *   - un score d'alignement 0-100 ;
@@ -76,9 +76,9 @@ async function alignerLot(
     .map((a, i) => `[${offset + i}] "${a.titre}" — ${(a.resume || '').substring(0, 200)}`)
     .join('\n');
 
-  const systeme = `Tu es l'analyste stratégique de l'ANSUT (Agence Nationale du Service Universel des Télécommunications de Côte d'Ivoire), qui met en œuvre la Feuille de route Transition Numérique et Innovation Technologique 2026-2028 du Ministère (MTNIT).
+  const systeme = `Tu es l'analyste stratégique de l'ANSUT (Agence Nationale du Service Universel des Télécommunications de Côte d'Ivoire). Ton référentiel est le PLAN STRATÉGIQUE ANSUT 2026-2030 (« Connecter chaque Ivoirien, bâtir une nation numérique »), structuré en 4 piliers propres à l'ANSUT. La Feuille de route du Ministère (MTNIT) n'est qu'un cadre d'alignement national : tu rattaches aux piliers de l'ANSUT ci-dessous, pas à ceux du Ministère.
 
-Piliers stratégiques (identifiant, code, objectif) :
+Piliers stratégiques de l'ANSUT (identifiant, code, objectif) :
 ${referentiel}
 
 Pour chaque article, détermine s'il a un impact sur une PRIORITÉ ACTUELLE de l'ANSUT — pas son importance générale. Un fait divers international sans lien avec les missions de l'ANSUT a un alignement faible, même s'il est spectaculaire.
