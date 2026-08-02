@@ -135,7 +135,7 @@ Recette menée en session authentifiée sur données réelles. Anomalies relevé
 | A4 | Double titre sur Veille (« Veille » + « Actualités & Veille ») | Corrigé : le titre hérité interne a été supprimé au profit de l'en-tête unifié. |
 | A5 | Le filtre `?niveau=critical` de « Examiner » était ignoré | Corrigé par conception : les signaux critiques (table `signaux`) et les articles (table `actualites`) n'ont pas de champ commun permettant un filtre honnête. Plutôt que de simuler un filtre, les signaux critiques sont **dépliables sur place** sur l'accueil, sans changement d'écran (voir le commentaire d'intention dans `CeMatinPage.tsx`). |
 | A6 | Markdown brut et URL non assainis dans les extraits **et les titres** | Corrigé : `src/lib/nettoyerExtrait.ts` expose `nettoyerExtrait` (extraits, tronqués) et `nettoyerTitre` (titres, non tronqués). Appliqué aux extraits (`ArticleCluster`, `PourVousFeed`, `SocialPulseWidget`, `EchoResonanceWidget`, `PostsAmplifierSection`…) et aux **titres d'articles collectés** (`ArticleCluster`, `FluxDetailPage`, `SpotlightSearch`, `ContextSelector`, `IntelligenceCard`, `SentimentSourcePopover`, flash info de la Matinale). |
-| A7 | Indicateur de pertinence constant à 50 % | **Atténué côté affichage** (utilise `score_pertinence` quand il existe, `50` seulement en dernier recours). Cause racine backend non résolue — voir §8. |
+| A7 | Indicateur de pertinence constant à 50 % | **Corrigé** — front (utilise `score_pertinence` en priorité) et **backend** : la collecte calcule et persiste désormais un vrai `score_pertinence`. Détail des corrections du pipeline en §8. |
 
 **Le texte vit dans les composants, pas dans les pages.** Homogénéiser les
 en-têtes de page ne suffit pas : l'essentiel du vocabulaire affiché (titres de
@@ -169,33 +169,34 @@ ou exporter le texte avant de fermer.
 
 ## 8. Reste à faire / recommandations pour la reprise
 
-### Pertinence de la veille (backend — priorité)
+### Pertinence de la veille (backend) — corrigé
 
-La cause racine de A7 (pertinence uniforme à 50 %) est dans l'Edge Function de
-collecte `supabase/functions/collecte-veille/index.ts`. Défauts identifiés à
-l'audit du code :
+La cause racine de A7 (pertinence uniforme à 50 %) était dans l'Edge Function de
+collecte `supabase/functions/collecte-veille/index.ts`. Les défauts identifiés à
+l'audit ont été traités :
 
-1. **Appariement par sous-chaîne** (`fullContent.includes(term)`) sans limite de
-   mot ni contrainte géographique → faux positifs (un article hors sujet est
-   retenu si un mot-clé court apparaît n'importe où).
-2. **Le score d'importance ne mesure pas la pertinence** : il mesure la densité
-   d'appariement (`totalScore * 0.3`, plafonné à 100), d'où la valeur par défaut
-   de 50 observée à l'écran.
-3. **Filtrage sémantique plafonné à 30 articles** (`slice(0, 30)`) : au-delà, les
-   articles sont abandonnés silencieusement.
-4. **Le filtrage sémantique ne s'applique qu'aux non-appariés** : les faux
-   positifs de mots-clés ne sont jamais revérifiés.
-5. **Seuil sémantique bas** (50/100).
-6. **Déduplication sur le titre exact** (`.eq('titre', ...)`) → doublons quand le
-   titre varie légèrement.
+| Défaut | Correction |
+|---|---|
+| Appariement par sous-chaîne (`includes`) → faux positifs (« ia » dans « média », « reseau » dans « reseaux ») | `contientTerme()` : appariement par **frontière de mot**, accents normalisés. |
+| Le score d'importance mesurait la densité d'appariement, pas la pertinence (d'où le 50 % constant) | Vrai **`score_pertinence`** écrit en base : criticité du thème le plus fort + bonus de corroboration plafonné ; `importance` alignée sur cette valeur 0-100. |
+| Filtrage sémantique plafonné à 30 articles, silencieusement | Traitement **par lots** jusqu'à 90 articles, et **journalisation** explicite de ce qui est écarté au-delà. |
+| Seuil sémantique à 50/100 | Relevé à **60** (`SEUIL_SEMANTIQUE`). |
+| Déduplication sur le titre exact | **`cleDedup()`** : dédup sur titre normalisé (accents, ponctuation, balisage retirés), pré-chargée sur 30 jours et intra-cycle. |
 
-Pistes : appariement borné aux mots (frontières de mot), contrainte
-pays/zone géographique, score de pertinence distinct du score d'appariement,
-suppression du plafond silencieux (ou journalisation de ce qui est écarté),
-vérification sémantique aussi sur les appariés, déduplication par similarité.
+La logique des fonctions (`contientTerme`, `cleDedup`, scoring) a été validée par
+un test isolé. Le front (`ArticleCluster`) lit déjà `score_pertinence` en
+priorité : les nouvelles collectes affichent une pertinence qui varie réellement.
 
-> Ce chantier touche la chaîne de collecte et n'a pas de tests : le valider en
-> préproduction avant mise en production.
+**Mitigation restante (défaut 4 de l'audit).** Le filtrage sémantique ne
+s'applique toujours qu'aux articles **non appariés** par mot-clé ; un éventuel
+faux positif d'appariement n'est pas revérifié par le modèle. L'appariement par
+frontière de mot supprime le mécanisme principal de ces faux positifs, mais une
+vérification sémantique des articles appariés sur un seul mot-clé court et peu
+critique reste un durcissement possible (coût LLM supplémentaire).
+
+> Ces changements touchent la chaîne de collecte et le projet n'a pas de tests
+> automatisés : valider en préproduction (lancer une collecte, contrôler les
+> `score_pertinence` obtenus) avant la mise en production.
 
 ### Divers
 

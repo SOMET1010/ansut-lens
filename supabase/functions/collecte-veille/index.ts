@@ -34,7 +34,62 @@ interface CollectedActualite {
   date_publication: string;
   source_type: 'perplexity' | 'grok_twitter' | 'google_news';
   url_verified: boolean;
+  // Pertinence attribuée par le filtrage sémantique (sujets connexes sans
+  // appariement de mot-clé). Absente pour les articles appariés par mot-clé.
+  pertinence_semantique?: number;
 }
+
+// ============= APPARIEMENT & PERTINENCE =============
+
+/**
+ * Normalise un texte pour la comparaison : minuscules et accents retirés.
+ * Permet d'apparier « télécom » et « telecom » de façon fiable.
+ */
+function normaliserTexte(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function echapperRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Teste la présence d'un terme dans un contenu en respectant les frontières de
+ * mot. L'appariement historique se faisait par sous-chaîne (`includes`), si bien
+ * qu'un mot-clé court appariait n'importe quel mot le contenant (« ia » dans
+ * « média », « réseau » dans un article Cisco sans rapport avec la Côte
+ * d'Ivoire). Les frontières de mot suppriment ce mécanisme de faux positifs.
+ *
+ * `contenuNorm` doit déjà être normalisé (via normaliserTexte).
+ */
+function contientTerme(contenuNorm: string, terme: string): boolean {
+  const t = normaliserTexte(terme).trim();
+  if (!t) return false;
+  const re = new RegExp(`(^|[^a-z0-9])${echapperRegex(t)}([^a-z0-9]|$)`);
+  return re.test(contenuNorm);
+}
+
+/**
+ * Clé de déduplication d'un titre. La déduplication historique portait sur le
+ * titre exact (`.eq('titre', ...)`), laissant passer deux dépêches reprenant la
+ * même information avec une ponctuation, une casse ou un balisage légèrement
+ * différents. On réduit ici le titre à ses lettres et chiffres significatifs.
+ */
+function cleDedup(titre: string | null | undefined): string {
+  if (!titre) return '';
+  return titre
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/https?:\/\/\S+/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Seuil de pertinence sémantique : un article « à moitié pertinent » n'entre plus. */
+const SEUIL_SEMANTIQUE = 60;
+/** Nombre maximum d'articles non appariés soumis au filtrage sémantique par cycle. */
+const MAX_SEMANTIQUE = 90;
 
 interface InsertedArticle {
   id: string;
@@ -651,10 +706,10 @@ Deno.serve(async (req) => {
 
     for (const actu of allActualites) {
       if (!actu.titre) continue;
-      const fullContent = `${actu.titre} ${actu.resume}`.toLowerCase();
+      const contenuNorm = normaliserTexte(`${actu.titre} ${actu.resume}`);
       const hasKeywordMatch = motsCles.some(m => {
         const allTerms = [m.mot_cle, ...(m.variantes || [])];
-        return allTerms.some(t => fullContent.includes(t.toLowerCase()));
+        return allTerms.some(t => contientTerme(contenuNorm, t));
       });
       if (hasKeywordMatch) {
         matchedArticles.push(actu);
@@ -670,52 +725,67 @@ Deno.serve(async (req) => {
         `- ${t.nom}: ${(t.concepts || []).join(', ')}, ${(t.mots_cles_associes || []).join(', ')}`
       ).join('\n');
 
-      const articleBatch = unmatchedArticles.slice(0, 30).map((a, i) =>
-        `[${i}] "${a.titre}" — ${a.resume?.substring(0, 120) || ''}`
-      ).join('\n');
+      // Les articles non appariés au-delà de la limite ne sont plus abandonnés
+      // en silence : on journalise explicitement ce qui n'est pas analysé ce
+      // cycle, plutôt que de laisser disparaître un sujet pertinent sans trace.
+      const aAnalyser = unmatchedArticles.slice(0, MAX_SEMANTIQUE);
+      const ignores = unmatchedArticles.length - aAnalyser.length;
+      if (ignores > 0) {
+        console.warn(`[collecte-veille] ⚠️ ${ignores} article(s) non apparié(s) au-delà de la limite sémantique (${MAX_SEMANTIQUE}) — non analysé(s) ce cycle.`);
+      }
 
-      try {
-        const semResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'google/gemini-2.5-flash-lite',
-            temperature: 0.1,
-            messages: [{
-              role: 'system',
-              content: `Tu es l'analyste de l'ANSUT (Agence Nationale du Service Universel des Télécommunications de Côte d'Ivoire). Ta mission est de repérer toute information traitant de la réduction de la fracture numérique, même si l'agence n'est pas nommée.
+      // Traitement par lots de 30 : l'ensemble des articles retenus est couvert,
+      // pas seulement les 30 premiers.
+      const TAILLE_LOT = 30;
+      for (let debut = 0; debut < aAnalyser.length; debut += TAILLE_LOT) {
+        const lot = aAnalyser.slice(debut, debut + TAILLE_LOT);
+        const articleBatch = lot.map((a, i) =>
+          `[${debut + i}] "${a.titre}" — ${a.resume?.substring(0, 120) || ''}`
+        ).join('\n');
+
+        try {
+          const semResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'google/gemini-2.5-flash-lite',
+              temperature: 0.1,
+              messages: [{
+                role: 'system',
+                content: `Tu es l'analyste de l'ANSUT (Agence Nationale du Service Universel des Télécommunications de Côte d'Ivoire). Ta mission est de repérer toute information traitant de la réduction de la fracture numérique, même si l'agence n'est pas nommée.
 
 Territoires d'Expression de l'ANSUT :
 ${conceptList}
 
-Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Retourne UNIQUEMENT un JSON array d'objets pour les articles pertinents : [{"index": 0, "territoire": "nom_territoire", "pertinence": 85}]. Ignore les articles non pertinents.`
-            }, {
-              role: 'user',
-              content: articleBatch
-            }],
-          }),
-        });
+Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pertinence de 0 à 100 (0 = aucun rapport, 100 = au cœur des missions). Utilise l'index exact fourni entre crochets. Retourne UNIQUEMENT un JSON array d'objets pour les articles pertinents : [{"index": 0, "territoire": "nom_territoire", "pertinence": 85}]. Ignore les articles non pertinents.`
+              }, {
+                role: 'user',
+                content: articleBatch
+              }],
+            }),
+          });
 
-        if (semResp.ok) {
-          const semData = await semResp.json();
-          const text = semData.choices?.[0]?.message?.content || '';
-          const match = text.match(/\[[\s\S]*?\]/);
-          if (match) {
-            const parsed: { index: number; territoire: string; pertinence: number }[] = JSON.parse(match[0]);
-            for (const p of parsed) {
-              if (p.pertinence >= 50) {
-                semanticMatches.set(p.index, { territoire: p.territoire, pertinence: p.pertinence });
+          if (semResp.ok) {
+            const semData = await semResp.json();
+            const text = semData.choices?.[0]?.message?.content || '';
+            const match = text.match(/\[[\s\S]*?\]/);
+            if (match) {
+              const parsed: { index: number; territoire: string; pertinence: number }[] = JSON.parse(match[0]);
+              for (const p of parsed) {
+                if (p.pertinence >= SEUIL_SEMANTIQUE) {
+                  semanticMatches.set(p.index, { territoire: p.territoire, pertinence: p.pertinence });
+                }
               }
             }
           }
-          console.log(`[collecte-veille] 🧠 Filtrage sémantique: ${semanticMatches.size}/${unmatchedArticles.length} sujets connexes détectés`);
+        } catch (semErr) {
+          console.error('[collecte-veille] Erreur filtrage sémantique (non-bloquante):', semErr);
         }
-      } catch (semErr) {
-        console.error('[collecte-veille] Erreur filtrage sémantique (non-bloquante):', semErr);
       }
+      console.log(`[collecte-veille] 🧠 Filtrage sémantique: ${semanticMatches.size}/${aAnalyser.length} sujets connexes retenus (seuil ${SEUIL_SEMANTIQUE})`);
     }
 
     // Merge semantic matches back into processing
@@ -724,6 +794,7 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Retourne U
       const article = unmatchedArticles[idx];
       if (article) {
         article.resume = `[Sujet Connexe — ${sem.territoire}] ${article.resume}`;
+        article.pertinence_semantique = sem.pertinence;
         articlesToProcess.push(article);
       }
     }
@@ -732,6 +803,17 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Retourne U
     let insertedCount = 0;
     const alertes: string[] = [];
     const insertedArticles: InsertedArticle[] = [];
+
+    // Déduplication par titre normalisé : on charge une fois les titres récents
+    // (30 derniers jours) et on écarte les doublons — y compris ceux dont seule
+    // la ponctuation, la casse ou le balisage diffère — sans requête par article.
+    const trenteJours = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: titresRecents } = await supabase
+      .from('actualites')
+      .select('titre')
+      .gte('created_at', trenteJours)
+      .limit(5000);
+    const titresConnus = new Set<string>((titresRecents || []).map(r => cleDedup(r.titre)));
 
     for (const actu of articlesToProcess) {
       if (!actu.titre) continue;
@@ -742,17 +824,14 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Retourne U
         continue;
       }
 
-      const { data: existing } = await supabase
-        .from('actualites')
-        .select('id')
-        .eq('titre', actu.titre)
-        .maybeSingle();
+      // Doublon connu (en base ou déjà traité dans ce cycle) : on saute.
+      const cleTitre = cleDedup(actu.titre);
+      if (!cleTitre || titresConnus.has(cleTitre)) continue;
+      titresConnus.add(cleTitre);
 
-      if (existing) continue;
-
-      const fullContent = `${actu.titre} ${actu.resume}`.toLowerCase();
+      const contenuNorm = normaliserTexte(`${actu.titre} ${actu.resume}`);
       const matchedKeywords: string[] = [];
-      let totalScore = 0;
+      let maxCriticite = 0;
       const quadrantScores: Record<string, number> = { tech: 0, regulation: 0, market: 0, reputation: 0 };
       let dominantCategory = '';
       let hasAlertKeyword = false;
@@ -760,11 +839,12 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Retourne U
       for (const motCle of motsCles) {
         const allTerms = [motCle.mot_cle, ...(motCle.variantes || [])];
         for (const term of allTerms) {
-          if (fullContent.includes(term.toLowerCase())) {
+          if (contientTerme(contenuNorm, term)) {
+            const criticite = motCle.score_criticite || 50;
             matchedKeywords.push(motCle.mot_cle);
-            totalScore += motCle.score_criticite || 50;
+            maxCriticite = Math.max(maxCriticite, criticite);
             if (motCle.quadrant) {
-              quadrantScores[motCle.quadrant] = (quadrantScores[motCle.quadrant] || 0) + (motCle.score_criticite || 50);
+              quadrantScores[motCle.quadrant] = (quadrantScores[motCle.quadrant] || 0) + criticite;
             }
             const catName = getCategoryName(motCle.categories_veille as MotCleVeille['categories_veille']);
             if (!dominantCategory && catName) {
@@ -781,7 +861,23 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Retourne U
 
       // Check if this is a semantic match (no keyword match but concept match)
       const isSemanticMatch = matchedKeywords.length === 0;
-      const importance = isSemanticMatch ? 65 : Math.min(100, Math.round(totalScore * 0.3));
+
+      // Pertinence réelle (0-100), distincte de la densité d'appariement.
+      // - Appariement par mot-clé : criticité du thème le plus fort, avec un
+      //   léger bonus de corroboration pour plusieurs thèmes distincts (plafonné),
+      //   au lieu d'une somme qui saturait dès quelques mots-clés banals.
+      // - Sujet connexe : score rendu par le filtrage sémantique.
+      let scorePertinence: number;
+      if (isSemanticMatch) {
+        scorePertinence = Math.min(100, Math.max(0, Math.round(actu.pertinence_semantique ?? SEUIL_SEMANTIQUE)));
+      } else {
+        const themesDistincts = new Set(matchedKeywords).size;
+        const bonus = Math.min(themesDistincts - 1, 3) * 5;
+        scorePertinence = Math.min(100, maxCriticite + bonus);
+      }
+      // `importance` porte désormais la même pertinence 0-100 (les seuils de flux
+      // et l'affichage lisent une valeur qui a un sens, pas la densité brute).
+      const importance = scorePertinence;
       const dominantQuadrant = Object.entries(quadrantScores)
         .sort((a, b) => b[1] - a[1])[0]?.[0] || 'market';
 
@@ -800,6 +896,7 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Retourne U
           tags: isSemanticMatch ? ['sujet-connexe', ...matchedKeywords] : matchedKeywords,
           categorie: dominantCategory || (isSemanticMatch ? 'Sujet Connexe' : 'Actualités sectorielles'),
           importance,
+          score_pertinence: scorePertinence,
           analyse_ia: JSON.stringify({
             mots_cles_detectes: matchedKeywords,
             quadrant_dominant: dominantQuadrant,
