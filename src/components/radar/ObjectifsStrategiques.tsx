@@ -69,8 +69,8 @@ export function ObjectifsStrategiques({ actualites, isLoading }: Props) {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
             <Card key={i}>
               <CardContent className="space-y-2 p-4">
                 <Skeleton className="h-4 w-2/3" />
@@ -81,7 +81,7 @@ export function ObjectifsStrategiques({ actualites, isLoading }: Props) {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {missions.map(({ mission, nombre, niveau, tete }) => {
             const style = NIVEAU[niveau];
             return (
@@ -91,9 +91,16 @@ export function ObjectifsStrategiques({ actualites, isLoading }: Props) {
                 className="group flex min-h-11 flex-col rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-sm font-semibold leading-snug">{mission.nom}</span>
+                  <span className="min-w-0 space-y-0.5">
+                    <span className="block text-sm font-semibold leading-snug">{mission.nom}</span>
+                    {mission.ansutPorteur && (
+                      <span className="inline-block rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                        ANSUT porteur
+                      </span>
+                    )}
+                  </span>
                   <span
-                    className={`mt-1 inline-flex items-center gap-1 text-[11px] font-medium ${style.texte}`}
+                    className={`mt-0.5 inline-flex shrink-0 items-center gap-1 text-[11px] font-medium ${style.texte}`}
                   >
                     <span className={`h-2 w-2 rounded-full ${style.pastille}`} aria-hidden />
                     {style.libelle}
