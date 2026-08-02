@@ -92,7 +92,9 @@ export function ObjectifsStrategiques({ actualites, isLoading }: Props) {
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="min-w-0 space-y-0.5">
-                    <span className="block text-sm font-semibold leading-snug">{mission.nom}</span>
+                    <span className="block text-sm font-semibold leading-snug">
+                      <span className="text-muted-foreground/70">{mission.code}</span> {mission.nom}
+                    </span>
                     {mission.ansutPorteur && (
                       <span className="inline-block rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
                         ANSUT porteur
