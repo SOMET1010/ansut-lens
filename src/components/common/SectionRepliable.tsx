@@ -42,7 +42,9 @@ export function SectionRepliable({
       ? 'flex'
       : toujoursOuvertDes === 'md'
         ? 'flex md:hidden'
-        : 'flex lg:hidden';
+        : toujoursOuvertDes === 'xl'
+          ? 'flex xl:hidden'
+          : 'flex lg:hidden';
 
   const classesContenu =
     toujoursOuvertDes === 'jamais'
@@ -53,9 +55,13 @@ export function SectionRepliable({
         ? ouvert
           ? 'block'
           : 'hidden md:block'
-        : ouvert
-          ? 'block'
-          : 'hidden lg:block';
+        : toujoursOuvertDes === 'xl'
+          ? ouvert
+            ? 'block'
+            : 'hidden xl:block'
+          : ouvert
+            ? 'block'
+            : 'hidden lg:block';
 
   return (
     <section className="space-y-3">
