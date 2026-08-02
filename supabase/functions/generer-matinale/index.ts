@@ -128,22 +128,33 @@ async function fetchPerplexityNews(): Promise<{ articles: Array<{ titre: string;
   const runQuery = async (qi: number) => {
     const query = queries[qi];
     const isEventQuery = qi === 0 || qi === 3 || qi === 5; // événements & agenda
+    const model = isEventQuery ? 'sonar-pro' : 'sonar';
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 60_000);
     try {
-      const response = await fetch('https://api.perplexity.ai/chat/completions', {
-        method: 'POST',
-        signal: ctrl.signal,
-        headers: {
-          'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: isEventQuery ? 'sonar-pro' : 'sonar',
-          messages: [
-            {
-              role: 'system',
-              content: `Tu es un agent de veille presse pour la Direction Générale de l'ANSUT (Côte d'Ivoire).
+      let content = '';
+      let citations: string[] = [];
+
+      // 1) Cache : réutilise une réponse récente (même modèle + même requête)
+      const cached = await getCachedPerplexity(model, query);
+      if (cached) {
+        content = cached.content;
+        citations = cached.citations;
+        console.log(`[Matinale/Perplexity] Q${qi} servi depuis le cache (${citations.length} citations)`);
+      } else {
+        const response = await fetch('https://api.perplexity.ai/chat/completions', {
+          method: 'POST',
+          signal: ctrl.signal,
+          headers: {
+            'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              {
+                role: 'system',
+                content: `Tu es un agent de veille presse pour la Direction Générale de l'ANSUT (Côte d'Ivoire).
 Tu dois retourner UNIQUEMENT du JSON valide, structure :
 { "articles": [ { "titre": "Titre EXACT de l'article (pas le nom du média, pas une description du site)", "resume": "Résumé factuel en 2 phrases reprenant les FAITS de l'article (chiffres, noms, décisions, lieu, dates)", "source": "Nom du média", "url": "URL DIRECTE de l'article publié (avec /chemin, jamais juste le domaine)", "date": "AAAA-MM-JJ" } ] }
 
@@ -154,24 +165,33 @@ RÈGLES STRICTES :
 - L'URL doit pointer vers l'article (ex: https://site.com/2026/05/13/article-slug), JAMAIS la page d'accueil ou une rubrique générique.
 - Si tu n'as pas d'article concret avec un vrai titre + URL d'article, retourne "articles": [].
 - Pas d'invention. Pas de paraphrase de homepage.`
-            },
-            { role: 'user', content: query }
-          ],
-          search_recency_filter: isEventQuery ? 'day' : 'week',
-          return_citations: true,
-        }),
-      });
+              },
+              { role: 'user', content: query }
+            ],
+            search_recency_filter: isEventQuery ? 'day' : 'week',
+            return_citations: true,
+          }),
+        });
 
-      if (!response.ok) {
-        const body = await response.text();
-        console.error(`[Matinale/Perplexity] Error ${response.status} for query: ${query} | body: ${body.slice(0, 300)}`);
-        return;
+        if (!response.ok) {
+          const body = await response.text();
+          if (response.status === 401 && body.includes('insufficient_quota')) {
+            console.error('[Matinale/Perplexity] Crédits API épuisés (insufficient_quota).');
+          } else {
+            console.error(`[Matinale/Perplexity] Error ${response.status} for query: ${query} | body: ${body.slice(0, 300)}`);
+          }
+          return;
+        }
+
+        const data = await response.json();
+        content = data.choices?.[0]?.message?.content || '';
+        citations = data.citations || [];
+        // Mise en cache (best effort, ne bloque pas en cas d'échec)
+        await setCachedPerplexity(model, query, content, citations);
       }
 
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content || '';
-      const citations = data.citations || [];
       allCitations.push(...citations);
+
 
       let parsedCount = 0;
       try {
