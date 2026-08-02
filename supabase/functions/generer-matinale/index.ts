@@ -665,11 +665,30 @@ La Direction de la Communication ANSUT doit pouvoir, en 5 minutes, répondre à 
 - Si le contexte est pauvre : basculer en mode "tendances + idées de contenus génériques actualisés" (jamais "aucune actualité")`;
 
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+interface MatinaleParams {
+  previewOnly: boolean;
+  recipients: string[];
+  freshnessHours: number;
+}
 
+// Met à jour l'état d'un job (no-op en mode synchrone)
+async function updateJob(
+  jobId: string | null,
+  patch: Record<string, unknown>,
+): Promise<void> {
+  if (!jobId) return;
+  try {
+    const admin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+    await admin.from('matinale_jobs').update(patch).eq('id', jobId);
+  } catch (e) {
+    console.error('[Matinale/Job] update failed:', (e as Error).message);
+  }
+}
+
+async function runMatinale(params: MatinaleParams, jobId: string | null): Promise<Response> {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -681,42 +700,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Auth check (optional for cron, required for manual trigger)
-    const authHeader = req.headers.get('Authorization');
-    let isAuthenticated = false;
-
-    if (authHeader?.startsWith('Bearer ')) {
-      const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-      const userClient = createClient(supabaseUrl, anonKey, {
-        global: { headers: { Authorization: authHeader } },
-      });
-      const token = authHeader.replace('Bearer ', '');
-      const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-      if (!claimsError && claimsData?.claims) {
-        isAuthenticated = true;
-      }
-    }
-
-    // Parse request body
-    let sendEmail = true;
-    let previewOnly = false;
-    let recipients: string[] = [];
-    let freshnessHours = 24; // défaut : 24h
-
-    try {
-      const body = await req.json();
-      previewOnly = body.previewOnly === true;
-      if (body.recipients && Array.isArray(body.recipients)) {
-        recipients = body.recipients;
-      }
-      if (typeof body.freshnessHours === 'number' && [24, 48, 168].includes(body.freshnessHours)) {
-        freshnessHours = body.freshnessHours;
-      }
-    } catch {
-      // No body = cron trigger, send to all configured recipients
-    }
+    const previewOnly = params.previewOnly;
+    const freshnessHours = params.freshnessHours;
+    let recipients: string[] = [...params.recipients];
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    await updateJob(jobId, { status: 'running', step: 'Collecte des sources', progress: 10, started_at: new Date().toISOString() });
 
     // Charger les règles de scoring configurables (admin/scoring)
     const SCORING_DEFAULTS = {
