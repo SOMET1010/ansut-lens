@@ -26,26 +26,32 @@ import {
   useRadarSignaux,
 } from '@/hooks/useRadarData';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
-import { ActiviteAnsut } from '@/components/radar/ActiviteAnsut';
+import { DossiersStrategiques } from '@/components/radar/DossiersStrategiques';
 import { ChangementsDepuisHier } from '@/components/radar/ChangementsDepuisHier';
 import { ASurveiller } from '@/components/radar/ASurveiller';
 import { useAnsutPublications } from '@/hooks/useAnsutPublications';
-import { prioritesAvecRepli } from '@/lib/prioritesAnsut';
-import { alignement, piliersDeLActu } from '@/lib/missions';
+import { alignement, estVoixAnsut, piliersDeLActu } from '@/lib/missions';
 import { MISSIONS_STRATEGIQUES } from '@/config/missions';
 import { nettoyerTitre } from '@/lib/nettoyerExtrait';
 
 /**
- * Fenêtre « ce matin » pour la veille externe : l'accueil ne considère que
- * l'actualité des dernières 24 h sous la question « qu'est-ce qui a changé
- * depuis hier ? ». Le vivier chargé sert au filtrage par priorité et au
- * dédoublonnage.
+ * Fenêtres de « Ce matin ».
+ *
+ * On charge la veille externe sur 72 h (compteurs des dossiers), et on isole le
+ * sous-ensemble des dernières 24 h pour « ce qui a changé depuis hier ». La voix
+ * propre de l'ANSUT est chargée sur une fenêtre large : c'est le TTL par type de
+ * contenu (voir `pertinenceAnsut`) qui décide de ce qui est encore « vivant »,
+ * pas la simple date de collecte.
  */
-const TAILLE_VIVIER_ACCUEIL = 40;
-const FENETRE_CE_MATIN_HEURES = 24;
+const TAILLE_VIVIER_ACCUEIL = 60;
+const FENETRE_VEILLE_HEURES = 72;
+const FENETRE_CHANGEMENTS_HEURES = 24;
+const FENETRE_PUBLICATIONS_JOURS = 90;
 
-/** Fenêtre de la voix propre de l'ANSUT (question 1), en jours. */
-const FENETRE_ANSUT_JOURS = 30;
+/** Tous les piliers du Plan ANSUT : c'est le référentiel de pertinence, et non
+ * une sélection déduite de la fréquence des publications (règle : ne pas
+ * inventer les priorités à partir des mots les plus fréquents). */
+const PILIERS_ANSUT = new Set(MISSIONS_STRATEGIQUES.map((m) => m.id));
 
 /** Alignement minimal pour proposer un sujet comme prochaine action. */
 const SEUIL_ACTION = 65;
@@ -65,35 +71,45 @@ function mission(id: string | undefined) {
 /**
  * Page d'accueil « Ce matin ».
  *
- * L'écran répond à quatre questions, et à elles seules, de haut en bas :
- *   1. Qu'a fait ou annoncé l'ANSUT récemment ?  → « L'ANSUT récemment »
- *   2. Qu'est-ce qui a changé depuis hier ?       → « Ce qui a changé depuis hier »
- *   3. Quel sujet mérite une attention humaine ?  → « À arbitrer »
- *   4. Que faut-il faire aujourd'hui ?            → « Prochaine action »
+ * L'écran relie TROIS couches sans jamais les fondre :
+ *   - Connaissance institutionnelle : les piliers du Plan ANSUT 2026-2030.
+ *   - Communication ANSUT : ce que l'ANSUT publie sur ses canaux.
+ *   - Veille externe : ce que médias, institutions et partenaires publient.
  *
- * L'organisation part de l'actualité propre de l'ANSUT, puis relie les signaux
- * externes à ces priorités — au lieu d'un simple flux de presse. Les chiffres
- * bruts, le briefing en prose non sourcée et la répétition de l'alerte critique
- * ont été retirés : chaque fait affiché provient d'une source datée.
+ * De haut en bas :
+ *   1. Dossiers stratégiques de l'ANSUT (piliers + dernière comm vivante + veille)
+ *   2. Ce qui a changé depuis hier (veille externe 24 h, rattachée aux piliers)
+ *   3. À arbitrer (sujets externes méritant une attention humaine)
+ *   4. Prochaine action (seulement si justifiée, sinon « À examiner »)
+ *
+ * Règles verrouillées : date de publication réelle, durée de vie par type de
+ * contenu (rien d'expiré pour combler un vide), silence autorisé, aucune
+ * mention « critique/stratégique » sans justification visible.
  */
 export default function CeMatinPage() {
+  const maintenantMs = Date.now();
+
   const { data: kpis, isFetching: kpisFetching } = useRadarKPIs('24h');
   const { data: signaux } = useRadarSignaux();
   const { data: sujets, isLoading: sujetsLoading } = useIntelligenceFeed(
     TAILLE_VIVIER_ACCUEIL,
-    FENETRE_CE_MATIN_HEURES,
+    FENETRE_VEILLE_HEURES,
   );
 
-  // Priorités de l'ANSUT : apprises de ses publications, avec repli sur les
-  // piliers qu'elle porte par mandat (P1, P6) quand la collecte est encore mince.
-  const { data: publicationsAdn } = useAnsutPublications(200, FENETRE_ANSUT_JOURS * 24);
-  const { priorites: prioritesActives } = useMemo(
-    () => prioritesAvecRepli(publicationsAdn ?? []),
-    [publicationsAdn],
-  );
+  // Communication propre de l'ANSUT sur une fenêtre large ; le TTL par type de
+  // contenu décide ensuite de ce qui est encore vivant pour le briefing.
+  const { data: publications } = useAnsutPublications(100, FENETRE_PUBLICATIONS_JOURS * 24);
 
   const { data: derniereCollecte } = useLastCollecteTime();
   const { hasPermission } = useUserPermissions();
+
+  // Veille EXTERNE (la voix de l'ANSUT vit en section 1, jamais dans la veille).
+  const externes = useMemo(() => (sujets ?? []).filter((a) => !estVoixAnsut(a)), [sujets]);
+  // Sous-ensemble « depuis hier » (24 h), à partir de la date de publication.
+  const externes24h = externes.filter((a) => {
+    if (!a.date_publication) return false;
+    return new Date(a.date_publication).getTime() >= maintenantMs - FENETRE_CHANGEMENTS_HEURES * 3600 * 1000;
+  });
 
   const signauxCritiques = useMemo(() => {
     const limite = Date.now() - FRAICHEUR_SIGNAL_JOURS * 24 * 3600 * 1000;
@@ -107,18 +123,17 @@ export default function CeMatinPage() {
 
   const alertesActives = kpis?.alertesActives ?? 0;
 
-  // Sujet le plus aligné du matin (sert la prochaine action quand aucun signal
-  // critique n'est en attente).
+  // Sujet externe le plus aligné et rattaché à un pilier (candidat à examiner).
   const sujetPhare = useMemo(
-    () => (sujets ?? []).find((a) => alignement(a) >= SEUIL_ACTION),
-    [sujets],
+    () => externes.find((a) => alignement(a) >= SEUIL_ACTION && piliersDeLActu(a).length > 0),
+    [externes],
   );
 
   /**
-   * Question 4 : une action précise et attribuable. On formule un verbe clair
-   * (préparer une note, vérifier, ouvrir la veille), rattaché au sujet concret
-   * du jour, plutôt qu'une recommandation générique. L'alerte critique n'est pas
-   * répétée ici : elle vit dans « À arbitrer ».
+   * Question 4 — Action. Règle verrouillée : on ne génère une action concrète
+   * QUE si elle est justifiée (reliée à un signal nouveau et à un pilier, avec
+   * source). Sinon on n'invente pas : on affiche « À examiner » ou « Données
+   * insuffisantes », et on laisse l'utilisateur décider.
    */
   const prochaineAction = useMemo(() => {
     if (signauxCritiques.length > 0) {
@@ -127,8 +142,8 @@ export default function CeMatinPage() {
         titre: `Préparer une note sur : ${s.titre}`,
         raison:
           signauxCritiques.length === 1
-            ? 'Un signal critique doit être qualifié et documenté aujourd’hui.'
-            : `${signauxCritiques.length} signaux critiques doivent être qualifiés aujourd’hui.`,
+            ? 'Un signal critique récent doit être qualifié et documenté.'
+            : `${signauxCritiques.length} signaux critiques récents doivent être qualifiés.`,
         actionLabel: 'Aller à Publier',
         to: '/publier',
         icon: FileText,
@@ -138,12 +153,12 @@ export default function CeMatinPage() {
     if (sujetPhare) {
       const m = mission(piliersDeLActu(sujetPhare)[0]);
       return {
-        titre: `Vérifier et qualifier : ${nettoyerTitre(sujetPhare.titre)}`,
+        titre: `À examiner : ${nettoyerTitre(sujetPhare.titre)}`,
         raison: m
-          ? `Sujet le plus aligné du matin (${m.code} — ${m.nom}). À confirmer avant toute diffusion.`
-          : 'Sujet le plus aligné du matin. À confirmer avant toute diffusion.',
+          ? `Nouveau signal externe rattaché à ${m.code} — ${m.nom}. À confirmer avant toute conclusion ; l'outil ne recommande pas à votre place.`
+          : 'Nouveau signal externe aligné sur une mission. À confirmer avant toute conclusion.',
         actionLabel: 'Ouvrir la veille',
-        to: sujetPhare.pilier_id ? `/veille?mission=${sujetPhare.pilier_id}` : '/veille',
+        to: `/veille?mission=${piliersDeLActu(sujetPhare)[0]}`,
         icon: Newspaper,
         ton: 'attention' as const,
       };
@@ -162,8 +177,9 @@ export default function CeMatinPage() {
       };
     }
     return {
-      titre: 'Maintenir la surveillance',
-      raison: 'Aucun sujet ne requiert d’action particulière aujourd’hui. La veille reste active.',
+      titre: 'Rien ne requiert d’action aujourd’hui',
+      raison:
+        'Données insuffisantes pour une recommandation fiable : aucun signal externe aligné ni alerte en attente. La surveillance reste active.',
       actionLabel: 'Ouvrir la veille',
       to: '/veille',
       icon: Newspaper,
@@ -194,21 +210,26 @@ export default function CeMatinPage() {
           }
         />
 
-        {/* Q1 — Qu'a fait ou annoncé l'ANSUT récemment ? */}
-        <ActiviteAnsut joursFenetre={FENETRE_ANSUT_JOURS} />
-
-        {/* Q2 — Qu'est-ce qui a changé depuis hier ? */}
-        <ChangementsDepuisHier
-          actualites={sujets ?? []}
-          prioritesActives={prioritesActives}
+        {/* 1 — Dossiers stratégiques de l'ANSUT (connaissance + communication + veille). */}
+        <DossiersStrategiques
+          publications={publications ?? []}
+          externes={externes}
+          maintenantMs={maintenantMs}
           isLoading={sujetsLoading}
         />
 
-        {/* Q3 — Quel sujet mérite une attention humaine ? */}
+        {/* 2 — Ce qui a changé depuis hier (veille externe 24 h, rattachée aux piliers). */}
+        <ChangementsDepuisHier
+          actualites={externes24h}
+          prioritesActives={PILIERS_ANSUT}
+          isLoading={sujetsLoading}
+        />
+
+        {/* 3 — À arbitrer (sujets externes méritant une attention humaine). */}
         <ASurveiller
-          actualites={sujets ?? []}
+          actualites={externes}
           signauxCritiques={signauxCritiques}
-          prioritesActives={prioritesActives}
+          prioritesActives={PILIERS_ANSUT}
           isLoading={sujetsLoading}
         />
 
