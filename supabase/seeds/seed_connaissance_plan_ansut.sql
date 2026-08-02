@@ -169,120 +169,125 @@ BEGIN
 
   -- Indicateurs
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Fibre optique allumée (total)', '34 821 km', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Backbone national RNHD déjà déployé (socle de départ)', NULL, '5 207 km', NULL, NULL, 'a_valider', 'Valeur de référence 2022-2025 (socle) — NE PAS confondre avec la cible 2030 (34 821 km allumés).')
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-0', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Backbone supplémentaire', '3 562 km', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Fibre optique allumée (total)', '34 821 km', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-1', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Fibre métropolitaine', '2 080 km', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Backbone supplémentaire', '3 562 km', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-2', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Fibre last mile', '7 452 km', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Fibre métropolitaine', '2 080 km', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-3', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Établissements scolaires et universitaires connectés', '356', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Fibre last mile', '7 452 km', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-4', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Administrations connectées au haut débit', '480', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Établissements scolaires et universitaires connectés', '356', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-5', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Établissements sanitaires connectés', '65 %', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Administrations connectées au haut débit', '480', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-6', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Frontières connectées au backbone national', '5', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Établissements sanitaires connectés', '65 %', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-7', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Utilisation minimale du backbone par les opérateurs', '40 %', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Frontières connectées au backbone national', '5', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-8', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p2'), 'e-Services et plateformes sectorielles déployés', '24', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p1'), 'Utilisation minimale du backbone par les opérateurs', '40 %', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-9', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p2'), 'Services prioritaires de l''État entièrement dématérialisés', '5', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p2'), 'e-Services et plateformes sectorielles déployés', '24', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-10', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p2'), 'Points d''accès universels dans les zones isolées', '125', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p2'), 'Services prioritaires de l''État entièrement dématérialisés', '5', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-11', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p2'), 'Personnes accompagnées en zone rurale', '10 000', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p2'), 'Points d''accès universels dans les zones isolées', '125', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-12', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p2'), 'Jeunes formés aux métiers du numérique', '6 500', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p2'), 'Personnes accompagnées en zone rurale', '10 000', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-13', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p2'), 'Femmes bénéficiaires de programmes dédiés', '2 500', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p2'), 'Jeunes formés aux métiers du numérique', '6 500', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-14', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p2'), 'Start-ups numériques accompagnées', '10', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p2'), 'Femmes bénéficiaires de programmes dédiés', '2 500', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-15', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p3'), 'Personnes sensibilisées chaque année', '20 000', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p2'), 'Start-ups numériques accompagnées', '10', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-16', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p3'), 'Personnes formées au numérique', '112 000', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p3'), 'Personnes sensibilisées chaque année', '20 000', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-17', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p3'), 'Taux d''accès visé aux smartphones', '80 %', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p3'), 'Personnes formées au numérique', '112 000', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-18', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p4'), 'Taux d''exécution du plan d''audit annuel', '100 %', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p3'), 'Taux d''accès visé aux smartphones', '80 %', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-19', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p4'), 'Score de notoriété auprès du public cible', '80 %', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p4'), 'Taux d''exécution du plan d''audit annuel', '100 %', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-20', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p4'), 'Taux de couverture des besoins financiers', '80 %', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p4'), 'Score de notoriété auprès du public cible', '80 %', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-21', id FROM i;
   WITH i AS (
-    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)
-    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p4'), 'Organes de gouvernance fonctionnels', '100 %', NULL, '2030-12-31', 'a_valider', NULL)
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p4'), 'Taux de couverture des besoins financiers', '80 %', NULL, NULL, '2030-12-31', 'a_valider', NULL)
     RETURNING id)
   INSERT INTO _kmap SELECT 'ind-22', id FROM i;
+  WITH i AS (
+    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)
+    VALUES ((SELECT id FROM _kmap WHERE key = 'obj-p4'), 'Organes de gouvernance fonctionnels', '100 %', NULL, NULL, '2030-12-31', 'a_valider', NULL)
+    RETURNING id)
+  INSERT INTO _kmap SELECT 'ind-23', id FROM i;
 
   -- Relations
   INSERT INTO public.strategic_relations (parent_id, enfant_id, type_relation, validation)
@@ -400,51 +405,53 @@ BEGIN
 
   -- Preuves documentaires (indicateurs)
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-0'), 'Diapositive 12', '34 821 km de fibre optique allumée au total.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-0'), 'Diapositive 4', 'Infrastructure Existante : 5 207 km de Backbone national (RNHD) déjà déployés comme socle.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-1'), 'Diapositive 12', '3 562 km de fibre optique backbone supplémentaires.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-1'), 'Diapositive 12', '34 821 km de fibre optique allumée au total.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-2'), 'Diapositive 12', '2 080 km de fibre optique métropolitaine.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-2'), 'Diapositive 12', '3 562 km de fibre optique backbone supplémentaires.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-3'), 'Diapositive 12', '7 452 km de fibre optique last mile.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-3'), 'Diapositive 12', '2 080 km de fibre optique métropolitaine.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-4'), 'Diapositive 12', '356 établissements scolaires et universitaires connectés.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-4'), 'Diapositive 12', '7 452 km de fibre optique last mile.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-5'), 'Diapositive 12', '480 Administrations connectées au haut débit.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-5'), 'Diapositive 12', '356 établissements scolaires et universitaires connectés.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-6'), 'Diapositive 12', '65% Établissements sanitaires connectés.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-6'), 'Diapositive 12', '480 Administrations connectées au haut débit.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-7'), 'Diapositive 12', '5 Frontières connectées au backbone national.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-7'), 'Diapositive 12', '65% Établissements sanitaires connectés.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-8'), 'Diapositive 12', '40% Utilisation minimale backbone par les opérateurs.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-8'), 'Diapositive 12', '5 Frontières connectées au backbone national.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-9'), 'Diapositive 13', '24 e-Services et plateformes sectorielles déployés.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-9'), 'Diapositive 12', '40% Utilisation minimale backbone par les opérateurs.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-10'), 'Diapositive 13', '5 Services prioritaires de l''État entièrement dématérialisés.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-10'), 'Diapositive 13', '24 e-Services et plateformes sectorielles déployés.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-11'), 'Diapositive 13', '125 Points d''accès universels dans les zones isolées.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-11'), 'Diapositive 13', '5 Services prioritaires de l''État entièrement dématérialisés.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-12'), 'Diapositive 13', '10 000 Personnes accompagnées en zone rurale.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-12'), 'Diapositive 13', '125 Points d''accès universels dans les zones isolées.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-13'), 'Diapositive 13', '6 500 Jeunes formés aux métiers du numérique.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-13'), 'Diapositive 13', '10 000 Personnes accompagnées en zone rurale.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-14'), 'Diapositive 13', '2 500 Femmes bénéficiaires de programmes dédiés.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-14'), 'Diapositive 13', '6 500 Jeunes formés aux métiers du numérique.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-15'), 'Diapositive 13', '10 Start-ups numériques accompagnées.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-15'), 'Diapositive 13', '2 500 Femmes bénéficiaires de programmes dédiés.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-16'), 'Diapositive 14', '20 000 Personnes sensibilisées chaque année.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-16'), 'Diapositive 13', '10 Start-ups numériques accompagnées.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-17'), 'Diapositive 14', '112 000 Personnes formées au numérique (2030).', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-17'), 'Diapositive 14', '20 000 Personnes sensibilisées chaque année.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-18'), 'Diapositive 14', '80% Taux d''accès visé aux smartphones.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-18'), 'Diapositive 14', '112 000 Personnes formées au numérique (2030).', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-19'), 'Diapositive 15', '100% Taux d''exécution du plan d''audit annuel.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-19'), 'Diapositive 14', '80% Taux d''accès visé aux smartphones.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-20'), 'Diapositive 15', '80% Score de notoriété auprès du public cible.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-20'), 'Diapositive 15', '100% Taux d''exécution du plan d''audit annuel.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-21'), 'Diapositive 15', '80% Taux de couverture des besoins financiers.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-21'), 'Diapositive 15', '80% Score de notoriété auprès du public cible.', 'extraction_assistee', '2026-04-01');
   INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
-  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-22'), 'Diapositive 15', '100% Organes de gouvernance fonctionnels.', 'extraction_assistee', '2026-04-01');
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-22'), 'Diapositive 15', '80% Taux de couverture des besoins financiers.', 'extraction_assistee', '2026-04-01');
+  INSERT INTO public.knowledge_evidence (source_id, cible_type, cible_id, localisation, texte_origine, methode_extraction, date_document)
+  VALUES ((SELECT id FROM _kmap WHERE key = 'src-plan'), 'indicator', (SELECT id FROM _kmap WHERE key = 'ind-23'), 'Diapositive 15', '100% Organes de gouvernance fonctionnels.', 'extraction_assistee', '2026-04-01');
 
   RAISE NOTICE 'Seed connaissance appliqué (statut a_valider). Passez à la revue/validation.';
 END $$;

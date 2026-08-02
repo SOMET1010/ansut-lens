@@ -20,6 +20,7 @@ RACINE = os.path.abspath(os.path.join(ICI, "..", ".."))
 JSON_IN = os.path.join(ICI, "plan_ansut_2026_2030.json")
 SEED_OUT = os.path.join(RACINE, "supabase", "seeds", "seed_connaissance_plan_ansut.sql")
 REVUE_OUT = os.path.join(RACINE, "docs", "REVUE-CONNAISSANCE-PLAN-ANSUT.md")
+TS_OUT = os.path.join(RACINE, "src", "data", "revueConnaissance.ts")
 
 TYPE_LABEL = {
     "mission": "Mission", "axe": "Axe stratégique", "programme": "Programme",
@@ -96,9 +97,9 @@ def generer_seed(data):
         ind_key = f"ind-{n}"
         ind["_key"] = ind_key
         L.append("  WITH i AS (")
-        L.append("    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, unite, echeance, validation, note)")
+        L.append("    INSERT INTO public.strategic_indicators (entity_id, libelle, valeur_cible, valeur_actuelle, unite, echeance, validation, note)")
         L.append(f"    VALUES ({kref(ind['entity'])}, {sql(ind['libelle'])}, {sql(ind.get('valeur_cible'))}, "
-                 f"{sql(ind.get('unite'))}, {sql(echeance_date(ind.get('echeance')))}, 'a_valider', {sql(ind.get('note'))})")
+                 f"{sql(ind.get('valeur_actuelle'))}, {sql(ind.get('unite'))}, {sql(echeance_date(ind.get('echeance')))}, 'a_valider', {sql(ind.get('note'))})")
         L.append("    RETURNING id)")
         L.append(f"  INSERT INTO _kmap SELECT {sql(ind_key)}, id FROM i;")
     L.append("")
@@ -181,10 +182,10 @@ def generer_revue(data):
         libelle = ent_by_key.get(ek, {}).get("libelle", ek)
         M.append(f"### {libelle}")
         M.append("")
-        M.append("| Indicateur | Cible | Échéance | Preuve |")
-        M.append("|---|---|---|---|")
+        M.append("| Indicateur | Cible 2030 | Réf./actuel | Échéance | Preuve |")
+        M.append("|---|---|---|---|---|")
         for ind in inds:
-            M.append(f"| {ind['libelle']} | {ind.get('valeur_cible', '—')} | {ind.get('echeance', '—')} | {ind.get('slide', '—')} |")
+            M.append(f"| {ind['libelle']} | {ind.get('valeur_cible', '—')} | {ind.get('valeur_actuelle', '—')} | {ind.get('echeance', '—')} | {ind.get('slide', '—')} |")
         M.append("")
 
     M.append("## Ambiguïtés & éléments non prouvés")
@@ -201,17 +202,60 @@ def generer_revue(data):
     return "\n".join(M)
 
 
+def generer_ts(data):
+    """Module TS typé (lecture seule) pour l'écran admin de revue."""
+    clean = {
+        "source": data["source"],
+        "entities": [
+            {k: v for k, v in e.items() if not k.startswith("_")} for e in data["entities"]
+        ],
+        "relations": data["relations"],
+        "indicators": [
+            {k: v for k, v in i.items() if not k.startswith("_")} for i in data["indicators"]
+        ],
+        "ambiguites": data.get("ambiguites", []),
+    }
+    payload = json.dumps(clean, ensure_ascii=False, indent=2)
+    return (
+        "// Généré par scripts/extraction/generer_seed.py — NE PAS ÉDITER À LA MAIN.\n"
+        "// Données de revue (lecture seule) de la connaissance institutionnelle extraite\n"
+        "// du plan. Statut de tous les éléments : « à valider » — aucune validation ici.\n\n"
+        "export interface RevueSource {\n"
+        "  key: string; titre: string; type: string; reference: string; date_document: string;\n"
+        "}\n"
+        "export interface RevueEntite {\n"
+        "  key: string; type: string; code?: string; libelle: string; description?: string;\n"
+        "  note_maturite?: string; slide?: string; texte?: string;\n"
+        "}\n"
+        "export interface RevueRelation {\n"
+        "  parent: string; enfant: string; type: string; validation: string;\n"
+        "}\n"
+        "export interface RevueIndicateur {\n"
+        "  entity: string; libelle: string; valeur_cible?: string; valeur_actuelle?: string;\n"
+        "  unite?: string; echeance?: string; note?: string; slide?: string; texte?: string;\n"
+        "}\n"
+        "export interface RevueConnaissance {\n"
+        "  source: RevueSource; entities: RevueEntite[]; relations: RevueRelation[];\n"
+        "  indicators: RevueIndicateur[]; ambiguites: string[];\n"
+        "}\n\n"
+        f"export const REVUE_CONNAISSANCE: RevueConnaissance = {payload};\n"
+    )
+
+
 def main():
     with open(JSON_IN, encoding="utf-8") as f:
         data = json.load(f)
-    os.makedirs(os.path.dirname(SEED_OUT), exist_ok=True)
-    os.makedirs(os.path.dirname(REVUE_OUT), exist_ok=True)
+    for out in (SEED_OUT, REVUE_OUT, TS_OUT):
+        os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(SEED_OUT, "w", encoding="utf-8") as f:
         f.write(generer_seed(data))
     with open(REVUE_OUT, "w", encoding="utf-8") as f:
         f.write(generer_revue(data))
+    with open(TS_OUT, "w", encoding="utf-8") as f:
+        f.write(generer_ts(data))
     print(f"Seed  : {SEED_OUT}")
     print(f"Revue : {REVUE_OUT}")
+    print(f"TS    : {TS_OUT}")
 
 
 if __name__ == "__main__":

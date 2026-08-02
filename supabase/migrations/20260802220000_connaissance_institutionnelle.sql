@@ -17,7 +17,26 @@
 -- plan) est livrée séparément et n'est appliquée qu'après revue humaine.
 -- À exécuter dans Cloud → SQL editor (Lovable n'applique pas les migrations).
 -- Idempotent (CREATE TABLE IF NOT EXISTS + policies DROP/CREATE).
+--
+-- Dépendances explicites (déjà présentes, utilisées par d'autres tables du
+-- projet) : la fonction public.update_updated_at_column(), le type app_role et
+-- la fonction public.has_role(uuid, app_role). Un préambule les vérifie et
+-- échoue tôt avec un message clair si l'une manque.
 -- =============================================================================
+
+-- 0) Préambule : vérifier les dépendances avant toute création ---------------
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'app_role') THEN
+    RAISE EXCEPTION 'Dépendance manquante : type public.app_role (créé par les migrations rôles).';
+  END IF;
+  IF to_regprocedure('public.update_updated_at_column()') IS NULL THEN
+    RAISE EXCEPTION 'Dépendance manquante : fonction public.update_updated_at_column().';
+  END IF;
+  IF to_regprocedure('public.has_role(uuid, app_role)') IS NULL THEN
+    RAISE EXCEPTION 'Dépendance manquante : fonction public.has_role(uuid, app_role).';
+  END IF;
+END $$;
 
 -- 1) Sources documentaires --------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.institutional_sources (
@@ -39,7 +58,11 @@ CREATE TABLE IF NOT EXISTS public.strategic_entities (
   code                  text,               -- P1, code projet…
   libelle               text NOT NULL,
   description           text,
-  direction_responsable text,               -- dénormalisé ; souvent « à confirmer »
+  -- Dénormalisation TRANSITOIRE. La représentation canonique d'une direction
+  -- responsable est une entité `direction` reliée via une relation
+  -- `responsable_de` (voir strategic_relations). Cette colonne texte sera
+  -- retirée quand les directions seront saisies comme entités.
+  direction_responsable text,
   periode_debut         date,
   periode_fin           date,
   statut                text NOT NULL DEFAULT 'actif',       -- actif | archive
@@ -65,12 +88,14 @@ CREATE TABLE IF NOT EXISTS public.strategic_relations (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   parent_id     uuid NOT NULL REFERENCES public.strategic_entities(id) ON DELETE CASCADE,
   enfant_id     uuid NOT NULL REFERENCES public.strategic_entities(id) ON DELETE CASCADE,
-  -- contient | porte | responsable_de | partenaire_de | contribue_a
   type_relation text NOT NULL DEFAULT 'contient',
   validation    text NOT NULL DEFAULT 'a_valider',   -- une relation peut être « supposée »
   created_at    timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT strategic_relations_type_chk
+    CHECK (type_relation IN ('contient','porte','responsable_de','partenaire_de','contribue_a')),
   CONSTRAINT strategic_relations_validation_chk
     CHECK (validation IN ('a_valider','valide','suppose','rejete')),
+  CONSTRAINT strategic_relations_no_self_chk CHECK (parent_id <> enfant_id),
   CONSTRAINT strategic_relations_unique UNIQUE (parent_id, enfant_id, type_relation)
 );
 
@@ -132,7 +157,44 @@ CREATE TRIGGER set_strategic_indicators_updated_at
   BEFORE UPDATE ON public.strategic_indicators
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
--- RLS : lecture pour les authentifiés, gestion réservée aux admins ----------
+-- Intégrité de la preuve polymorphe : `knowledge_evidence` pointe une entité,
+-- une relation ou un indicateur via (cible_type, cible_id). Une FK classique est
+-- impossible (cible polymorphe) ; un trigger garantit que la cible existe bien
+-- dans la table correspondante, et refuse l'insertion sinon.
+CREATE OR REPLACE FUNCTION public.check_knowledge_evidence_cible()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF NEW.cible_type = 'entity' THEN
+    IF NOT EXISTS (SELECT 1 FROM public.strategic_entities WHERE id = NEW.cible_id) THEN
+      RAISE EXCEPTION 'knowledge_evidence : entité cible % introuvable', NEW.cible_id;
+    END IF;
+  ELSIF NEW.cible_type = 'relation' THEN
+    IF NOT EXISTS (SELECT 1 FROM public.strategic_relations WHERE id = NEW.cible_id) THEN
+      RAISE EXCEPTION 'knowledge_evidence : relation cible % introuvable', NEW.cible_id;
+    END IF;
+  ELSIF NEW.cible_type = 'indicator' THEN
+    IF NOT EXISTS (SELECT 1 FROM public.strategic_indicators WHERE id = NEW.cible_id) THEN
+      RAISE EXCEPTION 'knowledge_evidence : indicateur cible % introuvable', NEW.cible_id;
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_check_knowledge_evidence_cible ON public.knowledge_evidence;
+CREATE TRIGGER trg_check_knowledge_evidence_cible
+  BEFORE INSERT OR UPDATE ON public.knowledge_evidence
+  FOR EACH ROW EXECUTE FUNCTION public.check_knowledge_evidence_cible();
+
+-- RLS : accès RÉSERVÉ AUX ADMINS pendant la phase brouillon -----------------
+-- Tant que la connaissance n'est pas revue/validée, il ne serait pas correct de
+-- l'exposer en lecture à tous les utilisateurs authentifiés : ce sont des
+-- données EXTRAITES, non validées, et potentiellement sensibles. On restreint
+-- donc lecture ET écriture aux admins. Une fois la base validée et branchée sur
+-- « Ce matin », on ajoutera une policy de lecture élargie (authenticated, ou des
+-- rôles précis) — décision à prendre explicitement à ce moment-là.
 ALTER TABLE public.institutional_sources ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.strategic_entities    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.strategic_relations   ENABLE ROW LEVEL SECURITY;
@@ -146,9 +208,8 @@ BEGIN
     'institutional_sources','strategic_entities','strategic_relations',
     'strategic_indicators','knowledge_evidence'
   ] LOOP
+    -- Retire une éventuelle policy de lecture large héritée d'une version antérieure.
     EXECUTE format('DROP POLICY IF EXISTS "Authenticated read %1$s" ON public.%1$I;', t);
-    EXECUTE format(
-      'CREATE POLICY "Authenticated read %1$s" ON public.%1$I FOR SELECT TO authenticated USING (true);', t);
     EXECUTE format('DROP POLICY IF EXISTS "Admins manage %1$s" ON public.%1$I;', t);
     EXECUTE format(
       'CREATE POLICY "Admins manage %1$s" ON public.%1$I FOR ALL TO authenticated '

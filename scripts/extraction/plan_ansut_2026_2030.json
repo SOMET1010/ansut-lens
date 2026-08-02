@@ -74,6 +74,7 @@
     { "parent": "axe-p2", "enfant": "part-min-agriculture", "type": "partenaire_de", "validation": "suppose" }
   ],
   "indicators": [
+    { "entity": "obj-p1", "libelle": "Backbone national RNHD déjà déployé (socle de départ)", "valeur_actuelle": "5 207 km", "note": "Valeur de référence 2022-2025 (socle) — NE PAS confondre avec la cible 2030 (34 821 km allumés).", "slide": "Diapositive 4", "texte": "Infrastructure Existante : 5 207 km de Backbone national (RNHD) déjà déployés comme socle." },
     { "entity": "obj-p1", "libelle": "Fibre optique allumée (total)", "valeur_cible": "34 821 km", "echeance": "2030", "slide": "Diapositive 12", "texte": "34 821 km de fibre optique allumée au total." },
     { "entity": "obj-p1", "libelle": "Backbone supplémentaire", "valeur_cible": "3 562 km", "echeance": "2030", "slide": "Diapositive 12", "texte": "3 562 km de fibre optique backbone supplémentaires." },
     { "entity": "obj-p1", "libelle": "Fibre métropolitaine", "valeur_cible": "2 080 km", "echeance": "2030", "slide": "Diapositive 12", "texte": "2 080 km de fibre optique métropolitaine." },

@@ -6,7 +6,7 @@
 
 - **Source** : Plan Stratégique ANSUT 2026-2030 (`ansut_strategic_plan_2026_2030.pptx`, 2026-04-01)
 - **Méthode** : extraction assistée (lecture du PPTX + structuration tracée)
-- **Volumes** : 28 entités, 27 relations, 23 indicateurs
+- **Volumes** : 28 entités, 27 relations, 24 indicateurs
 
 ## À faire lors de la revue
 
@@ -139,46 +139,47 @@
 
 ### Connectivité renforcée sur l'ensemble du territoire national
 
-| Indicateur | Cible | Échéance | Preuve |
-|---|---|---|---|
-| Fibre optique allumée (total) | 34 821 km | 2030 | Diapositive 12 |
-| Backbone supplémentaire | 3 562 km | 2030 | Diapositive 12 |
-| Fibre métropolitaine | 2 080 km | 2030 | Diapositive 12 |
-| Fibre last mile | 7 452 km | 2030 | Diapositive 12 |
-| Établissements scolaires et universitaires connectés | 356 | 2030 | Diapositive 12 |
-| Administrations connectées au haut débit | 480 | 2030 | Diapositive 12 |
-| Établissements sanitaires connectés | 65 % | 2030 | Diapositive 12 |
-| Frontières connectées au backbone national | 5 | 2030 | Diapositive 12 |
-| Utilisation minimale du backbone par les opérateurs | 40 % | 2030 | Diapositive 12 |
+| Indicateur | Cible 2030 | Réf./actuel | Échéance | Preuve |
+|---|---|---|---|---|
+| Backbone national RNHD déjà déployé (socle de départ) | — | 5 207 km | — | Diapositive 4 |
+| Fibre optique allumée (total) | 34 821 km | — | 2030 | Diapositive 12 |
+| Backbone supplémentaire | 3 562 km | — | 2030 | Diapositive 12 |
+| Fibre métropolitaine | 2 080 km | — | 2030 | Diapositive 12 |
+| Fibre last mile | 7 452 km | — | 2030 | Diapositive 12 |
+| Établissements scolaires et universitaires connectés | 356 | — | 2030 | Diapositive 12 |
+| Administrations connectées au haut débit | 480 | — | 2030 | Diapositive 12 |
+| Établissements sanitaires connectés | 65 % | — | 2030 | Diapositive 12 |
+| Frontières connectées au backbone national | 5 | — | 2030 | Diapositive 12 |
+| Utilisation minimale du backbone par les opérateurs | 40 % | — | 2030 | Diapositive 12 |
 
 ### Écosystème numérique renforcé et services innovants pour tous
 
-| Indicateur | Cible | Échéance | Preuve |
-|---|---|---|---|
-| e-Services et plateformes sectorielles déployés | 24 | 2030 | Diapositive 13 |
-| Services prioritaires de l'État entièrement dématérialisés | 5 | 2030 | Diapositive 13 |
-| Points d'accès universels dans les zones isolées | 125 | 2030 | Diapositive 13 |
-| Personnes accompagnées en zone rurale | 10 000 | 2030 | Diapositive 13 |
-| Jeunes formés aux métiers du numérique | 6 500 | 2030 | Diapositive 13 |
-| Femmes bénéficiaires de programmes dédiés | 2 500 | 2030 | Diapositive 13 |
-| Start-ups numériques accompagnées | 10 | 2030 | Diapositive 13 |
+| Indicateur | Cible 2030 | Réf./actuel | Échéance | Preuve |
+|---|---|---|---|---|
+| e-Services et plateformes sectorielles déployés | 24 | — | 2030 | Diapositive 13 |
+| Services prioritaires de l'État entièrement dématérialisés | 5 | — | 2030 | Diapositive 13 |
+| Points d'accès universels dans les zones isolées | 125 | — | 2030 | Diapositive 13 |
+| Personnes accompagnées en zone rurale | 10 000 | — | 2030 | Diapositive 13 |
+| Jeunes formés aux métiers du numérique | 6 500 | — | 2030 | Diapositive 13 |
+| Femmes bénéficiaires de programmes dédiés | 2 500 | — | 2030 | Diapositive 13 |
+| Start-ups numériques accompagnées | 10 | — | 2030 | Diapositive 13 |
 
 ### Les populations maîtrisent et utilisent le numérique
 
-| Indicateur | Cible | Échéance | Preuve |
-|---|---|---|---|
-| Personnes sensibilisées chaque année | 20 000 | 2030 | Diapositive 14 |
-| Personnes formées au numérique | 112 000 | 2030 | Diapositive 14 |
-| Taux d'accès visé aux smartphones | 80 % | 2030 | Diapositive 14 |
+| Indicateur | Cible 2030 | Réf./actuel | Échéance | Preuve |
+|---|---|---|---|---|
+| Personnes sensibilisées chaque année | 20 000 | — | 2030 | Diapositive 14 |
+| Personnes formées au numérique | 112 000 | — | 2030 | Diapositive 14 |
+| Taux d'accès visé aux smartphones | 80 % | — | 2030 | Diapositive 14 |
 
 ### Gouvernance de l'ANSUT améliorée et rayonnement régional
 
-| Indicateur | Cible | Échéance | Preuve |
-|---|---|---|---|
-| Taux d'exécution du plan d'audit annuel | 100 % | 2030 | Diapositive 15 |
-| Score de notoriété auprès du public cible | 80 % | 2030 | Diapositive 15 |
-| Taux de couverture des besoins financiers | 80 % | 2030 | Diapositive 15 |
-| Organes de gouvernance fonctionnels | 100 % | 2030 | Diapositive 15 |
+| Indicateur | Cible 2030 | Réf./actuel | Échéance | Preuve |
+|---|---|---|---|---|
+| Taux d'exécution du plan d'audit annuel | 100 % | — | 2030 | Diapositive 15 |
+| Score de notoriété auprès du public cible | 80 % | — | 2030 | Diapositive 15 |
+| Taux de couverture des besoins financiers | 80 % | — | 2030 | Diapositive 15 |
+| Organes de gouvernance fonctionnels | 100 % | — | 2030 | Diapositive 15 |
 
 ## Ambiguïtés & éléments non prouvés
 

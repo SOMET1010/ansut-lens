@@ -1,6 +1,7 @@
 import {
   Activity,
   Bell,
+  BookOpen,
   CalendarDays,
   ClipboardList,
   Clock,
@@ -186,6 +187,16 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
     question: 'Quelles règles s’appliquent aux données collectées ?',
     icon: Sliders,
     entrees: [
+      {
+        id: 'connaissance',
+        titre: 'Connaissance institutionnelle',
+        description:
+          'Revue (lecture seule) du plan stratégique extrait : axes, projets, objectifs, indicateurs et preuves. Rien n’est encore validé.',
+        path: '/admin/connaissance',
+        icon: BookOpen,
+        permission: 'access_admin',
+        synonymes: ['plan stratégique', 'adn', 'référentiel', 'piliers', 'revue', 'connaissance'],
+      },
       {
         id: 'scoring',
         titre: 'Règles de notation',
