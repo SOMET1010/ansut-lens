@@ -233,6 +233,12 @@ export function NewsletterStudio({ newsletter, onBack, onSaved }: NewsletterStud
 
   const selectedBlock = document.blocks.find(b => b.id === selectedBlockId) || null;
   const previewHtml = exportToHtml(document);
+  // Défense en profondeur : l'aperçu est toujours nettoyé côté client (anti-XSS)
+  const safePreviewHtml = DOMPurify.sanitize(previewHtml, {
+    USE_PROFILES: { html: true },
+    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'formaction'],
+  });
 
   return (
     <div className="h-[calc(100vh-120px)] flex flex-col">
