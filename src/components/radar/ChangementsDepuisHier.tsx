@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { nettoyerTitre } from '@/lib/nettoyerExtrait';
-import { piliersDeLActu, toucheUnPilier } from '@/lib/missions';
+import { estVoixAnsut, piliersDeLActu, toucheUnPilier } from '@/lib/missions';
 import { MISSIONS_STRATEGIQUES } from '@/config/missions';
 import { useArticleClusters } from '@/hooks/useArticleClusters';
 import type { Actualite } from '@/types';
@@ -37,9 +37,13 @@ function codePilier(id: string | undefined): string | null {
 }
 
 export function ChangementsDepuisHier({ actualites, prioritesActives, isLoading }: Props) {
-  // 1) Ne garder que ce qui touche une priorité active de l'ANSUT.
+  // 1) Veille EXTERNE uniquement (la voix de l'ANSUT vit en section 1), et
+  //    seulement ce qui touche une priorité active de l'ANSUT.
   const pertinents = useMemo(
-    () => (actualites ?? []).filter((a) => toucheUnPilier(a, prioritesActives)),
+    () =>
+      (actualites ?? []).filter(
+        (a) => !estVoixAnsut(a) && toucheUnPilier(a, prioritesActives),
+      ),
     [actualites, prioritesActives],
   );
 

@@ -50,6 +50,14 @@ const FENETRE_ANSUT_JOURS = 30;
 /** Alignement minimal pour proposer un sujet comme prochaine action. */
 const SEUIL_ACTION = 65;
 
+/**
+ * Fraîcheur maximale d'un signal critique pour l'accueil. Un signal détecté il y
+ * a plusieurs mois n'est pas un sujet « à arbitrer aujourd'hui » : au-delà de
+ * cette fenêtre, il n'est plus remonté sur « Ce matin » (il reste consultable
+ * dans Surveillance).
+ */
+const FRAICHEUR_SIGNAL_JOURS = 30;
+
 function mission(id: string | undefined) {
   return id ? MISSIONS_STRATEGIQUES.find((m) => m.id === id) : undefined;
 }
@@ -87,10 +95,15 @@ export default function CeMatinPage() {
   const { data: derniereCollecte } = useLastCollecteTime();
   const { hasPermission } = useUserPermissions();
 
-  const signauxCritiques = useMemo(
-    () => (signaux ?? []).filter((signal) => signal.niveau === 'critical'),
-    [signaux],
-  );
+  const signauxCritiques = useMemo(() => {
+    const limite = Date.now() - FRAICHEUR_SIGNAL_JOURS * 24 * 3600 * 1000;
+    return (signaux ?? []).filter((signal) => {
+      if (signal.niveau !== 'critical') return false;
+      const detecte = signal.date_detection ? new Date(signal.date_detection).getTime() : NaN;
+      // On exclut les signaux trop anciens ; une date manquante reste affichée.
+      return Number.isNaN(detecte) || detecte >= limite;
+    });
+  }, [signaux]);
 
   const alertesActives = kpis?.alertesActives ?? 0;
 
