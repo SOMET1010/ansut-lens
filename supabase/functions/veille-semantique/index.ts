@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
           messages: [
             {
               role: "system",
-              content: `Tu es un analyste visuel pour l'ANSUT (Autorité Nationale du Service Universel des Télécommunications) de Côte d'Ivoire.
+              content: `Tu es un analyste visuel pour l'ANSUT (Agence Nationale du Service Universel des Télécommunications) de Côte d'Ivoire.
 Tu analyses les images provenant des réseaux sociaux pour détecter :
 - La présence du logo ANSUT ou de partenaires (UIT, GSMA, Orange, MTN, Huawei, etc.)
 - Des stands d'exposition, poignées de main officielles, signatures de conventions
