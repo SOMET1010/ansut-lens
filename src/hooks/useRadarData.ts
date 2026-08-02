@@ -157,6 +157,7 @@ export function useIntelligenceFeed(limit: number = 50, maxAgeHours?: number) {
           contenu: a.contenu || undefined,
           source_nom: a.source_nom || undefined,
           source_url: a.source_url || undefined,
+          source_type: a.source_type || undefined,
           date_publication: a.date_publication || undefined,
           importance: a.importance || 50,
           score_pertinence: a.score_pertinence ?? undefined,

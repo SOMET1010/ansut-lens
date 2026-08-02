@@ -66,6 +66,20 @@ export function toucheUnPilier(a: Actualite, piliers: Set<string>): boolean {
   return piliersDeLActu(a).some((id) => piliers.has(id));
 }
 
+/**
+ * Vrai si l'actualité est en réalité une publication propre de l'ANSUT (pontée
+ * dans `actualites` depuis `publications_institutionnelles`). Ces éléments sont
+ * la voix de l'ANSUT : ils ont leur place en section « L'ANSUT récemment », pas
+ * dans la veille externe (« ce qui a changé ») ni dans « à arbitrer », où ils
+ * feraient remonter de la communication institutionnelle au même rang qu'un
+ * signal stratégique.
+ */
+export function estVoixAnsut(a: Actualite): boolean {
+  const type = (a.source_type ?? '').toLowerCase();
+  const cat = (a.categorie ?? '').toLowerCase();
+  return type === 'institutionnel' || cat === 'institutionnel';
+}
+
 export interface GroupePreuves {
   /** Axe de rattachement principal, ou `undefined` pour les sujets hors axes. */
   mission?: MissionStrategique;

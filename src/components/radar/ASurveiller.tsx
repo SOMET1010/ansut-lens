@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { nettoyerTitre } from '@/lib/nettoyerExtrait';
-import { alignement, piliersDeLActu } from '@/lib/missions';
+import { alignement, estVoixAnsut, piliersDeLActu } from '@/lib/missions';
 import { MISSIONS_STRATEGIQUES } from '@/config/missions';
 import { useArticleClusters } from '@/hooks/useArticleClusters';
 import type { Actualite, Signal } from '@/types';
@@ -42,9 +42,13 @@ function mission(id: string | undefined) {
 }
 
 export function ASurveiller({ actualites, signauxCritiques, prioritesActives, isLoading }: Props) {
-  // Articles candidats : suffisamment alignés, dédoublonnés par sujet.
+  // Articles candidats : sujets EXTERNES suffisamment alignés (la voix de
+  // l'ANSUT n'est pas un sujet « à arbitrer »), dédoublonnés ensuite.
   const candidats = useMemo(
-    () => (actualites ?? []).filter((a) => alignement(a) >= SEUIL_ATTENTION),
+    () =>
+      (actualites ?? []).filter(
+        (a) => !estVoixAnsut(a) && alignement(a) >= SEUIL_ATTENTION,
+      ),
     [actualites],
   );
   const clusters = useArticleClusters(candidats);
