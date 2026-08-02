@@ -1143,6 +1143,7 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
 
     const matinale = JSON.parse(toolCall.function.arguments);
     console.log('[Matinale] Generated successfully');
+    await updateJob(jobId, { step: 'Mise en forme du briefing', progress: 70 });
 
     // Post-process: Build sets of valid data for verification
     // Normalize URLs to make matching robust (trailing slash, tracking params, casing)
