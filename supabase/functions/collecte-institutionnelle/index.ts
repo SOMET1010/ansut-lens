@@ -31,12 +31,22 @@ type DateSource = 'absolute_source' | 'platform_metadata' | 'relative_text' | 'i
  * Résout la datation d'un contenu à partir de la lecture d'extraction.
  *
  * RÈGLE FONDATRICE : `published_at` n'est renseigné QUE si une date ABSOLUE et
- * explicite est présente. Une mention RELATIVE (« il y a 2 heures », « hier »,
- * « la semaine dernière ») n'est jamais convertie : elle reflète l'instant du
- * scraping, pas la vraie date de publication, et faisait passer des contenus
- * anciens (célébrations sportives, GITEX) pour « récents ». La date de collecte
- * ne sert JAMAIS de substitut. On conserve la PROVENANCE pour que le pipeline
- * distingue durablement une date fiable d'une date inconnue.
+ * explicite est présente. Une mention RELATIVE affichée (« il y a 2 heures »,
+ * « hier », « la semaine dernière ») n'est jamais convertie : elle reflète
+ * l'instant du scraping, pas la vraie date de publication, et faisait passer des
+ * contenus anciens (célébrations sportives, GITEX) pour « récents ». La date de
+ * collecte ne sert JAMAIS de substitut.
+ *
+ * Deux origines FIABLES sont acceptées :
+ *   - `absolute`  : une date absolue explicite est visible dans le texte
+ *     (« 12 mars 2026 »).
+ *   - `metadata`  : un horodatage machine ABSOLU a été lu dans le HTML — attribut
+ *     `datetime`, `data-utime` (epoch), tooltip `title`, JSON-LD `datePublished`
+ *     / `uploadDate`, `<meta article:published_time>`. Ces horodatages sont
+ *     absolus MÊME QUAND l'affichage est relatif : c'est la vraie date de
+ *     publication, pas une fabrication.
+ * On conserve la PROVENANCE pour que le pipeline distingue durablement une date
+ * fiable (et son origine) d'une date inconnue.
  */
 function resoudreDatation(
   dateAbsolue: string | null | undefined,
@@ -48,11 +58,55 @@ function resoudreDatation(
     if (d) return { published_at: d, source: 'absolute_source', verified: true };
     return { published_at: null, source: 'unknown', verified: false };
   }
+  if (src === 'metadata') {
+    // Horodatage machine absolu extrait du HTML → date vérifiée et tracée.
+    const d = parseDateAbsolue(dateAbsolue);
+    if (d) return { published_at: d, source: 'platform_metadata', verified: true };
+    return { published_at: null, source: 'unknown', verified: false };
+  }
   if (src === 'relative') {
-    // Mention relative → date d'origine NON vérifiée, jamais convertie.
+    // Mention relative affichée → date d'origine NON vérifiée, jamais convertie.
     return { published_at: null, source: 'relative_text', verified: false };
   }
   return { published_at: null, source: 'unknown', verified: false };
+}
+
+/**
+ * Extrait un horodatage de publication ABSOLU depuis les métadonnées machine
+ * d'une page — sans IA, de façon déterministe et donc totalement traçable.
+ *
+ * Ordre de confiance : métadonnées déjà parsées par Firecrawl, puis JSON-LD,
+ * puis balises meta, puis `<time datetime>`, puis `data-utime` (epoch Facebook).
+ * Renvoie une date ISO validée (parseDateAbsolue) ou null. Convient pour une
+ * page à contenu UNIQUE (un article, une vidéo) ; sur un flux multi-posts, la
+ * date par post est lue par l'IA dans le bloc HTML de chaque post.
+ */
+function extraireDateMetadata(metadata: unknown, html: string | null): string | null {
+  if (metadata && typeof metadata === 'object') {
+    const m = metadata as Record<string, unknown>;
+    const cles = [
+      'publishedTime', 'article:published_time', 'og:article:published_time',
+      'datePublished', 'date', 'og:updated_time', 'article:modified_time',
+    ];
+    for (const c of cles) {
+      const v = m[c];
+      const brut = typeof v === 'string' ? v : Array.isArray(v) && typeof v[0] === 'string' ? v[0] : null;
+      const d = parseDateAbsolue(brut);
+      if (d) return d;
+    }
+  }
+  if (!html) return null;
+  const jsonld = html.match(/"(?:datePublished|uploadDate|dateCreated)"\s*:\s*"([^"]+)"/);
+  if (jsonld) { const d = parseDateAbsolue(jsonld[1]); if (d) return d; }
+  const meta =
+    html.match(/<meta[^>]+(?:property|name|itemprop)=["'](?:article:published_time|datePublished|date)["'][^>]+content=["']([^"']+)["']/i) ||
+    html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name|itemprop)=["'](?:article:published_time|datePublished)["']/i);
+  if (meta) { const d = parseDateAbsolue(meta[1]); if (d) return d; }
+  const time = html.match(/<time[^>]+datetime=["']([^"']+)["']/i);
+  if (time) { const d = parseDateAbsolue(time[1]); if (d) return d; }
+  const utime = html.match(/data-utime=["'](\d{9,})["']/);
+  if (utime) { const d = parseDateAbsolue(new Date(parseInt(utime[1], 10) * 1000).toISOString()); if (d) return d; }
+  return null;
 }
 
 // Helper: inject publication into actualites table
@@ -131,17 +185,21 @@ Deno.serve(async (req) => {
               },
               body: JSON.stringify({
                 url: profileUrl,
-                formats: ["markdown"],
-                onlyMainContent: true,
+                // HTML en plus du markdown : les horodatages machine (datetime,
+                // data-utime, JSON-LD) vivent dans le HTML, pas dans le markdown.
+                // onlyMainContent=false pour ne pas rogner ces attributs.
+                formats: ["markdown", "html"],
+                onlyMainContent: false,
               }),
             });
 
             if (scrapeRes.ok) {
               const scrapeData = await scrapeRes.json();
               const markdown = scrapeData.data?.markdown || scrapeData.markdown || "";
+              const html = scrapeData.data?.html || scrapeData.html || "";
 
               if (markdown.length > 100) {
-                const posts = await extractPostsWithAI(LOVABLE_API_KEY, markdown, compte.plateforme);
+                const posts = await extractPostsWithAI(LOVABLE_API_KEY, markdown, html, compte.plateforme);
                 
                 for (const post of posts) {
                   const contentHash = post.contenu?.substring(0, 100);
@@ -245,7 +303,11 @@ Deno.serve(async (req) => {
 
 // --- AI helpers ---
 
-async function extractPostsWithAI(apiKey: string, markdown: string, plateforme: string) {
+async function extractPostsWithAI(apiKey: string, markdown: string, html: string, plateforme: string) {
+  // On donne le HTML en priorité : il porte les horodatages MACHINE (attribut
+  // datetime, data-utime, tooltip title, JSON-LD) que le markdown a perdus.
+  // Repli sur le markdown si le HTML est vide.
+  const source = (html && html.length > 200) ? html.substring(0, 20000) : markdown.substring(0, 8000);
   const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -257,17 +319,17 @@ async function extractPostsWithAI(apiKey: string, markdown: string, plateforme: 
       messages: [
         {
           role: "system",
-          content: `Tu es un extracteur de publications sociales. Extrais les posts du contenu scrappé d'un profil ${plateforme}.
-Pour chaque post: { "contenu": "texte du post", "date_absolue": "date ISO", "date_source": "absolute|relative|none", "url": "lien direct du post/vidéo", "hashtags": ["..."], "type": "post|article|partage" }.
-RÈGLES STRICTES SUR LA DATE :
-- date_absolue : ne la renseigne QUE si une date de publication ABSOLUE et explicite est visible (ex. « 12 mars 2026 », « 2026-03-12 »). Convertis-la en ISO.
-- N'utilise JAMAIS une mention RELATIVE (« il y a 2 heures », « hier », « la semaine dernière », « il y a 2 jours ») comme date. Ces mentions reflètent le moment du scraping, pas la vraie date de publication. Dans ce cas, laisse date_absolue vide.
-- date_source : « absolute » si une date absolue explicite est présente ; « relative » si seule une mention relative existe ; « none » si aucune date n'apparaît.
-- N'INVENTE JAMAIS de date.
+          content: `Tu es un extracteur de publications sociales. L'entrée est le HTML (ou le markdown) scrappé d'un profil ${plateforme}. Extrais chaque post en texte propre.
+Pour chaque post: { "contenu": "texte lisible du post", "date_absolue": "date ISO", "date_source": "metadata|absolute|relative|none", "url": "lien direct du post/vidéo", "hashtags": ["..."], "type": "post|article|partage" }.
+RÈGLES STRICTES SUR LA DATE — la vraie date de publication est presque toujours dans un ATTRIBUT MACHINE, même quand l'affichage dit « il y a 2 jours » :
+- Cherche EN PRIORITÉ l'horodatage absolu machine du post : attribut datetime="..." d'une balise <time>, attribut data-utime="..." (epoch en secondes → convertis en ISO), attribut title="..." d'un lien de date (contient souvent la date complète), ou un champ JSON-LD "datePublished"/"uploadDate". Si tu le trouves, mets-le dans date_absolue (ISO) et date_source="metadata".
+- Sinon, si une date ABSOLUE explicite est écrite en clair (« 12 mars 2026 », « 2026-03-12 »), mets-la dans date_absolue et date_source="absolute".
+- N'utilise JAMAIS le TEXTE relatif affiché (« il y a 2 heures », « hier », « il y a 2 jours ») comme date : dans ce cas date_source="relative" et date_absolue vide. Ce texte reflète l'instant du scraping, pas la publication.
+- N'INVENTE JAMAIS de date. date_source="none" si vraiment aucune date n'existe.
 - url : le lien direct de la publication/vidéo si présent, sinon omets-le.
 Si aucun post, retourne [].`,
         },
-        { role: "user", content: markdown.substring(0, 8000) },
+        { role: "user", content: source },
       ],
       tools: [{
         type: "function",
@@ -283,8 +345,8 @@ Si aucun post, retourne [].`,
                   type: "object",
                   properties: {
                     contenu: { type: "string" },
-                    date_absolue: { type: "string", description: "Date ISO UNIQUEMENT si une date absolue explicite est visible, sinon omettre" },
-                    date_source: { type: "string", description: "absolute | relative | none" },
+                    date_absolue: { type: "string", description: "Date ISO issue d'un horodatage machine (datetime, data-utime, JSON-LD) ou d'une date absolue explicite ; sinon omettre" },
+                    date_source: { type: "string", description: "metadata (horodatage machine absolu) | absolute (date explicite écrite) | relative (seul un texte relatif) | none" },
                     url: { type: "string", description: "Lien direct de la publication si présent" },
                     hashtags: { type: "array", items: { type: "string" } },
                     type: { type: "string" },
@@ -318,14 +380,16 @@ async function collectFromWebsite(firecrawlKey: string, aiKey: string) {
     },
     body: JSON.stringify({
       url: "https://www.ansut.ci/actualites",
-      formats: ["markdown"],
-      onlyMainContent: true,
+      formats: ["markdown", "html"],
+      onlyMainContent: false,
     }),
   });
 
   if (!siteRes.ok) return [];
   const siteData = await siteRes.json();
   const markdown = siteData.data?.markdown || siteData.markdown || "";
+  const html = siteData.data?.html || siteData.html || "";
+  const metadata = siteData.data?.metadata || siteData.metadata || null;
   if (markdown.length <= 100) return [];
 
   const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -339,10 +403,14 @@ async function collectFromWebsite(firecrawlKey: string, aiKey: string) {
       messages: [
         {
           role: "system",
-          content: `Extrais les articles/communiqués du site web ANSUT. Pour chaque article: { "titre": "...", "resume": "...", "date_absolue": "ISO date", "date_source": "absolute|relative|none", "url": "..." }.
-RÈGLES SUR LA DATE : ne renseigne date_absolue QUE si une date ABSOLUE et explicite est visible (ex. « 12 mars 2026 »). N'utilise JAMAIS une mention relative (« il y a 2 jours »). date_source = « absolute » si date absolue présente, « relative » si seule une mention relative existe, « none » sinon. N'invente jamais de date. Retourne un JSON array.`,
+          content: `Extrais les articles/communiqués du site web ANSUT depuis le HTML (ou markdown) scrappé. Pour chaque article: { "titre": "...", "resume": "...", "date_absolue": "ISO date", "date_source": "metadata|absolute|relative|none", "url": "..." }.
+RÈGLES SUR LA DATE :
+- Cherche EN PRIORITÉ un horodatage machine absolu : <time datetime="...">, "datePublished" (JSON-LD), <meta property="article:published_time">. Si trouvé → date_absolue (ISO) + date_source="metadata".
+- Sinon, une date ABSOLUE écrite en clair (« 12 mars 2026 ») → date_absolue + date_source="absolute".
+- N'utilise JAMAIS une mention relative affichée (« il y a 2 jours ») → date_source="relative", date_absolue vide. N'invente jamais de date ; sinon date_source="none".
+Retourne un JSON array.`,
         },
-        { role: "user", content: markdown.substring(0, 8000) },
+        { role: "user", content: (html && html.length > 200) ? html.substring(0, 20000) : markdown.substring(0, 8000) },
       ],
       tools: [{
         type: "function",
@@ -380,5 +448,22 @@ RÈGLES SUR LA DATE : ne renseigne date_absolue QUE si une date ABSOLUE et expli
   const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
   if (!toolCall) return [];
   const { articles } = JSON.parse(toolCall.function.arguments);
-  return articles || [];
+  const liste = articles || [];
+
+  // Filet de sécurité déterministe : si la page ne contient QU'UN article et que
+  // l'IA n'a pas trouvé de date fiable, la date machine de la page (JSON-LD,
+  // meta, <time>) EST celle de cet article. On ne l'applique jamais à une liste
+  // multi-articles (ce serait leur coller à tous la même date — malhonnête).
+  if (liste.length === 1) {
+    const a = liste[0];
+    const src = (a.date_source || "").toLowerCase();
+    if (src !== "metadata" && src !== "absolute") {
+      const dPage = extraireDateMetadata(metadata, html);
+      if (dPage) {
+        a.date_absolue = dPage;
+        a.date_source = "metadata";
+      }
+    }
+  }
+  return liste;
 }
