@@ -626,6 +626,90 @@ export type Database = {
           },
         ]
       }
+      editorial_qualifications: {
+        Row: {
+          actualite_id: string | null
+          ai_version: number | null
+          category: string
+          content_key: string
+          created_at: string
+          date_source: string
+          date_verified: boolean
+          editorial_date: string | null
+          evidence: Json
+          id: string
+          is_ansut_voice: boolean
+          is_institutional: boolean
+          limitations: string[]
+          primary_theme: string | null
+          publication_id: string | null
+          qualification_method: string
+          qualified_at: string
+          rules_version: number
+          secondary_themes: string[]
+          updated_at: string
+        }
+        Insert: {
+          actualite_id?: string | null
+          ai_version?: number | null
+          category?: string
+          content_key: string
+          created_at?: string
+          date_source?: string
+          date_verified?: boolean
+          editorial_date?: string | null
+          evidence?: Json
+          id?: string
+          is_ansut_voice?: boolean
+          is_institutional?: boolean
+          limitations?: string[]
+          primary_theme?: string | null
+          publication_id?: string | null
+          qualification_method?: string
+          qualified_at?: string
+          rules_version?: number
+          secondary_themes?: string[]
+          updated_at?: string
+        }
+        Update: {
+          actualite_id?: string | null
+          ai_version?: number | null
+          category?: string
+          content_key?: string
+          created_at?: string
+          date_source?: string
+          date_verified?: boolean
+          editorial_date?: string | null
+          evidence?: Json
+          id?: string
+          is_ansut_voice?: boolean
+          is_institutional?: boolean
+          limitations?: string[]
+          primary_theme?: string | null
+          publication_id?: string | null
+          qualification_method?: string
+          qualified_at?: string
+          rules_version?: number
+          secondary_themes?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "editorial_qualifications_actualite_id_fkey"
+            columns: ["actualite_id"]
+            isOneToOne: false
+            referencedRelation: "actualites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "editorial_qualifications_publication_id_fkey"
+            columns: ["publication_id"]
+            isOneToOne: false
+            referencedRelation: "publications_institutionnelles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evenements_strategiques: {
         Row: {
           boost_actif: boolean | null
