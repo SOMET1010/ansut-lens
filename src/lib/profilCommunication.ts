@@ -18,6 +18,8 @@
 
 import { piliersPourTexte } from '@/lib/missions';
 import { MISSIONS_STRATEGIQUES } from '@/config/missions';
+import { synthetiserPublications } from '@/lib/syntheseAnsut';
+import { nettoyerExtrait } from '@/lib/nettoyerExtrait';
 import type { PublicationAnsut } from '@/hooks/useAnsutPublications';
 
 function normaliser(s: string): string {
@@ -88,6 +90,14 @@ export interface ThemeEvolution extends ThemeCount {
   avant: number;
 }
 
+/** Élément court (campagne / événement) tiré d'une publication. */
+export interface ItemCommunication {
+  id: string;
+  titre: string;
+  date_publication: string | null;
+  url_original: string | null;
+}
+
 export interface ProfilCommunication {
   fenetreJours: number;
   /** Publications datées réellement et publiées dans la fenêtre. */
@@ -96,6 +106,12 @@ export interface ProfilCommunication {
   themes: ThemeCount[];
   /** Évolution des thèmes vs la fenêtre précédente (même durée). */
   evolution: ThemeEvolution[];
+  /** Partenaires cités dans la communication de la fenêtre. */
+  partenaires: string[];
+  /** Campagnes en cours (contenus de type campagne, non expirés). */
+  campagnes: ItemCommunication[];
+  /** Événements récents (contenus de type événement, non expirés). */
+  evenements: ItemCommunication[];
   /** Publications récentes encore vivantes (non expirées), du plus récent. */
   publicationsRecentes: (PublicationAnsut & { type: TypeCommunication })[];
 }
@@ -177,9 +193,9 @@ export function profilCommunication(
     };
   }).filter((e) => e.count > 0 || e.avant > 0);
 
-  // Publications récentes VIVANTES : datées, dans la fenêtre, non expirées
-  // selon leur TTL de type. Les contenus expirés sont archivés d'office.
-  const publicationsRecentes = actuelles
+  // Contenus VIVANTS : datés, dans la fenêtre, non expirés selon leur TTL de
+  // type. Les contenus expirés sont archivés d'office.
+  const vivantes = actuelles
     .map((pub) => {
       const ms = dateReelleMs(pub) as number;
       const { type, ttlJours } = typeCommunication(pub.contenu);
@@ -187,15 +203,35 @@ export function profilCommunication(
       return { pub, ms, type, vivante: ageJours <= ttlJours };
     })
     .filter((x) => x.vivante)
-    .sort((a, b) => b.ms - a.ms)
-    .slice(0, 4)
-    .map((x) => ({ ...x.pub, type: x.type }));
+    .sort((a, b) => b.ms - a.ms);
+
+  const titreCourt = (contenu: string | null): string => {
+    const t = nettoyerExtrait(contenu ?? '') || 'Publication';
+    return t.length > 90 ? `${t.slice(0, 90).trimEnd()}…` : t;
+  };
+  const toItem = (x: { pub: PublicationAnsut }): ItemCommunication => ({
+    id: x.pub.id,
+    titre: titreCourt(x.pub.contenu),
+    date_publication: x.pub.date_publication,
+    url_original: x.pub.url_original,
+  });
+
+  const campagnes = vivantes.filter((x) => x.type === 'campagne').slice(0, 4).map(toItem);
+  const evenements = vivantes.filter((x) => x.type === 'evenement').slice(0, 4).map(toItem);
+  const publicationsRecentes = vivantes.slice(0, 4).map((x) => ({ ...x.pub, type: x.type }));
+
+  // Partenaires cités dans la communication de la fenêtre (réutilise la liste
+  // de référence de l'écosystème).
+  const partenaires = synthetiserPublications(actuelles).partenaires;
 
   return {
     fenetreJours,
     total: actuelles.length,
     themes,
     evolution,
+    partenaires,
+    campagnes,
+    evenements,
     publicationsRecentes,
   };
 }

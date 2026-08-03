@@ -4,9 +4,11 @@ import {
   ArrowDown,
   ArrowRight,
   ArrowUp,
+  CalendarDays,
   ExternalLink,
   Facebook,
   Globe,
+  Handshake,
   Linkedin,
   Megaphone,
   Minus,
@@ -240,7 +242,88 @@ export function NotreCommunication() {
             )}
           </div>
 
+          {/* Lecture des réseaux officiels : campagnes, événements, partenaires
+              portés par l'ANSUT sur la période. */}
+          {(profil.campagnes.length > 0 ||
+            profil.evenements.length > 0 ||
+            profil.partenaires.length > 0) && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {profil.campagnes.length > 0 && (
+                <div className="rounded-xl border p-3">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                    <Megaphone className="h-3.5 w-3.5 text-primary" aria-hidden />
+                    Campagnes en cours
+                  </p>
+                  <ul className="mt-2 space-y-1.5">
+                    {profil.campagnes.map((c) => (
+                      <li key={c.id} className="text-sm">
+                        {c.url_original ? (
+                          <a
+                            href={c.url_original}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline"
+                          >
+                            {c.titre}
+                          </a>
+                        ) : (
+                          c.titre
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {profil.evenements.length > 0 && (
+                <div className="rounded-xl border p-3">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                    <CalendarDays className="h-3.5 w-3.5 text-primary" aria-hidden />
+                    Événements récents
+                  </p>
+                  <ul className="mt-2 space-y-1.5">
+                    {profil.evenements.map((e) => (
+                      <li key={e.id} className="text-sm">
+                        {e.url_original ? (
+                          <a
+                            href={e.url_original}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline"
+                          >
+                            {e.titre}
+                          </a>
+                        ) : (
+                          e.titre
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {profil.partenaires.length > 0 && (
+                <div className="rounded-xl border p-3 sm:col-span-2">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                    <Handshake className="h-3.5 w-3.5 text-primary" aria-hidden />
+                    Partenaires cités
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {profil.partenaires.map((p) => (
+                      <Badge key={p} variant="secondary" className="text-[11px]">
+                        {p}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Publications récentes vivantes, datées réellement et sourcées. */}
+          <p className="pt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
+            Publications récentes
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
             {profil.publicationsRecentes.map((pub) => {
               const plateforme = (pub.plateforme || '').toLowerCase();
