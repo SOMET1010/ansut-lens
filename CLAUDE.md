@@ -202,6 +202,21 @@ qualification is computed **once** (target: persisted at ingestion) and every
 screen only **reads** it — never recompute freshness, category, theme, or
 eligibility in a React component.
 
+### Navigation architecture (permanent rule)
+
+RADAR is **three separate spaces with three different audiences**, per
+**[`docs/ARCHITECTURE_NAVIGATION.md`](docs/ARCHITECTURE_NAVIGATION.md)**:
+**(1) RADAR** — the editorial product (main sidebar), only what DIRCOM uses daily
+(Ce matin · Veille · Recherche · Notre communication · 📊 Insights · Acteurs ·
+Publier · Assistant); **(2) Administration** — configuration, for a few admins
+(sources, comptes, connecteurs, mots-clés, utilisateurs, sécurité); **(3) Console
+technique** — operations, Super Admin only, hidden from the product (pipeline,
+collectes, imports, CRON, diagnostic, backfill, logs, santé). Any **business-value**
+feature (Insights, résonance, shadow tracker, coffre éditorial, newsletters,
+événements) belongs in the **product**, never in administration. The technical
+console must **never** clutter the DIRCOM's daily experience. "Réglages" is
+retired in favour of "Administration" + a separate "Console technique".
+
 ### Credibility Charter (permanent rule)
 
 Every displayed indicator, gauge, score, badge, counter or ranking MUST pass
