@@ -1860,6 +1860,84 @@ export type Database = {
         }
         Relationships: []
       }
+      ref_directions: {
+        Row: {
+          actif: boolean
+          code: string
+          last_sync_run_id: string | null
+          libelle: string
+          niveau: number | null
+          ordre: number | null
+          parent_code: string | null
+          synced_at: string
+          type: string | null
+        }
+        Insert: {
+          actif?: boolean
+          code: string
+          last_sync_run_id?: string | null
+          libelle: string
+          niveau?: number | null
+          ordre?: number | null
+          parent_code?: string | null
+          synced_at?: string
+          type?: string | null
+        }
+        Update: {
+          actif?: boolean
+          code?: string
+          last_sync_run_id?: string | null
+          libelle?: string
+          niveau?: number | null
+          ordre?: number | null
+          parent_code?: string | null
+          synced_at?: string
+          type?: string | null
+        }
+        Relationships: []
+      }
+      ref_sync_runs: {
+        Row: {
+          duration_ms: number | null
+          error: string | null
+          fetched_count: number | null
+          finished_at: string | null
+          http_status: number | null
+          id: string
+          referentiel: string
+          source_url: string | null
+          started_at: string
+          success: boolean
+          upserted_count: number | null
+        }
+        Insert: {
+          duration_ms?: number | null
+          error?: string | null
+          fetched_count?: number | null
+          finished_at?: string | null
+          http_status?: number | null
+          id?: string
+          referentiel: string
+          source_url?: string | null
+          started_at?: string
+          success?: boolean
+          upserted_count?: number | null
+        }
+        Update: {
+          duration_ms?: number | null
+          error?: string | null
+          fetched_count?: number | null
+          finished_at?: string | null
+          http_status?: number | null
+          id?: string
+          referentiel?: string
+          source_url?: string | null
+          started_at?: string
+          success?: boolean
+          upserted_count?: number | null
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           created_at: string | null
