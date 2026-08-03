@@ -107,3 +107,6 @@ verify_jwt = false
 
 [functions.resoudre-compte-social]
 verify_jwt = false
+
+[functions.import-publications]
+verify_jwt = false

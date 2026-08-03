@@ -107,6 +107,44 @@ Secrets déjà en place : `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`.
 - Redirect URL callback :
   `https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1/facebook-oauth-callback`.
 
+## 4bis. Pont agent → RADAR (endpoint `import-publications`)
+
+Quand une extraction légitime se fait via un **agent à navigateur connecté** (là
+où la lecture des posts est autorisée), la partie fragile (session connectée)
+**reste dans l'agent**. L'agent envoie ensuite ses publications **déjà
+normalisées** à RADAR, qui ne reçoit que des données propres.
+
+- **Endpoint** : `POST https://lpkfwxisranmetbtgxrv.supabase.co/functions/v1/import-publications`
+- **Sécurité** : en-tête `x-import-token: <IMPORT_PUBLICATIONS_TOKEN>` (secret à créer
+  dans Lovable Cloud → Secrets ; l'agent l'utilise). Aucun secret plateforme ici.
+- **Corps** :
+
+  ```json
+  {
+    "publications": [
+      {
+        "plateforme": "linkedin",
+        "date": "2026-07-31",
+        "texte": "Notion #5 Inclusion Numérique …",
+        "type": "image",
+        "url": "https://www.linkedin.com/feed/update/urn:li:activity:123",
+        "likes": 11, "comments": 0, "shares": 1, "vues": null,
+        "hashtags": ["ANSUT", "InclusionNumérique"]
+      }
+    ]
+  }
+  ```
+
+  Alias tolérés : `contenu`→`texte`, `date_publication_estimee`→`date`,
+  `type_contenu`→`type`, `url_original`→`url`, `reactions_count`→`likes`,
+  `comments_count`, `shares_count`, `vues_count`. **Ne pas** envoyer l'URL de flux
+  commune (`…/posts/?feedView=all`) comme `url` : laisser `url` vide sinon (RADAR
+  dédoublonne alors par le texte).
+- **Réponse** : `{ inserees, ignorees_doublons, erreurs }`. RADAR dédoublonne par
+  URL propre, sinon par empreinte de contenu. Les dates valides sont traitées
+  comme `absolute_source` (vérifiées). Les publications apparaissent dans Insights ;
+  lancer le **Backfill** pour la qualification persistée.
+
 ## 5. Filet provisoire — import manuel (CSV / URLs)
 
 Pour ne pas laisser Insights vide pendant la validation des accès : un import
