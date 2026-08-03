@@ -24,8 +24,17 @@ export function RelativeTime({
   }, [refreshInterval]);
 
   const dateObj = typeof date === 'string' ? new Date(date) : date;
+
+  // Garde-fou : une date invalide (chaîne malformée, valeur absente) faisait
+  // JETER date-fns (« Invalid time value »), ce qui plantait tout le rendu et
+  // provoquait une page blanche. On rend un repère neutre plutôt que planter.
+  const dateValide = dateObj instanceof Date && !Number.isNaN(dateObj.getTime());
+  if (!dateValide) {
+    return <span className={cn('text-muted-foreground', className)}>date inconnue</span>;
+  }
+
   const relative = formatDistanceToNow(dateObj, { addSuffix: true, locale: fr });
-  
+
   const getExactTime = () => {
     if (isToday(dateObj)) {
       return `Aujourd'hui ${format(dateObj, 'HH:mm', { locale: fr })}`;
@@ -50,8 +59,10 @@ interface FreshnessBadgeProps {
 
 export function FreshnessBadge({ date, className }: FreshnessBadgeProps) {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
+  const valide = dateObj instanceof Date && !Number.isNaN(dateObj.getTime());
+  if (!valide) return null;
   const hoursAgo = (Date.now() - dateObj.getTime()) / (1000 * 60 * 60);
-  
+
   const getColor = () => {
     if (hoursAgo < 1) return 'bg-signal-positive';
     if (hoursAgo < 24) return 'bg-signal-warning';
