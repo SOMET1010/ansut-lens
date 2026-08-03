@@ -177,6 +177,16 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
         statistique: 'motsClesActifs',
       },
       {
+        id: 'evenements',
+        titre: 'Événements stratégiques',
+        description:
+          'Renseigner les salons et sommets pour intensifier la collecte sur ces périodes. La liste des temps forts en cours s’affiche dans « Ce matin ».',
+        path: '/admin/evenements',
+        icon: CalendarDays,
+        permission: 'manage_keywords',
+        synonymes: ['MWC', 'Gitex', 'boost', 'calendrier', 'temps forts'],
+      },
+      {
         id: 'veille-semantique',
         titre: 'Veille sémantique',
         description:
@@ -373,16 +383,6 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
         path: '/admin/diffusion',
         icon: Radio,
         permission: 'manage_newsletters',
-      },
-      {
-        id: 'evenements',
-        titre: 'Événements stratégiques',
-        description:
-          'Renseigner les salons et sommets pour intensifier la collecte sur ces périodes. → Ce matin',
-        path: '/admin/evenements',
-        icon: CalendarDays,
-        permission: 'manage_keywords',
-        synonymes: ['MWC', 'Gitex', 'boost', 'calendrier'],
       },
       {
         id: 'alertes',
