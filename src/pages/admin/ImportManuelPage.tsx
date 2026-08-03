@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
-  PLATEFORMES_IMPORT, parseBulk, versPublication, dateValide,
+  PLATEFORMES_IMPORT, parseBulk, csvVersEntrees, versPublication, dateValide,
   type EntreeManuelle,
 } from '@/lib/importManuel';
 
@@ -55,6 +55,21 @@ export default function ImportManuelPage() {
     } finally {
       setEnCours(false);
     }
+  }
+
+  const [nomFichier, setNomFichier] = useState('');
+
+  async function onFichier(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setNomFichier(file.name);
+    try {
+      const texte = await file.text();
+      setApercu(csvVersEntrees(texte));
+    } catch (err) {
+      toast.error(`Lecture du fichier impossible : ${err instanceof Error ? err.message : ''}`);
+    }
+    e.target.value = '';
   }
 
   async function importerVrac() {
@@ -145,10 +160,30 @@ export default function ImportManuelPage() {
           </CardContent>
         </Card>
 
+        {/* Dépôt de fichier CSV */}
+        <Card>
+          <CardContent className="space-y-3 p-5">
+            <h2 className="text-sm font-semibold">Déposer un fichier CSV</h2>
+            <p className="text-xs text-muted-foreground">
+              Déposez un CSV (export de l’agent d’extraction, ou « Enregistrer sous → CSV » depuis Excel).
+              Les colonnes sont reconnues par leur nom : <code>plateforme</code>, <code>date_publication_estimee</code> (ou <code>date</code>),
+              <code>contenu</code> (ou <code>texte</code>), <code>type_contenu</code>, <code>reactions_count</code>, <code>comments_count</code>,
+              <code>shares_count</code>, <code>vues_count</code>, <code>hashtags</code>, <code>url_original</code>.
+            </p>
+            <div className="flex items-center gap-3">
+              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium hover:bg-accent">
+                <Upload className="h-4 w-4" /> Choisir un fichier CSV
+                <input type="file" accept=".csv,text/csv" className="hidden" onChange={onFichier} />
+              </label>
+              {nomFichier && <span className="text-xs text-muted-foreground">{nomFichier}</span>}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Import en vrac */}
         <Card>
           <CardContent className="space-y-3 p-5">
-            <h2 className="text-sm font-semibold">Import en vrac</h2>
+            <h2 className="text-sm font-semibold">Import en vrac (copier-coller)</h2>
             <p className="text-xs text-muted-foreground">
               Une publication par ligne, champs séparés par des barres verticales :<br />
               <code>plateforme | AAAA-MM-JJ | type | url | texte | j’aime | commentaires | partages | vues</code><br />
@@ -161,35 +196,38 @@ export default function ImportManuelPage() {
               onChange={(e) => { setBulk(e.target.value); setApercu(null); }}
               className="font-mono text-xs"
             />
-            <div className="flex items-center gap-2">
-              <Button variant="secondary" onClick={() => setApercu(parseBulk(bulk))} disabled={!bulk.trim()}>
-                <Upload className="mr-1.5 h-4 w-4" /> Analyser
-              </Button>
-              {apercu && (
+            <Button variant="secondary" onClick={() => setApercu(parseBulk(bulk))} disabled={!bulk.trim()}>
+              <Upload className="mr-1.5 h-4 w-4" /> Analyser le collage
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Aperçu + import — partagé par le CSV et le collage */}
+        {apercu && (
+          <Card className="border-primary/40">
+            <CardContent className="space-y-3 p-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm">
+                  <span className="font-semibold">{apercu.entrees.length}</span> publication(s) valide(s)
+                  {apercu.erreurs.length > 0 && <> · <span className="text-destructive">{apercu.erreurs.length} erreur(s)</span></>}
+                </p>
                 <Button onClick={importerVrac} disabled={bulkEnCours || apercu.entrees.length === 0}>
                   {bulkEnCours ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
                   Importer {apercu.entrees.length} publication(s)
                 </Button>
-              )}
-            </div>
-            {apercu && (
-              <div className="space-y-2 text-sm">
-                <p className="text-muted-foreground">
-                  {apercu.entrees.length} valide(s) · {apercu.erreurs.length} erreur(s).
-                </p>
-                {apercu.erreurs.length > 0 && (
-                  <Alert variant="destructive">
-                    <AlertDescription>
-                      <ul className="list-disc pl-4">
-                        {apercu.erreurs.map((er, i) => <li key={i}>{er}</li>)}
-                      </ul>
-                    </AlertDescription>
-                  </Alert>
-                )}
               </div>
-            )}
-          </CardContent>
-        </Card>
+              {apercu.erreurs.length > 0 && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    <ul className="list-disc pl-4">
+                      {apercu.erreurs.map((er, i) => <li key={i}>{er}</li>)}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </PageContainer>
   );
