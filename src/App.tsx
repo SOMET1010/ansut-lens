@@ -41,6 +41,7 @@ const NotFound = lazy(() => import('@/pages/NotFound'));
 
 // Sections principales
 const CeMatinPage = lazy(() => import('@/pages/CeMatinPage'));
+const LaMatinelePage = lazy(() => import('@/pages/LaMatinelePage'));
 const InsightsPage = lazy(() => import('@/pages/InsightsPage'));
 const VeillePage = lazy(() => import('@/pages/VeillePage'));
 const BalayagePage = lazy(() => import('@/pages/BalayagePage'));
@@ -202,6 +203,7 @@ const App = () => (
                         >
                           <Route element={<PermissionRoute permission="view_radar" />}>
                             <Route path="/ce-matin" element={<CeMatinPage />} />
+                            <Route path="/la-matinale" element={<LaMatinelePage />} />
                             <Route path="/veille" element={<VeillePage />} />
                             <Route path="/recherche" element={<BalayagePage />} />
                             <Route path="/insights" element={<InsightsPage />} />
