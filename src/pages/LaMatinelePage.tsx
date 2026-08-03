@@ -705,11 +705,18 @@ export default function LaMatinelePage() {
             <Info className="h-3.5 w-3.5" aria-hidden />
             Recette&nbsp;: comprendre en moins de 30 s ce qui compte, pourquoi, et où vérifier les preuves.
           </span>
-          <Link to="/insights" className="ml-auto inline-flex items-center gap-1 hover:text-[var(--m-accent)]">
-            <Radio className="h-3.5 w-3.5" aria-hidden />
-            Insights
-          </Link>
+          <span className="ml-auto flex items-center gap-3">
+            <Link to="/insights" className="inline-flex items-center gap-1 hover:text-[var(--m-accent)]">
+              <Radio className="h-3.5 w-3.5" aria-hidden />
+              Insights
+            </Link>
+            <span aria-hidden>·</span>
+            <Link to="/admin/credibilite" className="hover:text-[var(--m-accent)]">
+              Charte de crédibilité
+            </Link>
+          </span>
         </footer>
+
       </div>
     </div>
   );
