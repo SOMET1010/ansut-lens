@@ -77,7 +77,7 @@ const CATEGORIES_INSTITUTIONNELLES = new Set<CategorieCommunication>([
 // Marqueurs par catégorie. L'ordre d'évaluation privilégie les catégories les
 // plus spécifiques (sport, promo, protocole) pour éviter qu'un mot institutionnel
 // isolé ne requalifie une communication communautaire.
-const MARQUEURS: { categorie: CategorieCommunication; mots: string[] }[] = [
+export const MARQUEURS: { categorie: CategorieCommunication; mots: string[] }[] = [
   {
     categorie: 'sportive',
     mots: [
