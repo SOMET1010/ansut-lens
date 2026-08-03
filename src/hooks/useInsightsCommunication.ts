@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { PubInsights } from '@/lib/insightsCommunication';
+import type { ArticleEcho, PubInsights } from '@/lib/insightsCommunication';
 
 /**
  * Publications propres de l'ANSUT pour les Insights Communication.
@@ -37,6 +37,38 @@ export function useInsightsCommunication(limit = 500) {
         comments: p.comments_count ?? 0,
         shares: p.shares_count ?? 0,
         vues: p.vues_count ?? 0,
+      }));
+    },
+    refetchInterval: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Articles de presse collectés citant « ANSUT » — matière de l'écho médiatique.
+ *
+ * On récupère les actualités dont le titre, le texte ou les tags mentionnent
+ * l'ANSUT ; le moteur les fenêtre ensuite par leur date de publication. C'est un
+ * appariement par mot-clé : il peut inclure des faux positifs et manquer des
+ * formulations indirectes — cette limite est exposée dans la carte Insights.
+ */
+export function usePresseAnsut(limit = 500) {
+  return useQuery({
+    queryKey: ['insights-presse-ansut', limit],
+    queryFn: async (): Promise<ArticleEcho[]> => {
+      const { data, error } = await supabase
+        .from('actualites')
+        .select('id, titre, source_nom, source_url, date_publication')
+        .or('titre.ilike.%ansut%,contenu.ilike.%ansut%,tags.cs.{ANSUT}')
+        .order('date_publication', { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+
+      return (data || []).map((a) => ({
+        id: a.id,
+        titre: a.titre,
+        source: a.source_nom ?? null,
+        url: a.source_url ?? null,
+        dateMs: a.date_publication ? new Date(a.date_publication).getTime() : null,
       }));
     },
     refetchInterval: 5 * 60 * 1000,

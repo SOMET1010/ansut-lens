@@ -351,12 +351,13 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
     entrees: [
       {
         id: 'auto-veille',
-        titre: 'Résonance de nos publications',
-        description: 'Mesurer la reprise de nos communications et notre visibilité globale. → Insights',
+        titre: 'Auto-veille institutionnelle',
+        description:
+          'L’écho médiatique (comptages réels) est désormais dans Insights. Cet écran conserve des métriques estimées par IA (résonance, portée) — à consolider ou retirer avant tout usage décisionnel.',
         path: '/admin/auto-veille',
         icon: Megaphone,
         permission: 'manage_newsletters',
-        synonymes: ['auto-veille', 'miroir', 'share of voice'],
+        synonymes: ['auto-veille', 'miroir', 'résonance', 'écho médiatique'],
       },
       {
         id: 'newsletters',
