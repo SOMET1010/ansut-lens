@@ -65,21 +65,64 @@ export interface EntreeReglage {
     | 'derniereCollecte';
 }
 
+/**
+ * Les trois espaces de RADAR (voir docs/ARCHITECTURE_NAVIGATION.md) :
+ *   - `administration` : configuration, pour quelques administrateurs.
+ *   - `console`        : exploitation technique (pipeline, collectes, diagnostics),
+ *                        réservée aux profils techniques ; jamais le produit.
+ *   - `produit`        : valeur métier EN COURS de remontée vers les écrans
+ *                        principaux (transitoire — sera retiré d'ici à mesure).
+ *   - `aide`           : formation, présentation, documentation.
+ */
+export type ZoneReglages = 'administration' | 'console' | 'produit' | 'aide';
+
+export const ZONES_REGLAGES: Record<
+  ZoneReglages,
+  { titre: string; description: string; ton: 'neutre' | 'technique' | 'transitoire' }
+> = {
+  administration: {
+    titre: 'Administration',
+    description: 'Configurer la plateforme : accès, sources, comptes, connecteurs.',
+    ton: 'neutre',
+  },
+  console: {
+    titre: 'Console technique',
+    description:
+      'Exploitation : pipeline, collectes, tâches programmées, diagnostics. Réservé aux profils techniques — hors du produit éditorial.',
+    ton: 'technique',
+  },
+  produit: {
+    titre: 'À intégrer au produit',
+    description:
+      'Fonctions à valeur métier en cours de remontée vers les écrans principaux (Insights, Publier, Ce matin, Acteurs).',
+    ton: 'transitoire',
+  },
+  aide: {
+    titre: 'Aide & ressources',
+    description: 'Formation, présentation et documentation.',
+    ton: 'neutre',
+  },
+};
+
 export interface GroupeReglages {
   id: string;
   titre: string;
   /** Question a laquelle le groupe repond. */
   question: string;
   icon: LucideIcon;
+  /** Espace auquel appartient le groupe (produit vs config vs exploitation). */
+  zone: ZoneReglages;
   entrees: EntreeReglage[];
 }
 
 export const GROUPES_REGLAGES: GroupeReglages[] = [
+  // ————————————————————————— ADMINISTRATION —————————————————————————
   {
     id: 'acces',
     titre: 'Personnes et accès',
     question: 'Qui peut utiliser la plateforme et avec quels droits ?',
     icon: Users,
+    zone: 'administration',
     entrees: [
       {
         id: 'users',
@@ -100,16 +143,6 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
         synonymes: ['RBAC', 'droits', 'habilitations'],
       },
       {
-        id: 'audit-logs',
-        titre: 'Journal des actions',
-        description: 'Consulter l’historique des opérations effectuées sur la plateforme.',
-        path: '/admin/audit-logs',
-        icon: ClipboardList,
-        permission: 'view_audit_logs',
-        synonymes: ['audit', 'logs', 'traçabilité'],
-        statistique: 'actionsAudit24h',
-      },
-      {
         id: 'import-acteurs',
         titre: 'Import d’acteurs',
         description: 'Ajouter des acteurs en masse depuis un fichier ou une génération assistée.',
@@ -121,10 +154,11 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
     ],
   },
   {
-    id: 'collecte',
-    titre: 'Ce que la plateforme surveille',
-    question: 'Quelles sources et quels sujets sont collectés ?',
+    id: 'referentiel',
+    titre: 'Sources et référentiel',
+    question: 'Que surveille la plateforme et selon quel vocabulaire ?',
     icon: Database,
+    zone: 'administration',
     entrees: [
       {
         id: 'sources',
@@ -143,16 +177,6 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
         icon: Tag,
         permission: 'manage_keywords',
         statistique: 'motsClesActifs',
-      },
-      {
-        id: 'evenements',
-        titre: 'Événements stratégiques',
-        description:
-          'Renseigner les salons et sommets pour intensifier la collecte sur ces périodes.',
-        path: '/admin/evenements',
-        icon: CalendarDays,
-        permission: 'manage_keywords',
-        synonymes: ['MWC', 'Gitex', 'boost', 'calendrier'],
       },
       {
         id: 'veille-semantique',
@@ -174,33 +198,6 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
         synonymes: ['presse papier', 'kiosque'],
       },
       {
-        id: 'alertes',
-        titre: 'Alertes',
-        description: 'Régler la sensibilité de détection et consulter les alertes émises.',
-        path: '/alertes',
-        icon: Bell,
-        permission: 'access_admin',
-        statistique: 'alertesNonLues',
-      },
-    ],
-  },
-  {
-    id: 'traitement',
-    titre: 'Comment l’information est traitée',
-    question: 'Quelles règles s’appliquent aux données collectées ?',
-    icon: Sliders,
-    entrees: [
-      {
-        id: 'connaissance',
-        titre: 'Connaissance institutionnelle',
-        description:
-          'Revue (lecture seule) du plan stratégique extrait : axes, projets, objectifs, indicateurs et preuves. Rien n’est encore validé.',
-        path: '/admin/connaissance',
-        icon: BookOpen,
-        permission: 'access_admin',
-        synonymes: ['plan stratégique', 'adn', 'référentiel', 'piliers', 'revue', 'connaissance'],
-      },
-      {
         id: 'scoring',
         titre: 'Règles de notation',
         description:
@@ -211,25 +208,6 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
         synonymes: ['scoring', 'seuils', 'rouge orange vert'],
       },
       {
-        id: 'freshness',
-        titre: 'Fraîcheur des données',
-        description: 'Définir l’âge au-delà duquel une information n’est plus retenue.',
-        path: '/admin/freshness',
-        icon: Clock,
-        permission: 'manage_newsletters',
-        synonymes: ['ancienneté', 'date de publication'],
-      },
-      {
-        id: 'spdi-status',
-        titre: 'État du calcul des scores',
-        description:
-          'Vérifier que le calcul quotidien des scores de présence digitale s’est bien exécuté.',
-        path: '/admin/spdi-status',
-        icon: Activity,
-        permission: 'manage_cron_jobs',
-        synonymes: ['SPDI', 'batch'],
-      },
-      {
         id: 'credibilite',
         titre: 'Crédibilité des sources',
         description: 'Consulter la méthode d’évaluation de la fiabilité des sources.',
@@ -237,75 +215,25 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
         icon: ShieldCheck,
         permission: 'access_admin',
       },
-    ],
-  },
-  {
-    id: 'diffusion',
-    titre: 'Ce que la plateforme envoie',
-    question: 'Quels documents partent, vers qui et quand ?',
-    icon: Mail,
-    entrees: [
       {
-        id: 'newsletters',
-        titre: 'Newsletters',
-        description: 'Composer et programmer les lettres d’information.',
-        path: '/admin/newsletters',
-        icon: Mail,
-        permission: 'manage_newsletters',
-        statistique: 'newslettersEnAttente',
-      },
-      {
-        id: 'matinale',
-        titre: 'Matinale',
-        description: 'Configurer la note de synthèse diffusée chaque matin aux décideurs.',
-        path: '/admin/matinale',
-        icon: Newspaper,
-        permission: 'manage_newsletters',
-        synonymes: ['briefing', 'flash info'],
-      },
-      {
-        id: 'diffusion',
-        titre: 'Canaux de diffusion',
-        description: 'Choisir les canaux d’envoi : courriel, SMS, Telegram.',
-        path: '/admin/diffusion',
-        icon: Radio,
-        permission: 'manage_newsletters',
-      },
-      {
-        id: 'coffre-contenu',
-        titre: 'Coffre à contenus',
-        description: 'Constituer une réserve de publications prêtes à diffuser.',
-        path: '/admin/coffre-contenu',
-        icon: FileText,
-        permission: 'manage_newsletters',
-        synonymes: ['coffre-fort', 'posts pré-validés'],
+        id: 'connaissance',
+        titre: 'Connaissance institutionnelle',
+        description:
+          'Revue (lecture seule) du plan stratégique extrait : axes, projets, objectifs, indicateurs et preuves. Rien n’est encore validé.',
+        path: '/admin/connaissance',
+        icon: BookOpen,
+        permission: 'access_admin',
+        synonymes: ['plan stratégique', 'adn', 'référentiel', 'piliers', 'revue', 'connaissance'],
       },
     ],
   },
   {
-    id: 'visibilite',
-    titre: 'Suivi de notre visibilité',
-    question: 'Comment l’ANSUT et ses dirigeants sont-ils perçus ?',
-    icon: Megaphone,
+    id: 'comptes-connecteurs',
+    titre: 'Comptes et connecteurs',
+    question: 'Quels comptes suit-on et comment y accède-t-on ?',
+    icon: AtSign,
+    zone: 'administration',
     entrees: [
-      {
-        id: 'auto-veille',
-        titre: 'Résonance de nos publications',
-        description: 'Mesurer la reprise de nos communications et notre visibilité globale.',
-        path: '/admin/auto-veille',
-        icon: Megaphone,
-        permission: 'manage_newsletters',
-        synonymes: ['auto-veille', 'miroir', 'share of voice'],
-      },
-      {
-        id: 'shadow-tracker',
-        titre: 'Veille discrète des dirigeants',
-        description: 'Suivre les publications des directeurs sur les réseaux sociaux.',
-        path: '/admin/shadow-tracker',
-        icon: Eye,
-        permission: 'manage_newsletters',
-        synonymes: ['shadow tracker', 'VIP'],
-      },
       {
         id: 'comptes-surveilles',
         titre: 'Comptes surveillés',
@@ -315,26 +243,6 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
         icon: AtSign,
         permission: 'manage_cron_jobs',
         synonymes: ['réseaux sociaux', 'comptes', 'ajouter un compte', 'profil', 'VIP'],
-      },
-      {
-        id: 'moteur-editorial',
-        titre: 'Moteur éditorial',
-        description:
-          'Lancer la collecte, diagnostiquer et enregistrer la qualification des contenus (pipeline).',
-        path: '/admin/moteur-editorial',
-        icon: Cog,
-        permission: 'manage_cron_jobs',
-        synonymes: ['pipeline', 'collecte', 'qualification', 'backfill'],
-      },
-      {
-        id: 'import-manuel',
-        titre: 'Import manuel de publications',
-        description:
-          'Saisir des publications réelles (date, texte, métriques) en attendant les connecteurs officiels.',
-        path: '/admin/import-manuel',
-        icon: FilePlus2,
-        permission: 'manage_cron_jobs',
-        synonymes: ['import', 'saisie', 'csv', 'publications'],
       },
       {
         id: 'connecteurs-sociaux',
@@ -356,12 +264,34 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
       },
     ],
   },
+  // ————————————————————————— CONSOLE TECHNIQUE —————————————————————————
   {
-    id: 'technique',
-    titre: 'Fonctionnement technique',
-    question: 'La plateforme tourne-t-elle correctement ?',
-    icon: Clock,
+    id: 'exploitation',
+    titre: 'Pipeline et exploitation',
+    question: 'Faire tourner et diagnostiquer la plateforme.',
+    icon: Cog,
+    zone: 'console',
     entrees: [
+      {
+        id: 'moteur-editorial',
+        titre: 'Moteur éditorial',
+        description:
+          'Lancer la collecte, diagnostiquer et enregistrer la qualification des contenus (pipeline).',
+        path: '/admin/moteur-editorial',
+        icon: Cog,
+        permission: 'manage_cron_jobs',
+        synonymes: ['pipeline', 'collecte', 'qualification', 'backfill'],
+      },
+      {
+        id: 'import-manuel',
+        titre: 'Import manuel de publications',
+        description:
+          'Saisir des publications réelles (date, texte, métriques) en attendant les connecteurs officiels.',
+        path: '/admin/import-manuel',
+        icon: FilePlus2,
+        permission: 'manage_cron_jobs',
+        synonymes: ['import', 'saisie', 'csv', 'publications'],
+      },
       {
         id: 'cron-jobs',
         titre: 'Tâches programmées',
@@ -373,20 +303,125 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
         statistique: 'derniereCollecte',
       },
       {
-        id: 'documentation',
-        titre: 'Documentation technique',
-        description: 'Consulter le manuel technique complet de la plateforme.',
-        path: '/admin/documentation',
-        icon: FileCode,
-        permission: 'access_admin',
+        id: 'spdi-status',
+        titre: 'État du calcul des scores',
+        description:
+          'Vérifier que le calcul quotidien des scores de présence digitale s’est bien exécuté.',
+        path: '/admin/spdi-status',
+        icon: Activity,
+        permission: 'manage_cron_jobs',
+        synonymes: ['SPDI', 'batch'],
+      },
+      {
+        id: 'freshness',
+        titre: 'Fraîcheur des données',
+        description: 'Définir l’âge au-delà duquel une information n’est plus retenue.',
+        path: '/admin/freshness',
+        icon: Clock,
+        permission: 'manage_newsletters',
+        synonymes: ['ancienneté', 'date de publication'],
+      },
+      {
+        id: 'audit-logs',
+        titre: 'Journal des actions',
+        description: 'Consulter l’historique des opérations effectuées sur la plateforme.',
+        path: '/admin/audit-logs',
+        icon: ClipboardList,
+        permission: 'view_audit_logs',
+        synonymes: ['audit', 'logs', 'traçabilité'],
+        statistique: 'actionsAudit24h',
       },
     ],
   },
+  // ————————————— À INTÉGRER AU PRODUIT (transitoire) —————————————
+  {
+    id: 'a-remonter',
+    titre: 'Valeur métier à remonter',
+    question: 'Fonctions qui devraient vivre dans les écrans principaux.',
+    icon: Megaphone,
+    zone: 'produit',
+    entrees: [
+      {
+        id: 'auto-veille',
+        titre: 'Résonance de nos publications',
+        description: 'Mesurer la reprise de nos communications et notre visibilité globale. → Insights',
+        path: '/admin/auto-veille',
+        icon: Megaphone,
+        permission: 'manage_newsletters',
+        synonymes: ['auto-veille', 'miroir', 'share of voice'],
+      },
+      {
+        id: 'shadow-tracker',
+        titre: 'Veille discrète des dirigeants',
+        description: 'Suivre les publications des directeurs sur les réseaux sociaux. → Acteurs',
+        path: '/admin/shadow-tracker',
+        icon: Eye,
+        permission: 'manage_newsletters',
+        synonymes: ['shadow tracker', 'VIP'],
+      },
+      {
+        id: 'coffre-contenu',
+        titre: 'Coffre à contenus',
+        description: 'Constituer une réserve de publications prêtes à diffuser. → Publier',
+        path: '/admin/coffre-contenu',
+        icon: FileText,
+        permission: 'manage_newsletters',
+        synonymes: ['coffre-fort', 'posts pré-validés'],
+      },
+      {
+        id: 'newsletters',
+        titre: 'Newsletters',
+        description: 'Composer et programmer les lettres d’information. → Publier',
+        path: '/admin/newsletters',
+        icon: Mail,
+        permission: 'manage_newsletters',
+        statistique: 'newslettersEnAttente',
+      },
+      {
+        id: 'matinale',
+        titre: 'Matinale',
+        description: 'Configurer la note de synthèse diffusée chaque matin aux décideurs. → Publier',
+        path: '/admin/matinale',
+        icon: Newspaper,
+        permission: 'manage_newsletters',
+        synonymes: ['briefing', 'flash info'],
+      },
+      {
+        id: 'diffusion',
+        titre: 'Canaux de diffusion',
+        description: 'Choisir les canaux d’envoi : courriel, SMS, Telegram. → Publier',
+        path: '/admin/diffusion',
+        icon: Radio,
+        permission: 'manage_newsletters',
+      },
+      {
+        id: 'evenements',
+        titre: 'Événements stratégiques',
+        description:
+          'Renseigner les salons et sommets pour intensifier la collecte sur ces périodes. → Ce matin',
+        path: '/admin/evenements',
+        icon: CalendarDays,
+        permission: 'manage_keywords',
+        synonymes: ['MWC', 'Gitex', 'boost', 'calendrier'],
+      },
+      {
+        id: 'alertes',
+        titre: 'Alertes',
+        description: 'Régler la sensibilité de détection et consulter les alertes émises. → Notifications',
+        path: '/alertes',
+        icon: Bell,
+        permission: 'access_admin',
+        statistique: 'alertesNonLues',
+      },
+    ],
+  },
+  // ————————————————————————— AIDE & RESSOURCES —————————————————————————
   {
     id: 'accompagnement',
     titre: 'Formation et présentation',
     question: 'Comment expliquer la plateforme aux autres ?',
     icon: GraduationCap,
+    zone: 'aide',
     entrees: [
       {
         id: 'formation',
@@ -404,9 +439,20 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
         icon: Presentation,
         permission: 'access_admin',
       },
+      {
+        id: 'documentation',
+        titre: 'Documentation technique',
+        description: 'Consulter le manuel technique complet de la plateforme.',
+        path: '/admin/documentation',
+        icon: FileCode,
+        permission: 'access_admin',
+      },
     ],
   },
 ];
+
+/** Ordre d'affichage des espaces. */
+export const ORDRE_ZONES: ZoneReglages[] = ['administration', 'console', 'produit', 'aide'];
 
 /** Nombre total d'entrees, pour l'affichage et les tests. */
 export const NB_ENTREES_REGLAGES = GROUPES_REGLAGES.reduce(

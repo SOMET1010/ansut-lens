@@ -130,8 +130,8 @@ export const NAV_SECTIONS: NavSection[] = [
 
 export const ADMIN_SECTION: NavSection = {
   id: 'reglages',
-  label: 'Réglages',
-  question: 'Configurer la plateforme',
+  label: 'Administration',
+  question: 'Configurer et exploiter la plateforme',
   path: '/admin',
   icon: Settings,
   permission: 'access_admin',
