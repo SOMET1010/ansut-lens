@@ -24,6 +24,12 @@ export const LIBELLE_PLATEFORME: Record<PlateformeSociale, string> = {
   website: 'Site web',
 };
 
+/** Libellé d'affichage d'une plateforme, en tolérant les valeurs héritées. */
+export function libellePlateforme(p: string): string {
+  const cle = p === 'twitter' ? 'x' : p === 'web' ? 'website' : p;
+  return LIBELLE_PLATEFORME[cle as PlateformeSociale] ?? p;
+}
+
 export interface CompteAnalyse {
   /** L'URL a-t-elle pu être interprétée en un compte exploitable ? */
   valide: boolean;

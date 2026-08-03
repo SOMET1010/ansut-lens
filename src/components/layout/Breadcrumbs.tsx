@@ -25,6 +25,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   'auto-veille': 'Veille automatique',
   credibilite: 'Crédibilité des sources',
   'comptes-surveilles': 'Comptes surveillés',
+  'moteur-editorial': 'Moteur éditorial',
   'connecteurs-sociaux': 'Connecteurs sociaux',
   'guide-com-api': 'Guide des API sociales',
   titrologie: 'Titrologie',
