@@ -84,7 +84,7 @@ export const MISSIONS_STRATEGIQUES: MissionStrategique[] = [
       "Renforcer la connectivité sur l'ensemble du territoire : backbone, dernier kilomètre, centres de données et couverture des zones non desservies.",
     ansutPorteur: true,
     projetsAnsut: [
-      'BUS — Backbone Universel de Services (RNHD, RIA, last mile, allumage national)',
+      'BUS — Backbone Unifié Souverain (RNHD, RIA, last mile, allumage de la fibre)',
       'PU Rurale — Programme Universel de connectivité des zones isolées',
       'ConnectMyZone — connectivité ciblée des zones blanches',
     ],
@@ -109,10 +109,10 @@ export const MISSIONS_STRATEGIQUES: MissionStrategique[] = [
   {
     id: 'services-inclusion',
     code: 'P2',
-    nom: 'Services Numériques & Inclusion',
-    nomCourt: 'Services & inclusion numériques',
+    nom: 'Services Numériques, Inclusion sociale & Entrepreneuriat',
+    nomCourt: 'Services, inclusion & entrepreneuriat',
     objectif:
-      "Déployer des e-services publics et un écosystème numérique inclusif : dématérialisation, identité numérique, points d'accès et inclusion sociale et financière.",
+      "Renforcer l'écosystème numérique et l'accès aux services numériques innovants : e-services et dématérialisation, identité numérique, points d'accès universels, inclusion sociale des populations vulnérables, entrepreneuriat digital et soutien à l'innovation et à la recherche.",
     ansutPorteur: true,
     projetsAnsut: [
       'E-Conseil — dématérialisation des conseils des ministres et processus gouvernementaux',
@@ -141,7 +141,7 @@ export const MISSIONS_STRATEGIQUES: MissionStrategique[] = [
     nom: 'Usages Digitaux & Compétences',
     nomCourt: 'Usages & compétences',
     objectif:
-      "Développer la maîtrise et l'usage du numérique : culture numérique, formation, sensibilisation et accès aux terminaux.",
+      "Développer la maîtrise et l'usage du numérique : culture numérique, formation, sensibilisation, accès aux terminaux, et appropriation des technologies innovantes (IA, blockchain, big data).",
     ansutPorteur: true,
     projetsAnsut: [
       'Devices — programme d’accès aux smartphones et équipements (crédit, subvention)',
@@ -155,9 +155,14 @@ export const MISSIONS_STRATEGIQUES: MissionStrategique[] = [
       'montée en compétences', 'talents numériques', 'métiers du numérique', 'esatic',
       'accès aux terminaux', 'terminaux', 'smartphone', 'smartphones', 'tablette', 'tablettes',
       'équipements numériques', 'devices', 'cicn', "centre d'innovation", 'inclusion des jeunes',
+      // Français — technologies innovantes (Effet 3 du plan : IA, blockchain, big data)
+      'intelligence artificielle', 'ia', 'blockchain', 'big data', 'données massives',
+      'technologies émergentes', 'technologies innovantes', 'technologie émergente',
+      'technologie innovante', 'innovation technologique',
       // Anglais
       'digital skills', 'digital literacy', 'digital culture', 'e-learning', 'upskilling',
       'reskilling', 'training', 'devices', 'smartphones', 'tablets', 'digital talents',
+      'artificial intelligence', 'emerging technologies',
     ],
   },
   {
