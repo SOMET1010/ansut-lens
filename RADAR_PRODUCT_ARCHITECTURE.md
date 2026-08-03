@@ -119,6 +119,26 @@ Toute affirmation doit pouvoir afficher **« Pourquoi cette information ? »**, 
 
 ---
 
+## Les deux temporalités
+
+La fraîcheur n'est **pas une valeur unique**. Deux temporalités coexistent et le
+pipeline doit conserver les **deux** :
+
+- **Fraîcheur de la communication** — quand la prise de parole a été *publiée*.
+- **Fraîcheur du sujet** — quand l'*événement* traité a réellement eu lieu.
+
+Une publication peut être **récente tout en portant sur un événement ancien**
+(une vidéo publiée aujourd'hui qui célèbre une victoire d'il y a deux ans). Les
+écrans restituent ces deux dimensions **différemment** :
+
+- **« Ce matin »** privilégie les **sujets nouveaux** (fraîcheur du sujet).
+- **« Notre communication »** montre les **nouvelles prises de parole**, même
+  lorsqu'elles concernent des événements passés — mais les **étiquette
+  explicitement** comme telles.
+
+La **date de collecte ne sert jamais** à déterminer la fraîcheur éditoriale, quelle
+que soit la temporalité.
+
 ## Ce qui ne devra plus jamais arriver
 
 Un écran qui recalcule :
