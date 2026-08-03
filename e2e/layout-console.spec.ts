@@ -17,11 +17,16 @@ const BRUITS_IGNORES = [
   'Download the React DevTools',
   'ResizeObserver loop',
   'net::ERR_ABORTED',
+  // Avertissements React de developpement (absents du build de production).
+  'Warning:',
+  // Ressources annexes manquantes en developpement (icones, cartes de sources).
+  'Failed to load resource',
 ];
 
 function estBruit(texte: string) {
   return BRUITS_IGNORES.some((motif) => texte.includes(motif));
 }
+
 
 /** Collecte les erreurs console et les exceptions non capturees. */
 function surveillerErreurs(page: Page) {
