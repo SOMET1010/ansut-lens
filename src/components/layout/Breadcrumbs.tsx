@@ -43,6 +43,7 @@ const TAB_LABELS: Record<string, string> = {
   cartographie: 'Cartographie',
   spdi: 'Scores de présence',
   revue: 'Revue de stabilité',
+  dirigeants: 'Veille dirigeants',
   cockpit: 'Vue d’ensemble',
   social: 'Réseaux sociaux',
   notes: 'Notes',

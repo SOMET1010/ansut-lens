@@ -8,6 +8,7 @@ import PresenceDigitalePage from '@/pages/PresenceDigitalePage';
 import SpdiReviewPage from '@/pages/SpdiReviewPage';
 import { SPDIBenchmarkPanel } from '@/components/spdi';
 import { ActeursQuickTour } from '@/components/acteurs/ActeursQuickTour';
+import { VeilleDirigeants } from '@/components/acteurs/VeilleDirigeants';
 import { PageContainer, PageHeader, TermeMetier } from '@/components/common';
 
 /**
@@ -21,6 +22,7 @@ const ONGLETS = [
   { value: 'cartographie', label: 'Cartographie' },
   { value: 'spdi', label: 'Scores de présence' },
   { value: 'revue', label: 'Revue de stabilité' },
+  { value: 'dirigeants', label: 'Veille dirigeants' },
 ] as const;
 
 type ValeurOnglet = (typeof ONGLETS)[number]['value'];
@@ -101,6 +103,10 @@ export default function ActeursInfluencePage() {
 
           <TabsContent value="revue" className="mt-5">
             <SpdiReviewPage />
+          </TabsContent>
+
+          <TabsContent value="dirigeants" className="mt-5">
+            <VeilleDirigeants />
           </TabsContent>
         </Tabs>
       </div>

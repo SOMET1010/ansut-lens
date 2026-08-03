@@ -9,7 +9,6 @@ import {
   ClipboardList,
   Clock,
   Database,
-  Eye,
   FileCode,
   GraduationCap,
   Mail,
@@ -348,15 +347,6 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
         icon: Megaphone,
         permission: 'manage_newsletters',
         synonymes: ['auto-veille', 'miroir', 'share of voice'],
-      },
-      {
-        id: 'shadow-tracker',
-        titre: 'Veille discrète des dirigeants',
-        description: 'Suivre les publications des directeurs sur les réseaux sociaux. → Acteurs',
-        path: '/admin/shadow-tracker',
-        icon: Eye,
-        permission: 'manage_newsletters',
-        synonymes: ['shadow tracker', 'VIP'],
       },
       {
         id: 'newsletters',
