@@ -25,22 +25,47 @@ const typeConfig: Record<string, { label: string; icon: React.ReactNode; color: 
   economique: { label: 'Économique & Tech', icon: <BarChart3 className="h-3.5 w-3.5" aria-hidden />, color: 'bg-muted text-muted-foreground' },
 };
 
+function classerType(journal: string, url: string): string {
+  const j = (journal || '').toLowerCase();
+  const u = (url || '').toLowerCase();
+  if (/(sika|eco|business|finance|tech|jeune afrique)/.test(j + u)) return 'economique';
+  if (/(abidjan\.net|net|online|info|linfodrome|koaci)/.test(j + u)) return 'en_ligne';
+  return 'nationale';
+}
+
 async function fetchTitrologie(): Promise<TitreJournal[]> {
-  const { data, error } = await supabase.functions.invoke('generer-matinale', {
-    body: { previewOnly: true },
-  });
+  const today = new Date().toISOString().slice(0, 10);
+  const { data, error } = await supabase
+    .from('titrologie_unes')
+    .select('journal,titre_une,sujet,source_url,collected_at,date_parution')
+    .lte('date_parution', today)
+    .order('date_parution', { ascending: false })
+    .order('collected_at', { ascending: false })
+    .limit(40);
 
   if (error) throw error;
-  return (data?.titrologie?.unes || []) as TitreJournal[];
+
+  const rows = (data || []) as any[];
+  const latestDate = rows[0]?.date_parution;
+  return rows
+    .filter((r) => r.date_parution === latestDate)
+    .map((r) => ({
+      journal: r.journal ?? '—',
+      titre: r.titre_une ?? '',
+      resume: r.sujet ?? '',
+      url: r.source_url ?? '',
+      type: classerType(r.journal, r.source_url),
+    }));
 }
 
 export function TitrologieWidget() {
   const { data: titres, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['titrologie'],
+    queryKey: ['titrologie-widget'],
     queryFn: fetchTitrologie,
-    staleTime: 30 * 60 * 1000, // 30 min
+    staleTime: 10 * 60 * 1000,
     retry: 1,
   });
+
 
   const handleRefresh = () => {
     refetch();
