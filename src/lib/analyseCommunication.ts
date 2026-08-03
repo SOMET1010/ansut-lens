@@ -31,6 +31,7 @@ export interface SignalCommunication {
   pilierId: string;
   code: string;
   nom: string;
+  nomCourt: string;
   type: TypeSignalCom;
   /** Nombre de communications ANSUT récentes touchant ce thème. */
   poidsAnsut: number;
@@ -91,27 +92,40 @@ export function analyserCommunication(
     const negatifsEcosysteme = negatifs.get(mission.id) ?? 0;
     if (poidsAnsut === 0 && poidsEcosysteme === 0) continue;
 
+    const nom = mission.nomCourt;
+    const pubMot = `${poidsAnsut} publication${poidsAnsut > 1 ? 's' : ''} ANSUT`;
+    const artMot = `${poidsEcosysteme} article${poidsEcosysteme > 1 ? 's' : ''} de veille`;
+
     let type: TypeSignalCom;
     let observation: string;
 
     if (negatifsEcosysteme > 0) {
+      // Prudence : un contenu négatif ne fait pas un « risque ». On signale une
+      // mention à examiner, sans dramatiser.
       type = 'risque';
-      observation = `${negatifsEcosysteme} information${negatifsEcosysteme > 1 ? 's' : ''} à tonalité négative dans l'écosystème sur « ${mission.nom} » — à surveiller pour la réputation.`;
+      observation = `${negatifsEcosysteme} contenu${negatifsEcosysteme > 1 ? 's' : ''} à tonalité négative détecté${negatifsEcosysteme > 1 ? 's' : ''} dans l'écosystème sur « ${nom} » — à examiner.`;
     } else if (poidsEcosysteme > 0 && poidsAnsut === 0) {
       type = 'opportunite';
-      observation = `L'écosystème parle de « ${mission.nom} » (${poidsEcosysteme} info${poidsEcosysteme > 1 ? 's' : ''}), mais l'ANSUT ne communique pas encore sur ce thème — opportunité de communication.`;
+      observation = `L'écosystème parle de « ${nom} » (${artMot}) mais l'ANSUT ne communique pas encore dessus — opportunité de prise de parole.`;
     } else if (poidsAnsut > 0 && poidsEcosysteme === 0) {
       type = 'echo-faible';
-      observation = `L'ANSUT communique sur « ${mission.nom} », mais l'écosystème le reprend peu (aucune info externe récente).`;
+      observation = `L'ANSUT communique sur « ${nom} » (${pubMot}) mais l'écosystème le reprend peu ces derniers jours.`;
     } else {
       type = 'convergence';
-      observation = `Convergence sur « ${mission.nom} » : communication ANSUT (${poidsAnsut}) et écosystème (${poidsEcosysteme}) parlent du même thème.`;
+      if (poidsEcosysteme >= poidsAnsut * 1.5) {
+        observation = `L'écosystème parle davantage de « ${nom} » que l'ANSUT ces derniers jours (${artMot} contre ${pubMot}).`;
+      } else if (poidsAnsut >= poidsEcosysteme * 1.5) {
+        observation = `L'ANSUT communique davantage sur « ${nom} » que l'écosystème n'en parle (${pubMot} contre ${artMot}).`;
+      } else {
+        observation = `« ${nom} » est fortement présent à la fois dans la communication de l'ANSUT (${pubMot}) et dans l'écosystème (${artMot}).`;
+      }
     }
 
     signaux.push({
       pilierId: mission.id,
       code: mission.code,
       nom: mission.nom,
+      nomCourt: mission.nomCourt,
       type,
       poidsAnsut,
       poidsEcosysteme,

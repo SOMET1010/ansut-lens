@@ -7,7 +7,6 @@ import {
   TrendingUp,
   type LucideIcon,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { analyserCommunication, type TypeSignalCom } from '@/lib/analyseCommunication';
@@ -37,12 +36,12 @@ const CONFIG: Record<
 > = {
   risque: {
     icon: AlertTriangle,
-    libelle: 'Risque réputationnel',
-    classe: 'text-destructive',
+    libelle: 'Signal réputationnel à examiner',
+    classe: 'text-amber-600 dark:text-amber-400',
   },
   opportunite: {
     icon: TrendingUp,
-    libelle: 'Opportunité de communication',
+    libelle: 'Opportunité de prise de parole',
     classe: 'text-primary',
   },
   convergence: {
@@ -98,31 +97,28 @@ export function AnalyseCommunication({ publications, externes, isLoading }: Prop
           {signaux.map((s) => {
             const cfg = CONFIG[s.type];
             const Icone = cfg.icon;
+            // Vocabulaire réputationnel PROGRESSIF, reflétant le niveau de
+            // certitude : le mot « risque » est réservé à des signaux multiples.
+            const libelle =
+              s.type === 'risque'
+                ? s.negatifsEcosysteme <= 1
+                  ? 'Mention négative détectée'
+                  : s.negatifsEcosysteme <= 3
+                    ? 'Signal réputationnel à examiner'
+                    : 'Sujet sensible à surveiller'
+                : cfg.libelle;
             return (
               <li key={s.pilierId} className="rounded-lg border bg-card p-3">
                 <div className="flex items-start gap-2.5">
                   <Icone className={`mt-0.5 h-4 w-4 shrink-0 ${cfg.classe}`} aria-hidden />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className={`text-xs font-semibold ${cfg.classe}`}>{cfg.libelle}</span>
-                      <span className="text-[11px] text-muted-foreground/70">
-                        {s.code} · {s.nom}
+                      <span className={`text-xs font-semibold ${cfg.classe}`}>{libelle}</span>
+                      <span className="text-[11px] text-muted-foreground/70" title={`${s.code} — ${s.nom}`}>
+                        {s.nomCourt}
                       </span>
                     </div>
                     <p className="mt-1 text-sm">{s.observation}</p>
-                    <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-                      <Badge variant="outline" className="text-[10px]">
-                        ANSUT : {s.poidsAnsut}
-                      </Badge>
-                      <Badge variant="outline" className="text-[10px]">
-                        Écosystème : {s.poidsEcosysteme}
-                      </Badge>
-                      {s.negatifsEcosysteme > 0 && (
-                        <Badge variant="outline" className="border-destructive/40 text-[10px] text-destructive">
-                          dont {s.negatifsEcosysteme} négatif{s.negatifsEcosysteme > 1 ? 's' : ''}
-                        </Badge>
-                      )}
-                    </p>
                   </div>
                 </div>
               </li>
