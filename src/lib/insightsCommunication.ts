@@ -137,6 +137,69 @@ function trier(map: Map<string, StatCompte>): StatCompte[] {
   return [...map.values()].filter((s) => s.count > 0).sort((a, b) => b.count - a.count);
 }
 
+/** Un article de presse retenu pour l'écho médiatique (pour justifier le chiffre). */
+export interface ArticleEcho {
+  id: string;
+  titre: string;
+  source: string | null;
+  url: string | null;
+  dateMs: number | null;
+}
+
+/**
+ * Écho médiatique — rapport entre la reprise presse et l'effort de communication.
+ *
+ * DÉFINITION HONNÊTE : ce n'est PAS une « part de voix » au sens strict (qui
+ * comparerait les mentions de l'ANSUT à celles de TOUS les acteurs suivis sur un
+ * même corpus). Ici le dénominateur est le nombre de publications propres de
+ * l'ANSUT. On mesure donc combien d'articles de presse citent l'ANSUT rapporté à
+ * ce qu'elle publie elle-même : un rapport earned/owned, une amplification
+ * externe. Aucun score, aucune estimation — deux comptages réels et leur quotient.
+ */
+export interface EchoMediatique {
+  fenetreJours: number;
+  periodeDebutMs: number;
+  periodeFinMs: number;
+  /** Publications propres de l'ANSUT datées dans la fenêtre (owned). */
+  owned: number;
+  /** Articles de presse collectés citant « ANSUT », datés dans la fenêtre (earned). */
+  earned: number;
+  /** earned / owned, arrondi au centième ; null si owned = 0 (quotient impossible). */
+  ratio: number | null;
+  /** Les articles comptés, du plus récent au plus ancien — preuves cliquables. */
+  articles: ArticleEcho[];
+}
+
+/**
+ * Calcule l'écho médiatique sur la fenêtre.
+ *
+ * `owned` est fourni par l'appelant (le nombre de publications ANSUT datées déjà
+ * calculé par {@link calculerInsights}) pour garantir que le chiffre est le même
+ * partout sur l'écran. `earned` est recompté ici en fenêtrant les articles de
+ * presse par leur date de publication (fournie par la source).
+ */
+export function calculerEchoMediatique(
+  articlesPresse: ArticleEcho[],
+  owned: number,
+  fenetreJours: number,
+  maintenantMs: number,
+): EchoMediatique {
+  const debut = maintenantMs - fenetreJours * 24 * 3600 * 1000;
+  const comptes = (articlesPresse ?? [])
+    .filter((a) => a.dateMs !== null && a.dateMs >= debut && a.dateMs <= maintenantMs)
+    .sort((a, b) => (b.dateMs ?? 0) - (a.dateMs ?? 0));
+  const earned = comptes.length;
+  return {
+    fenetreJours,
+    periodeDebutMs: debut,
+    periodeFinMs: maintenantMs,
+    owned,
+    earned,
+    ratio: owned > 0 ? Math.round((earned / owned) * 100) / 100 : null,
+    articles: comptes,
+  };
+}
+
 export function calculerInsights(
   publications: PubInsights[],
   fenetreJours: number,

@@ -4,20 +4,30 @@ import {
   ArrowUp,
   BarChart3,
   CalendarDays,
+  ExternalLink,
   Film,
   Handshake,
   Hash,
   Layers,
   Minus,
+  Newspaper,
   Radio,
   ThumbsUp,
 } from 'lucide-react';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { PageContainer, PageHeader } from '@/components/common';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { useInsightsCommunication } from '@/hooks/useInsightsCommunication';
-import { calculerInsights, type Evolution, type StatCompte } from '@/lib/insightsCommunication';
+import { useInsightsCommunication, usePresseAnsut } from '@/hooks/useInsightsCommunication';
+import {
+  calculerInsights,
+  calculerEchoMediatique,
+  type EchoMediatique,
+  type Evolution,
+  type StatCompte,
+} from '@/lib/insightsCommunication';
 
 /**
  * 📊 Insights Communication.
@@ -83,14 +93,130 @@ function Section({
   );
 }
 
+/**
+ * Écho médiatique — seul indicateur composé de l'écran, et volontairement le
+ * plus transparent : période, volumes réels, formule en clair, sources, limites,
+ * et les articles comptés en preuves cliquables. Aucun score, aucune estimation.
+ * Ce n'est PAS une part de voix (le dénominateur est la communication propre de
+ * l'ANSUT, pas l'ensemble des acteurs) — d'où le nom « écho médiatique ».
+ */
+function CarteEchoMediatique({ echo }: { echo: EchoMediatique }) {
+  const periode = `${format(new Date(echo.periodeDebutMs), 'd MMM', { locale: fr })} – ${format(
+    new Date(echo.periodeFinMs),
+    'd MMM yyyy',
+    { locale: fr },
+  )}`;
+  const ratioTexte =
+    echo.ratio === null ? '—' : echo.ratio.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+
+  return (
+    <Card>
+      <CardContent className="space-y-4 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Newspaper className="h-4 w-4 text-primary" aria-hidden />
+              Écho médiatique
+            </h2>
+            <p className="text-xs text-muted-foreground">Reprise presse rapportée à notre propre communication · {periode}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-3xl font-bold tabular-nums leading-none">{ratioTexte}</p>
+            <p className="text-[11px] text-muted-foreground">article de presse par publication</p>
+          </div>
+        </div>
+
+        <p className="text-sm">
+          <span className="font-semibold tabular-nums">{echo.earned}</span> article
+          {echo.earned > 1 ? 's' : ''} de presse citant l’ANSUT pour{' '}
+          <span className="font-semibold tabular-nums">{echo.owned}</span> publication
+          {echo.owned > 1 ? 's' : ''} de l’ANSUT sur la période.
+        </p>
+
+        <dl className="space-y-1.5 border-t border-border pt-3 text-xs text-muted-foreground">
+          <div>
+            <dt className="inline font-medium text-foreground">Formule&nbsp;: </dt>
+            <dd className="inline">
+              articles de presse collectés citant «&nbsp;ANSUT&nbsp;» ÷ publications officielles de
+              l’ANSUT, sur la même fenêtre.
+            </dd>
+          </div>
+          <div>
+            <dt className="inline font-medium text-foreground">Sources&nbsp;: </dt>
+            <dd className="inline">
+              presse et médias collectés par RADAR (mention «&nbsp;ANSUT&nbsp;» dans le titre, le
+              texte ou les tags) ; publications officielles de l’ANSUT.
+            </dd>
+          </div>
+          <div>
+            <dt className="inline font-medium text-foreground">Limites&nbsp;: </dt>
+            <dd className="inline">
+              appariement par mot-clé (faux positifs et oublis possibles) ; ne couvre que les sources
+              déjà collectées, donc non exhaustif ; compare deux corpus distincts (presse vs
+              publications propres) — c’est une amplification externe, pas une part de voix ; les
+              dates de presse sont celles fournies par la source.
+            </dd>
+          </div>
+        </dl>
+
+        {echo.articles.length > 0 && (
+          <details className="text-xs">
+            <summary className="cursor-pointer font-medium text-foreground">
+              Voir les {echo.articles.length} article{echo.articles.length > 1 ? 's' : ''} comptés
+            </summary>
+            <ul className="mt-2 space-y-1.5">
+              {echo.articles.map((a) => {
+                const contenu = (
+                  <>
+                    <span className="truncate" title={a.titre}>
+                      {a.titre}
+                    </span>
+                    <span className="shrink-0 text-muted-foreground">
+                      {a.source ? `${a.source} · ` : ''}
+                      {a.dateMs ? format(new Date(a.dateMs), 'd MMM', { locale: fr }) : ''}
+                    </span>
+                  </>
+                );
+                return (
+                  <li key={a.id}>
+                    {a.url ? (
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between gap-2 rounded px-1 py-0.5 text-primary hover:bg-accent/40 hover:underline"
+                      >
+                        {contenu}
+                        <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
+                      </a>
+                    ) : (
+                      <div className="flex items-center justify-between gap-2 px-1 py-0.5">{contenu}</div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </details>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function InsightsPage() {
   const [fenetre, setFenetre] = useState<number>(30);
   const maintenantMs = Date.now();
   const { data: publications, isLoading } = useInsightsCommunication(500);
+  const { data: presse } = usePresseAnsut(500);
 
   const ins = useMemo(
     () => calculerInsights(publications ?? [], fenetre, maintenantMs),
     [publications, fenetre, maintenantMs],
+  );
+
+  const echo = useMemo(
+    () => calculerEchoMediatique(presse ?? [], ins.totalDatees, fenetre, maintenantMs),
+    [presse, ins.totalDatees, fenetre, maintenantMs],
   );
 
   return (
@@ -154,6 +280,9 @@ export default function InsightsPage() {
                 <> {ins.totalNonDatees} à date non vérifiée, non comptée{ins.totalNonDatees > 1 ? 's' : ''}.</>
               )}
             </p>
+
+            {/* Écho médiatique — indicateur composé, entièrement traçable. */}
+            <CarteEchoMediatique echo={echo} />
 
             <div className="grid gap-4 lg:grid-cols-2">
               {/* 1. Activité par réseau */}
