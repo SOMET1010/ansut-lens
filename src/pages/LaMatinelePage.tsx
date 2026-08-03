@@ -294,29 +294,39 @@ function SujetUne({ sujet, recitLoading }: { sujet: SujetBriefing; recitLoading:
 
 /* --------------------------------------------------------- Autres sujets */
 
-function CarteSujetSecondaire({ sujet, index }: { sujet: SujetBriefing; index: number }) {
+function CarteSujetSecondaire({ sujet }: { sujet: SujetBriefing }) {
+  const presse = sujet.preuves.filter((p) => p.type === 'presse').length;
+  const ansut = sujet.preuves.filter((p) => p.type === 'ansut').length;
+  const autres = sujet.nbPreuves - presse - ansut;
   return (
-    <article className="grid grid-cols-[2rem_1fr] gap-3 border-t border-[var(--m-line-soft)] py-4 first:border-t-0">
-      <span className="matinale-serif text-[1.4rem] leading-none tabular-nums text-[var(--m-ink-faint)]">
-        {String(index).padStart(2, '0')}
-      </span>
-      <div className="min-w-0">
-        <p className="matinale-mono text-[0.6rem] uppercase tracking-[0.16em] text-[var(--m-ink-faint)]">
-          {sujet.rubrique}
-        </p>
-        <h3 className="matinale-serif mt-1 text-balance text-[1.2rem] font-semibold leading-tight text-[var(--m-ink)]">
-          {sujet.titre}
-        </h3>
-        <p className="mt-1 line-clamp-2 max-w-[44ch] text-[0.9rem] leading-snug text-[var(--m-ink-soft)]">
-          {sujet.chapo}
-        </p>
-        <p className="matinale-mono mt-2 text-[0.62rem] uppercase tracking-[0.05em] tabular-nums text-[var(--m-ink-faint)]">
+    <article className="flex h-full flex-col rounded-xl border border-[var(--m-line)] bg-[var(--m-paper-2)] p-4">
+      <p className="matinale-mono text-[0.6rem] uppercase tracking-[0.16em] text-[var(--m-ink-faint)]">
+        {sujet.rubrique}
+      </p>
+      <h3 className="matinale-serif mt-1.5 text-balance text-[1.15rem] font-semibold leading-tight text-[var(--m-ink)]">
+        {sujet.titre}
+      </h3>
+      <p className="mt-1.5 line-clamp-2 text-[0.86rem] leading-snug text-[var(--m-ink-soft)]">
+        {sujet.chapo}
+      </p>
+      <div className="mt-auto flex items-center gap-2 pt-4">
+        <span className="matinale-mono text-[0.68rem] tabular-nums text-[var(--m-ink-faint)]">
           {sujet.nbPreuves} {sujet.nbPreuves > 1 ? 'preuves' : 'preuve'}
-        </p>
+        </span>
+        <span className="ml-auto flex items-center gap-1.5 text-[var(--m-ink-faint)]">
+          {presse > 0 && <FileText className="h-3.5 w-3.5" aria-label={`${presse} article(s) de presse`} />}
+          {ansut > 0 && <Globe className="h-3.5 w-3.5" aria-label={`${ansut} publication(s) ANSUT`} />}
+          {autres > 0 && (
+            <span className="matinale-mono rounded border border-[var(--m-line)] px-1.5 py-0.5 text-[0.62rem] tabular-nums">
+              +{autres}
+            </span>
+          )}
+        </span>
       </div>
     </article>
   );
 }
+
 
 /* ------------------------------------------------------------ Cartes latérales */
 
