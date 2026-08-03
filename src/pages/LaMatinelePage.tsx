@@ -327,6 +327,38 @@ function CarteSujetSecondaire({ sujet }: { sujet: SujetBriefing }) {
   );
 }
 
+/** Grille des autres sujets clés — 3 par défaut, le reste sur demande. */
+function AutresSujets({ sujets }: { sujets: SujetBriefing[] }) {
+  const [tousVisibles, setTousVisibles] = useState(false);
+  const visibles = tousVisibles ? sujets : sujets.slice(0, 3);
+  const total = sujets.length + 1;
+  return (
+    <section className="mt-8 border-t border-[var(--m-line)] pt-4">
+      <p className="matinale-mono text-[0.62rem] uppercase tracking-[0.16em] text-[var(--m-ink-faint)]">
+        Les autres sujets clés
+      </p>
+      <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {visibles.map((s) => (
+          <CarteSujetSecondaire key={s.id} sujet={s} />
+        ))}
+      </div>
+      {sujets.length > 3 && (
+        <div className="mt-4 flex justify-center">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setTousVisibles((v) => !v)}
+            className="gap-2 border-[var(--m-line)] bg-[var(--m-paper-2)] text-[var(--m-ink)] hover:bg-[var(--m-paper-3)]"
+          >
+            {tousVisibles ? 'Réduire les sujets' : `Voir tous les sujets (${total})`}
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          </Button>
+        </div>
+      )}
+    </section>
+  );
+}
+
 
 /* ------------------------------------------------------------ Cartes latérales */
 
