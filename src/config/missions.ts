@@ -28,8 +28,10 @@ export interface MissionStrategique {
   id: string;
   /** Code du pilier ANSUT (P1…P4). */
   code: string;
-  /** Intitulé court du pilier. */
+  /** Intitulé du pilier. */
   nom: string;
+  /** Nom court, orienté communication (affiché en priorité). */
+  nomCourt: string;
   /** Orientation stratégique principale du pilier, en une phrase. */
   objectif: string;
   /** L'ANSUT porte-t-elle ce pilier ? (vrai pour les 4 piliers propres.) */
@@ -77,6 +79,7 @@ export const MISSIONS_STRATEGIQUES: MissionStrategique[] = [
     id: 'connectivite-universelle',
     code: 'P1',
     nom: 'Connectivité Numérique Universelle',
+    nomCourt: 'Connectivité numérique',
     objectif:
       "Renforcer la connectivité sur l'ensemble du territoire : backbone, dernier kilomètre, centres de données et couverture des zones non desservies.",
     ansutPorteur: true,
@@ -107,6 +110,7 @@ export const MISSIONS_STRATEGIQUES: MissionStrategique[] = [
     id: 'services-inclusion',
     code: 'P2',
     nom: 'Services Numériques & Inclusion',
+    nomCourt: 'Services & inclusion numériques',
     objectif:
       "Déployer des e-services publics et un écosystème numérique inclusif : dématérialisation, identité numérique, points d'accès et inclusion sociale et financière.",
     ansutPorteur: true,
@@ -135,6 +139,7 @@ export const MISSIONS_STRATEGIQUES: MissionStrategique[] = [
     id: 'usages-competences',
     code: 'P3',
     nom: 'Usages Digitaux & Compétences',
+    nomCourt: 'Usages & compétences',
     objectif:
       "Développer la maîtrise et l'usage du numérique : culture numérique, formation, sensibilisation et accès aux terminaux.",
     ansutPorteur: true,
@@ -159,6 +164,7 @@ export const MISSIONS_STRATEGIQUES: MissionStrategique[] = [
     id: 'excellence-operationnelle',
     code: 'P4',
     nom: 'Excellence Opérationnelle',
+    nomCourt: 'Excellence opérationnelle',
     objectif:
       "Assurer une gouvernance efficace de l'ANSUT, un financement diversifié et un rayonnement régional : pilotage, audit, mobilisation des ressources et communication.",
     ansutPorteur: true,

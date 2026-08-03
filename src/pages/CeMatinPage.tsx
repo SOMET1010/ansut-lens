@@ -26,6 +26,7 @@ import {
   useRadarSignaux,
 } from '@/hooks/useRadarData';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
+import { ChangementsDuJour } from '@/components/radar/ChangementsDuJour';
 import { AnalyseCommunication } from '@/components/radar/AnalyseCommunication';
 import { NotreCommunication } from '@/components/radar/NotreCommunication';
 import { ChangementsDepuisHier } from '@/components/radar/ChangementsDepuisHier';
@@ -211,9 +212,15 @@ export default function CeMatinPage() {
           }
         />
 
-        {/* Couche 3 (progressive) — Analyse : notre communication vs écosystème.
-            Ajoutée en tête ; les sections existantes restent le temps de la
-            transition vers le briefing de communication. */}
+        {/* En-tête — Ce qui change aujourd'hui (l'essentiel depuis hier, <30 s). */}
+        <ChangementsDuJour
+          externes={externes}
+          publications={publications ?? []}
+          maintenantMs={maintenantMs}
+          isLoading={sujetsLoading}
+        />
+
+        {/* Analyse : notre communication vs écosystème. */}
         <AnalyseCommunication
           publications={publications ?? []}
           externes={externes}

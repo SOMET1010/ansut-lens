@@ -1,17 +1,17 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  ArrowDown,
   ArrowRight,
-  CalendarClock,
+  ArrowUp,
   ExternalLink,
   Facebook,
   Globe,
-  Handshake,
   Linkedin,
-  MapPin,
   Megaphone,
+  Minus,
   RefreshCw,
-  Tag,
+  Sparkle,
   Twitter,
   Youtube,
   type LucideIcon,
@@ -23,21 +23,28 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RelativeTime } from '@/components/ui/relative-time';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 import { nettoyerExtrait } from '@/lib/nettoyerExtrait';
 import { useAnsutPublications } from '@/hooks/useAnsutPublications';
-import { synthetiserPublications } from '@/lib/syntheseAnsut';
 import { choisirDatePublication } from '@/lib/datesPublication';
+import {
+  profilCommunication,
+  type EvolutionType,
+  type TypeCommunication,
+} from '@/lib/profilCommunication';
 
 /**
  * Couche 1 — « Notre communication ».
  *
- * Répond à : « quels thèmes l'ANSUT met-elle actuellement en avant ? ». Les
- * réseaux et le site de l'ANSUT sont un CAPTEUR de communication : ce qu'elle
- * publie révèle ses priorités du moment. C'est un signal de communication, pas
- * une vérité stratégique (le plan validé, lui, vit dans la connaissance).
+ * Ce n'est plus une simple liste de publications : c'est un profil de la
+ * communication de l'ANSUT dans le temps. À partir de la date RÉELLE de
+ * publication et d'une fenêtre glissante (30/60/90 j), on montre :
+ *   - un résumé des thèmes principaux (fréquence) ;
+ *   - leur évolution (émergent / en hausse / en baisse / disparu) ;
+ *   - les publications récentes encore vivantes (non expirées).
  *
- * On montre les thèmes portés (déduits des publications, explicables) et les
- * dernières prises de parole datées honnêtement. Aucun KPI, aucun pilotage.
+ * Les contenus sans date réelle ou expirés sont archivés d'office : on préfère
+ * « Aucune communication récente » plutôt que de remonter d'anciens contenus.
  */
 
 const ICONES: Record<string, LucideIcon> = {
@@ -62,38 +69,38 @@ const LABELS: Record<string, string> = {
   website: 'Site ANSUT',
 };
 
-/** Fenêtre de la communication ANSUT (jours). */
-const FENETRE_JOURS = 30;
+const TYPE_LABEL: Record<TypeCommunication, string> = {
+  evenement: 'Événement',
+  campagne: 'Campagne',
+  institutionnel: 'Institutionnel',
+  actualite: 'Actualité',
+};
 
-function LigneChips({
-  icon: Icon,
-  valeurs,
-}: {
-  icon: LucideIcon;
-  valeurs: string[];
-}) {
-  if (valeurs.length === 0) return null;
-  return (
-    <div className="flex items-start gap-2">
-      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-      <div className="flex flex-wrap gap-1.5">
-        {valeurs.map((v) => (
-          <Badge key={v} variant="secondary" className="text-[11px] font-normal">
-            {v}
-          </Badge>
-        ))}
-      </div>
-    </div>
-  );
-}
+const EVOLUTION_CFG: Record<
+  EvolutionType,
+  { icon: LucideIcon; libelle: string; classe: string }
+> = {
+  emergent: { icon: Sparkle, libelle: 'Émergent', classe: 'text-primary' },
+  hausse: { icon: ArrowUp, libelle: 'En hausse', classe: 'text-[hsl(var(--signal-positive))]' },
+  baisse: { icon: ArrowDown, libelle: 'En baisse', classe: 'text-amber-600 dark:text-amber-400' },
+  disparu: { icon: Minus, libelle: 'Disparu', classe: 'text-muted-foreground' },
+  stable: { icon: Minus, libelle: 'Stable', classe: 'text-muted-foreground' },
+};
+
+const FENETRES = [30, 60, 90] as const;
 
 export function NotreCommunication() {
-  const { data: publications, isLoading, refetch } = useAnsutPublications(6, FENETRE_JOURS * 24);
+  const [fenetre, setFenetre] = useState<number>(30);
   const [collecteEnCours, setCollecteEnCours] = useState(false);
+  const maintenantMs = Date.now();
 
-  const synthese = useMemo(
-    () => synthetiserPublications(publications ?? []),
-    [publications],
+  // Fenêtre de collecte large : le profil filtre ensuite par date de publication
+  // réelle et par TTL. On charge donc un historique suffisant (≈ 1 an).
+  const { data: publications, isLoading, refetch } = useAnsutPublications(300, 365 * 24);
+
+  const profil = useMemo(
+    () => profilCommunication(publications ?? [], fenetre, maintenantMs),
+    [publications, fenetre, maintenantMs],
   );
 
   const collecter = async () => {
@@ -115,16 +122,11 @@ export function NotreCommunication() {
     }
   };
 
-  const aDesPublications = (publications ?? []).length > 0;
-  const aDesThemes =
-    synthese.programmes.length > 0 ||
-    synthese.partenaires.length > 0 ||
-    synthese.localites.length > 0 ||
-    synthese.echeances.length > 0;
+  const evolutionsNotables = profil.evolution.filter((e) => e.evolution !== 'stable');
 
   return (
     <section aria-labelledby="notre-com-titre" className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2
             id="notre-com-titre"
@@ -134,28 +136,49 @@ export function NotreCommunication() {
             Notre communication
           </h2>
           <p className="text-xs text-muted-foreground">
-            Les thèmes que l’ANSUT met en avant en ce moment — un signal de communication, pas une
-            vérité stratégique.
+            Ce que l’ANSUT met en avant dans le temps — un profil de communication, pas une liste.
           </p>
         </div>
-        <Button asChild variant="link" size="sm" className="h-auto shrink-0 p-0">
-          <Link to="/communication">
-            Tout voir
-            <ArrowRight className="ml-1 h-3.5 w-3.5" aria-hidden />
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Fenêtre glissante configurable. */}
+          <div className="flex items-center gap-1 rounded-lg border p-0.5">
+            {FENETRES.map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFenetre(f)}
+                className={cn(
+                  'rounded px-2 py-0.5 text-xs font-medium transition-colors',
+                  fenetre === f
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+                aria-pressed={fenetre === f}
+              >
+                {f} j
+              </button>
+            ))}
+          </div>
+          <Button asChild variant="link" size="sm" className="h-auto shrink-0 p-0">
+            <Link to="/communication">
+              Tout voir
+              <ArrowRight className="ml-1 h-3.5 w-3.5" aria-hidden />
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
-        <Skeleton className="h-28 rounded-xl" />
-      ) : !aDesPublications ? (
+        <Skeleton className="h-32 rounded-xl" />
+      ) : profil.total === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-start gap-2 py-5">
             <p className="text-sm font-medium">
-              Aucune communication récente de l’ANSUT collectée ({FENETRE_JOURS} j).
+              Aucune communication récente de l’ANSUT sur les {fenetre} derniers jours.
             </p>
             <p className="text-xs text-muted-foreground">
-              Soit rien n’a été publié, soit la collecte des réseaux officiels n’a pas encore tourné.
+              Seules les publications à date réelle et non expirées sont comptées. Élargissez la
+              fenêtre, ou lancez une collecte.
             </p>
             <Button
               variant="outline"
@@ -171,22 +194,55 @@ export function NotreCommunication() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {/* Thèmes / partenaires / territoires / échéances mis en avant. */}
-          {aDesThemes && (
-            <div className="space-y-2 rounded-xl border border-primary/15 bg-primary/[0.03] p-3.5">
-              <LigneChips
-                icon={Tag}
-                valeurs={synthese.programmes.map((p) => `${p.code} · ${p.nom}`)}
-              />
-              <LigneChips icon={Handshake} valeurs={synthese.partenaires} />
-              <LigneChips icon={MapPin} valeurs={synthese.localites} />
-              <LigneChips icon={CalendarClock} valeurs={synthese.echeances} />
-            </div>
-          )}
+          {/* Résumé : thèmes principaux de la période. */}
+          <div className="rounded-xl border border-primary/15 bg-primary/[0.03] p-4">
+            <p className="text-sm">
+              Ces <span className="font-semibold">{fenetre} derniers jours</span>, l’ANSUT a
+              principalement communiqué sur :
+            </p>
+            <ul className="mt-2 space-y-1.5">
+              {profil.themes.slice(0, 5).map((t) => (
+                <li key={t.pilierId} className="flex items-center gap-2 text-sm">
+                  <span className="flex-1 font-medium" title={`${t.code} — ${t.nom}`}>
+                    {t.nomCourt}
+                  </span>
+                  <Badge variant="secondary" className="text-[11px]">
+                    {t.count} publication{t.count > 1 ? 's' : ''}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
 
-          {/* Dernières prises de parole, datées honnêtement et sourcées. */}
+            {/* Profil d'évolution des thèmes. */}
+            {evolutionsNotables.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-primary/10 pt-2.5">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+                  Évolution
+                </span>
+                {evolutionsNotables.map((e) => {
+                  const cfg = EVOLUTION_CFG[e.evolution];
+                  const Icone = cfg.icon;
+                  return (
+                    <span
+                      key={e.pilierId}
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px]',
+                        cfg.classe,
+                      )}
+                      title={`${cfg.libelle} — ${e.avant} → ${e.count} sur ${fenetre} j`}
+                    >
+                      <Icone className="h-3 w-3" aria-hidden />
+                      {e.nomCourt} · {cfg.libelle}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Publications récentes vivantes, datées réellement et sourcées. */}
           <div className="grid gap-3 sm:grid-cols-2">
-            {(publications ?? []).slice(0, 4).map((pub) => {
+            {profil.publicationsRecentes.map((pub) => {
               const plateforme = (pub.plateforme || '').toLowerCase();
               const Icone = ICONES[plateforme] ?? Globe;
               const label = LABELS[plateforme] ?? 'Source ANSUT';
@@ -199,21 +255,18 @@ export function NotreCommunication() {
                       <span className="font-medium text-foreground">{pub.auteur || 'ANSUT'}</span>
                       <span aria-hidden>·</span>
                       <span>{label}</span>
+                      <Badge variant="outline" className="text-[10px]">
+                        {TYPE_LABEL[pub.type]}
+                      </Badge>
                       {dateInfo && (
                         <>
                           <span aria-hidden>·</span>
                           <span>
-                            {dateInfo.mode === 'publie' ? 'Publié' : 'Collecté'}{' '}
-                            <RelativeTime date={dateInfo.date} />
+                            Publié <RelativeTime date={dateInfo.date} />
                           </span>
                         </>
                       )}
                     </div>
-                    {dateInfo?.mode === 'collecte' && (
-                      <p className="text-[10px] italic text-muted-foreground/70">
-                        Date d’origine non vérifiée.
-                      </p>
-                    )}
                     <p className="line-clamp-3 text-sm">{nettoyerExtrait(pub.contenu)}</p>
                     {pub.url_original && (
                       <a
