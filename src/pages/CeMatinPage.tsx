@@ -33,6 +33,7 @@ import { NotreCommunication } from '@/components/radar/NotreCommunication';
 import { ChangementsDepuisHier } from '@/components/radar/ChangementsDepuisHier';
 import { ASurveiller } from '@/components/radar/ASurveiller';
 import { CarteSujet } from '@/components/radar/CarteSujet';
+import { TempsFortsStrategiques } from '@/components/radar/TempsFortsStrategiques';
 import { useAnsutPublications } from '@/hooks/useAnsutPublications';
 import { useRecitsSujets } from '@/hooks/useRecitsSujets';
 import { alignement, estVoixAnsut, piliersDeLActu } from '@/lib/missions';
@@ -237,6 +238,10 @@ export default function CeMatinPage() {
             </div>
           }
         />
+
+        {/* Contexte — Temps forts sectoriels en cours ou imminents (lecture
+            seule ; la configuration vit dans l'Administration). */}
+        <TempsFortsStrategiques />
 
         {/* PROTOTYPE — Le sujet du jour : nouvelle unité de lecture « 1 carte =
             1 sujet », raconté et prouvé. En observation avant généralisation. */}
