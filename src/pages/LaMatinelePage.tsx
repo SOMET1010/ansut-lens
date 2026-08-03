@@ -550,9 +550,18 @@ function ActivitesRecentes({ briefing }: { briefing: Briefing }) {
   if (briefing.activitesRecentes.length === 0) return null;
   return (
     <section className="mt-8 border-t border-[var(--m-line)] pt-4">
-      <p className="matinale-mono text-[0.62rem] uppercase tracking-[0.16em] text-[var(--m-ink-faint)]">
-        Activités récentes
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="matinale-mono text-[0.62rem] uppercase tracking-[0.16em] text-[var(--m-ink-faint)]">
+          Activités récentes
+        </p>
+        <Link
+          to="/veille"
+          className="matinale-mono text-[0.62rem] uppercase tracking-[0.1em] text-[var(--m-accent)] hover:underline"
+        >
+          Voir toute l’activité →
+        </Link>
+      </div>
+
       <ul className="mt-3 grid gap-3 sm:grid-cols-3">
         {briefing.activitesRecentes.map((a, i) => (
           <li key={`${a.type}-${i}`} className="flex items-start gap-2">
