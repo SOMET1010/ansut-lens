@@ -2113,6 +2113,63 @@ export type Database = {
         }
         Relationships: []
       }
+      social_connections: {
+        Row: {
+          access_token: string
+          connected_at: string
+          connected_by: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          last_error: string | null
+          last_sync_at: string | null
+          meta: Json
+          org_identifier: string | null
+          plateforme: string
+          refresh_token: string | null
+          scope: string | null
+          statut: string
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          connected_at?: string
+          connected_by?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_error?: string | null
+          last_sync_at?: string | null
+          meta?: Json
+          org_identifier?: string | null
+          plateforme: string
+          refresh_token?: string | null
+          scope?: string | null
+          statut?: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          connected_at?: string
+          connected_by?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_error?: string | null
+          last_sync_at?: string | null
+          meta?: Json
+          org_identifier?: string | null
+          plateforme?: string
+          refresh_token?: string | null
+          scope?: string | null
+          statut?: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       social_insights: {
         Row: {
           alerte_generee: boolean | null
