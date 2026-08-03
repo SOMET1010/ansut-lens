@@ -164,6 +164,13 @@ Deno.serve(async (req) => {
     const { mode = "all" } = await req.json().catch(() => ({ mode: "all" }));
 
     const results: any[] = [];
+    // Diagnostic traçable : pourquoi la collecte a (ou n'a pas) ramené du contenu.
+    const diag: {
+      firecrawl_configured: boolean;
+      comptes_actifs: number;
+      comptes: any[];
+      website?: any;
+    } = { firecrawl_configured: !!FIRECRAWL_API_KEY, comptes_actifs: 0, comptes: [] };
 
     // 1. Collect from VIP accounts
     if (mode === "all" || mode === "vip") {
@@ -172,11 +179,22 @@ Deno.serve(async (req) => {
         .select("*")
         .eq("actif", true);
 
-      if (vipComptes && vipComptes.length > 0 && FIRECRAWL_API_KEY) {
+      diag.comptes_actifs = vipComptes?.length ?? 0;
+
+      if (!FIRECRAWL_API_KEY) {
+        diag.comptes.push({
+          statut: "sans_cle",
+          message: "FIRECRAWL_API_KEY non configurée — collecte réseau impossible.",
+        });
+      } else if (vipComptes && vipComptes.length > 0) {
         for (const compte of vipComptes) {
+          let trouves = 0;
+          let inseres = 0;
+          let statut = "ok";
+          let message = "";
           try {
             const profileUrl = compte.url_profil || `https://${compte.plateforme}.com/${compte.identifiant}`;
-            
+
             const scrapeRes = await fetch("https://api.firecrawl.dev/v1/scrape", {
               method: "POST",
               headers: {
@@ -184,23 +202,30 @@ Deno.serve(async (req) => {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                url: profileUrl,
                 // HTML en plus du markdown : les horodatages machine (datetime,
                 // data-utime, JSON-LD) vivent dans le HTML, pas dans le markdown.
                 // onlyMainContent=false pour ne pas rogner ces attributs.
+                url: profileUrl,
                 formats: ["markdown", "html"],
                 onlyMainContent: false,
               }),
             });
 
-            if (scrapeRes.ok) {
+            if (!scrapeRes.ok) {
+              statut = "injoignable";
+              message = `Firecrawl a répondu HTTP ${scrapeRes.status}.`;
+            } else {
               const scrapeData = await scrapeRes.json();
               const markdown = scrapeData.data?.markdown || scrapeData.markdown || "";
               const html = scrapeData.data?.html || scrapeData.html || "";
 
-              if (markdown.length > 100) {
+              if (markdown.length <= 100) {
+                statut = "vide";
+                message = `Contenu trop court (${markdown.length} car.) — page probablement protégée (mur de connexion) ou vide.`;
+              } else {
                 const posts = await extractPostsWithAI(LOVABLE_API_KEY, markdown, html, compte.plateforme);
-                
+                trouves = posts.length;
+
                 for (const post of posts) {
                   const contentHash = post.contenu?.substring(0, 100);
                   const { data: existing } = await supabase
@@ -234,26 +259,48 @@ Deno.serve(async (req) => {
                       .insert(pubData);
 
                     if (!error) {
+                      inseres++;
                       results.push({ source: compte.nom, post: post.contenu?.substring(0, 80) });
                       // Bridge: inject into actualites (la date reste honnête : null si non vérifiée)
                       await injectIntoActualites(supabase, pubData);
                     }
                   }
                 }
+
+                if (trouves === 0) {
+                  statut = "vide";
+                  message = "Page lue mais aucun post exploitable n'a pu être extrait.";
+                } else if (inseres === 0) {
+                  statut = "deja_connu";
+                  message = `${trouves} post(s) trouvé(s), tous déjà en base.`;
+                }
               }
             }
           } catch (e) {
+            statut = "erreur";
+            message = e instanceof Error ? e.message : String(e);
             console.error(`Error collecting from ${compte.nom}:`, e);
           }
+          diag.comptes.push({
+            nom: compte.nom,
+            plateforme: compte.plateforme,
+            statut,
+            posts_trouves: trouves,
+            posts_inseres: inseres,
+            message,
+          });
         }
       }
     }
 
     // 2. Collect from ANSUT website
-    if (FIRECRAWL_API_KEY && (mode === "all" || mode === "website")) {
-      try {
+    if (mode === "all" || mode === "website") {
+      if (!FIRECRAWL_API_KEY) {
+        diag.website = { statut: "sans_cle", message: "FIRECRAWL_API_KEY non configurée." };
+      } else try {
         const articles = await collectFromWebsite(FIRECRAWL_API_KEY, LOVABLE_API_KEY);
-        
+        let inseresSite = 0;
+
         for (const article of articles) {
           const { data: existing } = await supabase
             .from("publications_institutionnelles")
@@ -278,18 +325,25 @@ Deno.serve(async (req) => {
             };
 
             await supabase.from("publications_institutionnelles").insert(pubData);
+            inseresSite++;
             results.push({ source: "Site ANSUT", post: article.titre });
             // Bridge: inject into actualites
             await injectIntoActualites(supabase, pubData);
           }
         }
+        diag.website = {
+          statut: articles.length === 0 ? "vide" : "ok",
+          articles_trouves: articles.length,
+          articles_inseres: inseresSite,
+        };
       } catch (e) {
+        diag.website = { statut: "erreur", message: e instanceof Error ? e.message : String(e) };
         console.error("Error collecting from ANSUT website:", e);
       }
     }
 
     return new Response(
-      JSON.stringify({ success: true, collected: results.length, details: results }),
+      JSON.stringify({ success: true, collected: results.length, diagnostic: diag, details: results }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
