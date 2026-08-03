@@ -1664,6 +1664,8 @@ export type Database = {
           likes_count: number | null
           media_urls: string[] | null
           plateforme: string
+          publication_date_source: string
+          publication_date_verified: boolean
           resume_commentaires: string | null
           sentiment_commentaires: number | null
           shares_count: number | null
@@ -1685,6 +1687,8 @@ export type Database = {
           likes_count?: number | null
           media_urls?: string[] | null
           plateforme?: string
+          publication_date_source?: string
+          publication_date_verified?: boolean
           resume_commentaires?: string | null
           sentiment_commentaires?: number | null
           shares_count?: number | null
@@ -1706,6 +1710,8 @@ export type Database = {
           likes_count?: number | null
           media_urls?: string[] | null
           plateforme?: string
+          publication_date_source?: string
+          publication_date_verified?: boolean
           resume_commentaires?: string | null
           sentiment_commentaires?: number | null
           shares_count?: number | null
