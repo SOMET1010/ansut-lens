@@ -16,9 +16,11 @@ export type Database = {
     Tables: {
       actualites: {
         Row: {
+          action_suggeree: string | null
           analyse_ia: string | null
           categorie: string | null
           cluster_id: string | null
+          confiance_ia: number | null
           contenu: string | null
           created_at: string
           date_publication: string | null
@@ -27,6 +29,8 @@ export type Database = {
           id: string
           impact_ansut: string | null
           importance: number | null
+          pilier_id: string | null
+          piliers: string[]
           pourquoi_important: string | null
           resume: string | null
           score_pertinence: number | null
@@ -39,9 +43,11 @@ export type Database = {
           titre: string
         }
         Insert: {
+          action_suggeree?: string | null
           analyse_ia?: string | null
           categorie?: string | null
           cluster_id?: string | null
+          confiance_ia?: number | null
           contenu?: string | null
           created_at?: string
           date_publication?: string | null
@@ -50,6 +56,8 @@ export type Database = {
           id?: string
           impact_ansut?: string | null
           importance?: number | null
+          pilier_id?: string | null
+          piliers?: string[]
           pourquoi_important?: string | null
           resume?: string | null
           score_pertinence?: number | null
@@ -62,9 +70,11 @@ export type Database = {
           titre: string
         }
         Update: {
+          action_suggeree?: string | null
           analyse_ia?: string | null
           categorie?: string | null
           cluster_id?: string | null
+          confiance_ia?: number | null
           contenu?: string | null
           created_at?: string
           date_publication?: string | null
@@ -73,6 +83,8 @@ export type Database = {
           id?: string
           impact_ansut?: string | null
           importance?: number | null
+          pilier_id?: string | null
+          piliers?: string[]
           pourquoi_important?: string | null
           resume?: string | null
           score_pertinence?: number | null
@@ -803,6 +815,80 @@ export type Database = {
         }
         Relationships: []
       }
+      institutional_sources: {
+        Row: {
+          created_at: string
+          date_document: string | null
+          id: string
+          reference: string | null
+          titre: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_document?: string | null
+          id?: string
+          reference?: string | null
+          titre: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_document?: string | null
+          id?: string
+          reference?: string | null
+          titre?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      knowledge_evidence: {
+        Row: {
+          cible_id: string
+          cible_type: string
+          created_at: string
+          date_document: string | null
+          id: string
+          localisation: string | null
+          methode_extraction: string
+          source_id: string | null
+          texte_origine: string | null
+        }
+        Insert: {
+          cible_id: string
+          cible_type: string
+          created_at?: string
+          date_document?: string | null
+          id?: string
+          localisation?: string | null
+          methode_extraction?: string
+          source_id?: string | null
+          texte_origine?: string | null
+        }
+        Update: {
+          cible_id?: string
+          cible_type?: string
+          created_at?: string
+          date_document?: string | null
+          id?: string
+          localisation?: string | null
+          methode_extraction?: string
+          source_id?: string | null
+          texte_origine?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_evidence_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "institutional_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matinale_jobs: {
         Row: {
           created_at: string
@@ -1347,6 +1433,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      piliers_strategiques: {
+        Row: {
+          actif: boolean
+          ansut_porteur: boolean
+          code: string
+          created_at: string
+          id: string
+          mots_cles: string[]
+          nom: string
+          objectif: string | null
+          ordre: number
+          projets_ansut: string[]
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          ansut_porteur?: boolean
+          code: string
+          created_at?: string
+          id: string
+          mots_cles?: string[]
+          nom: string
+          objectif?: string | null
+          ordre?: number
+          projets_ansut?: string[]
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          ansut_porteur?: boolean
+          code?: string
+          created_at?: string
+          id?: string
+          mots_cles?: string[]
+          nom?: string
+          objectif?: string | null
+          ordre?: number
+          projets_ansut?: string[]
+          updated_at?: string
+        }
+        Relationships: []
       }
       presence_digitale_metrics: {
         Row: {
@@ -2029,6 +2157,158 @@ export type Database = {
           url?: string | null
         }
         Relationships: []
+      }
+      strategic_entities: {
+        Row: {
+          code: string | null
+          created_at: string
+          derniere_validation: string | null
+          description: string | null
+          direction_responsable: string | null
+          id: string
+          libelle: string
+          note_maturite: string | null
+          ordre: number
+          periode_debut: string | null
+          periode_fin: string | null
+          statut: string
+          type: string
+          updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+          validation: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          derniere_validation?: string | null
+          description?: string | null
+          direction_responsable?: string | null
+          id?: string
+          libelle: string
+          note_maturite?: string | null
+          ordre?: number
+          periode_debut?: string | null
+          periode_fin?: string | null
+          statut?: string
+          type: string
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          validation?: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          derniere_validation?: string | null
+          description?: string | null
+          direction_responsable?: string | null
+          id?: string
+          libelle?: string
+          note_maturite?: string | null
+          ordre?: number
+          periode_debut?: string | null
+          periode_fin?: string | null
+          statut?: string
+          type?: string
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          validation?: string
+        }
+        Relationships: []
+      }
+      strategic_indicators: {
+        Row: {
+          created_at: string
+          echeance: string | null
+          entity_id: string | null
+          id: string
+          libelle: string
+          note: string | null
+          unite: string | null
+          updated_at: string
+          valeur_actuelle: string | null
+          valeur_cible: string | null
+          validation: string
+        }
+        Insert: {
+          created_at?: string
+          echeance?: string | null
+          entity_id?: string | null
+          id?: string
+          libelle: string
+          note?: string | null
+          unite?: string | null
+          updated_at?: string
+          valeur_actuelle?: string | null
+          valeur_cible?: string | null
+          validation?: string
+        }
+        Update: {
+          created_at?: string
+          echeance?: string | null
+          entity_id?: string | null
+          id?: string
+          libelle?: string
+          note?: string | null
+          unite?: string | null
+          updated_at?: string
+          valeur_actuelle?: string | null
+          valeur_cible?: string | null
+          validation?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategic_indicators_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_entities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategic_relations: {
+        Row: {
+          created_at: string
+          enfant_id: string
+          id: string
+          parent_id: string
+          type_relation: string
+          validation: string
+        }
+        Insert: {
+          created_at?: string
+          enfant_id: string
+          id?: string
+          parent_id: string
+          type_relation?: string
+          validation?: string
+        }
+        Update: {
+          created_at?: string
+          enfant_id?: string
+          id?: string
+          parent_id?: string
+          type_relation?: string
+          validation?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategic_relations_enfant_id_fkey"
+            columns: ["enfant_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_relations_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_entities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       territoires_expression: {
         Row: {
