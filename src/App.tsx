@@ -41,6 +41,7 @@ const NotFound = lazy(() => import('@/pages/NotFound'));
 
 // Sections principales
 const CeMatinPage = lazy(() => import('@/pages/CeMatinPage'));
+const InsightsPage = lazy(() => import('@/pages/InsightsPage'));
 const VeillePage = lazy(() => import('@/pages/VeillePage'));
 const BalayagePage = lazy(() => import('@/pages/BalayagePage'));
 const ActeursInfluencePage = lazy(() => import('@/pages/ActeursInfluencePage'));
@@ -200,6 +201,7 @@ const App = () => (
                             <Route path="/ce-matin" element={<CeMatinPage />} />
                             <Route path="/veille" element={<VeillePage />} />
                             <Route path="/recherche" element={<BalayagePage />} />
+                            <Route path="/insights" element={<InsightsPage />} />
                           </Route>
 
                           <Route element={<PermissionRoute permission="view_personnalites" />}>

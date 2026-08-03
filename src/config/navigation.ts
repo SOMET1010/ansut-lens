@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   Bot,
   FileText,
   Home,
@@ -98,6 +99,14 @@ export const NAV_SECTIONS: NavSection[] = [
     icon: Megaphone,
     permission: 'use_assistant',
     legacyPaths: ['/reseaux-sociaux'],
+  },
+  {
+    id: 'insights',
+    label: 'Insights Communication',
+    question: 'Comment avons-nous communiqué ?',
+    path: '/insights',
+    icon: BarChart3,
+    permission: 'view_radar',
   },
   {
     id: 'publier',
