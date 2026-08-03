@@ -126,13 +126,25 @@ Trace des éléments supprimés ou masqués, par catégorie de défaut.
 
 - **SPDI (Score de Présence Digitale Institutionnelle)** : méthode documentée
   (4 axes pondérés — Visibilité 30 %, Qualité 25 %, Autorité 25 %, Présence 20 %).
-  Conservé, mais sa méthode devra être **rendue visible** à l'utilisateur lors de
-  la refonte de l'écran Acteurs. Tant que la méthode n'est pas exposée, éviter la
-  fausse précision (pas de décimales superflues).
+  Conservé car défendable, **mais sous condition** (voir feuille de route ci-dessous).
 - **Comptages réels** (publications, partenaires, mentions, part de voix) : 🟡
   conservés, calcul simple et traçable.
-- **Tonalité qualitative** (positif / neutre / négatif via icône) : conservée ;
-  seule la valeur décimale a été retirée.
+- **Tonalité qualitative** (positif / neutre / négatif via icône ou mot) :
+  conservée ; seules les valeurs décimales (« +0,34 ») ont été retirées, sur tous
+  les écrans (articles Veille + sidebar « Tonalité générale »).
+
+## Engagement de feuille de route — le SPDI (P1/P2)
+
+Le SPDI est conservé mais **non encore pleinement crédible au sens de cette charte**,
+car sa méthode n'est pas exposée à l'utilisateur. Objectif inscrit à la refonte de
+l'écran **Acteurs** (P1/P2) :
+
+1. **Rendre la méthode entièrement explicable dans l'interface** : les 4 axes, leurs
+   poids, et les données sources de chaque score, accessibles depuis l'écran.
+2. **Traçabilité** : pouvoir remonter du score aux contenus qui le justifient.
+3. **Tant que cette transparence n'existe pas**, le SPDI **ne doit jamais être
+   présenté comme une vérité absolue** : pas de fausse précision (pas de décimales),
+   formulation prudente, et il ne doit pas fonder à lui seul une décision.
 
 ---
 
