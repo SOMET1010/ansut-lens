@@ -20,6 +20,12 @@ import { piliersPourTexte } from '@/lib/missions';
 import { MISSIONS_STRATEGIQUES } from '@/config/missions';
 import { synthetiserPublications } from '@/lib/syntheseAnsut';
 import { nettoyerExtrait } from '@/lib/nettoyerExtrait';
+import {
+  categoriserCommunication,
+  dansLaFenetre,
+  qualifier,
+  type CategorieCommunication,
+} from '@/lib/qualificationContenu';
 import type { PublicationAnsut } from '@/hooks/useAnsutPublications';
 
 function normaliser(s: string): string {
@@ -98,6 +104,11 @@ export interface ItemCommunication {
   url_original: string | null;
 }
 
+/** Prise de parole récente NON institutionnelle (sportive, promo, protocolaire…). */
+export interface ItemCommunicationCategorisee extends ItemCommunication {
+  categorie: CategorieCommunication;
+}
+
 export interface ProfilCommunication {
   fenetreJours: number;
   /** Publications datées réellement et publiées dans la fenêtre. */
@@ -114,6 +125,12 @@ export interface ProfilCommunication {
   evenements: ItemCommunication[];
   /** Publications récentes encore vivantes (non expirées), du plus récent. */
   publicationsRecentes: (PublicationAnsut & { type: TypeCommunication })[];
+  /**
+   * Autres prises de parole récentes (sportive, promotionnelle, protocolaire,
+   * communautaire…) : de vraies communications de l'ANSUT, mais qui ne
+   * déterminent PAS les thèmes institutionnels.
+   */
+  autres: ItemCommunicationCategorisee[];
 }
 
 const JOUR_MS = 24 * 3600 * 1000;
@@ -144,17 +161,31 @@ export function profilCommunication(
   fenetreJours: number,
   maintenantMs: number,
 ): ProfilCommunication {
-  const debutActuel = maintenantMs - fenetreJours * JOUR_MS;
-  const debutPrecedent = maintenantMs - 2 * fenetreJours * JOUR_MS;
-
   const actuelles: PublicationAnsut[] = [];
   const precedentes: PublicationAnsut[] = [];
+  const autresPubs: PublicationAnsut[] = [];
 
   for (const pub of publications ?? []) {
-    const ms = dateReelleMs(pub);
-    if (ms === null || ms > maintenantMs) continue; // pas de date réelle / futur
-    if (ms >= debutActuel) actuelles.push(pub);
-    else if (ms >= debutPrecedent) precedentes.push(pub);
+    const q = qualifier(
+      {
+        texte: pub.contenu,
+        published_at: pub.date_publication,
+        collected_at: pub.collecte_le,
+        source_officielle_ansut: true,
+      },
+      maintenantMs,
+    );
+    // Date réelle inconnue → hors de TOUTE fenêtre (jamais « récent »).
+    if (!q.dateVerifiee) continue;
+
+    if (dansLaFenetre(q, fenetreJours)) {
+      // Seul le contenu INSTITUTIONNEL détermine les thèmes ; le reste (sportif,
+      // promotionnel, protocolaire…) est une « autre prise de parole ».
+      if (q.eligibleProfilStrategique) actuelles.push(pub);
+      else autresPubs.push(pub);
+    } else if (q.eligibleProfilStrategique && (q.ageJours ?? Infinity) <= 2 * fenetreJours) {
+      precedentes.push(pub);
+    }
   }
 
   // Thèmes principaux de la fenêtre (fréquence).
@@ -220,6 +251,12 @@ export function profilCommunication(
   const evenements = vivantes.filter((x) => x.type === 'evenement').slice(0, 4).map(toItem);
   const publicationsRecentes = vivantes.slice(0, 4).map((x) => ({ ...x.pub, type: x.type }));
 
+  // Autres prises de parole récentes (non institutionnelles), du plus récent.
+  const autres: ItemCommunicationCategorisee[] = autresPubs
+    .sort((a, b) => (dateReelleMs(b) ?? 0) - (dateReelleMs(a) ?? 0))
+    .slice(0, 4)
+    .map((pub) => ({ ...toItem({ pub }), categorie: categoriserCommunication(pub.contenu) }));
+
   // Partenaires cités dans la communication de la fenêtre (réutilise la liste
   // de référence de l'écosystème).
   const partenaires = synthetiserPublications(actuelles).partenaires;
@@ -233,5 +270,6 @@ export function profilCommunication(
     campagnes,
     evenements,
     publicationsRecentes,
+    autres,
   };
 }

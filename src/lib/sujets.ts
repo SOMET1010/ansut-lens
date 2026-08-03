@@ -18,8 +18,9 @@
 import type { Actualite } from '@/types';
 import type { PublicationAnsut } from '@/hooks/useAnsutPublications';
 import { MISSIONS_STRATEGIQUES } from '@/config/missions';
-import { piliersDeLActu, piliersPourTexte } from '@/lib/missions';
+import { piliersDeLActu } from '@/lib/missions';
 import { partenairesDansTexte } from '@/lib/syntheseAnsut';
+import { dansLaFenetre, qualifier } from '@/lib/qualificationContenu';
 
 const JOUR_MS = 24 * 3600 * 1000;
 
@@ -115,20 +116,32 @@ export function construireSujets(
   const debut24 = maintenantMs - JOUR_MS;
   const debut48 = maintenantMs - 2 * JOUR_MS;
 
-  // Articles de veille datés dans la période.
+  // Articles de veille datés RÉELLEMENT dans la période.
   const articlesPeriode = (externes ?? []).filter((a) => {
     const ms = dateMs(a.date_publication);
     return ms !== null && ms >= debut && ms <= maintenantMs;
   });
-  // Publications ANSUT collectées dans la période (fenêtre par collecte).
-  const pubsPeriode = (publications ?? []).filter((p) => {
-    const ms = dateMs(p.collecte_le) ?? dateMs(p.date_publication);
-    return ms !== null && ms >= debut && ms <= maintenantMs;
-  });
+  // Publications ANSUT : qualification commune — seules les prises de parole
+  // INSTITUTIONNELLES, datées réellement dans la période, peuvent servir de
+  // preuve d'un thème stratégique (Fanzone/sport/GITEX ancien exclus).
+  const pubsQualifiees = (publications ?? [])
+    .map((p) => ({
+      p,
+      q: qualifier(
+        {
+          texte: p.contenu,
+          published_at: p.date_publication,
+          collected_at: p.collecte_le,
+          source_officielle_ansut: true,
+        },
+        maintenantMs,
+      ),
+    }))
+    .filter((x) => x.q.eligibleProfilStrategique && dansLaFenetre(x.q, periodeJours));
 
   const sujets: Sujet[] = MISSIONS_STRATEGIQUES.map((m) => {
     const articles = articlesPeriode.filter((a) => piliersDeLActu(a).includes(m.id));
-    const pubs = pubsPeriode.filter((p) => piliersPourTexte(p.contenu ?? '').includes(m.id));
+    const pubs = pubsQualifiees.filter((x) => x.q.themes.includes(m.id)).map((x) => x.p);
 
     const nbArticles24h = articles.filter((a) => {
       const ms = dateMs(a.date_publication);
