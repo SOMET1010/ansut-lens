@@ -170,6 +170,8 @@ const App = () => (
                           des sections.
                         */}
                         <Route path="/" element={<Navigate to="/ce-matin" replace />} />
+                        <Route path="/index" element={<Navigate to="/ce-matin" replace />} />
+                        <Route path="/index.html" element={<Navigate to="/ce-matin" replace />} />
                         <Route path="/radar" element={<Navigate to="/ce-matin" replace />} />
                         <Route path="/medias" element={<Navigate to="/veille" replace />} />
                         <Route path="/actualites" element={<Navigate to="/veille" replace />} />
