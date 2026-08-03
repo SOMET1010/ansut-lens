@@ -532,9 +532,14 @@ function CarteConseiller({ conseil }: { conseil: ConseilBriefing }) {
           </CollapsibleContent>
         </Collapsible>
       )}
-      <p className="matinale-mono mt-3 inline-flex rounded border px-2 py-1 text-[0.58rem] uppercase tracking-[0.06em] text-[var(--m-ink-faint)]" style={{ borderColor: 'var(--m-line)' }}>
+      <p
+        className="matinale-mono mt-3 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[0.6rem] uppercase tracking-[0.06em] text-[var(--m-paper)]"
+        style={{ backgroundColor: 'var(--m-ink)' }}
+      >
+        <Sparkles className="h-3 w-3" aria-hidden />
         {LIBELLE_NON_INJONCTION}
       </p>
+
     </CarteLaterale>
   );
 }
