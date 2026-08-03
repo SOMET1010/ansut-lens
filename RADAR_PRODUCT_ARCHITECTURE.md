@@ -119,6 +119,43 @@ Toute affirmation doit pouvoir afficher **« Pourquoi cette information ? »**, 
 
 ---
 
+## Ce que RADAR mesure — et ce qu'il ne mesure pas
+
+RADAR mesure la **communication**, jamais la **gestion**. C'est le garde-fou qui
+l'empêche de dériver vers un cockpit de pilotage.
+
+**Dans RADAR — deux niveaux :**
+
+1. **Indicateurs de communication** (aident la DIRCOM à comprendre son impact et
+   à orienter ses prises de parole) :
+   - *Notre communication* : volumes par réseau, répartition par thème et par
+     **type** (institutionnelle / communautaire / événementielle / sportive…),
+     fréquence, évolution 7 / 30 / 90 j, part vidéo/image/texte, partenaires les
+     plus cités, hashtags, engagement réel, reprises médias.
+   - *Écosystème* : qui parle le plus, sujets qui montent / disparaissent,
+     acteurs les plus visibles, médias qui influencent la conversation.
+   - *Comparaison* : mêmes sujets que l'écosystème ? sujets non couverts ?
+     surexposés ? où est l'opportunité de prise de parole ?
+2. **Recommandations IA** — comme **conseiller, jamais décideur** : opportunité
+   de communication, risque de silence, valorisation, calendrier. Toujours
+   expliquées, sourcées, jamais une injonction.
+
+**PAS dans RADAR (relève du Cockpit) :** KPI de projets, avancement de
+programmes, budget, objectifs 2030, taux d'exécution, planning opérationnel,
+indicateurs RH, tableaux de bord de gestion.
+
+**Nommage :** la surface s'appelle **« Insights »** (ou « Indicateurs de
+communication »), jamais « Tableau de bord » — ce mot évoque le pilotage.
+
+**Charte oblige :** chaque indicateur reste soumis au test du DG (origine,
+méthode, reproductibilité, traçabilité, utilité). Pas de chiffre sans méthode,
+pas de fausse précision. Un indicateur dont la donnée n'est pas fiable n'est pas
+affiché.
+
+**RADAR comme moteur :** ces mêmes analyses seront exposées via une **API**
+(REST/GraphQL) pour alimenter le Cockpit — sans dupliquer la logique entre les
+deux applications. RADAR produit l'intelligence ; le Cockpit la consomme.
+
 ## Les deux temporalités
 
 La fraîcheur n'est **pas une valeur unique**. Deux temporalités coexistent et le
