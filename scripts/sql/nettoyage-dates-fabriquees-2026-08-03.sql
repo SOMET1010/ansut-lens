@@ -20,6 +20,11 @@ where id in (
   '07a4008e-513b-4686-8e59-a3cbfdc1eb6c'   -- Digital Fanzone
 );
 
+-- Copie pontee dans actualites (meme fausse date, ecart 0,0 j) : champions d'Ebimpe.
+update public.actualites
+set date_publication = null
+where id = '1ea5330c-75ff-4361-beb4-9c4cb64bcd45';
+
 -- A executer UNIQUEMENT si la migration de provenance est appliquee :
 -- update public.publications_institutionnelles
 -- set publication_date_source = 'relative_text', publication_date_verified = false
