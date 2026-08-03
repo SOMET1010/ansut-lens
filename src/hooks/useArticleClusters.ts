@@ -7,6 +7,9 @@ interface ExtendedActualite extends Actualite {
   score_pertinence?: number;
 }
 
+/** Entrée tolérante : accepte les variantes d'actualité issues des autres modules. */
+type ArticleEntrant = Partial<ExtendedActualite> & { id: string };
+
 export interface ArticleCluster {
   mainArticle: ExtendedActualite;
   relatedArticles: ExtendedActualite[];
@@ -128,8 +131,9 @@ const extractClusterEntities = (articles: ExtendedActualite[]): { people: string
   };
 };
 
-export function useArticleClusters(articles: ExtendedActualite[] | undefined): ArticleCluster[] {
+export function useArticleClusters(entrants: ArticleEntrant[] | undefined): ArticleCluster[] {
   return useMemo(() => {
+    const articles = entrants as ExtendedActualite[] | undefined;
     if (!articles || articles.length === 0) return [];
     
     const used = new Set<string>();
@@ -167,5 +171,5 @@ export function useArticleClusters(articles: ExtendedActualite[] | undefined): A
     }
     
     return clusters;
-  }, [articles]);
+  }, [entrants]);
 }
