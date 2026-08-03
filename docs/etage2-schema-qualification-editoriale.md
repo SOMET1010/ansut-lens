@@ -8,6 +8,12 @@
 > Critère de réussite : **un contenu est qualifié une fois, de manière traçable
 > et versionnée, puis toutes les vues réutilisent cette qualification sans
 > réinventer leur propre logique.**
+>
+> **✅ Décisions validées** (section 10) : (1) **Option B** — faits persistés,
+> éligibilités dérivées ; (2) liaison **`content_key` + FKs typées** ; (3) nommage
+> approuvé. La migration correspondante est
+> `supabase/migrations/20260803120000_editorial_qualifications.sql` — **à appliquer
+> par toi** avant tout merge.
 
 ## 0. Contrainte structurante — un contenu vit dans deux tables
 
