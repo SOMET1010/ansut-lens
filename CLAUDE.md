@@ -175,6 +175,18 @@ WYSIWYG editor with drag & drop blocks in `src/components/newsletter/studio/`:
 6. Use `toast` from `sonner` for user notifications
 7. Use `supabase.functions.invoke()` to call edge functions
 
+### Editorial architecture (permanent rule)
+
+RADAR is a **digital newsroom**, not an aggregator. Every content item is
+processed **once** by a single **editorial pipeline** — Collecte → Qualification →
+Lecture IA → Qualification éditoriale → Sujets → Briefing — and screens are only
+**views** of that shared intelligence, defined in
+**[`docs/ARCHITECTURE_EDITORIALE.md`](docs/ARCHITECTURE_EDITORIALE.md)**. Freshness
+is a property of the content, never of the screen: never recompute freshness or
+relevance rules per screen — consume the common qualification
+(`src/lib/qualificationContenu.ts`). The unit of reading is the **Sujet** (article
+= proof), not the article.
+
 ### Credibility Charter (permanent rule)
 
 Every displayed indicator, gauge, score, badge, counter or ranking MUST pass
