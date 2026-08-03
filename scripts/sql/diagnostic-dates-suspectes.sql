@@ -12,14 +12,14 @@
 --     des identifiants EXPLICITES (jamais une regle large automatique).
 --
 -- A executer dans l'editeur SQL Lovable/Supabase.
+-- NB : ce diagnostic n'utilise QUE des colonnes deja presentes ; il fonctionne
+-- meme si la migration de provenance n'a pas encore ete appliquee.
 
--- 1) Vue d'ensemble : combien de publications, combien datees, provenance.
+-- 1) Vue d'ensemble : combien de publications, combien datees.
 select
-  count(*)                                                as total,
-  count(date_publication)                                as avec_date,
-  count(*) filter (where date_publication is null)       as sans_date,
-  count(*) filter (where publication_date_verified)      as date_fiable,
-  count(*) filter (where not publication_date_verified)  as date_non_fiable
+  count(*)                                          as total,
+  count(date_publication)                           as avec_date,
+  count(*) filter (where date_publication is null)  as sans_date
 from public.publications_institutionnelles;
 
 -- 2) Lignes SUSPECTES a examiner : publications reseaux dont la date de
@@ -34,8 +34,6 @@ select
   date_publication,
   created_at                                                            as collecte_le,
   round(extract(epoch from (date_publication - created_at)) / 86400.0, 1) as ecart_jours,
-  publication_date_source,
-  publication_date_verified,
   (lower(coalesce(contenu, '')) ~
     '(football|fanzone|fan zone|champion|coupe|trophee|elephants|felicitation|gitex|ceremonie)')
                                                                         as marqueur_evenement
