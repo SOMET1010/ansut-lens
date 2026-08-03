@@ -1,12 +1,14 @@
 import { useMemo } from 'react';
 import { Actualite } from '@/hooks/useActualites';
 
-interface ExtendedActualite extends Omit<Actualite, 'created_at'> {
-  created_at?: string;
+interface ExtendedActualite extends Actualite {
   entites_personnes?: string[];
   entites_entreprises?: string[];
   score_pertinence?: number;
 }
+
+/** Entrée tolérante : accepte les variantes d'actualité issues des autres modules. */
+type ArticleEntrant = Partial<ExtendedActualite> & { id: string };
 
 export interface ArticleCluster {
   mainArticle: ExtendedActualite;
