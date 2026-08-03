@@ -10,7 +10,11 @@ import { SystemHealthWidget } from '@/components/admin/SystemHealthWidget';
 import { PageContainer, PageHeader } from '@/components/common';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
-import { GROUPES_REGLAGES, type EntreeReglage } from '@/config/reglages';
+import {
+  GROUPES_REGLAGES, ZONES_REGLAGES, ORDRE_ZONES,
+  type EntreeReglage,
+} from '@/config/reglages';
+import { cn } from '@/lib/utils';
 
 /**
  * Page des reglages, anciennement « Administration ».
@@ -95,12 +99,21 @@ export default function AdminPage() {
 
   const nbVisibles = groupesVisibles.reduce((total, groupe) => total + groupe.entrees.length, 0);
 
+  /** Regroupe les groupes visibles par espace, dans l'ordre défini. */
+  const zonesVisibles = useMemo(() => {
+    return ORDRE_ZONES.map((zone) => ({
+      zone,
+      meta: ZONES_REGLAGES[zone],
+      groupes: groupesVisibles.filter((g) => g.zone === zone),
+    })).filter((z) => z.groupes.length > 0);
+  }, [groupesVisibles]);
+
   return (
     <PageContainer>
       <div className="space-y-6">
         <PageHeader
-          titre="Réglages"
-          description="Configurer les accès, les sources surveillées, le traitement des données et les diffusions."
+          titre="Administration"
+          description="Configuration et exploitation de la plateforme — hors du produit éditorial de la DIRCOM."
           icon={Settings}
         />
 
@@ -147,59 +160,82 @@ export default function AdminPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-8">
-            {groupesVisibles.map((groupe) => (
-              <section key={groupe.id} aria-labelledby={`groupe-${groupe.id}`} className="space-y-3">
-                <div className="flex items-start gap-2.5">
-                  <groupe.icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
-                  <div className="min-w-0">
-                    <h2 id={`groupe-${groupe.id}`} className="text-sm font-semibold">
-                      {groupe.titre}
-                    </h2>
-                    <p className="text-xs text-muted-foreground">{groupe.question}</p>
-                  </div>
+          <div className="space-y-10">
+            {zonesVisibles.map(({ zone, meta, groupes }) => (
+              <section key={zone} aria-labelledby={`zone-${zone}`} className="space-y-5">
+                <div
+                  className={cn(
+                    'rounded-xl border-l-4 bg-muted/30 px-4 py-3',
+                    meta.ton === 'technique' && 'border-l-amber-500 bg-amber-500/5',
+                    meta.ton === 'transitoire' && 'border-l-muted-foreground/40 bg-transparent',
+                    meta.ton === 'neutre' && 'border-l-primary',
+                  )}
+                >
+                  <h2 id={`zone-${zone}`} className="text-base font-semibold">
+                    {meta.titre}
+                    {meta.ton === 'technique' && (
+                      <Badge variant="secondary" className="ml-2 align-middle text-[10px] font-normal">
+                        profils techniques
+                      </Badge>
+                    )}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">{meta.description}</p>
                 </div>
 
-                <ul className="grid grid-cols-1 gap-2 lg:grid-cols-2">
-                  {groupe.entrees.map((entree) => {
-                    const valeur = pastille(entree);
-                    return (
-                      <li key={entree.id}>
-                        <Link
-                          to={entree.path}
-                          className="flex min-h-11 items-start gap-3 rounded-xl border bg-card p-3.5 transition-colors hover:border-primary/40 hover:bg-accent/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          <span
-                            className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
-                            aria-hidden
-                          >
-                            <entree.icon className="h-4.5 w-4.5" />
-                          </span>
-                          <span className="min-w-0 flex-1 space-y-0.5">
-                            <span className="flex flex-wrap items-center gap-2">
-                              <span className="text-sm font-medium">{entree.titre}</span>
-                              {valeur && (
-                                <Badge
-                                  variant={estAlerte(entree) ? 'destructive' : 'secondary'}
-                                  className="shrink-0 text-[10px] font-normal"
-                                >
-                                  {valeur}
-                                </Badge>
-                              )}
-                            </span>
-                            <span className="block text-xs leading-relaxed text-muted-foreground">
-                              {entree.description}
-                            </span>
-                          </span>
-                          <ChevronRight
-                            className="mt-2 h-4 w-4 shrink-0 text-muted-foreground/50"
-                            aria-hidden
-                          />
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
+                {groupes.map((groupe) => (
+                  <section key={groupe.id} aria-labelledby={`groupe-${groupe.id}`} className="space-y-3">
+                    <div className="flex items-start gap-2.5">
+                      <groupe.icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+                      <div className="min-w-0">
+                        <h3 id={`groupe-${groupe.id}`} className="text-sm font-semibold">
+                          {groupe.titre}
+                        </h3>
+                        <p className="text-xs text-muted-foreground">{groupe.question}</p>
+                      </div>
+                    </div>
+
+                    <ul className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+                      {groupe.entrees.map((entree) => {
+                        const valeur = pastille(entree);
+                        return (
+                          <li key={entree.id}>
+                            <Link
+                              to={entree.path}
+                              className="flex min-h-11 items-start gap-3 rounded-xl border bg-card p-3.5 transition-colors hover:border-primary/40 hover:bg-accent/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                              <span
+                                className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+                                aria-hidden
+                              >
+                                <entree.icon className="h-4.5 w-4.5" />
+                              </span>
+                              <span className="min-w-0 flex-1 space-y-0.5">
+                                <span className="flex flex-wrap items-center gap-2">
+                                  <span className="text-sm font-medium">{entree.titre}</span>
+                                  {valeur && (
+                                    <Badge
+                                      variant={estAlerte(entree) ? 'destructive' : 'secondary'}
+                                      className="shrink-0 text-[10px] font-normal"
+                                    >
+                                      {valeur}
+                                    </Badge>
+                                  )}
+                                </span>
+                                <span className="block text-xs leading-relaxed text-muted-foreground">
+                                  {entree.description}
+                                </span>
+                              </span>
+                              <ChevronRight
+                                className="mt-2 h-4 w-4 shrink-0 text-muted-foreground/50"
+                                aria-hidden
+                              />
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                ))}
               </section>
             ))}
           </div>
