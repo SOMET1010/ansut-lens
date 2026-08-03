@@ -80,6 +80,7 @@ const AutoVeillePage = lazy(() => import('@/pages/admin/AutoVeillePage'));
 const CredibilitePDFPage = lazy(() => import('@/pages/admin/CredibilitePDFPage'));
 const ConnecteursSociauxPage = lazy(() => import('@/pages/admin/ConnecteursSociauxPage'));
 const GuideComApiSociauxPage = lazy(() => import('@/pages/admin/GuideComApiSociauxPage'));
+const ComptesSurveillesPage = lazy(() => import('@/pages/admin/ComptesSurveillesPage'));
 const TitrologieAdminPage = lazy(() => import('@/pages/admin/TitrologieAdminPage'));
 const PresentationPage = lazy(() => import('@/pages/PresentationPage'));
 
@@ -264,6 +265,10 @@ const App = () => (
                               <Route
                                 path="/admin/guide-com-api"
                                 element={<GuideComApiSociauxPage />}
+                              />
+                              <Route
+                                path="/admin/comptes-surveilles"
+                                element={<ComptesSurveillesPage />}
                               />
                             </Route>
 

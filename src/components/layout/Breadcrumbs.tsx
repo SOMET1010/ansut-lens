@@ -24,6 +24,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   'veille-semantique': 'Veille sémantique',
   'auto-veille': 'Veille automatique',
   credibilite: 'Crédibilité des sources',
+  'comptes-surveilles': 'Comptes surveillés',
   'connecteurs-sociaux': 'Connecteurs sociaux',
   'guide-com-api': 'Guide des API sociales',
   titrologie: 'Titrologie',

@@ -1,5 +1,6 @@
 import {
   Activity,
+  AtSign,
   Bell,
   BookOpen,
   CalendarDays,
@@ -302,6 +303,16 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
         icon: Eye,
         permission: 'manage_newsletters',
         synonymes: ['shadow tracker', 'VIP'],
+      },
+      {
+        id: 'comptes-surveilles',
+        titre: 'Comptes surveillés',
+        description:
+          'Ajouter un compte réseau social en collant son URL : RADAR en déduit les paramètres et le vérifie.',
+        path: '/admin/comptes-surveilles',
+        icon: AtSign,
+        permission: 'manage_cron_jobs',
+        synonymes: ['réseaux sociaux', 'comptes', 'ajouter un compte', 'profil', 'VIP'],
       },
       {
         id: 'connecteurs-sociaux',
