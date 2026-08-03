@@ -16,7 +16,6 @@ import {
 import { Plus, Radio, Sparkles, Bot } from 'lucide-react';
 import { useFluxVeille, useFluxActualitesCount, useFluxNewActualitesCount, useDeleteFlux, FluxVeille, useCreateFlux, FluxFormData } from '@/hooks/useFluxVeille';
 import { FluxCard, FluxFormDialog, FluxTemplateCard, fluxTemplates, FluxTemplate } from '@/components/flux';
-import { CentreSurveillanceBar } from '@/components/flux/CentreSurveillanceBar';
 import { PageContainer, PageHeader, SectionRepliable } from '@/components/common';
 
 export default function FluxPage() {
@@ -89,9 +88,6 @@ export default function FluxPage() {
           description="Les sujets et sources surveillés en continu, avec leur activité récente."
           icon={Radio}
         />
-
-        {/* Centre de Surveillance Numérique */}
-        <CentreSurveillanceBar />
 
         {/* Header — Capteurs Stratégiques */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">

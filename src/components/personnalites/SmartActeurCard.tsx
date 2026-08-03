@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Award, Building2, Network, Eye, Pencil, MoreHorizontal, Archive, Trash2, Info, Activity, ShieldAlert, Flame, Sparkles, Snowflake, AlertTriangle } from 'lucide-react';
+import { Award, Building2, Pencil, MoreHorizontal, Archive, Trash2, Info, Activity, Flame, Sparkles, AlertTriangle } from 'lucide-react';
 import { CERCLE_LABELS } from '@/hooks/usePersonnalites';
 import { MiniSparkline } from '@/components/spdi/MiniSparkline';
 import { SentimentBar } from '@/components/spdi/SentimentBar';
@@ -37,28 +37,6 @@ const getSPDIColor = (score: number) => {
   if (score >= 60) return { text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500', badge: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800' };
   if (score >= 40) return { text: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-500', badge: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/50 dark:text-orange-300 dark:border-orange-800' };
   return { text: 'text-red-600 dark:text-red-400', bg: 'bg-red-500', badge: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800' };
-};
-
-const getSPDIAdvice = (personnalite: Personnalite): { text: string; color: string } => {
-  if (!personnalite.suivi_spdi_actif) {
-    return { text: 'Activer le suivi SPDI', color: 'text-muted-foreground' };
-  }
-  const score = personnalite.score_spdi_actuel ?? 0;
-  if (score >= 80) return { text: 'Excellente visibilité', color: 'text-green-600 dark:text-green-400' };
-  if (score >= 60) return { text: 'Renforcer la présence LinkedIn', color: 'text-blue-600 dark:text-blue-400' };
-  if (score >= 40) return { text: 'Augmenter les prises de parole', color: 'text-orange-600 dark:text-orange-400' };
-  return { text: 'Action urgente recommandée', color: 'text-red-600 dark:text-red-400' };
-};
-
-// Connexions simulées basées sur le même cercle/organisation
-const getConnections = (personnalite: Personnalite, all: Personnalite[]): Personnalite[] => {
-  return all
-    .filter(p => p.id !== personnalite.id)
-    .filter(p => 
-      p.cercle === personnalite.cercle || 
-      (p.organisation && personnalite.organisation && p.organisation === personnalite.organisation)
-    )
-    .slice(0, 3);
 };
 
 const getCercleStyles = (cercle: CercleStrategique) => {
@@ -116,25 +94,18 @@ const getCategorieLabel = (categorie?: string) => {
   return labels[categorie || 'autre'] || 'Autre';
 };
 
-export function SmartActeurCard({ 
-  personnalite, 
-  allPersonnalites = [],
-  onClick, 
-  onEdit, 
-  onArchive, 
-  onDelete 
+export function SmartActeurCard({
+  personnalite,
+  onClick,
+  onEdit,
+  onArchive,
+  onDelete
 }: SmartActeurCardProps) {
   const cercleStyles = getCercleStyles(personnalite.cercle);
   const initials = `${personnalite.prenom?.[0] || ''}${personnalite.nom[0]}`.toUpperCase();
-  const connections = getConnections(personnalite, allPersonnalites);
-  const remainingConnections = Math.max(0, allPersonnalites.filter(p => 
-    p.id !== personnalite.id && p.cercle === personnalite.cercle
-  ).length - 3);
-  const influenceScore = personnalite.score_influence ?? 50;
 
   const suiviActif = personnalite.suivi_spdi_actif ?? false;
   const scoreSPDI = personnalite.score_spdi_actuel;
-  const spdiAdvice = getSPDIAdvice(personnalite);
   const dashboard = useActeurDigitalDashboard(
     suiviActif ? personnalite.id : undefined,
     personnalite.cercle
@@ -349,69 +320,6 @@ export function SmartActeurCard({
         </div>
       )}
 
-      {/* Footer : Connexions, Influence & Conseil SPDI */}
-      <div className="pt-4 border-t border-border/30 flex flex-col gap-3 mt-auto">
-        <div className="flex items-center justify-between">
-          {/* Mini-réseau de connexions */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-muted-foreground font-medium uppercase flex items-center gap-1">
-              <Network className="h-3 w-3" /> Connexions
-            </span>
-            <div className="flex -space-x-2">
-              {connections.length > 0 ? (
-                <>
-                  {connections.map((c) => (
-                    <TooltipProvider key={c.id}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Avatar className="h-6 w-6 border-2 border-background cursor-pointer">
-                            {c.photo_url && <AvatarImage src={c.photo_url} alt={c.nom} />}
-                            <AvatarFallback className="text-[8px] font-bold bg-muted">
-                              {c.nom[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">
-                          <p className="text-xs">{c.prenom} {c.nom}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ))}
-                  {remainingConnections > 0 && (
-                    <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[9px] font-medium text-muted-foreground border-2 border-background">
-                      +{remainingConnections}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <span className="text-[10px] text-muted-foreground/60">—</span>
-              )}
-            </div>
-          </div>
-
-          {/* Jauge d'influence */}
-          <div className="text-right">
-            <span className="text-[10px] text-muted-foreground font-medium uppercase">Influence</span>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-primary rounded-full transition-all" 
-                  style={{ width: `${influenceScore}%` }}
-                />
-              </div>
-              <span className="text-xs font-bold text-primary">
-                {influenceScore}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Mini-conseil SPDI */}
-        <div className={cn('text-[11px] font-medium flex items-center gap-1', spdiAdvice.color)}>
-          <Activity className="h-3 w-3 shrink-0" />
-          {spdiAdvice.text}
-        </div>
-      </div>
     </div>
   );
 }

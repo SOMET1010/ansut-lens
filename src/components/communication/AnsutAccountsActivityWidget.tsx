@@ -27,14 +27,6 @@ const PILIER_LABELS: Record<string, string> = {
   institutionnel: 'Institutionnel', evenementiel: 'Événementiel', autre: 'Autre',
 };
 
-function ScoreBadge({ score }: { score: number }) {
-  const color = score >= 70 ? 'bg-[hsl(var(--signal-positive))] text-[hsl(var(--signal-positive))] border-[hsl(var(--signal-positive))]'
-    : score >= 50 ? 'bg-[hsl(var(--signal-warning))] text-[hsl(var(--signal-warning))] border-[hsl(var(--signal-warning))]'
-    : 'bg-[hsl(var(--signal-critical))] text-[hsl(var(--signal-critical))] border-[hsl(var(--signal-critical))]';
-  const label = score >= 70 ? 'Bon' : score >= 50 ? 'Moyen' : 'Faible';
-  return <Badge className={`${color} border`}>{score}/100 · {label}</Badge>;
-}
-
 function StatutBadge({ statut }: { statut: AccountActivity['statut_activite'] }) {
   const map = {
     actif: { c: 'bg-[hsl(var(--signal-positive))] text-[hsl(var(--signal-positive))] border-[hsl(var(--signal-positive))]', l: 'Actif' },
@@ -138,7 +130,6 @@ export function AnsutAccountsActivityWidget() {
     try {
       const { data: res, error } = await supabase.functions.invoke('analyse-activite-ansut', {
         body: {
-          visibilityScore: data.visibilityScore,
           totalPubs: data.totalPubs,
           totalPubs7j: data.totalPubs7j,
           variationGlobale: data.variationGlobale,
@@ -182,7 +173,6 @@ export function AnsutAccountsActivityWidget() {
             <CardTitle className="text-base flex items-center gap-2 flex-wrap">
               <Activity className="h-5 w-5 text-primary" />
               Activité de nos comptes — 24 heures et 7 jours
-              <ScoreBadge score={data.visibilityScore} />
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
               {data.totalPubs} pub/24h ({data.variationGlobale >= 0 ? '+' : ''}{data.variationGlobale}% vs veille) · {data.totalPubs7j} pub/7j · {data.accounts.length} comptes suivis · {data.inactiveCount} {data.inactiveCount > 1 ? 'dormants' : 'dormant'}

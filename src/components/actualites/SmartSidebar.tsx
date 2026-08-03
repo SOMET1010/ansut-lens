@@ -119,8 +119,7 @@ export function SmartSidebar({
               <TooltipContent className="max-w-xs text-xs">
                 <p className="font-semibold mb-1">Source des scores</p>
                 <p className="text-muted-foreground">
-                  Calculé par IA (Gemini 2.5 Flash) sur {sentimentHealth.enrichedCount} article{sentimentHealth.enrichedCount > 1 ? 's' : ''} enrichi{sentimentHealth.enrichedCount > 1 ? 's' : ''} des 7 derniers jours.
-                  Échelle : -1 (très négatif) → +1 (très positif).
+                  Tonalité estimée par IA (Gemini 2.5 Flash) sur {sentimentHealth.enrichedCount} article{sentimentHealth.enrichedCount > 1 ? 's' : ''} enrichi{sentimentHealth.enrichedCount > 1 ? 's' : ''} des 7 derniers jours. Lecture qualitative : positive, neutre ou négative.
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -135,15 +134,16 @@ export function SmartSidebar({
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className={cn(
-                "text-2xl font-black",
+                "text-lg font-bold",
                 sentimentHealth.overallAvg > 0.1 ? "text-green-600 dark:text-green-400" :
                 sentimentHealth.overallAvg < -0.1 ? "text-red-600 dark:text-red-400" :
                 "text-muted-foreground"
               )}>
-                {sentimentHealth.overallAvg > 0 ? '+' : ''}{sentimentHealth.overallAvg.toFixed(2)}
+                {sentimentHealth.overallAvg > 0.1 ? 'Plutôt positive' :
+                 sentimentHealth.overallAvg < -0.1 ? 'Plutôt négative' : 'Neutre'}
               </span>
               <span className="text-[10px] text-muted-foreground leading-tight">
-                Score<br/>global
+                Tonalité<br/>d'ensemble
               </span>
             </div>
             <Tooltip>
@@ -193,12 +193,12 @@ export function SmartSidebar({
                   <span className="truncate flex-1 text-foreground">{cat.category}</span>
                   <span className="text-muted-foreground">({cat.count})</span>
                   <span className={cn(
-                    "font-semibold w-10 text-right",
+                    "text-[11px] w-14 text-right",
                     cat.alert ? "text-red-600 dark:text-red-400" :
                     cat.avgSentiment > 0.1 ? "text-green-600 dark:text-green-400" :
                     "text-muted-foreground"
                   )}>
-                    {cat.avgSentiment > 0 ? '+' : ''}{cat.avgSentiment.toFixed(1)}
+                    {cat.avgSentiment > 0.1 ? 'positive' : cat.avgSentiment < -0.1 ? 'négative' : 'neutre'}
                   </span>
                   {cat.alert && <AlertTriangle className="h-3 w-3 text-red-500 shrink-0" />}
                 </div>

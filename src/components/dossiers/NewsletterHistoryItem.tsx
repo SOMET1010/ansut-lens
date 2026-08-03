@@ -13,9 +13,6 @@ interface NewsletterHistoryItemProps {
 export function NewsletterHistoryItem({ newsletter, onClick }: NewsletterHistoryItemProps) {
   const date = new Date(newsletter.date_envoi || newsletter.created_at || new Date());
   const title = newsletter.contenu?.edito?.texte?.slice(0, 40) || `Newsletter #${newsletter.numero}`;
-  
-  // Simulated open rate (would come from email analytics in production)
-  const openRate = Math.floor(60 + Math.random() * 25);
 
   const isEnvoye = newsletter.statut === 'envoye';
 
@@ -46,7 +43,7 @@ export function NewsletterHistoryItem({ newsletter, onClick }: NewsletterHistory
               className="text-green-600 bg-green-50 dark:bg-green-950 dark:text-green-400 border-0 text-[10px]"
             >
               <Send className="h-3 w-3 mr-1" />
-              Envoyé • {openRate}% ouv.
+              Envoyé
             </Badge>
           ) : (
             <Badge 

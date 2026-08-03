@@ -52,9 +52,9 @@ export function RadarVisualization({ personnalites, onActeurClick }: RadarVisual
         const jitter = ((p.id.charCodeAt(0) % 10) - 5) * 3;
         const x = 50 + (radius + jitter) * Math.cos(angle);
         const y = 50 + (radius + jitter) * Math.sin(angle);
-        // Taille proportionnelle au score d'influence (min 4, max 10)
-        const size = 4 + (p.score_influence / 100) * 6;
-        
+        // Taille uniforme : la position encode déjà le cercle de proximité.
+        const size = 7;
+
         result.push({ personnalite: p, x, y, size });
       });
     });
@@ -151,7 +151,6 @@ export function RadarVisualization({ personnalites, onActeurClick }: RadarVisual
                     )}>
                       Cercle {personnalite.cercle}
                     </span>
-                    <span>Score: {personnalite.score_influence}</span>
                   </div>
                 </div>
               </TooltipContent>
