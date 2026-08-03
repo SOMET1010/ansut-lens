@@ -4,10 +4,12 @@ import { fr } from 'date-fns/locale';
 import {
   AlertTriangle,
   ChevronRight,
+  Circle,
   Info,
   Newspaper,
   Radio,
   Share2,
+  ShieldCheck,
   Sparkles,
   Star,
   Target,
@@ -27,10 +29,13 @@ import {
   ANCRES,
   LIBELLE_NON_INJONCTION,
   type Briefing,
+  type ConfianceBriefing,
   type ConseilBriefing,
   type EchoBriefing,
+  type NiveauConfiance,
   type PointRetenir,
   type Preuve,
+  type RepartitionPreuves,
   type SignalBriefing,
   type SujetBriefing,
 } from '@/lib/briefing';
@@ -99,6 +104,7 @@ function GroupesPreuves({ preuves }: { preuves: Preuve[] }) {
   const groupes = [
     { type: 'ansut' as const, label: 'Publications ANSUT' },
     { type: 'presse' as const, label: 'Reprise presse' },
+    { type: 'reseaux' as const, label: 'Écho réseaux' },
     { type: 'partenaire' as const, label: 'Partenaires cités' },
   ];
   return (
@@ -125,21 +131,70 @@ function GroupesPreuves({ preuves }: { preuves: Preuve[] }) {
   );
 }
 
+/** Répartition des preuves par nature — visible avant même le dépliage. */
+function RepartitionLigne({ r }: { r: RepartitionPreuves }) {
+  const parts = [
+    { n: r.presse, label: 'presse' },
+    { n: r.reseaux, label: 'réseaux' },
+    { n: r.ansut, label: 'ANSUT' },
+    { n: r.partenaires, label: 'partenaires' },
+  ].filter((p) => p.n > 0);
+  if (parts.length === 0) return null;
+  return (
+    <p className="matinale-mono text-[0.68rem] tabular-nums text-[var(--m-ink-soft)]">
+      {parts.map((p, i) => (
+        <span key={p.label}>
+          {i > 0 && <span className="text-[var(--m-ink-faint)]"> · </span>}
+          <b className="font-semibold text-[var(--m-ink)]">{p.n}</b> {p.label}
+        </span>
+      ))}
+    </p>
+  );
+}
+
+function styleConfiance(niveau: NiveauConfiance): { fg: string; bg: string; libelle: string } {
+  if (niveau === 'élevé') return { fg: 'var(--m-accent)', bg: 'var(--m-accent-wash)', libelle: 'Élevé' };
+  if (niveau === 'solide') return { fg: 'var(--m-accent-2)', bg: 'var(--m-accent-wash)', libelle: 'Solide' };
+  return { fg: 'var(--m-signal)', bg: 'var(--m-signal-wash)', libelle: 'Émergent' };
+}
+
+/** Confiance fondée sur la qualité des preuves — jamais une confiance d'IA. */
+function ConfianceBadge({ confiance }: { confiance: ConfianceBriefing }) {
+  const s = styleConfiance(confiance.niveau);
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2">
+      <span
+        className="matinale-mono inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.08em]"
+        style={{ color: s.fg, backgroundColor: s.bg }}
+      >
+        <ShieldCheck className="h-3 w-3" aria-hidden />
+        Sujet étayé · {s.libelle}
+      </span>
+      <span className="text-[0.72rem] text-[var(--m-ink-faint)]">{confiance.justification}</span>
+    </div>
+  );
+}
+
 function PourquoiCeSujet({ sujet }: { sujet: SujetBriefing }) {
   if (sujet.nbPreuves === 0) return null;
   return (
-    <Collapsible className="mt-5 overflow-hidden rounded-lg border border-[var(--m-line)] bg-[var(--m-paper-2)]">
-      <CollapsibleTrigger className="group flex w-full items-center gap-2 px-4 py-3 text-left text-[0.9rem] font-semibold text-[var(--m-ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--m-accent)]">
+    <Collapsible className="mt-5 overflow-hidden rounded-lg border border-[var(--m-accent)] bg-[var(--m-accent-wash)]">
+      <CollapsibleTrigger className="group flex w-full items-center gap-2 px-4 pt-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--m-accent)]">
         <ChevronRight
           className="h-4 w-4 shrink-0 text-[var(--m-accent)] transition-transform group-data-[state=open]:rotate-90"
           aria-hidden
         />
-        <span className="matinale-serif italic">Pourquoi ce sujet&nbsp;?</span>
-        <span className="matinale-mono ml-auto text-[0.68rem] font-normal tabular-nums text-[var(--m-ink-faint)]">
+        <span className="matinale-serif text-[1rem] font-semibold italic text-[var(--m-accent)]">
+          Pourquoi ce sujet&nbsp;?
+        </span>
+        <span className="matinale-mono ml-auto text-[0.72rem] font-semibold tabular-nums text-[var(--m-accent)]">
           {sujet.nbPreuves} {sujet.nbPreuves > 1 ? 'preuves' : 'preuve'}
         </span>
       </CollapsibleTrigger>
-      <CollapsibleContent className="border-t border-[var(--m-line)] px-4 pb-4 pt-1">
+      <div className="px-4 pb-3 pl-10">
+        <RepartitionLigne r={sujet.repartition} />
+      </div>
+      <CollapsibleContent className="border-t border-[var(--m-line)] bg-[var(--m-paper-2)] px-4 pb-4 pt-1">
         <GroupesPreuves preuves={sujet.preuves} />
         {sujet.limites && (
           <p className="mt-3 border-t border-dashed border-[var(--m-line)] pt-2 text-[0.72rem] italic text-[var(--m-ink-faint)]">
@@ -155,11 +210,13 @@ function PourquoiCeSujet({ sujet }: { sujet: SujetBriefing }) {
 
 function tonClasses(ton: PointRetenir['ton']): string {
   if (ton === 'attention') return 'text-[var(--m-signal)]';
+  if (ton === 'calme') return 'text-[var(--m-ink-faint)]';
   return 'text-[var(--m-accent)]';
 }
 
 function IconePorte({ ton }: { ton: PointRetenir['ton'] }) {
   const cls = cn('h-5 w-5 shrink-0', tonClasses(ton));
+  if (ton === 'calme') return <Circle className={cls} aria-hidden />;
   if (ton === 'attention') return <AlertTriangle className={cls} aria-hidden />;
   if (ton === 'positif') return <Target className={cls} aria-hidden />;
   return <Star className={cls} aria-hidden />;
@@ -220,6 +277,8 @@ function SujetUne({ sujet, recitLoading }: { sujet: SujetBriefing; recitLoading:
       <h2 className="matinale-serif mt-2 text-balance text-[clamp(1.6rem,3.4vw,2.4rem)] font-bold leading-[1.08] tracking-tight text-[var(--m-ink)]">
         {sujet.titre}
       </h2>
+
+      <ConfianceBadge confiance={sujet.confiance} />
 
       <p className="matinale-serif mt-3 max-w-[42rem] text-[1.08rem] leading-relaxed text-[var(--m-ink)]">
         {sujet.chapo}
@@ -366,7 +425,17 @@ function CarteEcho({ echo }: { echo: EchoBriefing }) {
   );
 }
 
-function CarteAExaminer({ signal }: { signal: SignalBriefing }) {
+function CarteAExaminer({ signal }: { signal: SignalBriefing | null }) {
+  if (!signal) {
+    return (
+      <CarteLaterale id={ANCRES.aExaminer} eyebrow={<Eyebrow>À examiner aujourd’hui</Eyebrow>}>
+        <p className="text-[0.84rem] leading-snug text-[var(--m-ink-soft)]">
+          Aucun signal à examiner aujourd’hui. La surveillance reste active — mieux vaut un silence
+          honnête qu’une alerte fabriquée.
+        </p>
+      </CarteLaterale>
+    );
+  }
   return (
     <CarteLaterale
       id={ANCRES.aExaminer}
@@ -400,7 +469,23 @@ function CarteAExaminer({ signal }: { signal: SignalBriefing }) {
   );
 }
 
-function CarteConseiller({ conseil }: { conseil: ConseilBriefing }) {
+function CarteConseiller({ conseil }: { conseil: ConseilBriefing | null }) {
+  if (!conseil) {
+    return (
+      <CarteLaterale id={ANCRES.conseil} eyebrow={<Eyebrow>Le conseiller</Eyebrow>}>
+        <p className="matinale-serif text-[0.98rem] italic leading-snug text-[var(--m-ink-soft)]">
+          Pas d’opportunité franche ce matin&nbsp;: la présence de l’ANSUT est alignée avec l’activité
+          de l’écosystème.
+        </p>
+        <p
+          className="matinale-mono mt-3 inline-flex rounded border px-2 py-1 text-[0.58rem] uppercase tracking-[0.06em] text-[var(--m-ink-faint)]"
+          style={{ borderColor: 'var(--m-line)' }}
+        >
+          {LIBELLE_NON_INJONCTION}
+        </p>
+      </CarteLaterale>
+    );
+  }
   return (
     <CarteLaterale id={ANCRES.conseil} eyebrow={<Eyebrow>Le conseiller</Eyebrow>}>
       <p className="matinale-serif text-[1rem] italic leading-snug text-[var(--m-ink)]">
@@ -568,17 +653,24 @@ export default function LaMatinelePage() {
                         <CarteSujetSecondaire key={s.id} sujet={s} index={i + 2} />
                       ))}
                     </div>
+                    <Link
+                      to="/veille"
+                      className="matinale-mono mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[var(--m-line)] bg-[var(--m-paper-2)] px-3 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.06em] text-[var(--m-accent)] transition-colors hover:bg-[var(--m-paper-3)]"
+                    >
+                      Voir tous les sujets
+                      <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+                    </Link>
                   </section>
                 )}
 
                 <ActivitesRecentes briefing={briefing} />
               </div>
 
-              {/* Colonne latérale */}
+              {/* Colonne latérale — les 3 cartes restent toujours présentes. */}
               <aside className="space-y-4">
                 {briefing.echo && <CarteEcho echo={briefing.echo} />}
-                {briefing.aExaminer && <CarteAExaminer signal={briefing.aExaminer} />}
-                {briefing.conseil && <CarteConseiller conseil={briefing.conseil} />}
+                <CarteAExaminer signal={briefing.aExaminer} />
+                <CarteConseiller conseil={briefing.conseil} />
               </aside>
             </div>
           </>

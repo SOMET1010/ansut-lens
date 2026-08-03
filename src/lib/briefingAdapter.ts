@@ -21,29 +21,57 @@ import type { Sujet } from '@/lib/sujets';
 import type { RecitSujet } from '@/hooks/useRecitsSujets';
 import type { EchoMediatique } from '@/lib/insightsCommunication';
 import type { PublicationAnsut } from '@/hooks/useAnsutPublications';
-import type { Signal } from '@/types';
+import type { Actualite, Signal } from '@/types';
+import { MISSIONS_STRATEGIQUES } from '@/config/missions';
 import { nettoyerTitre, nettoyerExtrait } from '@/lib/nettoyerExtrait';
 import {
   ANCRES,
   type ActiviteBriefing,
   type Briefing,
+  type ConfianceBriefing,
   type ConseilBriefing,
   type EchoBriefing,
   type Preuve,
   type PointRetenir,
   type ProfondeurLecture,
+  type RepartitionPreuves,
   type SignalBriefing,
   type SujetBriefing,
 } from '@/lib/briefing';
 
-/** Nombre de sujets secondaires affichés sous la Une. */
-const MAX_AUTRES_SUJETS = 6;
+/** Nombre de sujets secondaires affichés sous la Une (3 cartes, pas une liste). */
+const MAX_AUTRES_SUJETS = 3;
 /** Preuves écosystème minimales pour parler d'un « terrain vacant » (conseiller). */
 const SEUIL_OPPORTUNITE = 3;
 /** Fraîcheur maximale d'un signal remonté « à examiner » (jours). */
 const FRAICHEUR_SIGNAL_JOURS = 30;
 /** Articles d'écho médiatique affichés comme preuves. */
 const MAX_ARTICLES_ECHO = 8;
+
+/** Plateformes considérées comme « réseaux sociaux » côté veille externe. */
+const RESEAUX_SOCIAUX = new Set([
+  'twitter',
+  'x',
+  'facebook',
+  'linkedin',
+  'instagram',
+  'tiktok',
+  'youtube',
+  'threads',
+  'social',
+  'reseaux',
+]);
+
+/** Correspondance id de pilier → thème court affichable. */
+const THEME_PAR_PILIER: Record<string, string> = Object.fromEntries(
+  MISSIONS_STRATEGIQUES.map((m) => [m.id, m.nomCourt]),
+);
+
+/** Un article externe est-il une prise de parole « réseaux sociaux » ? */
+function estReseauSocial(a: Actualite): boolean {
+  const t = (a.source_type ?? '').toLowerCase();
+  return RESEAUX_SOCIAUX.has(t);
+}
 
 /** Données brutes issues des hooks existants — entrée de l'adaptateur. */
 export interface SourceBriefing {
@@ -97,7 +125,7 @@ function condenser(texte: string, maxPhrases = 2): string {
   return phrases.slice(0, maxPhrases).join(' ');
 }
 
-/** Preuves d'un sujet : voix ANSUT, reprise presse, partenaires cités. */
+/** Preuves d'un sujet : voix ANSUT, reprise presse, écho réseaux, partenaires. */
 function preuvesDuSujet(s: Sujet): Preuve[] {
   const ansut: Preuve[] = s.publications.map((p) => ({
     id: p.id,
@@ -107,10 +135,10 @@ function preuvesDuSujet(s: Sujet): Preuve[] {
     url: p.url_original ?? null,
     dateMs: dateMsPublication(p),
   }));
-  const presse: Preuve[] = s.articles.map((a) => ({
+  const externes: Preuve[] = s.articles.map((a) => ({
     id: a.id,
     source: a.source_nom ?? 'Source',
-    type: 'presse',
+    type: estReseauSocial(a) ? 'reseaux' : 'presse',
     titre: nettoyerTitre(a.titre),
     url: a.source_url ?? null,
     dateMs: a.date_publication ? new Date(a.date_publication).getTime() : null,
@@ -123,22 +151,73 @@ function preuvesDuSujet(s: Sujet): Preuve[] {
     url: null,
     dateMs: null,
   }));
-  return [...ansut, ...presse, ...partenaires];
+  return [...ansut, ...externes, ...partenaires];
+}
+
+/** Répartition des preuves par nature. */
+function repartitionDes(preuves: Preuve[]): RepartitionPreuves {
+  return {
+    presse: preuves.filter((p) => p.type === 'presse').length,
+    reseaux: preuves.filter((p) => p.type === 'reseaux').length,
+    ansut: preuves.filter((p) => p.type === 'ansut').length,
+    partenaires: preuves.filter((p) => p.type === 'partenaire').length,
+  };
+}
+
+/**
+ * Thèmes du sujet = piliers stratégiques réellement touchés par ses articles
+ * (jamais des acteurs). Le pilier du sujet vient en premier.
+ */
+function themesDuSujet(s: Sujet): string[] {
+  const themes: string[] = [];
+  const ajouter = (nom: string | undefined | null) => {
+    if (nom && !themes.includes(nom)) themes.push(nom);
+  };
+  ajouter(s.nomCourt);
+  for (const a of s.articles) {
+    const ids = a.piliers && a.piliers.length ? a.piliers : a.pilier_id ? [a.pilier_id] : [];
+    for (const id of ids) ajouter(THEME_PAR_PILIER[id]);
+  }
+  return themes.slice(0, 3);
+}
+
+/**
+ * Confiance fondée sur la QUALITÉ DES PREUVES (jamais une confiance d'IA) :
+ *  - volume de preuves,
+ *  - diversité des origines (nombre de natures présentes),
+ *  - nombre de sources distinctes.
+ * Reproductible et exposé ; volontairement qualitatif (pas de pourcentage).
+ */
+function confianceDe(preuves: Preuve[], repartition: RepartitionPreuves): ConfianceBriefing {
+  const nb = preuves.length;
+  const diversite = [repartition.presse, repartition.reseaux, repartition.ansut, repartition.partenaires].filter(
+    (n) => n > 0,
+  ).length;
+  const sourcesDistinctes = new Set(preuves.map((p) => p.source.toLowerCase())).size;
+
+  const niveau = nb >= 12 && diversite >= 3 ? 'élevé' : nb >= 5 && diversite >= 2 ? 'solide' : 'émergent';
+  const justification = `${nb} ${nb > 1 ? 'preuves' : 'preuve'} · ${diversite} ${
+    diversite > 1 ? 'types de sources' : 'type de source'
+  } · ${sourcesDistinctes} ${sourcesDistinctes > 1 ? 'sources distinctes' : 'source'}`;
+  return { niveau, justification };
 }
 
 /** Projette un `Sujet` (moteur existant) sur un `SujetBriefing` (contrat de vue). */
 function versSujetBriefing(s: Sujet, recit: RecitSujet | undefined): SujetBriefing {
   const recitParIA = !!(recit && recit.narrative && recit.narrative.trim());
   const preuves = preuvesDuSujet(s);
+  const repartition = repartitionDes(preuves);
   return {
     id: s.id,
     rubrique: s.nomCourt,
     titre: recit?.headline ? nettoyerTitre(recit.headline) : s.nom,
-    chapo: recitParIA ? condenser(recit!.narrative) : s.resumeFactuel,
+    chapo: recitParIA ? condenser(recit!.narrative, 3) : condenser(s.resumeFactuel, 3),
     recitParIA,
-    tags: s.partenaires.slice(0, 3),
+    tags: themesDuSujet(s),
     preuves,
     nbPreuves: preuves.length,
+    repartition,
+    confiance: confianceDe(preuves, repartition),
     limites: recit?.limitations?.trim() ? recit.limitations.trim() : null,
   };
 }
@@ -164,22 +243,42 @@ function versEcho(echo: EchoMediatique | null): EchoBriefing | null {
   };
 }
 
-/** Premier signal récent (non confirmé) → « À examiner ». */
-function versSignal(signaux: Signal[], maintenantMs: number): SignalBriefing | null {
+/**
+ * « À examiner » — quelque chose de non confirmé qui mérite une qualification
+ * humaine. Priorité au signal détecté (table `signaux`) ; à défaut, on remonte
+ * le sujet le plus ÉMERGENT non encore adressé par l'ANSUT (fait réel tiré des
+ * compteurs du sujet, pas une invention).
+ */
+function versSignal(signaux: Signal[], sujets: Sujet[], maintenantMs: number): SignalBriefing | null {
   const limite = maintenantMs - FRAICHEUR_SIGNAL_JOURS * 24 * 3600 * 1000;
   const signal = signaux.find((s) => {
     if (s.niveau !== 'critical' && s.niveau !== 'warning') return false;
     const d = dateMsSignal(s);
     return d === null || d >= limite;
   });
-  if (!signal) return null;
+  if (signal) {
+    return {
+      titre: nettoyerTitre(signal.titre),
+      corps:
+        signal.description?.trim() ||
+        'Signal détecté, non confirmé. À qualifier avant toute réaction — l’outil ne tranche pas à votre place.',
+      sources: signal.source_type ? `Source : ${signal.source_type}` : 'Signal détecté',
+      detecteLeMs: dateMsSignal(signal),
+      confirme: false,
+    };
+  }
+
+  // Repli : un sujet émergent (en hausse marquée sur 24 h) que l'ANSUT n'a pas
+  // encore adressé — à examiner avant toute prise de parole.
+  const emergent = sujets.find(
+    (s) => s.mouvement === 'emergent' && s.nbArticles24h >= 2 && s.nbPublications === 0,
+  );
+  if (!emergent) return null;
   return {
-    titre: nettoyerTitre(signal.titre),
-    corps:
-      signal.description?.trim() ||
-      'Signal détecté, non confirmé. À qualifier avant toute réaction — l’outil ne tranche pas à votre place.',
-    sources: signal.source_type ? `Source : ${signal.source_type}` : 'Signal détecté',
-    detecteLeMs: dateMsSignal(signal),
+    titre: emergent.nom,
+    corps: `Sujet émergent dans l’écosystème (${emergent.nbArticles24h} contenus sur 24 h), pas encore adressé par l’ANSUT. À examiner avant toute prise de parole.`,
+    sources: `${emergent.nbArticles24h} contenus sur 24 h`,
+    detecteLeMs: null,
     confirme: false,
   };
 }
@@ -193,11 +292,18 @@ function versSignal(signaux: Signal[], maintenantMs: number): SignalBriefing | n
  * « une opportunité, jamais une injonction ».
  */
 function versConseil(sujets: Sujet[]): { conseil: ConseilBriefing | null; nbOpportunites: number; rubrique: string | null } {
-  const vacants = sujets
+  // Terrain strictement vacant : l'écosystème parle, l'ANSUT n'a rien publié.
+  const vacantsStricts = sujets
     .filter((s) => s.nbPublications === 0 && s.nbArticles >= SEUIL_OPPORTUNITE)
     .sort((a, b) => b.nbArticles - a.nbArticles);
+  // Terrain sous-couvert : l'écosystème parle beaucoup plus que l'ANSUT.
+  const sousCouverts = sujets
+    .filter((s) => s.nbPublications >= 1 && s.nbArticles >= 4 && s.nbArticles >= s.nbPublications * 4)
+    .sort((a, b) => b.nbArticles - a.nbArticles);
+  const vacants = vacantsStricts.length > 0 ? vacantsStricts : sousCouverts;
   if (vacants.length === 0) return { conseil: null, nbOpportunites: 0, rubrique: null };
   const top = vacants[0];
+  const strict = top.nbPublications === 0;
   const preuves: Preuve[] = top.articles.slice(0, 5).map((a) => ({
     id: a.id,
     source: a.source_nom ?? 'Source',
@@ -208,8 +314,12 @@ function versConseil(sujets: Sujet[]): { conseil: ConseilBriefing | null; nbOppo
   }));
   return {
     conseil: {
-      texte: `L’écosystème parle de « ${top.nomCourt} » (${top.nbArticles} contenus) ; l’ANSUT n’a pas publié sur ce thème. Une prise de parole occuperait un terrain aujourd’hui vacant.`,
-      fondement: `${top.nbArticles} contenus écosystème · 0 publication ANSUT sur ce thème / ${top.periodeJours} j`,
+      texte: strict
+        ? `L’écosystème parle de « ${top.nomCourt} » (${top.nbArticles} contenus) ; l’ANSUT n’a pas publié sur ce thème. Une prise de parole occuperait un terrain aujourd’hui vacant.`
+        : `Sur « ${top.nomCourt} », l’écosystème est nettement plus actif que l’ANSUT (${top.nbArticles} contenus pour ${top.nbPublications} publication${top.nbPublications > 1 ? 's' : ''}). Une prise de parole rééquilibrerait la présence.`,
+      fondement: strict
+        ? `${top.nbArticles} contenus écosystème · 0 publication ANSUT sur ce thème / ${top.periodeJours} j`
+        : `${top.nbArticles} contenus écosystème · ${top.nbPublications} publication${top.nbPublications > 1 ? 's' : ''} ANSUT sur ce thème / ${top.periodeJours} j`,
       preuves,
     },
     nbOpportunites: vacants.length,
@@ -288,34 +398,36 @@ export function assemblerBriefing(
     .map((s) => versSujetBriefing(s, src.recits[s.id]));
 
   const echo = versEcho(src.echo);
-  const aExaminer = versSignal(src.signaux, src.maintenantMs);
+  const aExaminer = versSignal(src.signaux, src.sujets, src.maintenantMs);
   const { conseil, nbOpportunites, rubrique } = versConseil(src.sujets);
 
-  const aRetenir: PointRetenir[] = [];
-  if (sujetUne) {
-    aRetenir.push({
+  // Les 3 portes d'entrée sont TOUJOURS présentes — une catégorie vide s'affiche
+  // dans un état « calme » honnête plutôt que de disparaître (sinon la zone
+  // paraît inachevée). Jamais de porte fabriquée : juste l'état réel exposé.
+  const aRetenir: PointRetenir[] = [
+    {
       intitule: '1 sujet dominant',
-      detail: sujetUne.titre,
+      detail: sujetUne ? sujetUne.titre : 'Aucun sujet dominant ce matin',
       ancre: `#${ANCRES.sujetUne}`,
-      ton: 'neutre',
-    });
-  }
-  if (aExaminer) {
-    aRetenir.push({
-      intitule: '1 signal à examiner',
-      detail: aExaminer.titre,
+      ton: sujetUne ? 'neutre' : 'calme',
+    },
+    {
+      intitule: aExaminer ? '1 signal à examiner' : 'Aucun signal à examiner',
+      detail: aExaminer ? aExaminer.titre : 'La surveillance reste active',
       ancre: `#${ANCRES.aExaminer}`,
-      ton: 'attention',
-    });
-  }
-  if (conseil && nbOpportunites > 0) {
-    aRetenir.push({
-      intitule: `${nbOpportunites} ${nbOpportunites > 1 ? 'opportunités' : 'opportunité'}`,
-      detail: rubrique ? `Terrain vacant : ${rubrique}` : 'Terrain éditorial vacant',
+      ton: aExaminer ? 'attention' : 'calme',
+    },
+    {
+      intitule:
+        conseil && nbOpportunites > 0
+          ? `${nbOpportunites} ${nbOpportunites > 1 ? 'opportunités' : 'opportunité'}`
+          : 'Aucune opportunité franche',
+      detail:
+        conseil && rubrique ? `Terrain à occuper : ${rubrique}` : 'Couverture alignée avec l’écosystème',
       ancre: `#${ANCRES.conseil}`,
-      ton: 'positif',
-    });
-  }
+      ton: conseil && nbOpportunites > 0 ? 'positif' : 'calme',
+    },
+  ];
 
   const tousSujets = sujetUne ? [sujetUne, ...autresSujets] : autresSujets;
 

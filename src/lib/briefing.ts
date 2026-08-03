@@ -30,10 +30,31 @@ export interface Preuve {
   /** Origine de la preuve, pour l'affichage (« LinkedIn », « Fratmat », « Site »…). */
   source: string;
   /** Nature de la preuve — détermine le regroupement dans « Pourquoi ce sujet ? ». */
-  type: 'ansut' | 'presse' | 'partenaire';
+  type: 'ansut' | 'presse' | 'reseaux' | 'partenaire';
   titre: string;
   url: string | null;
   dateMs: number | null;
+}
+
+/** Répartition des preuves par nature — affichée avant même le dépliage. */
+export interface RepartitionPreuves {
+  presse: number;
+  reseaux: number;
+  ansut: number;
+  partenaires: number;
+}
+
+/**
+ * Niveau de confiance dans un sujet — fondé sur la QUALITÉ DES PREUVES, jamais
+ * sur une confiance d'IA. Reproductible et explicable (nombre de preuves,
+ * diversité des origines, nombre de sources distinctes). Volontairement
+ * qualitatif : pas de pourcentage (la Charte proscrit la fausse précision).
+ */
+export type NiveauConfiance = 'émergent' | 'solide' | 'élevé';
+export interface ConfianceBriefing {
+  niveau: NiveauConfiance;
+  /** Méthode exposée : « 61 preuves · 4 types de sources · 12 sources distinctes ». */
+  justification: string;
 }
 
 /** Un sujet du briefing (l'unité de lecture : 1 carte = 1 sujet, l'article est une preuve). */
@@ -49,10 +70,14 @@ export interface SujetBriefing {
   chapo: string;
   /** true si le chapô provient d'un récit IA, false s'il s'agit du résumé factuel. */
   recitParIA: boolean;
-  /** Étiquettes réelles (partenaires cités), jamais décoratives. */
+  /** Étiquettes = THÈMES stratégiques (piliers), pas des acteurs. */
   tags: string[];
   preuves: Preuve[];
   nbPreuves: number;
+  /** Répartition des preuves par nature, exposée avant dépliage. */
+  repartition: RepartitionPreuves;
+  /** Confiance fondée sur la qualité des preuves (émergent / solide / élevé). */
+  confiance: ConfianceBriefing;
   /** Limites du récit exposées par l'IA, le cas échéant (traçabilité). */
   limites: string | null;
 }
@@ -62,7 +87,8 @@ export interface PointRetenir {
   intitule: string; // « 1 sujet dominant »
   detail: string; // « La fibre du Nord entre dans sa phase active »
   ancre: string; // ancre vers la section correspondante
-  ton: 'neutre' | 'attention' | 'positif';
+  /** 'calme' = catégorie vide affichée honnêtement (jamais omise). */
+  ton: 'neutre' | 'attention' | 'positif' | 'calme';
 }
 
 /** Écho médiatique — rapport earned/owned, entièrement traçable (aucune estimation). */
