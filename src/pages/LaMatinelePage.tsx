@@ -1,10 +1,15 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
   AlertTriangle,
   ChevronRight,
+  FileText,
+  Globe,
+  Handshake,
   Info,
+  Megaphone,
   Newspaper,
   Radio,
   Share2,
@@ -22,6 +27,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { RelativeTime } from '@/components/ui/relative-time';
+
 import { useBriefing } from '@/hooks/useBriefing';
 import {
   ANCRES,
