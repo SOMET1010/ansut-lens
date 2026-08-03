@@ -206,13 +206,6 @@ export function useAnsutAccountsActivity() {
       const total7 = pubs7?.length || 0;
       const variationGlobale = pubs48_24 === 0 ? (pubs24 > 0 ? 100 : 0) : Math.round(((pubs24 - pubs48_24) / pubs48_24) * 100);
 
-      // Visibility score (0-100)
-      const inactiveCount = accounts.filter(a => a.statut_activite === 'dormant').length;
-      const activityScore = accounts.length ? ((accounts.length - inactiveCount) / accounts.length) * 100 : 0;
-      const sentimentScore = totalSent ? (pos / totalSent) * 100 : 50;
-      const engagementScore = Math.min(100, accounts.reduce((s, a) => s + a.taux_engagement, 0) / Math.max(accounts.length, 1) * 10);
-      const visibility = Math.round(activityScore * 0.4 + sentimentScore * 0.4 + engagementScore * 0.2);
-
       // Alerts
       const alerts: { niveau: 'critique' | 'attention' | 'info'; message: string }[] = [];
       const dormants = accounts.filter(a => a.statut_activite === 'dormant');
@@ -247,7 +240,6 @@ export function useAnsutAccountsActivity() {
         horaire,
         piliers,
         alerts,
-        visibilityScore: visibility,
         inactiveCount: dormants.length,
       };
     },
@@ -267,7 +259,6 @@ function emptyResult() {
     horaire: Array(24).fill(0),
     piliers: [] as { pilier: Pilier; count: number; pct: number }[],
     alerts: [] as { niveau: 'critique' | 'attention' | 'info'; message: string }[],
-    visibilityScore: 0,
     inactiveCount: 0,
   };
 }

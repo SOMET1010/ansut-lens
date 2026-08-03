@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
-  Building2, MapPin, Star, AlertTriangle, Bell, 
+  Building2, MapPin, AlertTriangle, Bell,
   Twitter, Linkedin, Newspaper, ExternalLink,
   Wifi, Wallet, Landmark, GraduationCap, Activity, Pencil,
   Archive, Trash2, Eye, MessageSquare, Award, Users, Lightbulb, Zap, Swords
@@ -95,7 +95,6 @@ export function ActeurDetail({ personnalite, open, onOpenChange, onEdit, onArchi
   const cercleColors = getCercleColors(personnalite.cercle);
   const CategorieIcon = getCategorieIcon(personnalite.categorie);
   const initials = `${personnalite.prenom?.[0] || ''}${personnalite.nom[0]}`.toUpperCase();
-  const stars = Math.round((personnalite.score_influence / 100) * 5);
   const cercleInfo = CERCLE_LABELS[personnalite.cercle];
   
   // Accès direct aux champs SPDI optionnels (sans cast)
@@ -182,25 +181,6 @@ export function ActeurDetail({ personnalite, open, onOpenChange, onEdit, onArchi
               {personnalite.pays}{personnalite.zone && ` • ${personnalite.zone}`}
             </div>
           )}
-
-          {/* Score d'influence */}
-          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg mb-4">
-            <span className="text-sm font-medium">Score d'influence</span>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-0.5">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={cn(
-                      'h-4 w-4',
-                      i < stars ? 'fill-secondary text-secondary' : 'text-muted-foreground/30'
-                    )}
-                  />
-                ))}
-              </div>
-              <span className="text-sm font-bold">{personnalite.score_influence}%</span>
-            </div>
-          </div>
 
           <Separator className="my-4" />
 

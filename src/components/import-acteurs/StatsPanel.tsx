@@ -1,4 +1,4 @@
-import { Users, Target, TrendingUp, Layers } from 'lucide-react';
+import { Users, Target, Layers } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -40,13 +40,8 @@ export function StatsPanel({ acteurs, doublonsCount }: StatsPanelProps) {
     color: CERCLE_COLORS[cercle]
   }));
 
-  // Score moyen
-  const scoreMoyen = selected.length > 0 
-    ? Math.round(selected.reduce((acc, a) => acc + a.score_influence, 0) / selected.length)
-    : 0;
-
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
       <Card className="glass">
         <CardContent className="p-4">
           <div className="flex items-center gap-2 mb-2">
@@ -74,19 +69,6 @@ export function StatsPanel({ acteurs, doublonsCount }: StatsPanelProps) {
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-bold text-emerald-500">{spdiActif.length}</span>
             <span className="text-xs text-muted-foreground">acteurs suivis</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="glass">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="h-4 w-4 text-amber-500" />
-            <span className="text-sm font-medium">Score moyen</span>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-amber-500">{scoreMoyen}</span>
-            <span className="text-xs text-muted-foreground">/ 100</span>
           </div>
         </CardContent>
       </Card>

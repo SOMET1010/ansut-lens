@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, ExternalLink, Gauge, Target } from 'lucide-react';
+import { AlertTriangle, ExternalLink, Target } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,8 +18,7 @@ import type { Actualite, Signal } from '@/types';
  * Ce n'est pas forcément une « alerte critique ». Chaque sujet est présenté avec
  * ce dont un décideur a besoin pour trancher :
  *   - pourquoi il concerne l'ANSUT (et à quel pilier il se rattache) ;
- *   - ce qui est nouveau (fraîcheur) ;
- *   - le niveau de confiance de l'analyse.
+ *   - ce qui est nouveau (fraîcheur).
  *
  * Les signaux critiques n'apparaissent QU'ICI (plus de triple répétition en haut,
  * dans le briefing et dans la barre d'action).
@@ -111,11 +110,6 @@ export function ASurveiller({ actualites, signauxCritiques, prioritesActives, is
               {signal.description && (
                 <p className="mt-1 text-xs text-muted-foreground">{signal.description}</p>
               )}
-              {typeof signal.score_impact === 'number' && signal.score_impact > 0 && (
-                <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                  <Gauge className="h-3 w-3" aria-hidden /> Impact estimé {signal.score_impact}/100
-                </p>
-              )}
             </div>
           ))}
 
@@ -143,11 +137,6 @@ export function ASurveiller({ actualites, signauxCritiques, prioritesActives, is
                     <Badge variant="secondary" className="text-[10px]">
                       Priorité ANSUT active
                     </Badge>
-                  )}
-                  {typeof a.confiance_ia === 'number' && (
-                    <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                      <Gauge className="h-3 w-3" aria-hidden /> Confiance {a.confiance_ia}%
-                    </span>
                   )}
                 </div>
 

@@ -175,6 +175,18 @@ WYSIWYG editor with drag & drop blocks in `src/components/newsletter/studio/`:
 6. Use `toast` from `sonner` for user notifications
 7. Use `supabase.functions.invoke()` to call edge functions
 
+### Credibility Charter (permanent rule)
+
+Every displayed indicator, gauge, score, badge, counter or ranking MUST pass
+the "DG test" defined in **[`docs/CHARTE_CREDIBILITE.md`](docs/CHARTE_CREDIBILITE.md)**:
+origin known, method explainable, reproducible, traceable to sources, useful to
+a communication decision. If one criterion is missing, **hide the information
+rather than fabricate precision**. Never ship `Math.random()`, hard-coded
+values, simulated data presented as real, unexplained confidence percentages, or
+false-precision indicators. Prefer an honest "no data" to an artificial number.
+Classify each datum 🟢 real / 🟡 calculated (keep if documented) / 🔴 interpreted
+(keep only if the method is clear and exposed).
+
 ### Security Notes
 
 - Row-Level Security on all tables

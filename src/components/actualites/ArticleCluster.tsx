@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, ExternalLink, Share2, MessageSquare, Layers, User, Building, Sparkles, Loader2, ArrowRight, FileText, AlertCircle, Cpu, TrendingUp, Scale, Star, Smile, Frown, Meh } from 'lucide-react';
+import { ChevronDown, ChevronUp, ExternalLink, Share2, MessageSquare, Layers, User, Building, Sparkles, Loader2, ArrowRight, FileText, AlertCircle, Smile, Frown, Meh } from 'lucide-react';
 import { FeedbackButtons } from './FeedbackButtons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -59,8 +59,7 @@ export function ArticleCluster({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const freshness = calculateFreshness(mainArticle.date_publication);
-  const score = mainArticle.score_pertinence ?? mainArticle.importance ?? 50;
-  
+
   const people = mainArticle.entites_personnes ?? [];
   const companies = mainArticle.entites_entreprises ?? [];
   
@@ -71,17 +70,8 @@ export function ArticleCluster({
       {/* Header principal */}
       <div className="p-5">
         <div className="flex justify-between items-start mb-3">
-          {/* Badge de Score + Source + Sentiment */}
+          {/* Source + Sentiment (tonalité qualitative) */}
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge 
-              variant="default" 
-              className={cn(
-                "font-bold",
-                score >= 80 ? "bg-primary" : score >= 60 ? "bg-primary/80" : "bg-muted-foreground"
-              )}
-            >
-              {score}% Alignement
-            </Badge>
             {/* Sentiment indicator */}
             {mainArticle.sentiment != null ? (
               <Tooltip>
@@ -93,13 +83,12 @@ export function ArticleCluster({
                     "bg-muted text-muted-foreground"
                   )}>
                     {mainArticle.sentiment > 0.2 ? <Smile className="h-3 w-3" aria-hidden="true" /> : mainArticle.sentiment < -0.2 ? <Frown className="h-3 w-3" aria-hidden="true" /> : <Meh className="h-3 w-3" aria-hidden="true" />}
-                    <span className="sr-only">
-                      {mainArticle.sentiment > 0.2 ? 'Sentiment positif' : mainArticle.sentiment < -0.2 ? 'Sentiment négatif' : 'Sentiment neutre'}
+                    <span>
+                      {mainArticle.sentiment > 0.2 ? 'Positif' : mainArticle.sentiment < -0.2 ? 'Négatif' : 'Neutre'}
                     </span>
-                    {mainArticle.sentiment > 0 ? '+' : ''}{mainArticle.sentiment.toFixed(1)}
                   </span>
                 </TooltipTrigger>
-                <TooltipContent><TermeMetier cle="sentiment">Sentiment</TermeMetier> IA : {mainArticle.sentiment.toFixed(2)}</TooltipContent>
+                <TooltipContent>Tonalité <TermeMetier cle="sentiment">estimée</TermeMetier> par l’IA (positive, neutre ou négative)</TooltipContent>
               </Tooltip>
             ) : (
               <Tooltip>
@@ -187,11 +176,6 @@ export function ArticleCluster({
                 <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium text-primary">
                   <Target className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   Impacte {pilier.code} — {pilier.nom}
-                  {mainArticle.confiance_ia != null && (
-                    <span className="font-normal text-muted-foreground">
-                      · confiance {mainArticle.confiance_ia}%
-                    </span>
-                  )}
                 </div>
               ) : null;
             })()}
@@ -346,25 +330,13 @@ export function ArticleCluster({
                 if (analyseData) {
                   return (
                     <div className="space-y-6">
-                      {/* Score + Catégorie */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-1">Importance</p>
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-primary transition-all" 
-                                style={{ width: `${analyseData.importance ?? 0}%` }}
-                              />
-                            </div>
-                            <span className="font-bold text-sm">{analyseData.importance ?? 0}/100</span>
-                          </div>
-                        </div>
+                      {/* Catégorie */}
+                      {analyseData.categorie && (
                         <div>
                           <p className="text-xs text-muted-foreground mb-1">Catégorie</p>
-                          <Badge variant="secondary">{analyseData.categorie ?? 'Non définie'}</Badge>
+                          <Badge variant="secondary">{analyseData.categorie}</Badge>
                         </div>
-                      </div>
+                      )}
 
                       {/* Tags */}
                       {analyseData.tags && analyseData.tags.length > 0 && (
@@ -376,47 +348,6 @@ export function ArticleCluster({
                             {analyseData.tags.map(tag => (
                               <Badge key={tag} variant="outline">{tag}</Badge>
                             ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Quadrants */}
-                      {analyseData.quadrant_distribution && (
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-2">Répartition par <TermeMetier cle="quadrant">quadrant</TermeMetier></p>
-                          <div className="space-y-2">
-                            {(() => {
-                              const quadrantConfig: Record<string, { icon: React.ElementType; label: string }> = {
-                                tech: { icon: Cpu, label: 'Technologie' },
-                                market: { icon: TrendingUp, label: 'Marché' },
-                                regulation: { icon: Scale, label: 'Régulation' },
-                                reputation: { icon: Star, label: 'Réputation' }
-                              };
-                              
-                              return Object.entries(analyseData.quadrant_distribution).map(([quadrant, score]) => {
-                                const config = quadrantConfig[quadrant.toLowerCase()] ?? { 
-                                  icon: null, 
-                                  label: quadrant 
-                                };
-                                const IconComponent = config.icon;
-                                
-                                return (
-                                  <div key={quadrant} className="flex items-center gap-2">
-                                    <span className="w-28 text-xs flex items-center gap-1.5">
-                                      {IconComponent && <IconComponent className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />}
-                                      <span className="capitalize">{config.label}</span>
-                                    </span>
-                                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                                      <div 
-                                        className="h-full bg-primary/70 transition-all" 
-                                        style={{ width: `${score}%` }}
-                                      />
-                                    </div>
-                                    <span className="text-xs w-8 text-right">{score}%</span>
-                                  </div>
-                                );
-                              });
-                            })()}
                           </div>
                         </div>
                       )}

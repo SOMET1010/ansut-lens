@@ -38,12 +38,6 @@ const AuthPage = lazy(() => import('@/pages/AuthPage'));
 const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
 const AccessDeniedPage = lazy(() => import('@/pages/AccessDeniedPage'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
-/**
- * Page de recette visuelle de la refonte, sans authentification ni acces aux
- * donnees. Elle permet de verifier le rendu des composants du nouveau systeme.
- * Supprimer cette ligne et le fichier associe une fois la refonte validee.
- */
-const DemoUxPage = lazy(() => import('@/pages/DemoUxPage'));
 
 // Sections principales
 const CeMatinPage = lazy(() => import('@/pages/CeMatinPage'));
@@ -161,7 +155,6 @@ const App = () => (
                         <Route path="/auth" element={<AuthPage />} />
                         <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
                         <Route path="/access-denied" element={<AccessDeniedPage />} />
-                        <Route path="/demo-ux" element={<DemoUxPage />} />
 
                         {/*
                           Redirections des anciennes adresses.
