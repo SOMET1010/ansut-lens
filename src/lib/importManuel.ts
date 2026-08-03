@@ -84,6 +84,150 @@ export interface ResultatParse {
   erreurs: string[];
 }
 
+/** Normalise un en-tête de colonne : minuscules, sans accents, séparateurs → « _ ». */
+function normaliserCle(h: string): string {
+  return (h ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '');
+}
+
+/** Alias de colonnes acceptés (clés déjà normalisées). */
+const ALIAS: Record<string, string[]> = {
+  plateforme: ['plateforme', 'platform', 'reseau', 'reseau_social'],
+  date: ['date', 'date_publication', 'date_publication_estimee', 'date_publiee', 'date_de_publication'],
+  type: ['type', 'type_contenu', 'format'],
+  // NB : on n'utilise PAS url_source_page (URL de flux commune) — elle collerait
+  // la même clé de contenu à tous les posts. Seule l'URL propre du post compte.
+  url: ['url', 'url_original', 'lien', 'permalien', 'lien_du_post'],
+  texte: ['texte', 'contenu', 'content', 'text', 'message'],
+  hashtags: ['hashtags', 'tags', 'mots_cles'],
+  likes: ['likes', 'reactions', 'reactions_count', 'jaime', 'j_aime', 'likes_count'],
+  comments: ['comments', 'commentaires', 'comments_count', 'commentaires_count'],
+  shares: ['shares', 'partages', 'shares_count', 'republications'],
+  vues: ['vues', 'views', 'vues_count', 'impressions'],
+};
+
+/** Détecte le séparateur (virgule ou point-virgule) d'après la ligne d'en-tête. */
+function detecterSeparateur(texte: string): string {
+  const premiere = texte.replace(/^\uFEFF/, '').split('\n')[0] ?? '';
+  const pv = (premiere.match(/;/g) || []).length;
+  const vg = (premiere.match(/,/g) || []).length;
+  return pv > vg ? ';' : ',';
+}
+
+/**
+ * Analyse un CSV en lignes de champs. Gère les guillemets, les guillemets
+ * échappés (`""`), et les retours à la ligne à l'intérieur d'un champ cité.
+ */
+export function parseCSV(texte: string): string[][] {
+  const s = (texte ?? '').replace(/^\uFEFF/, '');
+  const delim = detecterSeparateur(s);
+  const lignes: string[][] = [];
+  let ligne: string[] = [];
+  let champ = '';
+  let cite = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (cite) {
+      if (c === '"') {
+        if (s[i + 1] === '"') { champ += '"'; i++; } else cite = false;
+      } else champ += c;
+    } else if (c === '"') {
+      cite = true;
+    } else if (c === delim) {
+      ligne.push(champ); champ = '';
+    } else if (c === '\r') {
+      // ignorer
+    } else if (c === '\n') {
+      ligne.push(champ); lignes.push(ligne); ligne = []; champ = '';
+    } else {
+      champ += c;
+    }
+  }
+  if (champ !== '' || ligne.length > 0) { ligne.push(champ); lignes.push(ligne); }
+  return lignes.filter((l) => l.some((x) => x.trim() !== ''));
+}
+
+/** Normalise une date de cellule vers `YYYY-MM-DD` (ISO ou JJ/MM/AAAA). */
+export function normaliserDate(v: string): string {
+  const s = (v ?? '').trim();
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const fr = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (fr) return `${fr[3]}-${fr[2]}-${fr[1]}`;
+  return '';
+}
+
+function typeDepuis(brut: string): string {
+  const t = (brut || '').toLowerCase();
+  if (/image|carrousel|photo/.test(t)) return 'image';
+  if (/video|vidéo/.test(t)) return 'video';
+  if (/article|communiqu/.test(t)) return 'article';
+  return 'post';
+}
+
+/**
+ * Convertit un CSV (déposé par la com, ex. export de l'agent d'extraction) en
+ * entrées manuelles validées. Mappe les colonnes par nom (alias tolérants).
+ */
+export function csvVersEntrees(texte: string): ResultatParse {
+  const entrees: EntreeManuelle[] = [];
+  const erreurs: string[] = [];
+  const lignes = parseCSV(texte);
+  if (lignes.length < 2) {
+    erreurs.push('CSV vide ou sans ligne de données.');
+    return { entrees, erreurs };
+  }
+  const entete = lignes[0].map(normaliserCle);
+  const col = (champ: string) => {
+    for (const a of ALIAS[champ]) {
+      const i = entete.indexOf(a);
+      if (i >= 0) return i;
+    }
+    return -1;
+  };
+  const iPlat = col('plateforme'), iDate = col('date'), iTexte = col('texte');
+  if (iPlat < 0 || iDate < 0 || iTexte < 0) {
+    erreurs.push('Colonnes requises introuvables : plateforme, date (ou date_publication_estimee), texte (ou contenu).');
+    return { entrees, erreurs };
+  }
+  const iType = col('type'), iUrl = col('url'), iHash = col('hashtags');
+  const iLikes = col('likes'), iCom = col('comments'), iSh = col('shares'), iVues = col('vues');
+
+  for (let r = 1; r < lignes.length; r++) {
+    const L = lignes[r];
+    const g = (i: number) => (i >= 0 ? (L[i] ?? '').trim() : '');
+    const n = r + 1;
+    const plateforme = g(iPlat).toLowerCase();
+    const date = normaliserDate(g(iDate));
+    let texte = g(iTexte);
+    const hash = g(iHash);
+    if (hash && !texte.includes(hash)) texte = `${texte} ${hash}`.trim();
+
+    if (!PLATEFORMES_IMPORT.some((p) => p.valeur === plateforme)) {
+      erreurs.push(`Ligne ${n} : plateforme « ${g(iPlat)} » inconnue.`);
+      continue;
+    }
+    if (!dateValide(date)) {
+      erreurs.push(`Ligne ${n} : date « ${g(iDate)} » invalide (attendu AAAA-MM-JJ, non future).`);
+      continue;
+    }
+    if (!texte) {
+      erreurs.push(`Ligne ${n} : texte/contenu vide.`);
+      continue;
+    }
+    entrees.push({
+      plateforme, date, type: typeDepuis(g(iType)), url: g(iUrl), texte,
+      likes: nombreOuNull(g(iLikes)), comments: nombreOuNull(g(iCom)),
+      shares: nombreOuNull(g(iSh)), vues: nombreOuNull(g(iVues)),
+    });
+  }
+  return { entrees, erreurs };
+}
+
 /**
  * Analyse un collage « en vrac », une publication par ligne, champs séparés par
  * des barres verticales :

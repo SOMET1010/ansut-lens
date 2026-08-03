@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseBulk, versPublication, dateValide, hashtagsDeTexte } from '@/lib/importManuel';
+import { parseBulk, versPublication, dateValide, hashtagsDeTexte, csvVersEntrees, parseCSV, normaliserDate } from '@/lib/importManuel';
 
 describe('import manuel', () => {
   it('valide les dates ISO non futures', () => {
@@ -24,6 +24,33 @@ describe('import manuel', () => {
     expect(erreurs).toHaveLength(2);
     expect(entrees[0]).toMatchObject({ plateforme: 'facebook', likes: 12, comments: 2, shares: 5, vues: 300 });
     expect(entrees[1].likes).toBeNull();
+  });
+
+  it('parseCSV gère guillemets, virgules et retours à la ligne dans un champ', () => {
+    const csv = 'plateforme,date,contenu\nlinkedin,2026-07-31,"Bravo, ANSUT\nligne 2"';
+    const rows = parseCSV(csv);
+    expect(rows).toHaveLength(2);
+    expect(rows[1][2]).toBe('Bravo, ANSUT\nligne 2');
+  });
+
+  it('normaliserDate accepte ISO et JJ/MM/AAAA', () => {
+    expect(normaliserDate('2026-07-31 00:00:00')).toBe('2026-07-31');
+    expect(normaliserDate('31/07/2026')).toBe('2026-07-31');
+    expect(normaliserDate('bidon')).toBe('');
+  });
+
+  it('csvVersEntrees mappe les colonnes de l’agent (date_publication_estimee, contenu, reactions_count)', () => {
+    const csv = [
+      'plateforme,date_publication_estimee,type_contenu,url_original,contenu,reactions_count,comments_count,shares_count,vues_count,hashtags',
+      'linkedin,2026-07-31 00:00:00,carrousel / images,,"Notion #5 Inclusion Numérique",11,,1,,#ANSUT #InclusionNumérique',
+      'linkedin,2026-07-30,image,,"Transformation digitale",5,,1,,',
+    ].join('\n');
+    const { entrees, erreurs } = csvVersEntrees(csv);
+    expect(erreurs).toHaveLength(0);
+    expect(entrees).toHaveLength(2);
+    expect(entrees[0]).toMatchObject({ plateforme: 'linkedin', date: '2026-07-31', type: 'image', likes: 11, shares: 1 });
+    expect(entrees[0].texte).toContain('#ANSUT');
+    expect(entrees[0].comments).toBeNull();
   });
 
   it('construit une publication honnête (date vérifiée, métriques optionnelles)', () => {
