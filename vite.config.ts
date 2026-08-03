@@ -98,8 +98,13 @@ export default defineConfig(({ mode }) => ({
             return "vendor-icons";
           }
 
-          // Manipulation de dates et notifications, presentes partout.
-          if (id.includes("date-fns") || id.includes("sonner") || id.includes("next-themes")) {
+          // Dates uniquement (sans dépendance à React). `sonner` et
+          // `next-themes` utilisent des hooks React (dont useLayoutEffect) : les
+          // isoler dans un chunk distinct de React pouvait créer un cycle d'ordre
+          // de chargement où React est `undefined` au moment de leur évaluation
+          // (« Cannot read properties of undefined (reading 'useLayoutEffect') »,
+          // page blanche). On les laisse donc à Rollup, qui ordonne correctement.
+          if (id.includes("date-fns")) {
             return "vendor-base";
           }
 
@@ -163,7 +168,16 @@ export default defineConfig(({ mode }) => ({
             return "vendor-react";
           }
 
-          return "vendor";
+          /*
+           * Catch-all volontairement neutre : forcer TOUTES les autres
+           * dépendances dans un unique chunk `vendor` créait des cycles d'ordre
+           * de chargement avec `vendor-react` (React `undefined` → crash
+           * useLayoutEffect → page blanche). En renvoyant `undefined`, on laisse
+           * Rollup découper et ordonner ces modules correctement vis-à-vis de
+           * React. Les gros paquets hors chemin critique sont déjà isolés
+           * explicitement plus haut.
+           */
+          return undefined;
         },
       },
     },
