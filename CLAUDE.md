@@ -192,6 +192,16 @@ article is a proof), not the article. Every feature must answer one question:
 probably should not be built. Technical implementation & migration path:
 [`docs/ARCHITECTURE_EDITORIALE.md`](docs/ARCHITECTURE_EDITORIALE.md).
 
+**Binding technical contract**: [`docs/PIPELINE_EDITORIAL.md`](docs/PIPELINE_EDITORIAL.md)
+is the authoritative contract for *how* a content item flows through RADAR's four
+stages (Ingestion+Datation → Qualification → Vues → Conseiller IA). It fixes the
+single **Qualification contract** (computed once per content), the classification
+and freshness rules, the view→eligibility mapping, the AI contract, and the
+traceability rules. Any divergence between code and this contract is a bug. The
+qualification is computed **once** (target: persisted at ingestion) and every
+screen only **reads** it — never recompute freshness, category, theme, or
+eligibility in a React component.
+
 ### Credibility Charter (permanent rule)
 
 Every displayed indicator, gauge, score, badge, counter or ranking MUST pass
