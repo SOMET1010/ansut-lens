@@ -104,3 +104,6 @@ verify_jwt = false
 
 [functions.requalifier-contenus]
 verify_jwt = false
+
+[functions.resoudre-compte-social]
+verify_jwt = false
