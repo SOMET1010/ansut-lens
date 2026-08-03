@@ -313,3 +313,47 @@
     box-shadow: 0 0 15px hsl(var(--signal-positive) / 0.4);
   }
 }
+
+/* ==========================================================================
+   PILOTE « La Matinale » — palette éditoriale scopée (SUPPRIMABLE).
+   Portée : uniquement les éléments sous `.matinale`. Aucune règle ici ne
+   touche les autres écrans (Veille, Acteurs, Communication, Publier…), qui
+   conservent la palette ANSUT bleu/orange. À retirer avec la vue si le pilote
+   n'est pas retenu.
+   ========================================================================== */
+.matinale {
+  --m-paper: #f3f3ef;
+  --m-paper-2: #ececE6;
+  --m-paper-3: #e4e4dc;
+  --m-ink: #14201b;
+  --m-ink-soft: #4c574f;
+  --m-ink-faint: #737c74;
+  --m-line: #d6d6cc;
+  --m-line-soft: #e2e2d9;
+  --m-accent: #1e5540;
+  --m-accent-2: #2c6e52;
+  --m-accent-wash: #e4ede6;
+  --m-signal: #a85d18;
+  --m-signal-wash: #f1e7d8;
+}
+.dark .matinale {
+  --m-paper: #0e1512;
+  --m-paper-2: #141d18;
+  --m-paper-3: #1a241e;
+  --m-ink: #eceee6;
+  --m-ink-soft: #9eaaa1;
+  --m-ink-faint: #78857b;
+  --m-line: #26302a;
+  --m-line-soft: #1e2822;
+  --m-accent: #63c296;
+  --m-accent-2: #7fd0aa;
+  --m-accent-wash: #16271f;
+  --m-signal: #db9a54;
+  --m-signal-wash: #25211a;
+}
+.matinale-serif {
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+}
+.matinale-mono {
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+}

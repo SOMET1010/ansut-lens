@@ -8,6 +8,7 @@ import {
   Radio,
   Search,
   Settings,
+  Sunrise,
   Users,
   type LucideIcon,
 } from 'lucide-react';
@@ -51,6 +52,16 @@ export const NAV_SECTIONS: NavSection[] = [
     permission: 'view_radar',
     mobile: true,
     legacyPaths: ['/radar'],
+  },
+  {
+    // Pilote éditorial « La Matinale » : vue additive, isolée, atteignable ici.
+    // « Ce matin » reste inchangé le temps de la recette (comparaison possible).
+    id: 'la-matinale',
+    label: 'La matinale',
+    question: 'L’édition éditoriale du matin (pilote)',
+    path: '/la-matinale',
+    icon: Sunrise,
+    permission: 'view_radar',
   },
   {
     id: 'veille',
