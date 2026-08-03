@@ -98,3 +98,6 @@ verify_jwt = false
 
 [functions.collecte-titrologie]
 verify_jwt = false
+
+[functions.recit-sujet]
+verify_jwt = false

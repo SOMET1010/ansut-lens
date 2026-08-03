@@ -8,6 +8,7 @@ import {
   Home,
   Newspaper,
   RefreshCw,
+  Sparkles,
   Users,
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -31,8 +32,11 @@ import { AnalyseCommunication } from '@/components/radar/AnalyseCommunication';
 import { NotreCommunication } from '@/components/radar/NotreCommunication';
 import { ChangementsDepuisHier } from '@/components/radar/ChangementsDepuisHier';
 import { ASurveiller } from '@/components/radar/ASurveiller';
+import { CarteSujet } from '@/components/radar/CarteSujet';
 import { useAnsutPublications } from '@/hooks/useAnsutPublications';
+import { useRecitsSujets } from '@/hooks/useRecitsSujets';
 import { alignement, estVoixAnsut, piliersDeLActu } from '@/lib/missions';
+import { construireSujets, sujetSuffisant } from '@/lib/sujets';
 import { MISSIONS_STRATEGIQUES } from '@/config/missions';
 import { nettoyerTitre } from '@/lib/nettoyerExtrait';
 
@@ -49,6 +53,10 @@ const TAILLE_VIVIER_ACCUEIL = 60;
 const FENETRE_VEILLE_HEURES = 72;
 const FENETRE_CHANGEMENTS_HEURES = 24;
 const FENETRE_PUBLICATIONS_JOURS = 90;
+/** Fenêtre d'observation de la carte-sujet (prototype), en jours. */
+const FENETRE_SUJET_JOURS = 7;
+/** Vivier de veille dédié au sujet (fenêtre plus large que l'accueil). */
+const TAILLE_VIVIER_SUJET = 150;
 
 /** Tous les piliers du Plan ANSUT : c'est le référentiel de pertinence, et non
  * une sélection déduite de la fréquence des publications (règle : ne pas
@@ -112,6 +120,24 @@ export default function CeMatinPage() {
     if (!a.date_publication) return false;
     return new Date(a.date_publication).getTime() >= maintenantMs - FENETRE_CHANGEMENTS_HEURES * 3600 * 1000;
   });
+
+  // Sujet du jour (PROTOTYPE) — nouvelle unité de lecture « 1 carte = 1 sujet ».
+  // Flux de veille dédié sur 7 jours ; les autres cartes gardent leur fenêtre 72 h.
+  const { data: sujetFeed } = useIntelligenceFeed(TAILLE_VIVIER_SUJET, FENETRE_SUJET_JOURS * 24);
+  const externesSujet = useMemo(
+    () => (sujetFeed ?? []).filter((a) => !estVoixAnsut(a)),
+    [sujetFeed],
+  );
+  const sujetsCalcules = useMemo(
+    () => construireSujets(externesSujet, publications ?? [], maintenantMs, FENETRE_SUJET_JOURS),
+    [externesSujet, publications, maintenantMs],
+  );
+  const sujetDuJour = sujetsCalcules[0];
+  const sujetPret = !!sujetDuJour && sujetSuffisant(sujetDuJour);
+  const { data: recits, isLoading: recitsLoading } = useRecitsSujets(
+    sujetDuJour ? [sujetDuJour] : [],
+    sujetPret,
+  );
 
   const signauxCritiques = useMemo(() => {
     const limite = Date.now() - FRAICHEUR_SIGNAL_JOURS * 24 * 3600 * 1000;
@@ -211,6 +237,32 @@ export default function CeMatinPage() {
             </div>
           }
         />
+
+        {/* PROTOTYPE — Le sujet du jour : nouvelle unité de lecture « 1 carte =
+            1 sujet », raconté et prouvé. En observation avant généralisation. */}
+        {sujetDuJour && (
+          <section aria-labelledby="sujet-jour-titre" className="space-y-3">
+            <div>
+              <h2
+                id="sujet-jour-titre"
+                className="flex items-center gap-2 text-base font-semibold text-foreground"
+              >
+                <Sparkles className="h-4 w-4 text-primary" aria-hidden />
+                Le sujet du jour
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                De quoi parle-t-on aujourd'hui — raconté et prouvé. Chaque chiffre renvoie à ses
+                sources.
+              </p>
+            </div>
+            <CarteSujet
+              sujet={sujetDuJour}
+              recit={recits?.[sujetDuJour.id]}
+              recitLoading={sujetPret && recitsLoading}
+              suffisant={sujetPret}
+            />
+          </section>
+        )}
 
         {/* En-tête — Ce qui change aujourd'hui (l'essentiel depuis hier, <30 s). */}
         <ChangementsDuJour

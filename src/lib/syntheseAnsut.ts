@@ -123,6 +123,19 @@ function extraireEcheances(texteBrut: string): string[] {
   return [...found].slice(0, 4);
 }
 
+/**
+ * Partenaires / institutions de référence cités dans un texte libre (article de
+ * veille, publication…). Réutilise la liste de référence de l'écosystème et
+ * l'appariement à frontière de mot : aucun nom n'est inventé, chaque partenaire
+ * détecté est adossé au texte réel.
+ */
+export function partenairesDansTexte(texte: string): string[] {
+  const n = normaliser(texte ?? '');
+  return PARTENAIRES.filter((p) => [p.nom, ...p.variantes].some((v) => contient(n, v))).map(
+    (p) => p.nom,
+  );
+}
+
 export function synthetiserPublications(publications: PublicationAnsut[]): SyntheseAnsut {
   const pubs = publications ?? [];
   const texteBrut = pubs.map((p) => p.contenu ?? '').join('  \n  ');
