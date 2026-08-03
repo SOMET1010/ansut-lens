@@ -131,8 +131,9 @@ const extractClusterEntities = (articles: ExtendedActualite[]): { people: string
   };
 };
 
-export function useArticleClusters(articles: ExtendedActualite[] | undefined): ArticleCluster[] {
+export function useArticleClusters(entrants: ArticleEntrant[] | undefined): ArticleCluster[] {
   return useMemo(() => {
+    const articles = entrants as ExtendedActualite[] | undefined;
     if (!articles || articles.length === 0) return [];
     
     const used = new Set<string>();
