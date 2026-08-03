@@ -1,10 +1,15 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
   AlertTriangle,
   ChevronRight,
+  FileText,
+  Globe,
+  Handshake,
   Info,
+  Megaphone,
   Newspaper,
   Radio,
   Share2,
@@ -22,6 +27,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { RelativeTime } from '@/components/ui/relative-time';
+
 import { useBriefing } from '@/hooks/useBriefing';
 import {
   ANCRES,
@@ -147,9 +153,37 @@ function PourquoiCeSujet({ sujet }: { sujet: SujetBriefing }) {
           </p>
         )}
       </CollapsibleContent>
+      <RepartitionPreuves preuves={sujet.preuves} />
     </Collapsible>
   );
 }
+
+const REPARTITION = [
+  { type: 'presse' as const, label: 'Presse', Icone: Newspaper },
+  { type: 'ansut' as const, label: 'ANSUT', Icone: Megaphone },
+  { type: 'partenaire' as const, label: 'Partenaires', Icone: Handshake },
+];
+
+/** Bandeau de répartition des preuves — comptages réels, aucune estimation. */
+function RepartitionPreuves({ preuves }: { preuves: Preuve[] }) {
+  const items = REPARTITION.map((r) => ({
+    ...r,
+    nb: preuves.filter((p) => p.type === r.type).length,
+  })).filter((r) => r.nb > 0);
+  if (items.length === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[var(--m-line)] px-4 py-2.5">
+      {items.map(({ type, label, Icone, nb }) => (
+        <span key={type} className="flex items-center gap-1.5 text-[0.78rem] text-[var(--m-ink-soft)]">
+          <Icone className="h-3.5 w-3.5 text-[var(--m-ink-faint)]" aria-hidden />
+          <b className="tabular-nums text-[var(--m-ink)]">{nb}</b>
+          {label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 
 /* -------------------------------------------------------------- À retenir */
 
@@ -260,29 +294,71 @@ function SujetUne({ sujet, recitLoading }: { sujet: SujetBriefing; recitLoading:
 
 /* --------------------------------------------------------- Autres sujets */
 
-function CarteSujetSecondaire({ sujet, index }: { sujet: SujetBriefing; index: number }) {
+function CarteSujetSecondaire({ sujet }: { sujet: SujetBriefing }) {
+  const presse = sujet.preuves.filter((p) => p.type === 'presse').length;
+  const ansut = sujet.preuves.filter((p) => p.type === 'ansut').length;
+  const autres = sujet.nbPreuves - presse - ansut;
   return (
-    <article className="grid grid-cols-[2rem_1fr] gap-3 border-t border-[var(--m-line-soft)] py-4 first:border-t-0">
-      <span className="matinale-serif text-[1.4rem] leading-none tabular-nums text-[var(--m-ink-faint)]">
-        {String(index).padStart(2, '0')}
-      </span>
-      <div className="min-w-0">
-        <p className="matinale-mono text-[0.6rem] uppercase tracking-[0.16em] text-[var(--m-ink-faint)]">
-          {sujet.rubrique}
-        </p>
-        <h3 className="matinale-serif mt-1 text-balance text-[1.2rem] font-semibold leading-tight text-[var(--m-ink)]">
-          {sujet.titre}
-        </h3>
-        <p className="mt-1 line-clamp-2 max-w-[44ch] text-[0.9rem] leading-snug text-[var(--m-ink-soft)]">
-          {sujet.chapo}
-        </p>
-        <p className="matinale-mono mt-2 text-[0.62rem] uppercase tracking-[0.05em] tabular-nums text-[var(--m-ink-faint)]">
+    <article className="flex h-full flex-col rounded-xl border border-[var(--m-line)] bg-[var(--m-paper-2)] p-4">
+      <p className="matinale-mono text-[0.6rem] uppercase tracking-[0.16em] text-[var(--m-ink-faint)]">
+        {sujet.rubrique}
+      </p>
+      <h3 className="matinale-serif mt-1.5 text-balance text-[1.15rem] font-semibold leading-tight text-[var(--m-ink)]">
+        {sujet.titre}
+      </h3>
+      <p className="mt-1.5 line-clamp-2 text-[0.86rem] leading-snug text-[var(--m-ink-soft)]">
+        {sujet.chapo}
+      </p>
+      <div className="mt-auto flex items-center gap-2 pt-4">
+        <span className="matinale-mono text-[0.68rem] tabular-nums text-[var(--m-ink-faint)]">
           {sujet.nbPreuves} {sujet.nbPreuves > 1 ? 'preuves' : 'preuve'}
-        </p>
+        </span>
+        <span className="ml-auto flex items-center gap-1.5 text-[var(--m-ink-faint)]">
+          {presse > 0 && <FileText className="h-3.5 w-3.5" aria-label={`${presse} article(s) de presse`} />}
+          {ansut > 0 && <Globe className="h-3.5 w-3.5" aria-label={`${ansut} publication(s) ANSUT`} />}
+          {autres > 0 && (
+            <span className="matinale-mono rounded border border-[var(--m-line)] px-1.5 py-0.5 text-[0.62rem] tabular-nums">
+              +{autres}
+            </span>
+          )}
+        </span>
       </div>
     </article>
   );
 }
+
+/** Grille des autres sujets clés — 3 par défaut, le reste sur demande. */
+function AutresSujets({ sujets }: { sujets: SujetBriefing[] }) {
+  const [tousVisibles, setTousVisibles] = useState(false);
+  const visibles = tousVisibles ? sujets : sujets.slice(0, 3);
+  const total = sujets.length + 1;
+  return (
+    <section className="mt-8 border-t border-[var(--m-line)] pt-4">
+      <p className="matinale-mono text-[0.62rem] uppercase tracking-[0.16em] text-[var(--m-ink-faint)]">
+        Les autres sujets clés
+      </p>
+      <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {visibles.map((s) => (
+          <CarteSujetSecondaire key={s.id} sujet={s} />
+        ))}
+      </div>
+      {sujets.length > 3 && (
+        <div className="mt-4 flex justify-center">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setTousVisibles((v) => !v)}
+            className="gap-2 border-[var(--m-line)] bg-[var(--m-paper-2)] text-[var(--m-ink)] hover:bg-[var(--m-paper-3)]"
+          >
+            {tousVisibles ? 'Réduire les sujets' : `Voir tous les sujets (${total})`}
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          </Button>
+        </div>
+      )}
+    </section>
+  );
+}
+
 
 /* ------------------------------------------------------------ Cartes latérales */
 
@@ -290,11 +366,13 @@ function CarteLaterale({
   id,
   eyebrow,
   accent = 'accent',
+  info,
   children,
 }: {
   id?: string;
   eyebrow: React.ReactNode;
   accent?: 'accent' | 'signal';
+  info?: string;
   children: React.ReactNode;
 }) {
   const wash = accent === 'signal' ? 'var(--m-signal-wash)' : 'var(--m-paper-2)';
@@ -305,11 +383,23 @@ function CarteLaterale({
       className="scroll-mt-6 rounded-xl border p-4"
       style={{ backgroundColor: wash, borderColor: line }}
     >
-      <div className="mb-2.5">{eyebrow}</div>
+      <div className="mb-2.5 flex items-start justify-between gap-2">
+        <div className="min-w-0">{eyebrow}</div>
+        {info && (
+          <Info
+            className="h-3.5 w-3.5 shrink-0 text-[var(--m-ink-faint)]"
+            aria-label={info}
+            role="img"
+          >
+            <title>{info}</title>
+          </Info>
+        )}
+      </div>
       {children}
     </section>
   );
 }
+
 
 function Eyebrow({ children, accent = 'accent' }: { children: React.ReactNode; accent?: 'accent' | 'signal' }) {
   const color = accent === 'signal' ? 'var(--m-signal)' : 'var(--m-accent)';
@@ -325,7 +415,10 @@ function Eyebrow({ children, accent = 'accent' }: { children: React.ReactNode; a
 
 function CarteEcho({ echo }: { echo: EchoBriefing }) {
   return (
-    <CarteLaterale eyebrow={<Eyebrow>Notre communication · Écho médiatique</Eyebrow>}>
+    <CarteLaterale
+      info="Rapport entre les articles de presse citant l’ANSUT et les publications ANSUT sur la fenêtre indiquée. Deux comptages réels, aucune estimation."
+      eyebrow={<Eyebrow>Notre communication · Écho médiatique</Eyebrow>}
+    >
       {echo.ratio !== null ? (
         <>
           <p className="flex items-baseline gap-2">
@@ -371,6 +464,7 @@ function CarteAExaminer({ signal }: { signal: SignalBriefing }) {
     <CarteLaterale
       id={ANCRES.aExaminer}
       accent="signal"
+      info="Signal détecté par la surveillance et non encore confirmé. Il est présenté pour arbitrage humain, jamais comme une conclusion."
       eyebrow={
         <Eyebrow accent="signal">
           <AlertTriangle className="mr-1 inline h-3 w-3 align-[-1px]" aria-hidden />
@@ -391,6 +485,14 @@ function CarteAExaminer({ signal }: { signal: SignalBriefing }) {
           </>
         )}
       </p>
+      <Button
+        asChild
+        variant="outline"
+        size="sm"
+        className="mt-3 border-[var(--m-signal)] bg-transparent text-[var(--m-signal)] hover:bg-[var(--m-signal-wash)] hover:text-[var(--m-signal)]"
+      >
+        <Link to="/alertes">Ouvrir le signal</Link>
+      </Button>
       {!signal.confirme && (
         <p className="matinale-mono mt-2.5 border-t border-dashed pt-2 text-[0.6rem] uppercase tracking-[0.04em] text-[var(--m-ink-faint)]" style={{ borderColor: 'var(--m-line)' }}>
           Deviendra « à arbitrer » une fois les preuves suffisantes.
@@ -402,7 +504,11 @@ function CarteAExaminer({ signal }: { signal: SignalBriefing }) {
 
 function CarteConseiller({ conseil }: { conseil: ConseilBriefing }) {
   return (
-    <CarteLaterale id={ANCRES.conseil} eyebrow={<Eyebrow>Le conseiller</Eyebrow>}>
+    <CarteLaterale
+      id={ANCRES.conseil}
+      info="Piste éditoriale déduite des contenus de l’écosystème et de l’absence de publication ANSUT sur le thème. Une opportunité, jamais une injonction."
+      eyebrow={<Eyebrow>Le conseiller</Eyebrow>}
+    >
       <p className="matinale-serif text-[1rem] italic leading-snug text-[var(--m-ink)]">
         «&nbsp;{conseil.texte}&nbsp;»
       </p>
@@ -426,9 +532,14 @@ function CarteConseiller({ conseil }: { conseil: ConseilBriefing }) {
           </CollapsibleContent>
         </Collapsible>
       )}
-      <p className="matinale-mono mt-3 inline-flex rounded border px-2 py-1 text-[0.58rem] uppercase tracking-[0.06em] text-[var(--m-ink-faint)]" style={{ borderColor: 'var(--m-line)' }}>
+      <p
+        className="matinale-mono mt-3 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[0.6rem] uppercase tracking-[0.06em] text-[var(--m-paper)]"
+        style={{ backgroundColor: 'var(--m-ink)' }}
+      >
+        <Sparkles className="h-3 w-3" aria-hidden />
         {LIBELLE_NON_INJONCTION}
       </p>
+
     </CarteLaterale>
   );
 }
@@ -439,9 +550,18 @@ function ActivitesRecentes({ briefing }: { briefing: Briefing }) {
   if (briefing.activitesRecentes.length === 0) return null;
   return (
     <section className="mt-8 border-t border-[var(--m-line)] pt-4">
-      <p className="matinale-mono text-[0.62rem] uppercase tracking-[0.16em] text-[var(--m-ink-faint)]">
-        Activités récentes
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="matinale-mono text-[0.62rem] uppercase tracking-[0.16em] text-[var(--m-ink-faint)]">
+          Activités récentes
+        </p>
+        <Link
+          to="/veille"
+          className="matinale-mono text-[0.62rem] uppercase tracking-[0.1em] text-[var(--m-accent)] hover:underline"
+        >
+          Voir toute l’activité →
+        </Link>
+      </div>
+
       <ul className="mt-3 grid gap-3 sm:grid-cols-3">
         {briefing.activitesRecentes.map((a, i) => (
           <li key={`${a.type}-${i}`} className="flex items-start gap-2">
@@ -559,17 +679,9 @@ export default function LaMatinelePage() {
                 )}
 
                 {briefing.autresSujets.length > 0 && (
-                  <section className="mt-8 border-t border-[var(--m-line)] pt-4">
-                    <p className="matinale-mono text-[0.62rem] uppercase tracking-[0.16em] text-[var(--m-ink-faint)]">
-                      Les autres sujets clés
-                    </p>
-                    <div className="mt-2">
-                      {briefing.autresSujets.map((s, i) => (
-                        <CarteSujetSecondaire key={s.id} sujet={s} index={i + 2} />
-                      ))}
-                    </div>
-                  </section>
+                  <AutresSujets sujets={briefing.autresSujets} />
                 )}
+
 
                 <ActivitesRecentes briefing={briefing} />
               </div>
@@ -593,11 +705,18 @@ export default function LaMatinelePage() {
             <Info className="h-3.5 w-3.5" aria-hidden />
             Recette&nbsp;: comprendre en moins de 30 s ce qui compte, pourquoi, et où vérifier les preuves.
           </span>
-          <Link to="/insights" className="ml-auto inline-flex items-center gap-1 hover:text-[var(--m-accent)]">
-            <Radio className="h-3.5 w-3.5" aria-hidden />
-            Insights
-          </Link>
+          <span className="ml-auto flex items-center gap-3">
+            <Link to="/insights" className="inline-flex items-center gap-1 hover:text-[var(--m-accent)]">
+              <Radio className="h-3.5 w-3.5" aria-hidden />
+              Insights
+            </Link>
+            <span aria-hidden>·</span>
+            <Link to="/admin/credibilite" className="hover:text-[var(--m-accent)]">
+              Charte de crédibilité
+            </Link>
+          </span>
         </footer>
+
       </div>
     </div>
   );
