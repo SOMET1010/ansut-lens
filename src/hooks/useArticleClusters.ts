@@ -171,5 +171,5 @@ export function useArticleClusters(entrants: ArticleEntrant[] | undefined): Arti
     }
     
     return clusters;
-  }, [articles]);
+  }, [entrants]);
 }
