@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { Actualite } from '@/hooks/useActualites';
 
-interface ExtendedActualite extends Actualite {
+interface ExtendedActualite extends Omit<Actualite, 'created_at'> {
+  created_at?: string;
   entites_personnes?: string[];
   entites_entreprises?: string[];
   score_pertinence?: number;
