@@ -464,6 +464,7 @@ function CarteAExaminer({ signal }: { signal: SignalBriefing }) {
     <CarteLaterale
       id={ANCRES.aExaminer}
       accent="signal"
+      info="Signal détecté par la surveillance et non encore confirmé. Il est présenté pour arbitrage humain, jamais comme une conclusion."
       eyebrow={
         <Eyebrow accent="signal">
           <AlertTriangle className="mr-1 inline h-3 w-3 align-[-1px]" aria-hidden />
@@ -484,6 +485,14 @@ function CarteAExaminer({ signal }: { signal: SignalBriefing }) {
           </>
         )}
       </p>
+      <Button
+        asChild
+        variant="outline"
+        size="sm"
+        className="mt-3 border-[var(--m-signal)] bg-transparent text-[var(--m-signal)] hover:bg-[var(--m-signal-wash)] hover:text-[var(--m-signal)]"
+      >
+        <Link to="/alertes">Ouvrir le signal</Link>
+      </Button>
       {!signal.confirme && (
         <p className="matinale-mono mt-2.5 border-t border-dashed pt-2 text-[0.6rem] uppercase tracking-[0.04em] text-[var(--m-ink-faint)]" style={{ borderColor: 'var(--m-line)' }}>
           Deviendra « à arbitrer » une fois les preuves suffisantes.
@@ -495,7 +504,11 @@ function CarteAExaminer({ signal }: { signal: SignalBriefing }) {
 
 function CarteConseiller({ conseil }: { conseil: ConseilBriefing }) {
   return (
-    <CarteLaterale id={ANCRES.conseil} eyebrow={<Eyebrow>Le conseiller</Eyebrow>}>
+    <CarteLaterale
+      id={ANCRES.conseil}
+      info="Piste éditoriale déduite des contenus de l’écosystème et de l’absence de publication ANSUT sur le thème. Une opportunité, jamais une injonction."
+      eyebrow={<Eyebrow>Le conseiller</Eyebrow>}
+    >
       <p className="matinale-serif text-[1rem] italic leading-snug text-[var(--m-ink)]">
         «&nbsp;{conseil.texte}&nbsp;»
       </p>
