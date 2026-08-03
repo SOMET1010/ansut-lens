@@ -153,9 +153,37 @@ function PourquoiCeSujet({ sujet }: { sujet: SujetBriefing }) {
           </p>
         )}
       </CollapsibleContent>
+      <RepartitionPreuves preuves={sujet.preuves} />
     </Collapsible>
   );
 }
+
+const REPARTITION = [
+  { type: 'presse' as const, label: 'Presse', Icone: Newspaper },
+  { type: 'ansut' as const, label: 'ANSUT', Icone: Megaphone },
+  { type: 'partenaire' as const, label: 'Partenaires', Icone: Handshake },
+];
+
+/** Bandeau de répartition des preuves — comptages réels, aucune estimation. */
+function RepartitionPreuves({ preuves }: { preuves: Preuve[] }) {
+  const items = REPARTITION.map((r) => ({
+    ...r,
+    nb: preuves.filter((p) => p.type === r.type).length,
+  })).filter((r) => r.nb > 0);
+  if (items.length === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[var(--m-line)] px-4 py-2.5">
+      {items.map(({ type, label, Icone, nb }) => (
+        <span key={type} className="flex items-center gap-1.5 text-[0.78rem] text-[var(--m-ink-soft)]">
+          <Icone className="h-3.5 w-3.5 text-[var(--m-ink-faint)]" aria-hidden />
+          <b className="tabular-nums text-[var(--m-ink)]">{nb}</b>
+          {label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 
 /* -------------------------------------------------------------- À retenir */
 
