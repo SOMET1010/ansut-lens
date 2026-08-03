@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { FileText, Edit3, Send, Mail, Users, AlertTriangle, TrendingUp, Eye, Sparkles, Calendar, Palette } from 'lucide-react';
+import { FileText, Edit3, Send, Mail, Users, AlertTriangle, TrendingUp, Eye, Sparkles, Calendar, Palette, Archive } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -32,6 +32,7 @@ import {
   NewsletterScheduler
 } from '@/components/newsletter';
 import { NewsletterStudio } from '@/components/newsletter/studio';
+import { CoffreContenu } from '@/components/dossiers/CoffreContenu';
 import { FocusBanner } from '@/components/radar';
 import { SectionEmptyState } from '@/components/radar/SectionEmptyState';
 import { toErrorMessage } from '@/utils/errors';
@@ -48,7 +49,7 @@ export default function DossiersPage() {
   const [selectedDossier, setSelectedDossier] = useState<Dossier | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingDossier, setEditingDossier] = useState<Dossier | null>(null);
-  const [activeTab, setActiveTab] = useState<'notes' | 'newsletters'>('notes');
+  const [activeTab, setActiveTab] = useState<'notes' | 'newsletters' | 'coffre'>('notes');
   
   // Newsletter management states
   const [newsletterView, setNewsletterView] = useState<NewsletterView>('list');
@@ -277,7 +278,7 @@ export default function DossiersPage() {
 
       {/* MODE: ANALYSTE - Vue complète avec onglets */}
       {safeMode === 'analyste' && (
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'notes' | 'newsletters')} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'notes' | 'newsletters' | 'coffre')} className="space-y-6">
           <div className="flex items-center justify-between">
             <TabsList>
               <TabsTrigger value="notes" className="gap-2">
@@ -287,6 +288,10 @@ export default function DossiersPage() {
               <TabsTrigger value="newsletters" className="gap-2">
                 <Mail className="h-4 w-4" />
                 Newsletters
+              </TabsTrigger>
+              <TabsTrigger value="coffre" className="gap-2">
+                <Archive className="h-4 w-4" />
+                Coffre à contenus
               </TabsTrigger>
             </TabsList>
             
