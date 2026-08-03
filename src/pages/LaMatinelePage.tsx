@@ -334,11 +334,13 @@ function CarteLaterale({
   id,
   eyebrow,
   accent = 'accent',
+  info,
   children,
 }: {
   id?: string;
   eyebrow: React.ReactNode;
   accent?: 'accent' | 'signal';
+  info?: string;
   children: React.ReactNode;
 }) {
   const wash = accent === 'signal' ? 'var(--m-signal-wash)' : 'var(--m-paper-2)';
@@ -349,11 +351,23 @@ function CarteLaterale({
       className="scroll-mt-6 rounded-xl border p-4"
       style={{ backgroundColor: wash, borderColor: line }}
     >
-      <div className="mb-2.5">{eyebrow}</div>
+      <div className="mb-2.5 flex items-start justify-between gap-2">
+        <div className="min-w-0">{eyebrow}</div>
+        {info && (
+          <Info
+            className="h-3.5 w-3.5 shrink-0 text-[var(--m-ink-faint)]"
+            aria-label={info}
+            role="img"
+          >
+            <title>{info}</title>
+          </Info>
+        )}
+      </div>
       {children}
     </section>
   );
 }
+
 
 function Eyebrow({ children, accent = 'accent' }: { children: React.ReactNode; accent?: 'accent' | 'signal' }) {
   const color = accent === 'signal' ? 'var(--m-signal)' : 'var(--m-accent)';
