@@ -101,3 +101,6 @@ verify_jwt = false
 
 [functions.recit-sujet]
 verify_jwt = false
+
+[functions.requalifier-contenus]
+verify_jwt = false
