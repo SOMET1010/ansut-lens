@@ -617,17 +617,9 @@ export default function LaMatinelePage() {
                 )}
 
                 {briefing.autresSujets.length > 0 && (
-                  <section className="mt-8 border-t border-[var(--m-line)] pt-4">
-                    <p className="matinale-mono text-[0.62rem] uppercase tracking-[0.16em] text-[var(--m-ink-faint)]">
-                      Les autres sujets clés
-                    </p>
-                    <div className="mt-2">
-                      {briefing.autresSujets.map((s, i) => (
-                        <CarteSujetSecondaire key={s.id} sujet={s} index={i + 2} />
-                      ))}
-                    </div>
-                  </section>
+                  <AutresSujets sujets={briefing.autresSujets} />
                 )}
+
 
                 <ActivitesRecentes briefing={briefing} />
               </div>
