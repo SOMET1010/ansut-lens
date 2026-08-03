@@ -415,7 +415,10 @@ function Eyebrow({ children, accent = 'accent' }: { children: React.ReactNode; a
 
 function CarteEcho({ echo }: { echo: EchoBriefing }) {
   return (
-    <CarteLaterale eyebrow={<Eyebrow>Notre communication · Écho médiatique</Eyebrow>}>
+    <CarteLaterale
+      info="Rapport entre les articles de presse citant l’ANSUT et les publications ANSUT sur la fenêtre indiquée. Deux comptages réels, aucune estimation."
+      eyebrow={<Eyebrow>Notre communication · Écho médiatique</Eyebrow>}
+    >
       {echo.ratio !== null ? (
         <>
           <p className="flex items-baseline gap-2">
