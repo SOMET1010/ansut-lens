@@ -392,7 +392,9 @@ export function NotreCommunication() {
                 Autres prises de parole récentes
               </p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
-                Hors axes stratégiques — comptent pour le ton et la relation au public, pas pour les thèmes portés.
+                Publiées récemment — peuvent porter sur des événements passés. Hors axes
+                stratégiques : comptent pour le ton et la relation au public, pas pour les thèmes
+                portés.
               </p>
               <ul className="mt-2 space-y-2">
                 {profil.autres.map((a) => (
