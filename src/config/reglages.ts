@@ -2,6 +2,7 @@ import {
   Activity,
   AtSign,
   Bell,
+  Cog,
   BookOpen,
   CalendarDays,
   ClipboardList,
@@ -313,6 +314,16 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
         icon: AtSign,
         permission: 'manage_cron_jobs',
         synonymes: ['réseaux sociaux', 'comptes', 'ajouter un compte', 'profil', 'VIP'],
+      },
+      {
+        id: 'moteur-editorial',
+        titre: 'Moteur éditorial',
+        description:
+          'Lancer la collecte, diagnostiquer et enregistrer la qualification des contenus (pipeline).',
+        path: '/admin/moteur-editorial',
+        icon: Cog,
+        permission: 'manage_cron_jobs',
+        synonymes: ['pipeline', 'collecte', 'qualification', 'backfill'],
       },
       {
         id: 'connecteurs-sociaux',

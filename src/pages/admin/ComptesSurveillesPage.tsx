@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { analyserUrlCompte, nettoyerNomAffiche, LIBELLE_PLATEFORME, type CompteAnalyse } from '@/lib/comptesSociaux';
+import { analyserUrlCompte, nettoyerNomAffiche, LIBELLE_PLATEFORME, libellePlateforme, type CompteAnalyse } from '@/lib/comptesSociaux';
 import { useComptesSurveilles, useMutationsComptes } from '@/hooks/useComptesSurveilles';
 
 /**
@@ -216,9 +216,7 @@ export default function ComptesSurveillesPage() {
                       <TableRow key={c.id}>
                         <TableCell className="font-medium">{c.nom}</TableCell>
                         <TableCell>
-                          <Badge variant="secondary">
-                            {LIBELLE_PLATEFORME[c.plateforme as keyof typeof LIBELLE_PLATEFORME] ?? c.plateforme}
-                          </Badge>
+                          <Badge variant="secondary">{libellePlateforme(c.plateforme)}</Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                           {c.url_profil ? (
