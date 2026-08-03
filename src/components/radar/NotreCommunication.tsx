@@ -34,6 +34,7 @@ import {
   type EvolutionType,
   type TypeCommunication,
 } from '@/lib/profilCommunication';
+import { LIBELLE_CATEGORIE } from '@/lib/qualificationContenu';
 
 /**
  * Couche 1 — « Notre communication ».
@@ -172,15 +173,15 @@ export function NotreCommunication() {
 
       {isLoading ? (
         <Skeleton className="h-32 rounded-xl" />
-      ) : profil.total === 0 ? (
+      ) : profil.total === 0 && profil.autres.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-start gap-2 py-5">
             <p className="text-sm font-medium">
-              Aucune communication récente de l’ANSUT sur les {fenetre} derniers jours.
+              Aucune communication de l’ANSUT sur ses axes stratégiques ces {fenetre} derniers jours.
             </p>
             <p className="text-xs text-muted-foreground">
-              Seules les publications à date réelle et non expirées sont comptées. Élargissez la
-              fenêtre, ou lancez une collecte.
+              Seules les publications datées réellement et rattachées à un axe stratégique
+              déterminent les thèmes. Élargissez la fenêtre, ou lancez une collecte.
             </p>
             <Button
               variant="outline"
@@ -196,12 +197,21 @@ export function NotreCommunication() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {/* Résumé : thèmes principaux de la période. */}
-          <div className="rounded-xl border border-primary/15 bg-primary/[0.03] p-4">
-            <p className="text-sm">
-              Ces <span className="font-semibold">{fenetre} derniers jours</span>, l’ANSUT a
-              principalement communiqué sur :
-            </p>
+          {profil.total === 0 && (
+            <div className="rounded-xl border border-dashed bg-muted/20 p-3 text-sm text-muted-foreground">
+              Aucune communication sur les{' '}
+              <span className="font-medium text-foreground">axes stratégiques</span> ces {fenetre}{' '}
+              derniers jours. L’ANSUT a toutefois publié d’autres prises de parole (ci-dessous).
+            </div>
+          )}
+
+          {profil.total > 0 && (
+            /* Résumé : thèmes institutionnels principaux de la période. */
+            <div className="rounded-xl border border-primary/15 bg-primary/[0.03] p-4">
+              <p className="text-sm">
+                Ces <span className="font-semibold">{fenetre} derniers jours</span>, l’ANSUT a
+                principalement communiqué sur :
+              </p>
             <ul className="mt-2 space-y-1.5">
               {profil.themes.slice(0, 5).map((t) => (
                 <li key={t.pilierId} className="flex items-center gap-2 text-sm">
@@ -240,7 +250,8 @@ export function NotreCommunication() {
                 })}
               </div>
             )}
-          </div>
+            </div>
+          )}
 
           {/* Lecture des réseaux officiels : campagnes, événements, partenaires
               portés par l'ANSUT sur la période. */}
@@ -321,8 +332,10 @@ export function NotreCommunication() {
           )}
 
           {/* Publications récentes vivantes, datées réellement et sourcées. */}
+          {profil.publicationsRecentes.length > 0 && (
+          <>
           <p className="pt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
-            Publications récentes
+            Publications stratégiques récentes
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             {profil.publicationsRecentes.map((pub) => {
@@ -367,6 +380,45 @@ export function NotreCommunication() {
               );
             })}
           </div>
+          </>
+          )}
+
+          {/* Autres prises de parole récentes (sportive, promotionnelle,
+              protocolaire…) : de vraies communications, mais qui ne déterminent
+              pas les thèmes institutionnels. */}
+          {profil.autres.length > 0 && (
+            <div className="rounded-xl border p-3">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
+                Autres prises de parole récentes
+              </p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                Hors axes stratégiques — comptent pour le ton et la relation au public, pas pour les thèmes portés.
+              </p>
+              <ul className="mt-2 space-y-2">
+                {profil.autres.map((a) => (
+                  <li key={a.id} className="flex items-start gap-2 text-sm">
+                    <Badge variant="outline" className="mt-0.5 shrink-0 text-[10px]">
+                      {LIBELLE_CATEGORIE[a.categorie]}
+                    </Badge>
+                    <span className="min-w-0 flex-1">
+                      {a.url_original ? (
+                        <a
+                          href={a.url_original}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:underline"
+                        >
+                          {a.titre}
+                        </a>
+                      ) : (
+                        a.titre
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </section>

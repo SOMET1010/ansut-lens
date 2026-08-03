@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { TermeMetier } from '@/components/common/TermeMetier';
 import { Target } from 'lucide-react';
 import { MISSIONS_STRATEGIQUES } from '@/config/missions';
+import { estVoixAnsut } from '@/lib/missions';
 
 // Interface pour le JSON d'analyse IA
 interface AnalyseIA {
@@ -104,6 +105,14 @@ export function ArticleCluster({
             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
               {mainArticle.source_nom ?? 'Source inconnue'} • {freshness.label}
             </span>
+            {estVoixAnsut(mainArticle) && (
+              <Badge
+                variant="outline"
+                className="border-primary/30 text-[10px] font-semibold text-primary"
+              >
+                Source officielle ANSUT
+              </Badge>
+            )}
           </div>
           
           {/* Indicateur de clustering */}

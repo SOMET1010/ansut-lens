@@ -22,7 +22,7 @@ import {
 import { useArticleClusters } from '@/hooks/useArticleClusters';
 import { useSidebarAnalytics } from '@/hooks/useSidebarAnalytics';
 import { MISSIONS_STRATEGIQUES } from '@/config/missions';
-import { missionsDeLActualite } from '@/lib/missions';
+import { estVoixAnsut, missionsDeLActualite } from '@/lib/missions';
 import type { Actualite } from '@/types';
 import { X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -65,6 +65,10 @@ export default function VeillePage() {
   const [periode, setPeriode] = useState<string>('72h');
   const [filtresActifs, setFiltresActifs] = useState<string[]>([]);
   const [enrichissementEnCours, setEnrichissementEnCours] = useState<string | null>(null);
+  // La veille = ce que dit l'ÉCOSYSTÈME. Les publications officielles de l'ANSUT
+  // en sont exclues par défaut (elles ont leur écran « Notre communication ») ;
+  // l'utilisateur peut les réintégrer explicitement.
+  const [inclureAnsut, setInclureAnsut] = useState(false);
 
   const ongletActif = searchParams.get('tab') === 'pour-vous' ? 'pour-vous' : 'tout';
 
@@ -101,6 +105,8 @@ export default function VeillePage() {
 
   const actualitesFiltrees = useMemo(() => {
     return (actualites ?? []).filter((actu) => {
+      // Corpus externe : on écarte la voix officielle de l'ANSUT par défaut.
+      if (!inclureAnsut && estVoixAnsut(actu)) return false;
       if (termeRecherche) {
         const terme = termeRecherche.toLowerCase();
         const correspond =
@@ -121,7 +127,14 @@ export default function VeillePage() {
       if (missionActive && !articleDansMission(actu, missionActive.id)) return false;
       return true;
     });
-  }, [actualites, termeRecherche, filtresActifs, missionActive, articleDansMission]);
+  }, [actualites, termeRecherche, filtresActifs, missionActive, articleDansMission, inclureAnsut]);
+
+  // Nombre de publications officielles ANSUT présentes dans la période (pour la
+  // bascule « inclure / exclure du corpus externe »).
+  const nbAnsut = useMemo(
+    () => (actualites ?? []).filter((a) => estVoixAnsut(a)).length,
+    [actualites],
+  );
 
   const clusters = useArticleClusters(actualitesFiltrees);
   const analytics = useSidebarAnalytics(actualitesFiltrees, articlesHier, filtresActifs);
@@ -245,15 +258,30 @@ export default function VeillePage() {
 
             <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
               <div className="min-w-0 flex-1 space-y-4">
-                <p className="text-xs text-muted-foreground">
-                  {clusters.length} sujet{clusters.length > 1 ? 's' : ''} regroupé
-                  {clusters.length > 1 ? 's' : ''}, trié
-                  {clusters.length > 1 ? 's' : ''} par{' '}
-                  <TermeMetier cle="resonance" discret>
-                    résonance
-                  </TermeMetier>{' '}
-                  et fraîcheur.
-                </p>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    {clusters.length} sujet{clusters.length > 1 ? 's' : ''} regroupé
+                    {clusters.length > 1 ? 's' : ''}, trié
+                    {clusters.length > 1 ? 's' : ''} par{' '}
+                    <TermeMetier cle="resonance" discret>
+                      résonance
+                    </TermeMetier>{' '}
+                    et fraîcheur.
+                  </p>
+                  {nbAnsut > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 gap-1.5 text-[11px]"
+                      onClick={() => setInclureAnsut((v) => !v)}
+                      aria-pressed={inclureAnsut}
+                    >
+                      {inclureAnsut
+                        ? `Masquer les publications ANSUT (${nbAnsut})`
+                        : `Inclure les publications ANSUT (${nbAnsut})`}
+                    </Button>
+                  )}
+                </div>
 
                 {isLoading ? (
                   <div className="space-y-4">
