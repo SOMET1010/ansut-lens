@@ -3,6 +3,7 @@ import {
   AtSign,
   Bell,
   Cog,
+  FilePlus2,
   BookOpen,
   CalendarDays,
   ClipboardList,
@@ -324,6 +325,16 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
         icon: Cog,
         permission: 'manage_cron_jobs',
         synonymes: ['pipeline', 'collecte', 'qualification', 'backfill'],
+      },
+      {
+        id: 'import-manuel',
+        titre: 'Import manuel de publications',
+        description:
+          'Saisir des publications réelles (date, texte, métriques) en attendant les connecteurs officiels.',
+        path: '/admin/import-manuel',
+        icon: FilePlus2,
+        permission: 'manage_cron_jobs',
+        synonymes: ['import', 'saisie', 'csv', 'publications'],
       },
       {
         id: 'connecteurs-sociaux',

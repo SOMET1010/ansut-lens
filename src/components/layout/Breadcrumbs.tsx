@@ -26,6 +26,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   credibilite: 'Crédibilité des sources',
   'comptes-surveilles': 'Comptes surveillés',
   'moteur-editorial': 'Moteur éditorial',
+  'import-manuel': 'Import manuel',
   'connecteurs-sociaux': 'Connecteurs sociaux',
   'guide-com-api': 'Guide des API sociales',
   titrologie: 'Titrologie',
