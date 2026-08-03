@@ -12,15 +12,15 @@
 
 @layer base {
   :root {
-    /* Light mode - subtle professional */
-    --background: 220 20% 97%;
-    --foreground: 60 6% 11%;
+    /* Light mode — neutres « encre » (papier chaud + encre), accent ANSUT bleu */
+    --background: 40 30% 97%;
+    --foreground: 40 8% 11%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 60 6% 11%;
+    --card: 40 33% 99%;
+    --card-foreground: 40 8% 11%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 60 6% 11%;
+    --popover: 40 33% 99%;
+    --popover-foreground: 40 8% 11%;
 
     /* ANSUT Blue as primary */
     --primary: 212 65% 42%;
@@ -30,8 +30,8 @@
     --secondary: 27 87% 54%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 14% 90%;
-    --muted-foreground: 0 0% 53%;
+    --muted: 40 16% 92%;
+    --muted-foreground: 40 6% 43%;
 
     --accent: 27 87% 54%;
     --accent-foreground: 0 0% 100%;
@@ -39,20 +39,20 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 14% 85%;
-    --input: 220 14% 85%;
+    --border: 40 14% 87%;
+    --input: 40 14% 87%;
     --ring: 212 65% 42%;
 
     --radius: 0.75rem;
 
-    /* Sidebar - light mode */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 60 6% 11%;
+    /* Sidebar - light mode — papier « encre », item actif en accent bleu ANSUT */
+    --sidebar-background: 40 30% 98%;
+    --sidebar-foreground: 40 8% 11%;
     --sidebar-primary: 212 65% 42%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 27 87% 54%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 220 14% 90%;
+    --sidebar-accent: 212 55% 92%;
+    --sidebar-accent-foreground: 212 60% 30%;
+    --sidebar-border: 40 14% 89%;
     --sidebar-ring: 212 65% 42%;
 
     /* ANSUT specific tokens */
@@ -87,15 +87,15 @@
   }
 
   .dark {
-    /* Dark mode - ANSUT premium dark theme */
-    --background: 222 30% 8%;
-    --foreground: 210 20% 95%;
+    /* Dark mode — neutres « encre » sombres, accent ANSUT bleu */
+    --background: 40 9% 8%;
+    --foreground: 40 12% 94%;
 
-    --card: 222 30% 12%;
-    --card-foreground: 210 20% 95%;
+    --card: 40 9% 12%;
+    --card-foreground: 40 12% 94%;
 
-    --popover: 222 30% 10%;
-    --popover-foreground: 210 20% 95%;
+    --popover: 40 9% 11%;
+    --popover-foreground: 40 12% 94%;
 
     /* ANSUT Blue - brighter for dark mode */
     --primary: 212 70% 55%;
@@ -105,8 +105,8 @@
     --secondary: 27 90% 58%;
     --secondary-foreground: 60 6% 11%;
 
-    --muted: 222 25% 18%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 40 8% 18%;
+    --muted-foreground: 40 8% 62%;
 
     --accent: 27 90% 58%;
     --accent-foreground: 60 6% 11%;
@@ -114,18 +114,18 @@
     --destructive: 0 72% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 222 25% 20%;
-    --input: 222 25% 20%;
+    --border: 40 8% 20%;
+    --input: 40 8% 20%;
     --ring: 212 70% 55%;
 
-    /* Sidebar - dark mode */
-    --sidebar-background: 222 30% 10%;
-    --sidebar-foreground: 210 20% 95%;
+    /* Sidebar - dark mode — papier « encre » sombre, item actif en accent bleu */
+    --sidebar-background: 40 9% 10%;
+    --sidebar-foreground: 40 12% 94%;
     --sidebar-primary: 212 70% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 27 90% 58%;
-    --sidebar-accent-foreground: 60 6% 11%;
-    --sidebar-border: 222 25% 18%;
+    --sidebar-accent: 212 45% 24%;
+    --sidebar-accent-foreground: 212 40% 88%;
+    --sidebar-border: 40 8% 18%;
     --sidebar-ring: 212 70% 55%;
 
     /* ANSUT specific tokens */
@@ -315,41 +315,27 @@
 }
 
 /* ==========================================================================
-   PILOTE « La Matinale » — palette éditoriale scopée (SUPPRIMABLE).
-   Portée : uniquement les éléments sous `.matinale`. Aucune règle ici ne
-   touche les autres écrans (Veille, Acteurs, Communication, Publier…), qui
-   conservent la palette ANSUT bleu/orange. À retirer avec la vue si le pilote
-   n'est pas retenu.
+   « La Matinale » — tokens éditoriaux HARMONISÉS sur le design system global.
+   Les variables `--m-*` ne portent plus de couleur propre : elles RÉFÉRENCENT
+   les tokens globaux (neutres « encre » + accent bleu ANSUT + signal orange).
+   La Matinale suit donc automatiquement le thème clair/sombre et toute évolution
+   de la palette officielle — plus aucun îlot vert. La mise en page éditoriale
+   (serif, dateline, cartes, preuves) est conservée telle quelle dans la vue.
    ========================================================================== */
 .matinale {
-  --m-paper: #f3f3ef;
-  --m-paper-2: #ececE6;
-  --m-paper-3: #e4e4dc;
-  --m-ink: #14201b;
-  --m-ink-soft: #4c574f;
-  --m-ink-faint: #737c74;
-  --m-line: #d6d6cc;
-  --m-line-soft: #e2e2d9;
-  --m-accent: #1e5540;
-  --m-accent-2: #2c6e52;
-  --m-accent-wash: #e4ede6;
-  --m-signal: #a85d18;
-  --m-signal-wash: #f1e7d8;
-}
-.dark .matinale {
-  --m-paper: #0e1512;
-  --m-paper-2: #141d18;
-  --m-paper-3: #1a241e;
-  --m-ink: #eceee6;
-  --m-ink-soft: #9eaaa1;
-  --m-ink-faint: #78857b;
-  --m-line: #26302a;
-  --m-line-soft: #1e2822;
-  --m-accent: #63c296;
-  --m-accent-2: #7fd0aa;
-  --m-accent-wash: #16271f;
-  --m-signal: #db9a54;
-  --m-signal-wash: #25211a;
+  --m-paper: hsl(var(--background));
+  --m-paper-2: hsl(var(--card));
+  --m-paper-3: hsl(var(--muted));
+  --m-ink: hsl(var(--foreground));
+  --m-ink-soft: hsl(var(--muted-foreground));
+  --m-ink-faint: hsl(var(--foreground) / 0.55);
+  --m-line: hsl(var(--border));
+  --m-line-soft: hsl(var(--border) / 0.55);
+  --m-accent: hsl(var(--primary));
+  --m-accent-2: hsl(var(--primary));
+  --m-accent-wash: hsl(var(--primary) / 0.12);
+  --m-signal: hsl(var(--secondary));
+  --m-signal-wash: hsl(var(--secondary) / 0.14);
 }
 .matinale-serif {
   font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
