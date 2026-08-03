@@ -11,7 +11,6 @@ import {
   Database,
   Eye,
   FileCode,
-  FileText,
   GraduationCap,
   Mail,
   Megaphone,
@@ -358,15 +357,6 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
         icon: Eye,
         permission: 'manage_newsletters',
         synonymes: ['shadow tracker', 'VIP'],
-      },
-      {
-        id: 'coffre-contenu',
-        titre: 'Coffre à contenus',
-        description: 'Constituer une réserve de publications prêtes à diffuser. → Publier',
-        path: '/admin/coffre-contenu',
-        icon: FileText,
-        permission: 'manage_newsletters',
-        synonymes: ['coffre-fort', 'posts pré-validés'],
       },
       {
         id: 'newsletters',
