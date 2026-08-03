@@ -82,6 +82,7 @@ const ConnecteursSociauxPage = lazy(() => import('@/pages/admin/ConnecteursSocia
 const GuideComApiSociauxPage = lazy(() => import('@/pages/admin/GuideComApiSociauxPage'));
 const ComptesSurveillesPage = lazy(() => import('@/pages/admin/ComptesSurveillesPage'));
 const MoteurEditorialPage = lazy(() => import('@/pages/admin/MoteurEditorialPage'));
+const ImportManuelPage = lazy(() => import('@/pages/admin/ImportManuelPage'));
 const TitrologieAdminPage = lazy(() => import('@/pages/admin/TitrologieAdminPage'));
 const PresentationPage = lazy(() => import('@/pages/PresentationPage'));
 
@@ -274,6 +275,10 @@ const App = () => (
                               <Route
                                 path="/admin/moteur-editorial"
                                 element={<MoteurEditorialPage />}
+                              />
+                              <Route
+                                path="/admin/import-manuel"
+                                element={<ImportManuelPage />}
                               />
                             </Route>
 
