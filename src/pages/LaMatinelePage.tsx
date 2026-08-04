@@ -326,44 +326,9 @@ function SujetUne({ sujet, recitLoading }: { sujet: SujetBriefing; recitLoading:
 
 /* --------------------------------------------------------- Autres sujets */
 
-function CarteSujetSecondaire({ sujet }: { sujet: SujetBriefing }) {
-  const presse = sujet.preuves.filter((p) => p.type === 'presse').length;
-  const ansut = sujet.preuves.filter((p) => p.type === 'ansut').length;
-  const autres = sujet.nbPreuves - presse - ansut;
-  return (
-    <article className="flex h-full flex-col rounded-xl border border-[var(--m-line)] bg-[var(--m-paper-2)] p-4">
-      <p className="matinale-mono text-[0.6rem] uppercase tracking-[0.16em] text-[var(--m-ink-faint)]">
-        {sujet.rubrique}
-      </p>
-      <h3 className="matinale-serif mt-1.5 text-balance text-[1.15rem] font-semibold leading-tight text-[var(--m-ink)]">
-        {sujet.titre}
-      </h3>
-      <p className="mt-1.5 line-clamp-2 text-[0.86rem] leading-snug text-[var(--m-ink-soft)]">
-        {sujet.chapo}
-      </p>
-      <div className="mt-auto flex items-center gap-2 pt-4">
-        <span className="matinale-mono text-[0.68rem] tabular-nums text-[var(--m-ink-faint)]">
-          {sujet.nbPreuves} {sujet.nbPreuves > 1 ? 'preuves' : 'preuve'}
-        </span>
-        <span className="ml-auto flex items-center gap-1.5 text-[var(--m-ink-faint)]">
-          {presse > 0 && <FileText className="h-3.5 w-3.5" aria-label={`${presse} article(s) de presse`} />}
-          {ansut > 0 && <Globe className="h-3.5 w-3.5" aria-label={`${ansut} publication(s) ANSUT`} />}
-          {autres > 0 && (
-            <span className="matinale-mono rounded border border-[var(--m-line)] px-1.5 py-0.5 text-[0.62rem] tabular-nums">
-              +{autres}
-            </span>
-          )}
-        </span>
-      </div>
-    </article>
-  );
-}
-
-/** Grille des autres sujets clés — 3 par défaut, le reste sur demande. */
-function AutresSujets({ sujets }: { sujets: SujetBriefing[] }) {
-  const [tousVisibles, setTousVisibles] = useState(false);
-  const visibles = tousVisibles ? sujets : sujets.slice(0, 3);
-  const total = sujets.length + 1;
+/** Grille des autres sujets clés — 3 aperçus, le reste sur la page dédiée. */
+function AutresSujets({ sujets, total }: { sujets: SujetBriefing[]; total: number }) {
+  const visibles = sujets.slice(0, 3);
   return (
     <section className="mt-8 border-t border-[var(--m-line)] pt-4">
       <p className="matinale-mono text-[0.62rem] uppercase tracking-[0.16em] text-[var(--m-ink-faint)]">
@@ -371,25 +336,27 @@ function AutresSujets({ sujets }: { sujets: SujetBriefing[] }) {
       </p>
       <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {visibles.map((s) => (
-          <CarteSujetSecondaire key={s.id} sujet={s} />
+          <CarteSujetBriefing key={s.id} sujet={s} />
         ))}
       </div>
-      {sujets.length > 3 && (
+      {total > visibles.length && (
         <div className="mt-4 flex justify-center">
           <Button
-            type="button"
+            asChild
             variant="outline"
-            onClick={() => setTousVisibles((v) => !v)}
             className="gap-2 border-[var(--m-line)] bg-[var(--m-paper-2)] text-[var(--m-ink)] hover:bg-[var(--m-paper-3)]"
           >
-            {tousVisibles ? 'Réduire les sujets' : `Voir tous les sujets (${total})`}
-            <ChevronRight className="h-4 w-4" aria-hidden />
+            <Link to="/sujets">
+              Voir tous les sujets ({total})
+              <ChevronRight className="h-4 w-4" aria-hidden />
+            </Link>
           </Button>
         </div>
       )}
     </section>
   );
 }
+
 
 
 /* ------------------------------------------------------------ Cartes latérales */
