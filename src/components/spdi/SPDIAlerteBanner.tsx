@@ -37,19 +37,17 @@ export function SPDIAlerteBanner({ variation, periode = '14 jours', onAction }: 
         
         <div className="flex-1">
           <AlertTitle className="text-base font-semibold mb-1">
-            {severity === 'critical' 
-              ? 'Alerte critique : Chute de visibilité'
-              : 'Attention : Baisse significative du score'
-            }
+            {severity === 'critical'
+              ? 'Baisse marquée de la présence digitale'
+              : 'Baisse de la présence digitale'}
           </AlertTitle>
           <AlertDescription className="text-sm">
-            Votre score de présence digitale a diminué de{' '}
-            <span className="font-bold text-red-500">{Math.abs(variation).toFixed(1)}%</span>
-            {' '}sur les {periode}. 
-            {severity === 'critical' 
-              ? ' Une action immédiate est recommandée pour rétablir votre visibilité institutionnelle.'
-              : ' Consultez les recommandations pour améliorer votre présence.'
-            }
+            Le score de présence digitale a diminué de{' '}
+            <span className="font-bold text-red-500">{Math.round(Math.abs(variation))} %</span>
+            {' '}sur les {periode}.{' '}
+            {severity === 'critical'
+              ? 'Une baisse de cette ampleur mérite d’être examinée.'
+              : 'Les recommandations détaillent les leviers possibles.'}
           </AlertDescription>
           
           {onAction && (

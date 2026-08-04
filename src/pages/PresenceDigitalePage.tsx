@@ -53,7 +53,7 @@ export default function PresenceDigitalePage() {
         body: { personnalite_id: selectedActeur },
       });
       if (error) throw error;
-      toast.success('Score SPDI recalculé', { description: `Nouveau score : ${data?.score_final?.toFixed(1) ?? '—'}` });
+      toast.success('Score SPDI recalculé', { description: `Nouveau score : ${data?.score_final != null ? Math.round(data.score_final) : '—'}` });
     } catch (e: any) {
       toast.error('Erreur lors du calcul', { description: e.message });
     } finally {
