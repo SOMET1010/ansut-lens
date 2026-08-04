@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { nettoyerExtrait } from '@/lib/nettoyerExtrait';
+import { libelleJournal } from '@/lib/journalTitrologie';
 
 interface TitreJournal {
   journal: string;
@@ -32,6 +33,7 @@ function classerType(journal: string, url: string): string {
   if (/(abidjan\.net|net|online|info|linfodrome|koaci)/.test(j + u)) return 'en_ligne';
   return 'nationale';
 }
+
 
 async function fetchTitrologie(): Promise<TitreJournal[]> {
   const today = new Date().toISOString().slice(0, 10);
@@ -166,7 +168,19 @@ export function TitrologieWidget() {
                     key={`${type}-${i}`}
                     className="pl-3 border-l-2 border-primary/30 hover:border-primary transition-colors"
                   >
-                    <p className="text-[11px] font-semibold text-primary">{t.journal}</p>
+                    {(() => {
+                      const src = libelleJournal(t.journal);
+                      return (
+                        <p
+                          className={`text-[11px] font-semibold ${
+                            src.identifie ? 'text-primary' : 'italic text-muted-foreground'
+                          }`}
+                          title={src.identifie ? undefined : 'Le nom du journal n’a pas pu être lu sur la une'}
+                        >
+                          {src.texte}
+                        </p>
+                      );
+                    })()}
                     {/* Nettoyage du titre issu de la collecte */}
                     <p className="text-sm font-medium leading-tight">{nettoyerExtrait(t.titre)}</p>
                     {t.resume && (

@@ -21,6 +21,7 @@ import { extractSectionKeywords, useMatinaleSectionSourceCount } from '@/hooks/u
 import { downloadPDF as downloadTitrologiePDF, downloadMarkdown as downloadTitrologieMarkdown } from '@/utils/exportTitrologieBriefing';
 import { useTitrologieToday } from '@/hooks/useTitrologieToday';
 import { RefreshCw } from 'lucide-react';
+import { libelleJournal, ressembleAIdentifiant } from '@/lib/journalTitrologie';
 
 function SourceCountBadge({ data, section, freshnessHours, enabled }: {
   data: MatinaleData; section: any; freshnessHours: number; enabled: boolean;
@@ -98,7 +99,14 @@ function TitrologieBilanBlock({
     analyse_ia: r.analyse_ia,
   }));
   const unes = liveMapped.length > 0 ? liveMapped : unesProp;
-  const journauxDetectes = new Set(unes.map(u => (u.journal || '').trim()).filter(Boolean)).size;
+  // Honnêteté (charte de crédibilité) : ne compter comme « journal » que les unes
+  // dont le bandeau-titre a réellement été identifié — pas les identifiants
+  // techniques restés dans `journal`. Peut légitimement valoir 0 si l'OCR n'a lu
+  // aucun masthead ; le nombre d'unes exploitables (titres lus) est distinct.
+  const journauxDetectes = new Set(
+    unes.map(u => (u.journal || '').trim())
+      .filter(nom => nom && !ressembleAIdentifiant(nom)),
+  ).size;
 
   // Defaillances: confidence < threshold OR ocr_warnings present OR titre too short OR explicit ocr_failed flag
   const defaillances = unes
@@ -184,7 +192,7 @@ function TitrologieBilanBlock({
               <li key={i} className="flex items-start gap-2">
                 <Badge variant="outline" className="text-[10px] shrink-0 bg-background">conf. {d.conf}/100</Badge>
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{d.journal}</div>
+                  <div className="font-medium truncate">{libelleJournal(d.journal).texte}</div>
                   <div className="text-[11px] text-muted-foreground">{d.raison}</div>
                 </div>
                 {d.image_url && (
@@ -422,7 +430,7 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
                   {synth.top_risques.map((r, k) => (
                     <li key={k} className="flex items-start gap-1.5">
                       <Badge variant="outline" className={`${RISQUE_BADGE[r.risque]} text-[9px] px-1 py-0 shrink-0`}>{r.score}</Badge>
-                      <span className="flex-1"><span className="font-medium">{r.journal}</span> — {r.titre}</span>
+                      <span className="flex-1"><span className="font-medium">{libelleJournal(r.journal).texte}</span> — {r.titre}</span>
                     </li>
                   ))}
                 </ul>
@@ -498,7 +506,7 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
                   const activeAngles = angleEntries.filter(([, a]) => a && a.intensite >= 1);
                   return (
                     <tr key={i} className="border-b border-border/40 align-top">
-                      <td className="py-1.5 pr-2 font-medium whitespace-nowrap">{u.journal}</td>
+                      <td className="py-1.5 pr-2 font-medium whitespace-nowrap">{libelleJournal(u.journal).texte}</td>
                       <td className="py-1.5 pr-2">
                         {isValidUrl(u.url) ? (
                           <a href={u.url} target="_blank" rel="noopener noreferrer" className="hover:underline inline-flex items-start gap-1">
