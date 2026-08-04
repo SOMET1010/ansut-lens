@@ -678,7 +678,11 @@ export default function LaMatinelePage() {
                 )}
 
                 {briefing.autresSujets.length > 0 && (
-                  <AutresSujets sujets={briefing.autresSujets} />
+                  <AutresSujets
+                    sujets={briefing.autresSujets}
+                    total={briefing.autresSujets.length + (briefing.sujetUne ? 1 : 0)}
+                  />
+
                 )}
 
 
