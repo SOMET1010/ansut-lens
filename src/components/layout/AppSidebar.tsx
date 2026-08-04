@@ -32,7 +32,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { getInitials } from '@/utils/activity-status';
-import { ADMIN_SECTION, NAV_SECTIONS } from '@/config/navigation';
+import { ADMIN_SECTION, NAV_GROUPS, NAV_SECTIONS } from '@/config/navigation';
 import logoMark from '@/assets/logo-ansut-mark.png';
 
 /**
@@ -58,7 +58,9 @@ export function AppSidebar() {
   const { hasPermission, isLoading: permissionsLoading } = useUserPermissions();
   const collapsed = state === 'collapsed';
 
-  const visibleSections = NAV_SECTIONS.filter((section) => hasPermission(section.permission));
+  const visibleSections = NAV_SECTIONS.filter(
+    (section) => !section.hidden && hasPermission(section.permission),
+  );
   const hasAdminAccess = hasPermission(ADMIN_SECTION.permission);
 
   const getSidebarInitials = (name?: string | null, email?: string) => {
@@ -89,43 +91,64 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {permissionsLoading
-                ? Array.from({ length: 5 }).map((_, index) => (
-                    <SidebarMenuItem key={index}>
-                      <div className="flex items-center gap-3 px-3 py-2">
-                        <Skeleton className="h-5 w-5 rounded" />
-                        {!collapsed && <Skeleton className="h-4 w-28" />}
-                      </div>
-                    </SidebarMenuItem>
-                  ))
-                : visibleSections.map((section) => (
-                    <SidebarMenuItem key={section.id}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(section.path)}
-                        tooltip={`${section.label} — ${section.question}`}
-                        className="h-auto py-2"
-                      >
-                        <NavLink to={section.path} className="flex items-start gap-3">
-                          <section.icon className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
-                          {!collapsed && (
-                            <span className="flex min-w-0 flex-col gap-0.5 leading-tight">
-                              <span className="truncate text-sm font-medium">{section.label}</span>
-                              <span className="truncate text-[11px] text-muted-foreground">
-                                {section.question}
+        {permissionsLoading ? (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <SidebarMenuItem key={index}>
+                    <div className="flex items-center gap-3 px-3 py-2">
+                      <Skeleton className="h-5 w-5 rounded" />
+                      {!collapsed && <Skeleton className="h-4 w-28" />}
+                    </div>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : (
+          NAV_GROUPS.map((groupe) => {
+            const sections = visibleSections.filter(
+              (section) => (section.group ?? 'redaction') === groupe.id,
+            );
+            if (sections.length === 0) return null;
+            return (
+              <SidebarGroup key={groupe.id}>
+                {!collapsed && (
+                  <SidebarGroupLabel className="text-xs text-muted-foreground">
+                    {groupe.label}
+                  </SidebarGroupLabel>
+                )}
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {sections.map((section) => (
+                      <SidebarMenuItem key={section.id}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive(section.path)}
+                          tooltip={`${section.label} — ${section.question}`}
+                          className="h-auto py-2"
+                        >
+                          <NavLink to={section.path} className="flex items-start gap-3">
+                            <section.icon className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+                            {!collapsed && (
+                              <span className="flex min-w-0 flex-col gap-0.5 leading-tight">
+                                <span className="truncate text-sm font-medium">{section.label}</span>
+                                <span className="truncate text-[11px] text-muted-foreground">
+                                  {section.question}
+                                </span>
                               </span>
-                            </span>
-                          )}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                            )}
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            );
+          })
+        )}
 
         {!permissionsLoading && hasAdminAccess && (
           <>
