@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Radio, Sparkles, Bot } from 'lucide-react';
+import { Plus, Radio, Sparkles } from 'lucide-react';
 import { useFluxVeille, useFluxActualitesCount, useFluxNewActualitesCount, useDeleteFlux, FluxVeille, useCreateFlux, FluxFormData } from '@/hooks/useFluxVeille';
 import { FluxCard, FluxFormDialog, FluxTemplateCard, fluxTemplates, FluxTemplate } from '@/components/flux';
 import { PageContainer, PageHeader, SectionRepliable } from '@/components/common';
@@ -89,26 +88,25 @@ export default function FluxPage() {
           icon={Radio}
         />
 
-        {/* Header — Capteurs Stratégiques */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold flex items-center gap-3">
-              <Radio className="h-5 w-5 text-primary" aria-hidden />
-              Capteurs Stratégiques
-              {!isLoading && flux && flux.length > 0 && (
-                <Badge variant="secondary" className="text-xs gap-1">
-                  <Bot className="h-3 w-3" aria-hidden />
-                  {activeCount} agent{activeCount > 1 ? 's' : ''} actif{activeCount > 1 ? 's' : ''}
-                </Badge>
-              )}
-            </h2>
-            <p className="text-muted-foreground mt-1">
-              Dispositifs de surveillance numérique — chaque agent surveille, analyse, alerte et recommande.
-            </p>
-          </div>
+        {/*
+          Barre d'action. On dit ce que fait vraiment une veille — regrouper des
+          mots-clés et des sources, compter les articles correspondants et, le cas
+          échéant, alerter — sans le vocabulaire « capteur / agent » qui laissait
+          croire à une intelligence autonome qui « analyse et recommande ».
+        */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <p className="text-sm text-muted-foreground" role="status">
+            {!isLoading && flux && flux.length > 0 && (
+              <>
+                {activeCount} veille{activeCount > 1 ? 's' : ''} active{activeCount > 1 ? 's' : ''}
+                {flux.length > activeCount &&
+                  ` · ${flux.length - activeCount} en pause`}
+              </>
+            )}
+          </p>
           <Button onClick={handleCreateNew} className="gap-2 min-h-11 sm:min-h-9">
             <Plus className="h-4 w-4" aria-hidden />
-            Déployer un capteur
+            Nouvelle veille
           </Button>
         </div>
 
@@ -137,14 +135,15 @@ export default function FluxPage() {
               <div className="h-16 w-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-4">
                 <Radio className="h-8 w-8 text-primary" aria-hidden />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Aucun capteur déployé</h3>
+              <h3 className="text-lg font-semibold mb-2">Aucune veille</h3>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Déployez votre premier capteur stratégique pour activer la surveillance automatique,
-                ou choisissez un dispositif ANSUT ci-dessous.
+                Créez une veille pour suivre un sujet en continu — ses mots-clés et ses
+                sources — et compter les articles correspondants. Ou partez d’un modèle
+                ANSUT ci-dessous.
               </p>
               <Button onClick={handleCreateNew} size="lg" className="min-h-11 sm:min-h-9">
                 <Plus className="h-4 w-4 mr-2" aria-hidden />
-                Déployer mon premier capteur
+                Créer ma première veille
               </Button>
             </CardContent>
           </Card>
@@ -167,10 +166,10 @@ export default function FluxPage() {
         <div className="border-t border-border pt-8">
           <h2 className="text-sm font-bold text-muted-foreground uppercase mb-1 flex items-center gap-2">
             <Sparkles className="h-4 w-4" aria-hidden />
-            Dispositifs de Surveillance ANSUT
+            Modèles de veille ANSUT
           </h2>
           <p className="text-xs text-muted-foreground mb-4">
-            Modèles préconfigurés alignés sur les missions stratégiques ANSUT — déploiement en un clic.
+            Modèles préconfigurés alignés sur les missions de l’ANSUT — un clic pour créer la veille.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {fluxTemplates.map((template) => (
@@ -195,9 +194,9 @@ export default function FluxPage() {
         <AlertDialog open={!!deletingFlux} onOpenChange={(open) => !open && setDeletingFlux(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Supprimer ce flux ?</AlertDialogTitle>
+              <AlertDialogTitle>Supprimer cette veille ?</AlertDialogTitle>
               <AlertDialogDescription>
-                Le flux "{deletingFlux?.nom}" sera définitivement supprimé. 
+                La veille «&nbsp;{deletingFlux?.nom}&nbsp;» sera définitivement supprimée.
                 Cette action est irréversible.
               </AlertDialogDescription>
             </AlertDialogHeader>
