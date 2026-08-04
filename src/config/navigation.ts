@@ -5,7 +5,6 @@ import {
   Newspaper,
   PenLine,
   Radio,
-  ScrollText,
   Search,
   Settings,
   Sunrise,
@@ -88,7 +87,7 @@ export const NAV_SECTIONS: NavSection[] = [
     permission: 'view_radar',
     group: 'redaction',
     mobile: true,
-    legacyPaths: ['/actualites', '/medias'],
+    legacyPaths: ['/actualites', '/medias', '/pige'],
   },
   {
     id: 'recherche',
@@ -160,18 +159,6 @@ export const NAV_SECTIONS: NavSection[] = [
     permission: 'create_flux',
     group: 'outils',
     legacyPaths: ['/flux'],
-  },
-  {
-    // Repliee dans Veille (methode de collecte, pas un produit) : masquee du
-    // menu mais route et fil d'Ariane conserves.
-    id: 'pige',
-    label: 'Pige presse',
-    question: 'Que disent les journaux, titre par titre ?',
-    path: '/pige',
-    icon: ScrollText,
-    permission: 'view_radar',
-    group: 'redaction',
-    hidden: true,
   },
 ];
 
