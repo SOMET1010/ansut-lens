@@ -12,9 +12,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Radio, Sparkles } from 'lucide-react';
+import { Plus, Radio } from 'lucide-react';
 import { useFluxVeille, useFluxActualitesCount, useFluxNewActualitesCount, useDeleteFlux, FluxVeille, useCreateFlux, FluxFormData } from '@/hooks/useFluxVeille';
-import { FluxCard, FluxFormDialog, FluxTemplateCard, fluxTemplates, FluxTemplate } from '@/components/flux';
+import { FluxCard, FluxFormDialog } from '@/components/flux';
 import { PageContainer, PageHeader, SectionRepliable } from '@/components/common';
 
 export default function FluxPage() {
@@ -55,22 +55,6 @@ export default function FluxPage() {
       setEditingFlux(null);
       setTemplateData(null);
     }
-  };
-
-  const handleTemplateSelect = (template: FluxTemplate) => {
-    setTemplateData({
-      nom: template.title,
-      description: template.description,
-      mots_cles: template.keywords,
-      quadrants: template.quadrants,
-      categories_ids: [],
-      importance_min: 0,
-      alerte_email: false,
-      alerte_push: true,
-      frequence_digest: 'quotidien',
-    });
-    setEditingFlux(null);
-    setFormOpen(true);
   };
 
   const handleCreateNew = () => {
@@ -161,26 +145,6 @@ export default function FluxPage() {
             ))}
           </div>
         )}
-
-        {/* Section : Dispositifs ANSUT */}
-        <div className="border-t border-border pt-8">
-          <h2 className="text-sm font-bold text-muted-foreground uppercase mb-1 flex items-center gap-2">
-            <Sparkles className="h-4 w-4" aria-hidden />
-            Modèles de veille ANSUT
-          </h2>
-          <p className="text-xs text-muted-foreground mb-4">
-            Modèles préconfigurés alignés sur les missions de l’ANSUT — un clic pour créer la veille.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {fluxTemplates.map((template) => (
-              <FluxTemplateCard
-                key={template.id}
-                template={template}
-                onSelect={handleTemplateSelect}
-              />
-            ))}
-          </div>
-        </div>
 
         {/* Form Dialog */}
         <FluxFormDialog
