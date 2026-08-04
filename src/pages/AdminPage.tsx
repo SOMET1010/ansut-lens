@@ -97,16 +97,29 @@ export default function AdminPage() {
     })).filter((groupe) => groupe.entrees.length > 0);
   }, [recherche, hasPermission, stats]);
 
-  const nbVisibles = groupesVisibles.reduce((total, groupe) => total + groupe.entrees.length, 0);
+  // La Console technique (exploitation) est réservée aux profils habilités :
+  // elle ne doit jamais encombrer le quotidien de la DIRCOM. Le droit dédié
+  // `access_console_technique` (activable par rôle) la masque entièrement pour
+  // qui ne l'a pas — indépendamment des permissions fines de chaque entrée.
+  const voitConsoleTechnique = hasPermission('access_console_technique');
 
   /** Regroupe les groupes visibles par espace, dans l'ordre défini. */
   const zonesVisibles = useMemo(() => {
-    return ORDRE_ZONES.map((zone) => ({
-      zone,
-      meta: ZONES_REGLAGES[zone],
-      groupes: groupesVisibles.filter((g) => g.zone === zone),
-    })).filter((z) => z.groupes.length > 0);
-  }, [groupesVisibles]);
+    return ORDRE_ZONES.filter((zone) => zone !== 'console' || voitConsoleTechnique)
+      .map((zone) => ({
+        zone,
+        meta: ZONES_REGLAGES[zone],
+        groupes: groupesVisibles.filter((g) => g.zone === zone),
+      }))
+      .filter((z) => z.groupes.length > 0);
+  }, [groupesVisibles, voitConsoleTechnique]);
+
+  // Compte et état vide se basent sur ce qui est RÉELLEMENT affiché (Console
+  // masquée comprise), pour que la recherche ne promette pas un résultat caché.
+  const nbVisibles = zonesVisibles.reduce(
+    (total, z) => total + z.groupes.reduce((n, g) => n + g.entrees.length, 0),
+    0,
+  );
 
   return (
     <PageContainer>
@@ -148,7 +161,7 @@ export default function AdminPage() {
           )}
         </div>
 
-        {groupesVisibles.length === 0 ? (
+        {zonesVisibles.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
               <SlidersHorizontal className="h-10 w-10 text-muted-foreground/60" aria-hidden />

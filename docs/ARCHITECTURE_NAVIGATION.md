@@ -105,10 +105,18 @@ la DIRCOM ne la voit jamais.
 | **Journal des actions** (audit) | traçabilité |
 | **Santé / Logs / Jobs** | supervision technique |
 
-> **Rôle Super Admin** : la console est masquée derrière un rôle dédié. Cible :
-> ajouter `super_admin` au RBAC (les 4 rôles actuels sont `admin`, `user`,
-> `council_user`, `guest`). En transition, on peut la gater derrière `admin` + une
-> permission `access_ops_console`, le temps d'introduire le rôle.
+> **Gating de la Console (implémenté)** : la console est masquée derrière la
+> permission dédiée **`access_console_technique`** (migration
+> `20260804120000`), activable par rôle depuis l'éditeur d'habilitations. Par
+> défaut seul `admin` la possède : le levier sert à créer un palier « admin de
+> configuration » (Administration oui, Console non) sans toucher au RBAC.
+>
+> Ce choix est **délibéré** plutôt qu'un nouveau rôle `super_admin`. Introduire
+> un rôle plus privilégié qu'`admin` obligerait à élargir ~30 politiques RLS et
+> deux contrôles `role = 'admin'` codés en dur dans les edge functions
+> (`manage-user`, `list-users-status`) — sous peine de **verrouiller** ce rôle
+> hors de la gestion des comptes. Le système de permissions par rôle, déjà en
+> place, atteint le même résultat sans ce risque et reste réversible.
 
 ---
 
@@ -121,7 +129,7 @@ la DIRCOM ne la voit jamais.
 └────────────────────────────────────────────────────────────────┘
         (barre latérale principale — la DIRCOM ne voit que ça)
 
-┌─ Administration (admins) ─┐     ┌─ Console technique (super admin) ─┐
+┌─ Administration (admins) ─┐     ┌─ Console technique (profils tech.) ┐
 │ Configuration · Sécurité  │     │ Pipeline · Collectes · Logs ·      │
 │ Sources · Comptes ·       │     │ Jobs · CRON · Diagnostic ·         │
 │ Connecteurs · Utilisateurs│     │ Backfill · Santé · Maintenance     │
@@ -133,8 +141,9 @@ la DIRCOM ne la voit jamais.
 1. **Ce document** — la cible fait foi.
 2. **Scinder le registre `reglages.ts`** en deux espaces : **Administration**
    (config) et **Console technique** (ops) ; renommer « Réglages » → « Administration ».
-3. **Gater la Console technique** derrière une permission dédiée (puis un rôle
-   `super_admin`).
+3. **Gater la Console technique** derrière la permission dédiée
+   `access_console_technique` — ✅ fait (menu masqué dans `AdminPage` + routes
+   `/admin/*` d'exploitation protégées dans `App.tsx`).
 4. **Remonter la valeur éditoriale** vers le produit, un écran à la fois :
    Coffre → Publier · Événements → Ce matin · Shadow tracker → Acteurs ·
    Newsletters → Publier · Résonance → Insights (si crédible).
