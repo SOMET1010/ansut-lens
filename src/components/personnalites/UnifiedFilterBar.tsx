@@ -96,23 +96,24 @@ export function UnifiedFilterBar({
         </button>
         
         {([1, 2, 3, 4] as CercleStrategique[]).map((cercle) => {
-          const { color } = CERCLE_LABELS[cercle];
+          const { color, court, label } = CERCLE_LABELS[cercle];
           const count = stats?.parCercle[cercle] ?? 0;
           const isActive = activeTab === cercle.toString();
-          
+
           return (
             <button
               key={cercle}
               onClick={() => onTabChange(cercle.toString())}
+              title={label}
               className={cn(
                 'px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap flex items-center gap-1.5',
-                isActive 
-                  ? 'bg-background text-foreground shadow-sm' 
+                isActive
+                  ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               )}
-             aria-label="Fermer">
+             aria-label={label}>
               <div className={cn('h-2 w-2 rounded-full', color)} />
-              <span className="hidden sm:inline">C</span>{cercle}
+              {court}
               <span className={cn(
                 'text-[10px] px-1.5 py-0.5 rounded-full',
                 isActive ? 'bg-primary/10 text-primary' : 'bg-muted'

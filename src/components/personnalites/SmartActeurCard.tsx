@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Award, Building2, Pencil, MoreHorizontal, Archive, Trash2, Info, Activity, Flame, Sparkles, AlertTriangle } from 'lucide-react';
+import { Award, Building2, Pencil, MoreHorizontal, Archive, Trash2, Activity, Flame, AlertTriangle } from 'lucide-react';
 import { CERCLE_LABELS } from '@/hooks/usePersonnalites';
 import { MiniSparkline } from '@/components/spdi/MiniSparkline';
 import { SentimentBar } from '@/components/spdi/SentimentBar';
@@ -138,8 +138,9 @@ export function SmartActeurCard({
               </AvatarFallback>
             </Avatar>
             
-            {/* Badge SPDI */}
-            {suiviActif && scoreSPDI != null ? (
+            {/* Badge de présence médiatique — affiché uniquement si la présence
+                est réellement suivie et mesurée (Charte : pas de score fabriqué). */}
+            {suiviActif && scoreSPDI != null && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -154,27 +155,11 @@ export function SmartActeurCard({
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
-                    <p className="text-xs">Score SPDI — Présence digitale</p>
+                    <p className="text-xs">Présence médiatique observée (0 à 100)</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-            ) : !suiviActif ? (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="absolute -bottom-1 -right-1 bg-background p-0.5 rounded-full shadow-sm">
-                      <div className="flex items-center gap-0.5 bg-muted text-muted-foreground text-[9px] font-medium px-1.5 py-0.5 rounded-full border border-border">
-                        <Info className="h-2 w-2" />
-                        SPDI
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p className="text-xs">Suivi SPDI inactif</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ) : null}
+            )}
             {/* Mini sparkline under avatar */}
             {suiviActif && dashboard.sparklineData.length >= 2 && (
               <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
@@ -219,12 +204,6 @@ export function SmartActeurCard({
                 <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800">
                   <AlertTriangle className="h-2.5 w-2.5" />
                   Vigilance
-                </span>
-              )}
-              {personnalite.cercle === 1 && personnalite.niveau_alerte !== 'critique' && personnalite.niveau_alerte !== 'eleve' && (
-                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800">
-                  <Sparkles className="h-2.5 w-2.5" />
-                  Aligné
                 </span>
               )}
             </div>

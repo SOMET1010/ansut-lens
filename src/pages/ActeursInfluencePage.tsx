@@ -20,8 +20,8 @@ import { PageContainer, PageHeader, TermeMetier } from '@/components/common';
  */
 const ONGLETS = [
   { value: 'cartographie', label: 'Cartographie' },
-  { value: 'spdi', label: 'Scores de présence' },
-  { value: 'revue', label: 'Revue de stabilité' },
+  { value: 'spdi', label: 'Présence médiatique' },
+  { value: 'revue', label: 'Évolution' },
   { value: 'dirigeants', label: 'Veille dirigeants' },
 ] as const;
 
@@ -51,8 +51,8 @@ export default function ActeursInfluencePage() {
     <PageContainer>
       <div className="space-y-5">
         <PageHeader
-          titre="Acteurs"
-          description="Qui parle et qui compte dans le secteur : cartographie, scores de présence et suivi de stabilité."
+          titre="Acteurs influents"
+          description="Qui façonne le débat numérique, et qui se rapproche de l'ANSUT."
           icon={Users}
           actions={
             <>
@@ -78,8 +78,9 @@ export default function ActeursInfluencePage() {
           }
         >
           <p className="text-xs text-muted-foreground">
-            Les scores de présence reposent sur le{' '}
-            <TermeMetier cle="spdi">SPDI</TermeMetier>, et les acteurs sont répartis par{' '}
+            La présence de chaque acteur est estimée à partir de ses mentions dans la
+            presse et les réseaux suivis, de leur régularité et de leur proximité avec les
+            sujets de l'ANSUT. Les acteurs sont regroupés par{' '}
             <TermeMetier cle="cercle">cercle</TermeMetier> de proximité.
           </p>
         </PageHeader>
