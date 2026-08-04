@@ -257,13 +257,8 @@ const App = () => (
                               <Route path="/admin/users" element={<UsersPage />} />
                             </Route>
 
-                            <Route element={<PermissionRoute permission="view_audit_logs" />}>
-                              <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
-                            </Route>
-
+                            {/* Comptes et connecteurs — reste dans l'Administration. */}
                             <Route element={<PermissionRoute permission="manage_cron_jobs" />}>
-                              <Route path="/admin/cron-jobs" element={<CronJobsPage />} />
-                              <Route path="/admin/spdi-status" element={<SpdiStatusPage />} />
                               <Route
                                 path="/admin/connecteurs-sociaux"
                                 element={<ConnecteursSociauxPage />}
@@ -276,21 +271,12 @@ const App = () => (
                                 path="/admin/comptes-surveilles"
                                 element={<ComptesSurveillesPage />}
                               />
-                              <Route
-                                path="/admin/moteur-editorial"
-                                element={<MoteurEditorialPage />}
-                              />
-                              <Route
-                                path="/admin/import-manuel"
-                                element={<ImportManuelPage />}
-                              />
                             </Route>
 
                             <Route element={<PermissionRoute permission="manage_newsletters" />}>
                               <Route path="/admin/newsletters" element={<NewslettersPage />} />
                               <Route path="/admin/diffusion" element={<DiffusionPage />} />
                               <Route path="/admin/matinale" element={<MatinalePage />} />
-                              <Route path="/admin/freshness" element={<FreshnessPage />} />
                               <Route path="/admin/scoring" element={<ScoringPage />} />
                               <Route path="/admin/titrologie" element={<TitrologieAdminPage />} />
                               <Route
@@ -302,6 +288,37 @@ const App = () => (
                                 element={<CoffreContenuPage />}
                               />
                               <Route path="/admin/auto-veille" element={<AutoVeillePage />} />
+                            </Route>
+
+                            {/*
+                              Console technique — exploitation réservée aux profils
+                              habilités (docs/ARCHITECTURE_NAVIGATION.md). Double
+                              barrière : d'abord le droit « access_console_technique »,
+                              puis la permission fine de chaque page. Un admin de
+                              configuration (sans ce droit) est redirigé — l'URL
+                              directe ne contourne pas le masquage du menu.
+                            */}
+                            <Route
+                              element={<PermissionRoute permission="access_console_technique" />}
+                            >
+                              <Route element={<PermissionRoute permission="manage_cron_jobs" />}>
+                                <Route
+                                  path="/admin/moteur-editorial"
+                                  element={<MoteurEditorialPage />}
+                                />
+                                <Route
+                                  path="/admin/import-manuel"
+                                  element={<ImportManuelPage />}
+                                />
+                                <Route path="/admin/cron-jobs" element={<CronJobsPage />} />
+                                <Route path="/admin/spdi-status" element={<SpdiStatusPage />} />
+                              </Route>
+                              <Route element={<PermissionRoute permission="view_audit_logs" />}>
+                                <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
+                              </Route>
+                              <Route element={<PermissionRoute permission="manage_newsletters" />}>
+                                <Route path="/admin/freshness" element={<FreshnessPage />} />
+                              </Route>
                             </Route>
 
                             <Route element={<PermissionRoute permission="manage_sources" />}>
