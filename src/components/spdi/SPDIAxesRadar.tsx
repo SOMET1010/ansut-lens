@@ -22,11 +22,20 @@ export function SPDIAxesRadar({ axes, showCard = true }: SPDIAxesRadarProps) {
       fullMark: 100,
       detail: `${axes.visibilite.nb_mentions} mentions, ${axes.visibilite.nb_sources} sources`
     },
-    { 
-      axe: 'Qualité', 
-      score: axes.qualite.score, 
+    {
+      axe: 'Qualité',
+      score: axes.qualite.score,
       fullMark: 100,
-      detail: `Sentiment: ${(axes.qualite.sentiment_moyen * 100).toFixed(0)}%`
+      // Le sentiment moyen est un score signé (≈ -1 → +1), pas un pourcentage :
+      // l'afficher « ×100 % » fabriquait une unité fausse (jusqu'à « 999 % »).
+      // On expose une lecture qualitative honnête, selon le signe.
+      detail: `Sentiment ${
+        axes.qualite.sentiment_moyen > 0.05
+          ? 'plutôt positif'
+          : axes.qualite.sentiment_moyen < -0.05
+            ? 'plutôt négatif'
+            : 'neutre'
+      }`,
     },
     { 
       axe: 'Autorité', 

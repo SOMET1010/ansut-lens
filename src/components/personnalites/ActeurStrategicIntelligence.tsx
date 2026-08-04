@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ArrowDown, ArrowUp, Minus, Target, Sparkles, Flame, Snowflake, Radio, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowDown, ArrowUp, Minus, Target, Radio, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
 import { useActeurDigitalDashboard } from '@/hooks/useActeurDigitalDashboard';
 import type { Personnalite } from '@/types';
 import { cn } from '@/lib/utils';
@@ -8,12 +8,17 @@ interface Props {
   personnalite: Personnalite;
 }
 
-function computeAlignement(p: Personnalite): { label: string; color: string; icon: typeof Flame } {
-  // Heuristique : niveau_alerte + cercle
-  if (p.niveau_alerte === 'critique') return { label: 'Hostile / Volatile', color: 'text-red-600 bg-red-50 border-red-200 dark:bg-red-950/40', icon: Flame };
-  if (p.niveau_alerte === 'eleve') return { label: 'Sensible', color: 'text-orange-600 bg-orange-50 border-orange-200 dark:bg-orange-950/40', icon: AlertTriangle };
-  if (p.cercle === 1) return { label: 'Aligné', color: 'text-green-600 bg-green-50 border-green-200 dark:bg-green-950/40', icon: Sparkles };
-  return { label: 'Neutre', color: 'text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-950/40', icon: Snowflake };
+function computeVigilance(p: Personnalite): { label: string; color: string; icon: typeof AlertTriangle } {
+  // Reflet FIDÈLE du niveau d'alerte SAISI (champ manuel) — sans en inférer une
+  // « hostilité » ou une « volatilité » que la donnée ne porte pas. Le niveau
+  // d'alerte dit qu'on surveille l'acteur de près, pas qu'il est hostile.
+  if (p.niveau_alerte === 'critique') {
+    return { label: 'Vigilance haute', color: 'text-red-600 bg-red-50 border-red-200 dark:bg-red-950/40', icon: AlertTriangle };
+  }
+  if (p.niveau_alerte === 'eleve') {
+    return { label: 'Vigilance élevée', color: 'text-orange-600 bg-orange-50 border-orange-200 dark:bg-orange-950/40', icon: AlertTriangle };
+  }
+  return { label: 'Standard', color: 'text-muted-foreground bg-muted/30 border-border', icon: Radio };
 }
 
 function computeDynamique(sparkline: number[]) {
@@ -50,11 +55,11 @@ export function ActeurStrategicIntelligence({ personnalite }: Props) {
     `${personnalite.prenom ?? ''} ${personnalite.nom}`.trim()
   );
 
-  const alignement = useMemo(() => computeAlignement(personnalite), [personnalite]);
+  const vigilance = useMemo(() => computeVigilance(personnalite), [personnalite]);
   const dynamique = useMemo(() => computeDynamique(dashboard.sparklineData), [dashboard.sparklineData]);
   const whyStrategic = useMemo(() => computeWhyStrategic(personnalite), [personnalite]);
 
-  const AlignementIcon = alignement.icon;
+  const VigilanceIcon = vigilance.icon;
   const TrendIcon = dynamique.trend === 'up' ? TrendingUp : dynamique.trend === 'down' ? TrendingDown : Minus;
   const trendColor = dynamique.trend === 'up' ? 'text-green-600' : dynamique.trend === 'down' ? 'text-red-600' : 'text-muted-foreground';
 
@@ -62,10 +67,10 @@ export function ActeurStrategicIntelligence({ personnalite }: Props) {
     <div className="space-y-5">
       {/* Bandeau Alignement + Dynamique */}
       <div className="grid grid-cols-2 gap-2">
-        <div className={cn('p-3 rounded-lg border flex flex-col items-center gap-1', alignement.color)}>
-          <AlignementIcon className="h-4 w-4" />
-          <span className="text-[10px] uppercase tracking-wide font-semibold opacity-70">Alignement</span>
-          <span className="text-xs font-bold text-center">{alignement.label}</span>
+        <div className={cn('p-3 rounded-lg border flex flex-col items-center gap-1', vigilance.color)}>
+          <VigilanceIcon className="h-4 w-4" />
+          <span className="text-[10px] uppercase tracking-wide font-semibold opacity-70">Niveau de vigilance</span>
+          <span className="text-xs font-bold text-center">{vigilance.label}</span>
         </div>
         <div className={cn('p-3 rounded-lg border flex flex-col items-center gap-1 bg-muted/30', trendColor)}>
           <TrendIcon className="h-4 w-4" />
@@ -78,10 +83,13 @@ export function ActeurStrategicIntelligence({ personnalite }: Props) {
 
       {/* Pourquoi stratégique */}
       <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-        <h4 className="text-xs font-bold uppercase tracking-wide text-primary mb-2 flex items-center gap-1.5">
+        <h4 className="text-xs font-bold uppercase tracking-wide text-primary mb-0.5 flex items-center gap-1.5">
           <Target className="h-3.5 w-3.5" />
-          Pourquoi cet acteur est stratégique
+          Rôle dans l’écosystème
         </h4>
+        <p className="text-[10px] text-muted-foreground mb-2">
+          D’après la catégorie et le cercle enregistrés pour cet acteur.
+        </p>
         <ul className="space-y-1">
           {whyStrategic.map((r, i) => (
             <li key={i} className="text-xs text-foreground/85 flex items-start gap-1.5">
