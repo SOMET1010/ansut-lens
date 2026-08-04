@@ -13,7 +13,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Award, Building2, Pencil, MoreHorizontal, Archive, Trash2, Activity, Flame, AlertTriangle } from 'lucide-react';
+import { Award, Building2, Pencil, MoreHorizontal, Archive, Trash2, Activity, Flame, AlertTriangle, Newspaper, Clock } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { CERCLE_LABELS } from '@/hooks/usePersonnalites';
 import { MiniSparkline } from '@/components/spdi/MiniSparkline';
 import { SentimentBar } from '@/components/spdi/SentimentBar';
@@ -24,6 +26,8 @@ import { cn } from '@/lib/utils';
 interface SmartActeurCardProps {
   personnalite: Personnalite;
   allPersonnalites?: Personnalite[];
+  /** Nombre de mentions réelles sur 7 jours (job lier-mentions-acteurs). */
+  mentions7j?: number;
   onClick?: () => void;
   onEdit?: () => void;
   onArchive?: () => void;
@@ -96,6 +100,7 @@ const getCategorieLabel = (categorie?: string) => {
 
 export function SmartActeurCard({
   personnalite,
+  mentions7j,
   onClick,
   onEdit,
   onArchive,
@@ -103,6 +108,13 @@ export function SmartActeurCard({
 }: SmartActeurCardProps) {
   const cercleStyles = getCercleStyles(personnalite.cercle);
   const initials = `${personnalite.prenom?.[0] || ''}${personnalite.nom[0]}`.toUpperCase();
+
+  // Activité réelle (Charte : n'affiche que ce qui est mesuré et sourcé).
+  const derniereActivite = personnalite.derniere_activite
+    ? new Date(personnalite.derniere_activite)
+    : null;
+  const aDeMentions = typeof mentions7j === 'number' && mentions7j > 0;
+  const aDeLActivite = aDeMentions || !!derniereActivite;
 
   const suiviActif = personnalite.suivi_spdi_actif ?? false;
   const scoreSPDI = personnalite.score_spdi_actuel;
@@ -296,6 +308,25 @@ export function SmartActeurCard({
       {suiviActif && (
         <div className="mb-3">
           <SentimentBar {...dashboard.sentimentDistribution} compact />
+        </div>
+      )}
+
+      {/* Activité réelle — affichée uniquement si des mentions sont reliées
+          (job lier-mentions-acteurs). Sinon rien : pas de « 0 » fabriqué. */}
+      {aDeLActivite && (
+        <div className="mt-auto pt-3 border-t border-border/50 flex items-center gap-3 text-[11px] text-muted-foreground">
+          {aDeMentions && (
+            <span className="inline-flex items-center gap-1 font-medium text-foreground/80">
+              <Newspaper className="h-3 w-3" />
+              {mentions7j} {mentions7j! > 1 ? 'mentions' : 'mention'} · 7 j
+            </span>
+          )}
+          {derniereActivite && (
+            <span className="inline-flex items-center gap-1" title="Date de la mention la plus récente">
+              <Clock className="h-3 w-3" />
+              {formatDistanceToNow(derniereActivite, { addSuffix: true, locale: fr })}
+            </span>
+          )}
         </div>
       )}
 
