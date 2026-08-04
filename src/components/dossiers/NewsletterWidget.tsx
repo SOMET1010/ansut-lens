@@ -81,12 +81,28 @@ export function NewsletterWidget({ onGenerate }: NewsletterWidgetProps) {
           La Newsletter est prête à être générée.
         </h3>
         
-        {/* Stats */}
+        {/*
+          Périmètre honnête (charte de crédibilité) : ce sont des COMPTAGES bruts
+          — les articles collectés sur la fenêtre et les destinataires actifs — pas
+          une sélection « pertinente » faite par l'IA (aucun tri n'a lieu à ce
+          stade). Le tri éditorial intervient à la génération du brouillon.
+        */}
         <p className="text-sm opacity-80 mb-6 leading-relaxed">
-          L'IA a sélectionné{' '}
-          <span className="font-bold">{previewStats?.actualites || '...'} articles</span> pertinents 
-          pour votre audience de{' '}
-          <span className="font-bold">{previewStats?.destinataires || '...'} décideurs</span>.
+          {previewStats ? (
+            <>
+              <span className="font-bold">
+                {previewStats.actualites} article{previewStats.actualites > 1 ? 's' : ''}
+              </span>{' '}
+              collecté{previewStats.actualites > 1 ? 's' : ''} ces 7 derniers jours ·{' '}
+              <span className="font-bold">
+                {previewStats.destinataires} destinataire{previewStats.destinataires > 1 ? 's' : ''}
+              </span>{' '}
+              actif{previewStats.destinataires > 1 ? 's' : ''}. Le brouillon sera constitué à
+              partir de cette période.
+            </>
+          ) : (
+            'Calcul de la période en cours…'
+          )}
         </p>
         
         {/* Generate button */}
