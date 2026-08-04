@@ -223,8 +223,6 @@ function extractInsightsFromContent(
     
     if (matchingKeywords.length > 0 || keywords.length === 0) {
       const sentiment = estimateSentiment(titleContent + ' ' + content.substring(0, 500));
-      const isCritical = sentiment < -0.3 || 
-        /controvers|scandale|accusation|crise|problème|échec|alerte|urgent/i.test(titleContent);
 
       insights.push({
         source_id: sourceId,
@@ -232,10 +230,12 @@ function extractInsightsFromContent(
         type_contenu: 'post',
         contenu: titleContent.substring(0, 1000),
         url_original: metadata.sourceURL || originalUrl,
-        engagement_score: calculateEngagementScore(content, plateforme),
+        // Charte : pas de score d'engagement fabriqué (le scraping ne fournit pas
+        // de vrais compteurs) ni de « critique » déduit d'une regex.
+        engagement_score: 0,
         sentiment,
         entites_detectees: matchingKeywords,
-        est_critique: isCritical,
+        est_critique: false,
       });
     }
   }
@@ -263,15 +263,9 @@ function extractInsightsFromContent(
     // Extraire les hashtags et tags potentiels
     const hashtagMatches = cleanContent.match(/#\w+/g) || [];
     
-    // Calculer un score d'engagement estimé
-    const engagementScore = calculateEngagementScore(cleanContent, plateforme);
-    
-    // Estimer le sentiment
+    // Sentiment estimé (indicatif) ; PAS de score d'engagement fabriqué ni de
+    // « critique » déduit d'une regex — Charte de crédibilité.
     const sentiment = estimateSentiment(cleanContent);
-    
-    // Déterminer si critique
-    const isCritical = sentiment < -0.3 || 
-      /controvers|scandale|accusation|crise|problème|échec|alerte|urgent|danger/i.test(cleanContent);
 
     insights.push({
       source_id: sourceId,
@@ -279,11 +273,11 @@ function extractInsightsFromContent(
       type_contenu: 'post',
       contenu: cleanContent.substring(0, 1000),
       hashtags: hashtagMatches.length > 0 ? hashtagMatches : undefined,
-      engagement_score: engagementScore,
+      engagement_score: 0,
       sentiment,
       entites_detectees: matchingKeywords,
       url_original: metadata.sourceURL || originalUrl,
-      est_critique: isCritical,
+      est_critique: false,
     });
   }
   

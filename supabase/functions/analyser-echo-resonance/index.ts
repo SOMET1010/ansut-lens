@@ -8,6 +8,22 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // DÉSACTIVÉ — Charte de crédibilité.
+  // Cette fonction écrivait dans `echo_metrics` un « score de résonance /100 »,
+  // une « portée estimée » et un « nombre de reprises presse » ESTIMÉS par un LLM
+  // (le prompt demandait littéralement d'« estimer » ces valeurs), puis les
+  // présentait comme des faits. Ces scores fabriqués ont été retirés du produit ;
+  // on ne les persiste plus. L'écho médiatique RÉEL (reprises presse ÷
+  // publications, dédupliqué) est calculé côté lecture (`calculerEchoMediatique`).
+  // Fonction conservée en no-op pour ne pas casser un appel programmé existant.
+  return new Response(
+    JSON.stringify({
+      disabled: true,
+      reason: "Résonance/portée/reprises estimées par IA retirées (charte de crédibilité) ; écho médiatique réel calculé côté lecture.",
+    }),
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

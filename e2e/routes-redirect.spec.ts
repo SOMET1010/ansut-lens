@@ -13,6 +13,7 @@ const REDIRECTIONS: Array<{ from: string; to: string }> = [
   { from: '/index', to: '/ce-matin' },
   { from: '/index.html', to: '/ce-matin' },
   { from: '/radar', to: '/ce-matin' },
+  { from: '/la-matinale', to: '/ce-matin' },
   { from: '/actualites', to: '/veille' },
   { from: '/medias', to: '/veille' },
   { from: '/balayage', to: '/recherche' },

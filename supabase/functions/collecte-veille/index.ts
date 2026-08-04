@@ -1,5 +1,20 @@
 // Using native Deno.serve
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { canonicalUrl, estPageArticle } from "../_shared/dedup-actualites.ts";
+
+/**
+ * Extrait une date de publication du CHEMIN de l'URL (…/2024/10/15/… ou
+ * …/2024-10-15…). Corrige la faute d'audit « /2024/10/ affiché "il y a 2 j" » :
+ * on récupère la vraie date de l'article quand elle est dans l'URL, sinon on
+ * renvoie null (jamais la date du jour fabriquée).
+ */
+function dateDepuisUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const m = url.match(/\/(20\d{2})[/-](0[1-9]|1[0-2])(?:[/-](0[1-9]|[12]\d|3[01]))?/);
+  if (!m) return null;
+  const iso = `${m[1]}-${m[2]}-${m[3] ?? '01'}`;
+  return Number.isNaN(new Date(iso).getTime()) ? null : iso;
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -361,7 +376,8 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours).`;
         resume: a.resume || '',
         source: a.source || 'Perplexity',
         url: realUrl,
-        date_publication: a.date_publication || new Date().toISOString().split('T')[0],
+        // Date réelle si fournie ou déductible de l'URL ; jamais fabriquée.
+        date_publication: a.date_publication || dateDepuisUrl(realUrl),
         source_type: 'perplexity' as const,
         url_verified: urlVerified,
       });
@@ -485,7 +501,8 @@ Réponds TOUJOURS avec un JSON valide:
       resume: a.resume || '',
       source: a.auteur_twitter || 'Twitter/X',
       url,
-      date_publication: a.date_publication || new Date().toISOString().split('T')[0],
+      // Date réelle si fournie ; jamais la date du jour fabriquée.
+      date_publication: a.date_publication || null,
       source_type: 'grok_twitter' as const,
       url_verified: urlVerified,
     });
@@ -548,9 +565,11 @@ async function collecteGoogleNews(
             catch { return 'Google News'; }
           })(),
           url: result.url,
-          date_publication: new Date().toISOString().split('T')[0],
+          // Vraie date extraite de l'URL si présente, sinon null (jamais le jour).
+          date_publication: dateDepuisUrl(result.url),
           source_type: 'google_news',
-          url_verified: true,
+          // Vérifié seulement si c'est une vraie page d'article, pas une home.
+          url_verified: estPageArticle(result.url),
         });
       }
     } catch (err) {
@@ -830,6 +849,21 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
       .limit(5000);
     const titresConnus = new Set<string>((titresRecents || []).map(r => cleDedup(r.titre)));
 
+    // Déduplication par URL canonique : on charge les URLs des 30 derniers jours
+    // et on écarte tout article dont l'URL (host + chemin, sans query) est déjà
+    // connue — corrige la contamination « même article ×6 » de l'audit.
+    const { data: urlsRecentes } = await supabase
+      .from('actualites')
+      .select('source_url')
+      .gte('created_at', trenteJours)
+      .not('source_url', 'is', null)
+      .limit(5000);
+    const urlsConnus = new Set<string>();
+    for (const r of urlsRecentes || []) {
+      const c = canonicalUrl(r.source_url as string);
+      if (c) urlsConnus.add(c);
+    }
+
     // Référentiel des piliers stratégiques (Plan Stratégique ANSUT 2026-2030) :
     // chaque article est rattaché aux piliers qu'il impacte, le premier servant de
     // pilier principal. Le rattachement est ainsi persisté et requêtable, plutôt
@@ -918,7 +952,14 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
       const dominantQuadrant = Object.entries(quadrantScores)
         .sort((a, b) => b[1] - a[1])[0]?.[0] || 'market';
 
-      const sourceUrl = (actu.url && isValidUrl(actu.url)) ? actu.url : null;
+      // Lien d'article stable uniquement : une page d'accueil n'est pas une preuve.
+      const sourceUrl = (actu.url && isValidUrl(actu.url) && estPageArticle(actu.url)) ? actu.url : null;
+
+      // Doublon d'URL (en base ou déjà traité ce cycle) : on saute.
+      const canonUrl = canonicalUrl(sourceUrl);
+      if (canonUrl && urlsConnus.has(canonUrl)) continue;
+      if (canonUrl) urlsConnus.add(canonUrl);
+
       const sourceNom = (actu.source && actu.source.trim())
         || nomSourceDepuisUrl(sourceUrl)
         || 'Source non précisée';
@@ -932,7 +973,9 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
           source_nom: sourceNom,
           source_url: sourceUrl,
           source_type: actu.source_type,
-          date_publication: actu.date_publication || new Date().toISOString(),
+          // Date réelle uniquement : null si non vérifiée (fin de la date du jour
+          // fabriquée). Les vues fenêtrées excluent honnêtement les dates nulles.
+          date_publication: actu.date_publication ?? null,
           tags: isSemanticMatch ? ['sujet-connexe', ...matchedKeywords] : matchedKeywords,
           categorie: dominantCategory || (isSemanticMatch ? 'Sujet Connexe' : 'Actualités sectorielles'),
           importance,

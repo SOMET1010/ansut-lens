@@ -2,7 +2,6 @@ import {
   BarChart3,
   Bot,
   FileText,
-  Home,
   Megaphone,
   Newspaper,
   Radio,
@@ -44,24 +43,17 @@ export interface NavSection {
 
 export const NAV_SECTIONS: NavSection[] = [
   {
+    // « La Matinale » n'est plus un pilote isolé : elle EST « Ce matin ».
+    // L'édition éditoriale du matin devient l'unique porte d'entrée ; l'ancien
+    // tableau de bord et l'ancienne adresse /la-matinale y sont redirigés.
     id: 'ce-matin',
     label: 'Ce matin',
     question: 'Que dois-je savoir maintenant ?',
     path: '/ce-matin',
-    icon: Home,
-    permission: 'view_radar',
-    mobile: true,
-    legacyPaths: ['/radar'],
-  },
-  {
-    // Pilote éditorial « La Matinale » : vue additive, isolée, atteignable ici.
-    // « Ce matin » reste inchangé le temps de la recette (comparaison possible).
-    id: 'la-matinale',
-    label: 'La matinale',
-    question: 'L’édition éditoriale du matin (pilote)',
-    path: '/la-matinale',
     icon: Sunrise,
     permission: 'view_radar',
+    mobile: true,
+    legacyPaths: ['/radar', '/la-matinale'],
   },
   {
     id: 'veille',

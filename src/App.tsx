@@ -40,7 +40,9 @@ const AccessDeniedPage = lazy(() => import('@/pages/AccessDeniedPage'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
 
 // Sections principales
-const CeMatinPage = lazy(() => import('@/pages/CeMatinPage'));
+// « Ce matin » est désormais l'édition éditoriale (ex-« La Matinale ») : une
+// seule porte d'entrée du matin. L'ancien tableau de bord `CeMatinPage` est
+// retiré de la navigation ; son adresse et /la-matinale redirigent vers /ce-matin.
 const LaMatinelePage = lazy(() => import('@/pages/LaMatinelePage'));
 const InsightsPage = lazy(() => import('@/pages/InsightsPage'));
 const VeillePage = lazy(() => import('@/pages/VeillePage'));
@@ -171,6 +173,7 @@ const App = () => (
                         <Route path="/index" element={<Navigate to="/ce-matin" replace />} />
                         <Route path="/index.html" element={<Navigate to="/ce-matin" replace />} />
                         <Route path="/radar" element={<Navigate to="/ce-matin" replace />} />
+                        <Route path="/la-matinale" element={<Navigate to="/ce-matin" replace />} />
                         <Route path="/medias" element={<Navigate to="/veille" replace />} />
                         <Route path="/actualites" element={<Navigate to="/veille" replace />} />
                         <Route path="/balayage" element={<Navigate to="/recherche" replace />} />
@@ -202,8 +205,7 @@ const App = () => (
                           }
                         >
                           <Route element={<PermissionRoute permission="view_radar" />}>
-                            <Route path="/ce-matin" element={<CeMatinPage />} />
-                            <Route path="/la-matinale" element={<LaMatinelePage />} />
+                            <Route path="/ce-matin" element={<LaMatinelePage />} />
                             <Route path="/veille" element={<VeillePage />} />
                             <Route path="/recherche" element={<BalayagePage />} />
                             <Route path="/insights" element={<InsightsPage />} />
