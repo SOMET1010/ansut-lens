@@ -81,7 +81,7 @@ function jaccard(a: Set<string>, b: Set<string>): number {
   return union === 0 ? 0 : inter / union;
 }
 
-function canonicalUrl(url?: string | null): string | null {
+export function canonicalUrl(url?: string | null): string | null {
   if (!url) return null;
   try {
     const u = new URL(url);
@@ -91,6 +91,18 @@ function canonicalUrl(url?: string | null): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Une URL pointe-t-elle vers un ARTICLE (chemin réel) et non une page d'accueil ?
+ * Un lien vers la home d'un média n'est pas une preuve : il ne mène pas au contenu
+ * cité. Réutilisé à l'écriture (collecte) comme à la lecture (affichage).
+ */
+export function estPageArticle(url?: string | null): boolean {
+  const canon = canonicalUrl(url);
+  if (!canon) return false;
+  const i = canon.indexOf('/');
+  return i >= 0 && canon.length - i > 1;
 }
 
 function richnessScore(a: ActuLike): number {
