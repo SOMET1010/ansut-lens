@@ -5,7 +5,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
 import {
   PageContainer,
   PageHeader,
@@ -220,11 +219,6 @@ export default function VeillePage() {
               selectedPeriod={periode}
               onPeriodChange={setPeriode}
               onRefresh={rafraichir}
-              onExport={() =>
-                toast.info(
-                  'L’export n’est pas encore disponible. Utilisez la page Publier pour produire une note.',
-                )
-              }
               isRefreshing={declencherCollecte.isPending}
               collectePhase={declencherCollecte.phase}
               onBatchSentiment={() => analyseSentiment.mutate()}

@@ -307,7 +307,7 @@ export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFo
                 <Zap className="h-6 w-6" />
               </div>
               <Input 
-                placeholder="Ex: Concurrence Fintech, E-Réputation..." 
+                placeholder="Ex : Zones blanches, FTTH & 5G, Réputation ANSUT…"
                 className="h-12 text-base"
                 value={formData.nom}
                 onChange={(e) => setFormData(prev => ({ ...prev, nom: e.target.value }))}

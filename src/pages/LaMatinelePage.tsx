@@ -12,13 +12,11 @@ import {
   Megaphone,
   Newspaper,
   Radio,
-  Share2,
   Sparkles,
   Star,
   Target,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -589,13 +587,6 @@ function ActivitesRecentes({ briefing }: { briefing: Briefing }) {
 
 /* --------------------------------------------------------------- Page */
 
-function partagerBientot() {
-  toast('Partage intelligent — préparé, pas encore actif', {
-    description:
-      'À partir de ce même briefing : PDF élégant, e-mail, message Teams, WhatsApp, note de cabinet.',
-  });
-}
-
 function EtatVide() {
   return (
     <div className="rounded-xl border border-dashed border-[var(--m-line)] bg-[var(--m-paper-2)] p-10 text-center">
@@ -633,7 +624,7 @@ export default function LaMatinelePage() {
         <header className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-[var(--m-ink)] pb-4">
           <div>
             <p className="matinale-mono text-[0.64rem] uppercase tracking-[0.22em] text-[var(--m-accent)]">
-              La matinale
+              Ce matin
             </p>
             <h1 className="matinale-serif mt-1 text-[clamp(1.8rem,4vw,2.7rem)] font-bold leading-none tracking-tight text-[var(--m-ink)]">
               {capitaliser(format(new Date(briefing.genereLeMs), "'Édition du' EEEE d MMMM yyyy", { locale: fr }))}
@@ -651,15 +642,6 @@ export default function LaMatinelePage() {
               )}
             </p>
           </div>
-          <Button
-            type="button"
-            onClick={partagerBientot}
-            variant="outline"
-            className="gap-2 border-[var(--m-line)] bg-[var(--m-paper-2)] text-[var(--m-ink)] hover:bg-[var(--m-paper-3)]"
-          >
-            <Share2 className="h-4 w-4" aria-hidden />
-            Partager le briefing
-          </Button>
         </header>
 
         {isLoading && !briefing.sujetUne ? (

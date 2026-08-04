@@ -336,13 +336,13 @@ export default function BalayagePage() {
     (value?: string) => {
       const target = (value ?? subject).trim();
       if (!target) {
-        toast.error('Renseignez un sujet avant d’armer le balayage');
+        toast.error('Renseignez un sujet avant de lancer la recherche');
         return;
       }
       setSubject(target);
       setArmedSubject(target);
       pushRecent(target);
-      toast.success(`Balayage armé sur « ${target} »`);
+      toast.success(`Recherche lancée sur « ${target} »`);
     },
     [subject, pushRecent]
   );
@@ -379,7 +379,7 @@ export default function BalayagePage() {
             <Satellite className="h-6 w-6" aria-hidden="true" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Balayage 30 jours</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Recherche · 30 jours</h1>
             <p className="text-sm text-muted-foreground">
               Un sujet, toutes les sources — liens de recherche réels, aucun résultat fabriqué.
             </p>
@@ -395,7 +395,7 @@ export default function BalayagePage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Radio className="h-4 w-4 text-primary" aria-hidden="true" />
-            Console de balayage
+            Lancer une recherche
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
