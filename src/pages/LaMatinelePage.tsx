@@ -241,12 +241,13 @@ function ARetenir({ points }: { points: PointRetenir[] }) {
         <p className="matinale-mono text-[0.62rem] uppercase tracking-[0.18em] text-[var(--m-ink-faint)]">
           À retenir ce matin
         </p>
-        <a
-          href={`#${ANCRES.sujetUne}`}
+        <Link
+          to="/sujets"
           className="matinale-mono text-[0.62rem] uppercase tracking-[0.1em] text-[var(--m-accent)] hover:underline"
         >
           Voir tous les sujets →
-        </a>
+        </Link>
+
       </div>
       <ul className="grid gap-px sm:grid-cols-3">
         {points.map((p) => (
