@@ -105,6 +105,9 @@ export default function VeillePage() {
 
   const actualitesFiltrees = useMemo(() => {
     return (actualites ?? []).filter((actu) => {
+      // La pige presse a son écran dédié (« Pige presse ») : on la sort du fil
+      // Veille pour ne pas la montrer deux fois.
+      if (actu.source_type === 'pige') return false;
       // Corpus externe : on écarte la voix officielle de l'ANSUT par défaut.
       if (!inclureAnsut && estVoixAnsut(actu)) return false;
       if (termeRecherche) {

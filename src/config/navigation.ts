@@ -5,6 +5,7 @@ import {
   Megaphone,
   Newspaper,
   Radio,
+  ScrollText,
   Search,
   Settings,
   Sunrise,
@@ -64,6 +65,14 @@ export const NAV_SECTIONS: NavSection[] = [
     permission: 'view_radar',
     mobile: true,
     legacyPaths: ['/actualites', '/medias'],
+  },
+  {
+    id: 'pige',
+    label: 'Pige presse',
+    question: 'Que disent les journaux, titre par titre ?',
+    path: '/pige',
+    icon: ScrollText,
+    permission: 'view_radar',
   },
   {
     id: 'recherche',
