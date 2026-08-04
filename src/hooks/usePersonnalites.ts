@@ -266,26 +266,26 @@ export function useDeletePersonnalite() {
 // Constantes pour les labels
 export const CERCLE_LABELS: Record<CercleStrategique, { label: string; court: string; color: string; description: string }> = {
   1: {
-    label: 'Institutionnels Nationaux',
-    court: 'Institutionnels',
+    label: 'Institutions',
+    court: 'Institutions',
     color: 'bg-blue-500',
     description: 'Tutelle MTND, Régulation ARTCI, Gouvernance ANSUT'
   },
   2: {
-    label: 'Opérateurs & Connectivité',
+    label: 'Opérateurs',
     court: 'Opérateurs',
     color: 'bg-orange-500',
     description: 'Télécoms, FAI, Fintech, Équipementiers'
   },
   3: {
-    label: 'Bailleurs & Internationaux',
-    court: 'Bailleurs',
+    label: 'Partenaires',
+    court: 'Partenaires',
     color: 'bg-green-500',
     description: 'Banque Mondiale, BAD, UE, Smart Africa'
   },
   4: {
-    label: 'Experts & Médias',
-    court: 'Experts & Médias',
+    label: 'Influenceurs',
+    court: 'Influenceurs',
     color: 'bg-purple-500',
     description: 'Médias tech, Académiques, Consultants'
   },
