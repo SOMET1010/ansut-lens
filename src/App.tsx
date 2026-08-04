@@ -206,6 +206,8 @@ const App = () => (
                         >
                           <Route element={<PermissionRoute permission="view_radar" />}>
                             <Route path="/ce-matin" element={<LaMatinelePage />} />
+                            <Route path="/sujets" element={<SujetsPage />} />
+
                             <Route path="/veille" element={<VeillePage />} />
                             <Route path="/recherche" element={<BalayagePage />} />
                             <Route path="/insights" element={<InsightsPage />} />
