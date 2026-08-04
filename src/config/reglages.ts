@@ -9,9 +9,7 @@ import {
   Clock,
   Database,
   FileCode,
-  GraduationCap,
   Newspaper,
-  Presentation,
   Radar,
   Shield,
   ShieldCheck,
@@ -341,39 +339,16 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
   // son assainissement (charte de crédibilité), pour ne pas remonter de fausse
   // précision dans le produit.
   // ————————————————————————— AIDE & RESSOURCES —————————————————————————
-  {
-    id: 'accompagnement',
-    titre: 'Formation et présentation',
-    question: 'Comment expliquer la plateforme aux autres ?',
-    icon: GraduationCap,
-    zone: 'aide',
-    entrees: [
-      {
-        id: 'formation',
-        titre: 'Guides de formation',
-        description: 'Télécharger les guides d’utilisation par profil.',
-        path: '/admin/formation',
-        icon: GraduationCap,
-        permission: 'access_admin',
-      },
-      {
-        id: 'presentation',
-        titre: 'Support de présentation',
-        description: 'Récupérer les diapositives de présentation du projet.',
-        path: '/admin/presentation',
-        icon: Presentation,
-        permission: 'access_admin',
-      },
-      {
-        id: 'documentation',
-        titre: 'Documentation technique',
-        description: 'Consulter le manuel technique complet de la plateforme.',
-        path: '/admin/documentation',
-        icon: FileCode,
-        permission: 'access_admin',
-      },
-    ],
-  },
+  // Le groupe « Formation et présentation » (guides, diapositives, doc technique)
+  // est RETIRÉ du menu tant que son contenu n'est pas refait : ces supports
+  // décrivent l'ancienne plateforme (Personnalités, Suivi SPDI, cockpit
+  // Surveillance, table presence_digitale_metrics…) — tout ce que la refonte
+  // crédibilité + navigation a supprimé ou renommé. Mieux vaut ne pas proposer
+  // de formation trompeuse que d'en afficher une périmée (charte de crédibilité).
+  // Les routes /admin/formation|presentation|documentation subsistent mais ne
+  // sont plus liées ; à réactiver une fois les supports réécrits pour RADAR.
+  // La zone « aide » n'ayant plus de groupe, elle disparaît automatiquement du
+  // rendu (AdminPage filtre les zones sans groupe visible).
 ];
 
 /** Ordre d'affichage des espaces. */
