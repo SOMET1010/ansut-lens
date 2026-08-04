@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { FileText, Edit3, Send, Mail, Users, AlertTriangle, TrendingUp, Eye, Sparkles, Calendar, Palette, Archive } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { FileText, Edit3, Send, Mail, Users, AlertTriangle, TrendingUp, Eye, Sparkles, Calendar, Palette, Archive, Newspaper, Radio, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,6 +13,7 @@ import {
 } from '@/hooks/useDossiers';
 import { useNewsletters, useNewsletter } from '@/hooks/useNewsletters';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { 
   DossierFormDialog, 
@@ -56,6 +57,7 @@ export default function DossiersPage() {
   const [selectedNewsletterId, setSelectedNewsletterId] = useState<string | null>(null);
   
   const { isAdmin } = useAuth();
+  const { hasPermission } = useUserPermissions();
   const { mode, setMode } = useViewMode();
   const { data: dossiers, isLoading: isLoadingDossiers, isError: isErrorDossiers, error: errorDossiers, refetch: refetchDossiers } = useDossiers();
   const { data: newsletters, isLoading: isLoadingNewsletters, isError: isErrorNewsletters, error: errorNewsletters, refetch: refetchNewsletters } = useNewsletters();
@@ -204,6 +206,52 @@ export default function DossiersPage() {
           Mode {currentConfig.label}
         </Badge>
       </div>
+
+      {/*
+        Produire & diffuser — la fabrication et l'envoi de la matinale et des
+        résumés sont des activités du PRODUIT (règle de navigation : la valeur
+        éditoriale vit dans les écrans, pas dans l'administration). Ces accès
+        remontent ici l'ancien sas « À intégrer au produit ». Réservés à qui
+        peut réellement produire (`manage_newsletters`).
+      */}
+      {hasPermission('manage_newsletters') && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Link
+            to="/admin/matinale"
+            className="group flex items-start gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Newspaper className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-1.5 text-sm font-medium">
+                Matinale
+                <ChevronRight className="h-4 w-4 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" />
+              </span>
+              <span className="block text-xs leading-relaxed text-muted-foreground">
+                Composer et exporter la note de synthèse du matin.
+              </span>
+            </span>
+          </Link>
+          <Link
+            to="/admin/diffusion"
+            className="group flex items-start gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Radio className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-1.5 text-sm font-medium">
+                Canaux de diffusion
+                <ChevronRight className="h-4 w-4 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" />
+              </span>
+              <span className="block text-xs leading-relaxed text-muted-foreground">
+                Programmer l’envoi du résumé par courriel, SMS ou Telegram.
+              </span>
+            </span>
+          </Link>
+        </div>
+      )}
 
       {/* MODE: DG - Vue synthétique */}
       {safeMode === 'dg' && (

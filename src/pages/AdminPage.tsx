@@ -180,7 +180,6 @@ export default function AdminPage() {
                   className={cn(
                     'rounded-xl border-l-4 bg-muted/30 px-4 py-3',
                     meta.ton === 'technique' && 'border-l-amber-500 bg-amber-500/5',
-                    meta.ton === 'transitoire' && 'border-l-muted-foreground/40 bg-transparent',
                     meta.ton === 'neutre' && 'border-l-primary',
                   )}
                 >

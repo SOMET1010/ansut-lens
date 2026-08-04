@@ -1,7 +1,6 @@
 import {
   Activity,
   AtSign,
-  Bell,
   Cog,
   FilePlus2,
   BookOpen,
@@ -11,12 +10,9 @@ import {
   Database,
   FileCode,
   GraduationCap,
-  Mail,
-  Megaphone,
   Newspaper,
   Presentation,
   Radar,
-  Radio,
   Shield,
   ShieldCheck,
   Sliders,
@@ -68,15 +64,16 @@ export interface EntreeReglage {
  *   - `administration` : configuration, pour quelques administrateurs.
  *   - `console`        : exploitation technique (pipeline, collectes, diagnostics),
  *                        réservée aux profils techniques ; jamais le produit.
- *   - `produit`        : valeur métier EN COURS de remontée vers les écrans
- *                        principaux (transitoire — sera retiré d'ici à mesure).
  *   - `aide`           : formation, présentation, documentation.
+ *
+ * (La zone « produit » a disparu : la valeur métier vit désormais dans les
+ * écrans principaux, pas dans un sas d'administration.)
  */
-export type ZoneReglages = 'administration' | 'console' | 'produit' | 'aide';
+export type ZoneReglages = 'administration' | 'console' | 'aide';
 
 export const ZONES_REGLAGES: Record<
   ZoneReglages,
-  { titre: string; description: string; ton: 'neutre' | 'technique' | 'transitoire' }
+  { titre: string; description: string; ton: 'neutre' | 'technique' }
 > = {
   administration: {
     titre: 'Administration',
@@ -88,12 +85,6 @@ export const ZONES_REGLAGES: Record<
     description:
       'Exploitation : pipeline, collectes, tâches programmées, diagnostics. Réservé aux profils techniques — hors du produit éditorial.',
     ton: 'technique',
-  },
-  produit: {
-    titre: 'À intégrer au produit',
-    description:
-      'Fonctions à valeur métier en cours de remontée vers les écrans principaux (Insights, Publier, Ce matin, Acteurs).',
-    ton: 'transitoire',
   },
   aide: {
     titre: 'Aide & ressources',
@@ -341,61 +332,14 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
       },
     ],
   },
-  // ————————————— À INTÉGRER AU PRODUIT (transitoire) —————————————
-  {
-    id: 'a-remonter',
-    titre: 'Valeur métier à remonter',
-    question: 'Fonctions qui devraient vivre dans les écrans principaux.',
-    icon: Megaphone,
-    zone: 'produit',
-    entrees: [
-      {
-        id: 'auto-veille',
-        titre: 'Auto-veille institutionnelle',
-        description:
-          'L’écho médiatique (comptages réels) est désormais dans Insights. Cet écran conserve des métriques estimées par IA (résonance, portée) — à consolider ou retirer avant tout usage décisionnel.',
-        path: '/admin/auto-veille',
-        icon: Megaphone,
-        permission: 'manage_newsletters',
-        synonymes: ['auto-veille', 'miroir', 'résonance', 'écho médiatique'],
-      },
-      {
-        id: 'newsletters',
-        titre: 'Newsletters',
-        description: 'Composer et programmer les lettres d’information. → Publier',
-        path: '/admin/newsletters',
-        icon: Mail,
-        permission: 'manage_newsletters',
-        statistique: 'newslettersEnAttente',
-      },
-      {
-        id: 'matinale',
-        titre: 'Matinale',
-        description: 'Configurer la note de synthèse diffusée chaque matin aux décideurs. → Publier',
-        path: '/admin/matinale',
-        icon: Newspaper,
-        permission: 'manage_newsletters',
-        synonymes: ['briefing', 'flash info'],
-      },
-      {
-        id: 'diffusion',
-        titre: 'Canaux de diffusion',
-        description: 'Choisir les canaux d’envoi : courriel, SMS, Telegram. → Publier',
-        path: '/admin/diffusion',
-        icon: Radio,
-        permission: 'manage_newsletters',
-      },
-      {
-        id: 'alertes',
-        titre: 'Alertes',
-        description: 'Régler la sensibilité de détection et consulter les alertes émises. → Notifications',
-        path: '/alertes',
-        icon: Bell,
-        permission: 'access_admin',
-        statistique: 'alertesNonLues',
-      },
-    ],
-  },
+  // La zone « À intégrer au produit » a été retirée : sa valeur vit désormais
+  // dans le PRODUIT (règle de navigation). Newsletters et Coffre à contenus sont
+  // des onglets de « Publier » ; Matinale et Canaux de diffusion y sont accessibles
+  // via l'encart « Produire & diffuser » ; les Alertes via la cloche de
+  // notifications. L'écho médiatique réel est dans Insights ; l'ancien écran
+  // « Auto-veille » (métriques estimées par IA) est retiré du menu en attendant
+  // son assainissement (charte de crédibilité), pour ne pas remonter de fausse
+  // précision dans le produit.
   // ————————————————————————— AIDE & RESSOURCES —————————————————————————
   {
     id: 'accompagnement',
@@ -433,7 +377,7 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
 ];
 
 /** Ordre d'affichage des espaces. */
-export const ORDRE_ZONES: ZoneReglages[] = ['administration', 'console', 'produit', 'aide'];
+export const ORDRE_ZONES: ZoneReglages[] = ['administration', 'console', 'aide'];
 
 /** Nombre total d'entrees, pour l'affichage et les tests. */
 export const NB_ENTREES_REGLAGES = GROUPES_REGLAGES.reduce(
