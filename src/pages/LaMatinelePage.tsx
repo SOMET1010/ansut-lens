@@ -27,6 +27,8 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { RelativeTime } from '@/components/ui/relative-time';
+import { CarteSujetBriefing } from '@/components/radar/CarteSujetBriefing';
+
 
 import { useBriefing } from '@/hooks/useBriefing';
 import {
