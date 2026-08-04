@@ -110,7 +110,7 @@ export function TitrologieWidget() {
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <Newspaper className="h-5 w-5 text-primary" aria-hidden />
-            Revue de Presse
+            Revue de presse — unes du jour
           </CardTitle>
           {/* Ajout d'un aria-label pour le bouton reduit a une icone */}
           <Button
@@ -125,6 +125,15 @@ export function TitrologieWidget() {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground capitalize">{dateStr}</p>
+        {/*
+          Cadrage honnête : c'est l'actualité GÉNÉRALE — les unes de la presse
+          ivoirienne, toutes rubriques — donnée à titre de contexte, chaque titre
+          étant nommé (journal) et sourcé (lien). On n'en fait pas une veille
+          ANSUT filtrée : on dit ce que c'est.
+        */}
+        <p className="text-[11px] text-muted-foreground/80">
+          Unes de la presse ivoirienne, toutes rubriques — à titre de contexte.
+        </p>
       </CardHeader>
       <CardContent className="space-y-4">
         {(!titres || titres.length === 0) ? (
