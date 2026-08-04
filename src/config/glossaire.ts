@@ -67,22 +67,22 @@ export const GLOSSAIRE: TermeGlossaire[] = [
       'Revue des titres de la presse papier ivoirienne du jour, telle qu’elle se pratique devant les kiosques a journaux.',
   },
   {
-    cle: 'matinale',
-    terme: 'Matinale',
+    cle: 'ce-matin',
+    terme: 'Ce matin',
     definition:
-      'Note de synthese diffusee chaque matin aux decideurs, rassemblant les faits marquants des dernieres vingt-quatre heures.',
+      'Note de synthese consultee chaque matin, rassemblant les faits marquants des dernieres vingt-quatre heures.',
   },
   {
-    cle: 'balayage',
-    terme: 'Balayage',
+    cle: 'recherche',
+    terme: 'Recherche',
     definition:
       'Recherche approfondie sur un sujet unique, remontant jusqu’a trente jours et interrogeant toutes les sources disponibles.',
   },
   {
-    cle: 'capteur',
-    terme: 'Capteur',
+    cle: 'surveillance',
+    terme: 'Surveillance',
     definition:
-      'Surveillance permanente configuree sur un theme, un acteur ou un mot-cle, qui alimente la veille en continu.',
+      'Suivi permanent configure sur un theme, un acteur ou un mot-cle, qui alimente la veille en continu.',
   },
   {
     cle: 'share-of-voice',
