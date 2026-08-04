@@ -5,6 +5,9 @@ import type { Personnalite } from '@/types';
 export interface BenchmarkVerdict {
   lines: string[];
   winner: 'A' | 'B' | 'draw';
+  /** Nombre d'indicateurs où chaque acteur mène nettement (méthode exposée). */
+  aPoints: number;
+  bPoints: number;
 }
 
 export interface BenchmarkData {
@@ -28,7 +31,7 @@ function generateVerdict(
   if (scoreDelta > 10) {
     const leader = a.score > b.score ? a : b;
     const other = a.score > b.score ? b : a;
-    lines.push(`${leader.name} domine avec un score SPDI de ${Math.round(leader.score)} contre ${Math.round(other.score)}.`);
+    lines.push(`${leader.name} a un score SPDI plus élevé (${Math.round(leader.score)} vs ${Math.round(other.score)}).`);
     if (a.score > b.score) aPoints++; else bPoints++;
   } else if (scoreDelta > 0) {
     lines.push(`Les scores SPDI sont proches (${Math.round(a.score)} vs ${Math.round(b.score)}).`);
@@ -66,7 +69,7 @@ function generateVerdict(
   }
 
   const winner = aPoints > bPoints ? 'A' as const : bPoints > aPoints ? 'B' as const : 'draw' as const;
-  return { lines, winner };
+  return { lines, winner, aPoints, bPoints };
 }
 
 export function useBenchmarkData(
@@ -96,7 +99,7 @@ export function useBenchmarkData(
   }, [dashA.sparklineData, dashB.sparklineData]);
 
   const verdict = useMemo(() => {
-    if (!acteurA || !acteurB) return { lines: [], winner: 'draw' as const };
+    if (!acteurA || !acteurB) return { lines: [], winner: 'draw' as const, aPoints: 0, bPoints: 0 };
     return generateVerdict(
       { name: `${acteurA.prenom ?? ''} ${acteurA.nom}`.trim(), dash: dashA, score: acteurA.score_spdi_actuel ?? 0 },
       { name: `${acteurB.prenom ?? ''} ${acteurB.nom}`.trim(), dash: dashB, score: acteurB.score_spdi_actuel ?? 0 },
