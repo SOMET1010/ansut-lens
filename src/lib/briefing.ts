@@ -24,17 +24,10 @@
  * honnêtement plutôt que de fabriquer une précision.
  */
 
-/** Une preuve cliquable : d'où vient l'information. */
-export interface Preuve {
-  id: string;
-  /** Origine de la preuve, pour l'affichage (« LinkedIn », « Fratmat », « Site »…). */
-  source: string;
-  /** Nature de la preuve — détermine le regroupement dans « Pourquoi ce sujet ? ». */
-  type: 'ansut' | 'presse' | 'partenaire';
-  titre: string;
-  url: string | null;
-  dateMs: number | null;
-}
+// La preuve est définie par la FONDATION partagée (source unique de vérité) et
+// ré-exportée ici pour les consommateurs du contrat Briefing.
+import type { Preuve } from '@/lib/preuve';
+export type { Preuve };
 
 /** Un sujet du briefing (l'unité de lecture : 1 carte = 1 sujet, l'article est une preuve). */
 export interface SujetBriefing {
@@ -49,10 +42,20 @@ export interface SujetBriefing {
   chapo: string;
   /** true si le chapô provient d'un récit IA, false s'il s'agit du résumé factuel. */
   recitParIA: boolean;
-  /** Étiquettes réelles (partenaires cités), jamais décoratives. */
+  /** Étiquettes thématiques (jamais des acteurs — ceux-ci vont dans `organisations`). */
   tags: string[];
+  /**
+   * Preuves = DOCUMENTS vérifiables uniquement (publications ANSUT + reprises
+   * presse attribuables et dédupliquées). Une organisation citée n'est PAS une
+   * preuve : elle est listée à part dans `organisations`.
+   */
   preuves: Preuve[];
+  /** Nombre de documents (= preuves.length) — jamais gonflé par les entités citées. */
   nbPreuves: number;
+  /** Organisations mentionnées dans les contenus (Orange, MTN…), à part des preuves. */
+  organisations: string[];
+  /** Reprises (mêmes URL/titre) écartées à la déduplication — exposé pour transparence. */
+  nbReprises: number;
   /** Limites du récit exposées par l'IA, le cas échéant (traçabilité). */
   limites: string | null;
 }

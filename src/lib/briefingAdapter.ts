@@ -22,14 +22,19 @@ import type { RecitSujet } from '@/hooks/useRecitsSujets';
 import type { EchoMediatique } from '@/lib/insightsCommunication';
 import type { PublicationAnsut } from '@/hooks/useAnsutPublications';
 import type { Signal } from '@/types';
-import { nettoyerTitre, nettoyerExtrait } from '@/lib/nettoyerExtrait';
+import { nettoyerTitre } from '@/lib/nettoyerExtrait';
+import {
+  documentsProbants,
+  libellePlateforme,
+  dateMsPublicationAnsut,
+  type Preuve,
+} from '@/lib/preuve';
 import {
   ANCRES,
   type ActiviteBriefing,
   type Briefing,
   type ConseilBriefing,
   type EchoBriefing,
-  type Preuve,
   type PointRetenir,
   type ProfondeurLecture,
   type SignalBriefing,
@@ -42,6 +47,8 @@ const MAX_AUTRES_SUJETS = 6;
 const SEUIL_OPPORTUNITE = 3;
 /** Fraîcheur maximale d'un signal remonté « à examiner » (jours). */
 const FRAICHEUR_SIGNAL_JOURS = 30;
+/** Fraîcheur maximale d'une entrée du fil « Activités récentes » (jours). */
+const FRAICHEUR_ACTIVITE_JOURS = 30;
 /** Articles d'écho médiatique affichés comme preuves. */
 const MAX_ARTICLES_ECHO = 8;
 
@@ -58,31 +65,6 @@ export interface SourceBriefing {
   derniereCollecteMs: number | null;
 }
 
-function libellePlateforme(p: string | null | undefined): string {
-  const cle = (p ?? '').toLowerCase();
-  const table: Record<string, string> = {
-    linkedin: 'LinkedIn',
-    facebook: 'Facebook',
-    x: 'X',
-    twitter: 'X',
-    youtube: 'YouTube',
-    instagram: 'Instagram',
-    tiktok: 'TikTok',
-    website: 'Site',
-    web: 'Site',
-    site: 'Site',
-  };
-  if (table[cle]) return table[cle];
-  return p ? p.charAt(0).toUpperCase() + p.slice(1) : 'Source';
-}
-
-function dateMsPublication(p: PublicationAnsut): number | null {
-  const brut = p.date_publication ?? p.collecte_le;
-  if (!brut) return null;
-  const t = new Date(brut).getTime();
-  return Number.isNaN(t) ? null : t;
-}
-
 function dateMsSignal(s: Signal): number | null {
   if (!s.date_detection) return null;
   const t = new Date(s.date_detection).getTime();
@@ -97,48 +79,27 @@ function condenser(texte: string, maxPhrases = 2): string {
   return phrases.slice(0, maxPhrases).join(' ');
 }
 
-/** Preuves d'un sujet : voix ANSUT, reprise presse, partenaires cités. */
-function preuvesDuSujet(s: Sujet): Preuve[] {
-  const ansut: Preuve[] = s.publications.map((p) => ({
-    id: p.id,
-    source: libellePlateforme(p.plateforme),
-    type: 'ansut',
-    titre: (nettoyerExtrait(p.contenu ?? '') || 'Publication ANSUT').slice(0, 120),
-    url: p.url_original ?? null,
-    dateMs: dateMsPublication(p),
-  }));
-  const presse: Preuve[] = s.articles.map((a) => ({
-    id: a.id,
-    source: a.source_nom ?? 'Source',
-    type: 'presse',
-    titre: nettoyerTitre(a.titre),
-    url: a.source_url ?? null,
-    dateMs: a.date_publication ? new Date(a.date_publication).getTime() : null,
-  }));
-  const partenaires: Preuve[] = s.partenaires.map((nom) => ({
-    id: `part:${s.id}:${nom}`,
-    source: 'Mention',
-    type: 'partenaire',
-    titre: nom,
-    url: null,
-    dateMs: null,
-  }));
-  return [...ansut, ...presse, ...partenaires];
-}
-
 /** Projette un `Sujet` (moteur existant) sur un `SujetBriefing` (contrat de vue). */
 function versSujetBriefing(s: Sujet, recit: RecitSujet | undefined): SujetBriefing {
   const recitParIA = !!(recit && recit.narrative && recit.narrative.trim());
-  const preuves = preuvesDuSujet(s);
+  // Fondation partagée : documents dédupliqués et vérifiables, organisations à part.
+  const { documents, organisations, nbReprises } = documentsProbants({
+    publications: s.publications,
+    articles: s.articles,
+    organisations: s.partenaires,
+  });
   return {
     id: s.id,
     rubrique: s.nomCourt,
     titre: recit?.headline ? nettoyerTitre(recit.headline) : s.nom,
     chapo: recitParIA ? condenser(recit!.narrative) : s.resumeFactuel,
     recitParIA,
-    tags: s.partenaires.slice(0, 3),
-    preuves,
-    nbPreuves: preuves.length,
+    // Les acteurs cités ne sont pas des thèmes : ils vont dans `organisations`.
+    tags: [],
+    preuves: documents,
+    nbPreuves: documents.length,
+    organisations,
+    nbReprises,
     limites: recit?.limitations?.trim() ? recit.limitations.trim() : null,
   };
 }
@@ -155,11 +116,13 @@ function versEcho(echo: EchoMediatique | null): EchoBriefing | null {
     dateMs: a.dateMs,
   }));
   return {
-    ratio: echo.ratio,
+    // Une seule décimale : deux décimales suggéreraient une précision que six
+    // publications ne portent pas.
+    ratio: echo.ratio == null ? null : Math.round(echo.ratio * 10) / 10,
     earned: echo.earned,
     owned: echo.owned,
     fenetreJours: echo.fenetreJours,
-    methode: `Presse citant « ANSUT » ÷ publications ANSUT sur ${echo.fenetreJours} jours — deux comptages réels, aucune estimation.`,
+    methode: `Presse citant « ANSUT » ÷ publications ANSUT sur ${echo.fenetreJours} jours — deux comptages réels de volumes, sans lien de causalité ni estimation.`,
     articles,
   };
 }
@@ -198,14 +161,11 @@ function versConseil(sujets: Sujet[]): { conseil: ConseilBriefing | null; nbOppo
     .sort((a, b) => b.nbArticles - a.nbArticles);
   if (vacants.length === 0) return { conseil: null, nbOpportunites: 0, rubrique: null };
   const top = vacants[0];
-  const preuves: Preuve[] = top.articles.slice(0, 5).map((a) => ({
-    id: a.id,
-    source: a.source_nom ?? 'Source',
-    type: 'presse',
-    titre: nettoyerTitre(a.titre),
-    url: a.source_url ?? null,
-    dateMs: a.date_publication ? new Date(a.date_publication).getTime() : null,
-  }));
+  const preuves: Preuve[] = documentsProbants({
+    publications: [],
+    articles: top.articles,
+    organisations: [],
+  }).documents.slice(0, 5);
   return {
     conseil: {
       texte: `L’écosystème parle de « ${top.nomCourt} » (${top.nbArticles} contenus) ; l’ANSUT n’a pas publié sur ce thème. Une prise de parole occuperait un terrain aujourd’hui vacant.`,
@@ -217,28 +177,40 @@ function versConseil(sujets: Sujet[]): { conseil: ConseilBriefing | null; nbOppo
   };
 }
 
-/** Fil « Activités récentes » — le plus frais de chaque nature. */
+/**
+ * Fil « Activités récentes » — le plus frais de chaque nature, mais seulement
+ * s'il est réellement RÉCENT. Un signal daté d'il y a plusieurs mois n'a rien à
+ * faire entre une activité de 6 h et une de 5 j : au-delà de la fenêtre, on
+ * l'écarte du fil (il reste consultable dans son écran dédié).
+ */
 function versActivites(src: SourceBriefing): ActiviteBriefing[] {
+  const limite = src.maintenantMs - FRAICHEUR_ACTIVITE_JOURS * 24 * 3600 * 1000;
+  const recent = (ms: number | null): ms is number => ms !== null && ms >= limite;
   const acts: ActiviteBriefing[] = [];
+
   const pub = src.publicationsRecentes[0];
-  if (pub) {
+  const pubMs = pub ? dateMsPublicationAnsut(pub) : null;
+  if (pub && recent(pubMs)) {
     acts.push({
       type: 'publication',
       intitule: 'Nouvelle publication ANSUT',
       detail: libellePlateforme(pub.plateforme),
-      quandMs: dateMsPublication(pub),
+      quandMs: pubMs,
     });
   }
+
   const sig = src.signaux[0];
-  if (sig) {
+  const sigMs = sig ? dateMsSignal(sig) : null;
+  if (sig && recent(sigMs)) {
     acts.push({
       type: 'signal',
       intitule: 'Signal à examiner détecté',
       detail: nettoyerTitre(sig.titre),
-      quandMs: dateMsSignal(sig),
+      quandMs: sigMs,
     });
   }
-  const art = src.presseRecente.find((a) => a.dateMs !== null);
+
+  const art = src.presseRecente.find((a) => recent(a.dateMs));
   if (art) {
     acts.push({
       type: 'presse',
@@ -247,6 +219,7 @@ function versActivites(src: SourceBriefing): ActiviteBriefing[] {
       quandMs: art.dateMs,
     });
   }
+
   return acts;
 }
 
