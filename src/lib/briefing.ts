@@ -24,17 +24,10 @@
  * honnêtement plutôt que de fabriquer une précision.
  */
 
-/** Une preuve cliquable : d'où vient l'information. */
-export interface Preuve {
-  id: string;
-  /** Origine de la preuve, pour l'affichage (« LinkedIn », « Fratmat », « Site »…). */
-  source: string;
-  /** Nature de la preuve — détermine le regroupement dans « Pourquoi ce sujet ? ». */
-  type: 'ansut' | 'presse' | 'partenaire';
-  titre: string;
-  url: string | null;
-  dateMs: number | null;
-}
+// La preuve est définie par la FONDATION partagée (source unique de vérité) et
+// ré-exportée ici pour les consommateurs du contrat Briefing.
+import type { Preuve } from '@/lib/preuve';
+export type { Preuve };
 
 /** Un sujet du briefing (l'unité de lecture : 1 carte = 1 sujet, l'article est une preuve). */
 export interface SujetBriefing {

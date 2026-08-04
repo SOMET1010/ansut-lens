@@ -22,14 +22,19 @@ import type { RecitSujet } from '@/hooks/useRecitsSujets';
 import type { EchoMediatique } from '@/lib/insightsCommunication';
 import type { PublicationAnsut } from '@/hooks/useAnsutPublications';
 import type { Signal } from '@/types';
-import { nettoyerTitre, nettoyerExtrait } from '@/lib/nettoyerExtrait';
+import { nettoyerTitre } from '@/lib/nettoyerExtrait';
+import {
+  documentsProbants,
+  libellePlateforme,
+  dateMsPublicationAnsut,
+  type Preuve,
+} from '@/lib/preuve';
 import {
   ANCRES,
   type ActiviteBriefing,
   type Briefing,
   type ConseilBriefing,
   type EchoBriefing,
-  type Preuve,
   type PointRetenir,
   type ProfondeurLecture,
   type SignalBriefing,
@@ -47,29 +52,6 @@ const FRAICHEUR_ACTIVITE_JOURS = 30;
 /** Articles d'écho médiatique affichés comme preuves. */
 const MAX_ARTICLES_ECHO = 8;
 
-/** Canonicalise une URL pour la déduplication ; distingue article vs page d'accueil. */
-function infosUrl(u: string | null | undefined): { canon: string; estArticle: boolean } | null {
-  if (!u) return null;
-  try {
-    const url = new URL(u);
-    const host = url.hostname.replace(/^www\./, '').toLowerCase();
-    const path = url.pathname.replace(/\/+$/, '');
-    return { canon: `${host}${path}`, estArticle: path.length > 1 };
-  } catch {
-    return null;
-  }
-}
-
-/** Titre normalisé (sans casse, accents ni ponctuation) pour la dédup de secours. */
-function titreNorm(t: string): string {
-  return (t || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
-}
-
 /** Données brutes issues des hooks existants — entrée de l'adaptateur. */
 export interface SourceBriefing {
   sujets: Sujet[];
@@ -81,31 +63,6 @@ export interface SourceBriefing {
   presseRecente: { id: string; titre: string; source: string | null; url: string | null; dateMs: number | null }[];
   maintenantMs: number;
   derniereCollecteMs: number | null;
-}
-
-function libellePlateforme(p: string | null | undefined): string {
-  const cle = (p ?? '').toLowerCase();
-  const table: Record<string, string> = {
-    linkedin: 'LinkedIn',
-    facebook: 'Facebook',
-    x: 'X',
-    twitter: 'X',
-    youtube: 'YouTube',
-    instagram: 'Instagram',
-    tiktok: 'TikTok',
-    website: 'Site',
-    web: 'Site',
-    site: 'Site',
-  };
-  if (table[cle]) return table[cle];
-  return p ? p.charAt(0).toUpperCase() + p.slice(1) : 'Source';
-}
-
-function dateMsPublication(p: PublicationAnsut): number | null {
-  const brut = p.date_publication ?? p.collecte_le;
-  if (!brut) return null;
-  const t = new Date(brut).getTime();
-  return Number.isNaN(t) ? null : t;
 }
 
 function dateMsSignal(s: Signal): number | null {
@@ -122,65 +79,15 @@ function condenser(texte: string, maxPhrases = 2): string {
   return phrases.slice(0, maxPhrases).join(' ');
 }
 
-/**
- * Documents PROBANTS d'un sujet, dédupliqués et vérifiables — plus les
- * organisations citées listées À PART. Règles (Charte de crédibilité) :
- *  - une preuve est un DOCUMENT : publication ANSUT ou reprise presse ;
- *  - une reprise presse doit être ATTRIBUABLE (source nommée) et ne pas pointer
- *    vers une simple page d'accueil (lien d'article stable exigé) ;
- *  - déduplication par URL canonique, à défaut par titre normalisé ;
- *  - une organisation mentionnée (Orange, MTN…) N'EST PAS une preuve : elle est
- *    renvoyée à part et jamais additionnée au compteur.
- */
-function documentsDuSujet(s: Sujet): {
-  documents: Preuve[];
-  organisations: string[];
-  nbReprises: number;
-} {
-  const ansut: Preuve[] = s.publications.map((p) => ({
-    id: p.id,
-    source: libellePlateforme(p.plateforme),
-    type: 'ansut',
-    titre: (nettoyerExtrait(p.contenu ?? '') || 'Publication ANSUT').slice(0, 120),
-    url: p.url_original ?? null,
-    dateMs: dateMsPublication(p),
-  }));
-
-  const vus = new Set<string>();
-  const presse: Preuve[] = [];
-  let nbReprises = 0;
-  for (const a of s.articles) {
-    // Attribuable ? (sinon, non vérifiable → écarté)
-    if (!a.source_nom) continue;
-    // Lien d'article stable — on rejette les pages d'accueil génériques.
-    const info = infosUrl(a.source_url);
-    if (info && !info.estArticle) continue;
-    // Déduplication : URL canonique en priorité, sinon titre normalisé.
-    const cleUrl = info ? `u:${info.canon}` : null;
-    const cleTitre = `t:${titreNorm(nettoyerTitre(a.titre))}`;
-    if ((cleUrl && vus.has(cleUrl)) || vus.has(cleTitre)) {
-      nbReprises += 1;
-      continue;
-    }
-    if (cleUrl) vus.add(cleUrl);
-    vus.add(cleTitre);
-    presse.push({
-      id: a.id,
-      source: a.source_nom,
-      type: 'presse',
-      titre: nettoyerTitre(a.titre),
-      url: a.source_url ?? null,
-      dateMs: a.date_publication ? new Date(a.date_publication).getTime() : null,
-    });
-  }
-
-  return { documents: [...ansut, ...presse], organisations: s.partenaires.slice(), nbReprises };
-}
-
 /** Projette un `Sujet` (moteur existant) sur un `SujetBriefing` (contrat de vue). */
 function versSujetBriefing(s: Sujet, recit: RecitSujet | undefined): SujetBriefing {
   const recitParIA = !!(recit && recit.narrative && recit.narrative.trim());
-  const { documents, organisations, nbReprises } = documentsDuSujet(s);
+  // Fondation partagée : documents dédupliqués et vérifiables, organisations à part.
+  const { documents, organisations, nbReprises } = documentsProbants({
+    publications: s.publications,
+    articles: s.articles,
+    organisations: s.partenaires,
+  });
   return {
     id: s.id,
     rubrique: s.nomCourt,
@@ -254,14 +161,11 @@ function versConseil(sujets: Sujet[]): { conseil: ConseilBriefing | null; nbOppo
     .sort((a, b) => b.nbArticles - a.nbArticles);
   if (vacants.length === 0) return { conseil: null, nbOpportunites: 0, rubrique: null };
   const top = vacants[0];
-  const preuves: Preuve[] = top.articles.slice(0, 5).map((a) => ({
-    id: a.id,
-    source: a.source_nom ?? 'Source',
-    type: 'presse',
-    titre: nettoyerTitre(a.titre),
-    url: a.source_url ?? null,
-    dateMs: a.date_publication ? new Date(a.date_publication).getTime() : null,
-  }));
+  const preuves: Preuve[] = documentsProbants({
+    publications: [],
+    articles: top.articles,
+    organisations: [],
+  }).documents.slice(0, 5);
   return {
     conseil: {
       texte: `L’écosystème parle de « ${top.nomCourt} » (${top.nbArticles} contenus) ; l’ANSUT n’a pas publié sur ce thème. Une prise de parole occuperait un terrain aujourd’hui vacant.`,
@@ -285,7 +189,7 @@ function versActivites(src: SourceBriefing): ActiviteBriefing[] {
   const acts: ActiviteBriefing[] = [];
 
   const pub = src.publicationsRecentes[0];
-  const pubMs = pub ? dateMsPublication(pub) : null;
+  const pubMs = pub ? dateMsPublicationAnsut(pub) : null;
   if (pub && recent(pubMs)) {
     acts.push({
       type: 'publication',
