@@ -44,6 +44,8 @@ const NotFound = lazy(() => import('@/pages/NotFound'));
 // seule porte d'entrée du matin. L'ancien tableau de bord `CeMatinPage` est
 // retiré de la navigation ; son adresse et /la-matinale redirigent vers /ce-matin.
 const LaMatinelePage = lazy(() => import('@/pages/LaMatinelePage'));
+const SujetsPage = lazy(() => import('@/pages/SujetsPage'));
+
 const InsightsPage = lazy(() => import('@/pages/InsightsPage'));
 const VeillePage = lazy(() => import('@/pages/VeillePage'));
 const BalayagePage = lazy(() => import('@/pages/BalayagePage'));
@@ -206,6 +208,8 @@ const App = () => (
                         >
                           <Route element={<PermissionRoute permission="view_radar" />}>
                             <Route path="/ce-matin" element={<LaMatinelePage />} />
+                            <Route path="/sujets" element={<SujetsPage />} />
+
                             <Route path="/veille" element={<VeillePage />} />
                             <Route path="/recherche" element={<BalayagePage />} />
                             <Route path="/insights" element={<InsightsPage />} />
