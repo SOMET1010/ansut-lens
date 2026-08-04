@@ -1,567 +1,380 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { 
-  Copy, Check, Linkedin, Twitter, Mail, FileText, Newspaper, 
-  Send, Sparkles, ArrowRight, RefreshCw, Clock, AlertCircle,
-  Megaphone, Lightbulb, Target, MessageSquare, ExternalLink, Globe
-} from 'lucide-react';
-import { ReactionAnalyzerSection } from '@/components/communication/ReactionAnalyzerSection';
-import { MatinaleHistoryWidget } from '@/components/communication/MatinaleHistoryWidget';
-import { SujetsValorisationSection } from '@/components/communication/SujetsValorisationSection';
-import { PostsAmplifierSection } from '@/components/communication/PostsAmplifierSection';
-import { NavLink } from 'react-router-dom';
-import { PageContainer, PageHeader, TermeMetier } from '@/components/common';
-import {
-  MediaImpactWidget,
-  SocialPulseWidget,
-  ShareOfVoiceWidget,
-  EchoResonanceWidget,
-} from '@/components/radar';
-import { AnsutAccountsActivityWidget } from '@/components/communication/AnsutAccountsActivityWidget';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from 'sonner';
+import { useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { supabase } from '@/integrations/supabase/client';
-import { useMatinalePreview, useMatinaleSend } from '@/hooks/useMatinale';
+import { ArrowDownRight, ArrowUpRight, Info, Minus, Newspaper, Radio } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { RelativeTime } from '@/components/ui/relative-time';
+import { useCommunication } from '@/hooks/useCommunication';
+import { estTracable, type Indicateur } from '@/lib/indicateur';
+import type {
+  Communication,
+  EchoCommunication,
+  EngagementReseauItem,
+  StatItem,
+  StatReseauItem,
+} from '@/lib/communication';
+import type { Preuve } from '@/lib/preuve';
 
-function CopyButton({ text, label }: { text: string; label: string }) {
-  const [copied, setCopied] = useState(false);
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    toast.success(`${label} copié !`);
-    setTimeout(() => setCopied(false), 2000);
-  };
+/**
+ * Notre communication — vue 100 % PASSIVE d'un objet {@link Communication}.
+ *
+ * Reconstruite sur les fondations de crédibilité (dédup, preuve, « zéro score
+ * opaque ») pour remplacer l'ancien tableau de bord jugé 2/10 par l'audit. Elle
+ * répond à « Comment l'ANSUT est-elle visible ? » avec des faits vérifiables :
+ * ce que l'ANSUT publie, l'écho médiatique (dédupliqué, méthode exposée), et
+ * l'engagement UNIQUEMENT quand la plateforme le fournit. Aucune Résonance /100,
+ * aucun « 72 points », aucun total contaminé, aucun conseil IA non sourcé.
+ */
+
+const FENETRES = [30, 60, 90];
+
+function courtJour(ms: number): string {
+  return format(new Date(ms), 'dd/MM', { locale: fr });
+}
+
+/* --------------------------------------------------------------- Preuves */
+
+function PreuveLien({ preuve }: { preuve: Preuve }) {
+  const contenu = (
+    <>
+      <span className="matinale-mono shrink-0 text-[0.66rem] text-[var(--m-ink-faint)]">
+        {preuve.source}
+      </span>
+      <span className="min-w-0 flex-1 text-[var(--m-ink-soft)]">{preuve.titre}</span>
+      {preuve.dateMs && (
+        <span className="matinale-mono shrink-0 text-[0.62rem] text-[var(--m-ink-faint)]">
+          <RelativeTime date={new Date(preuve.dateMs)} />
+        </span>
+      )}
+    </>
+  );
+  const base = 'flex items-baseline gap-2 rounded px-1.5 py-1 text-[0.84rem] leading-snug';
+  if (preuve.url) {
+    return (
+      <a
+        href={preuve.url}
+        target="_blank"
+        rel="noreferrer"
+        className={cn(
+          base,
+          'transition-colors hover:bg-[var(--m-paper-3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--m-accent)]',
+        )}
+      >
+        {contenu}
+      </a>
+    );
+  }
+  return <span className={base}>{contenu}</span>;
+}
+
+/* ---------------------------------------------------------------- Blocs */
+
+function Section({
+  titre,
+  question,
+  children,
+}: {
+  titre: string;
+  question?: string;
+  children: ReactNode;
+}) {
   return (
-    <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1.5 min-h-11 sm:min-h-9" aria-label={`Copier ${label}`}>
-      {copied ? <Check className="h-3.5 w-3.5 text-[hsl(var(--signal-positive))]" /> : <Copy className="h-3.5 w-3.5" />}
-      {copied ? 'Copié' : 'Copier'}
-    </Button>
+    <section className="mt-8 border-t border-[var(--m-line)] pt-4">
+      <p className="matinale-mono text-[0.62rem] uppercase tracking-[0.16em] text-[var(--m-ink-faint)]">
+        {titre}
+      </p>
+      {question && <p className="mt-0.5 text-[0.8rem] text-[var(--m-ink-soft)]">{question}</p>}
+      <div className="mt-3">{children}</div>
+    </section>
   );
 }
 
-function TonaliteBadge({ tonalite }: { tonalite: string }) {
-  const config = {
-    positif: { label: 'Positif', variant: 'default' as const, className: 'bg-[hsl(var(--signal-positive))]/10 text-[hsl(var(--signal-positive))] border-[hsl(var(--signal-positive))]/20' },
-    negatif: { label: 'Négatif', variant: 'destructive' as const, className: '' },
-    neutre: { label: 'Neutre', variant: 'secondary' as const, className: 'bg-[hsl(var(--signal-warning))]/10 text-[hsl(var(--signal-warning))] border-[hsl(var(--signal-warning))]/20' },
-  }[tonalite] || { label: tonalite, variant: 'secondary' as const, className: '' };
-  return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
+function EvolutionIcone({ evolution }: { evolution: StatReseauItem['evolution'] }) {
+  if (evolution === 'hausse') {
+    return <ArrowUpRight className="h-3.5 w-3.5 text-[var(--m-accent)]" aria-label="en hausse" />;
+  }
+  if (evolution === 'baisse') {
+    return <ArrowDownRight className="h-3.5 w-3.5 text-[var(--m-ink-faint)]" aria-label="en baisse" />;
+  }
+  return <Minus className="h-3.5 w-3.5 text-[var(--m-ink-faint)]" aria-label="stable" />;
 }
 
-// --- Section 1: Matinale Briefing ---
-function MatinaleBriefingSection() {
-  const { mutate: generatePreview, data, isPending } = useMatinalePreview();
-  const { mutate: sendMatinale, isPending: isSending } = useMatinaleSend();
-
+function BarresReseaux({ reseaux }: { reseaux: StatReseauItem[] }) {
+  if (reseaux.length === 0) {
+    return <p className="text-[0.84rem] text-[var(--m-ink-soft)]">Aucune publication datée sur la période.</p>;
+  }
+  const max = Math.max(...reseaux.map((r) => r.count), 1);
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Newspaper className="h-5 w-5 text-primary" />
-            Briefing du matin
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Flash info, e-réputation et posts prêts à publier
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={() => generatePreview(24)} disabled={isPending} className="gap-2">
-            {isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {isPending ? 'Génération…' : 'Générer le briefing'}
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button disabled={isSending} variant="default" className="gap-2">
-                {isSending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                {/*
-                  Le libelle etait ecrit sous la forme d'une chaine contenant du
-                  JSX litteral, qui se serait affichee telle quelle a l'ecran.
-                  Un composant ne peut pas figurer dans une chaine de caracteres.
-                */}
-                {isSending ? 'Envoi…' : 'Envoyer la matinale'}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Confirmer l’envoi de la matinale</AlertDialogTitle>
-                <AlertDialogDescription>
-                  La <TermeMetier cle="matinale">Matinale</TermeMetier> sera envoyée par email à tous les destinataires actifs. Cette action est irréversible.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction onClick={() => sendMatinale(undefined)}>
-                  Confirmer l'envoi
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </div>
+    <ul className="space-y-2">
+      {reseaux.map((r) => (
+        <li key={r.cle} className="flex items-center gap-3">
+          <span className="w-24 shrink-0 truncate text-[0.84rem] text-[var(--m-ink)]">{r.libelle}</span>
+          <span className="h-2 flex-1 overflow-hidden rounded-full bg-[var(--m-paper-3)]">
+            <span
+              className="block h-full rounded-full bg-[var(--m-accent)]"
+              style={{ width: `${Math.round((r.count / max) * 100)}%` }}
+            />
+          </span>
+          <span className="matinale-mono flex w-24 shrink-0 items-center justify-end gap-1.5 text-[0.72rem] tabular-nums text-[var(--m-ink-soft)]">
+            <b className="text-[var(--m-ink)]">{r.count}</b>
+            <EvolutionIcone evolution={r.evolution} />
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
-      {isPending && (
-        <div className="grid gap-4 md:grid-cols-3">
-          {[1,2,3].map(i => (
-            <Card key={i}><CardContent className="p-4 space-y-3">
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-3 w-full" />
-              <Skeleton className="h-3 w-1/2" />
-            </CardContent></Card>
-          ))}
-        </div>
-      )}
-
-      {data?.matinale && (
-        <div className="space-y-6">
-          {/* Flash Info */}
-          <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
-              Flash info <Badge variant="secondary">{data.matinale.flash_info.length}</Badge>
-            </h3>
-            <div className="grid gap-3 md:grid-cols-3">
-              {data.matinale.flash_info.map((item, i) => (
-                <Card key={i} className="border-l-4 border-l-primary">
-                  <CardContent className="p-4">
-                    <p className="font-medium text-sm mb-1">{nettoyerTitre(item.titre)}</p>
-                    <p className="text-xs text-muted-foreground mb-2">{nettoyerExtrait(item.resume)}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground/70">Source : {item.source}</span>
-                      {item.source_url && (
-                        <a
-                          aria-label="Voir la source"
-                          href={item.source_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="shrink-0 p-1 rounded-md hover:bg-accent transition-colors"
-                          title="Voir la source"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5 text-primary" />
-                        </a>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-
-          {/* Veille Réputation */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm flex items-center gap-1.5">
-                  Ce que l’on dit de l’ANSUT
-                </CardTitle>
-                <TonaliteBadge tonalite={data.matinale.veille_reputation.tonalite} />
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0 space-y-4">
-              <p className="text-sm">{data.matinale.veille_reputation.resume}</p>
-              
-              {/* Preuves avec liens */}
-              {data.matinale.veille_reputation.preuves && data.matinale.veille_reputation.preuves.length > 0 ? (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    Preuves — Articles mentionnant l'ANSUT
-                  </p>
-                  {data.matinale.veille_reputation.preuves.map((preuve, i) => {
-                    const sentColor = preuve.sentiment_article === 'positif' 
-                      ? 'border-l-[hsl(var(--signal-positive))]' 
-                      : preuve.sentiment_article === 'negatif' 
-                        ? 'border-l-destructive' 
-                        : 'border-l-[hsl(var(--signal-warning))]';
-                    return (
-                      <div key={i} className={`p-3 rounded-lg bg-muted/50 border-l-4 ${sentColor}`}>
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium truncate">{preuve.titre}</p>
-                            <p className="text-xs text-muted-foreground italic mt-0.5">« {preuve.extrait} »</p>
-                            <div className="flex items-center gap-2 mt-1.5">
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">{preuve.source}</Badge>
-                              <TonaliteBadge tonalite={preuve.sentiment_article} />
-                            </div>
-                          </div>
-                          {preuve.url && (
-                            <a
-                              aria-label="Voir l'article source"
-                              href={preuve.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="shrink-0 p-1.5 rounded-md hover:bg-accent transition-colors"
-                              title="Voir l'article source"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5 text-primary" />
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="p-3 rounded-lg bg-[hsl(var(--signal-warning))]/5 border border-dashed border-[hsl(var(--signal-warning))]/20">
-                  <p className="text-xs text-[hsl(var(--signal-warning))]  flex items-center gap-1.5">
-                    <AlertCircle className="h-3.5 w-3.5" />
-                    Aucune mention directe de l'ANSUT détectée dans les médias sur les dernières 24h
-                  </p>
-                </div>
-              )}
-
-              {data.matinale.veille_reputation.mentions_cles.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {data.matinale.veille_reputation.mentions_cles.map((m, i) => (
-                    <Badge key={i} variant="outline" className="text-[10px]">{m}</Badge>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Posts prêts à publier */}
-          <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
-              Publications prêtes à diffuser
-            </h3>
-            <div className="grid gap-4 md:grid-cols-2">
-              {/* LinkedIn */}
-              <Card className="border-l-4 border-l-[hsl(var(--signal-neutral))]">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm flex items-center gap-1.5">
-                      <Linkedin className="h-4 w-4 text-[hsl(var(--signal-neutral))]" /> LinkedIn
-                    </CardTitle>
-                    <CopyButton text={data.matinale.pret_a_poster.linkedin} label="Post LinkedIn" />
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-sm whitespace-pre-line mb-2">{data.matinale.pret_a_poster.linkedin}</p>
-                  <p className="text-xs italic text-muted-foreground">
-                    Angle proposé : {data.matinale.pret_a_poster.angle}
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* X / Twitter */}
-              <Card className="border-l-4 border-l-foreground">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm flex items-center gap-1.5">
-                      <Twitter className="h-4 w-4" /> X (Twitter)
-                    </CardTitle>
-                    <CopyButton text={data.matinale.pret_a_poster.x_post || ''} label="Post X" />
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-sm whitespace-pre-line mb-2">
-                    {data.matinale.pret_a_poster.x_post || 'Non disponible – régénérez le briefing'}
-                  </p>
-                  {data.matinale.pret_a_poster.x_post && (
-                    <p className="text-xs text-muted-foreground">
-                      {data.matinale.pret_a_poster.x_post.length}/280 caractères
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          <p className="text-[10px] text-muted-foreground text-center">
-            Généré à partir de {data.articles_count} articles • {format(new Date(data.generated_at), "HH:mm 'le' d MMMM", { locale: fr })}
-          </p>
-        </div>
-      )}
-
-      {!data && !isPending && (
-        <Card className="border-dashed">
-          <CardContent className="py-12 text-center">
-            <Newspaper className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
-            <p className="text-sm text-muted-foreground">
-              Cliquez sur « Générer le briefing » pour obtenir votre <TermeMetier cle="matinale">matinale</TermeMetier> du jour
-            </p>
-          </CardContent>
-        </Card>
-      )}
+function Chips({ items }: { items: StatItem[] }) {
+  if (items.length === 0) return <p className="text-[0.84rem] text-[var(--m-ink-soft)]">—</p>;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {items.map((i) => (
+        <span
+          key={i.cle}
+          className="matinale-mono inline-flex items-center gap-1.5 rounded-full border border-[var(--m-line)] bg-[var(--m-paper-2)] px-2.5 py-1 text-[0.68rem] text-[var(--m-ink-soft)]"
+        >
+          {i.libelle}
+          <b className="tabular-nums text-[var(--m-ink)]">{i.count}</b>
+        </span>
+      ))}
     </div>
   );
 }
 
-// --- Section 2: Content Generator ---
-function ContentGeneratorSection({ sujetRef }: { sujetRef?: React.MutableRefObject<((text: string) => void) | null> }) {
-  const [sujet, setSujet] = useState('');
-  const [result, setResult] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  // Expose setSujet to parent
-  if (sujetRef) sujetRef.current = (text: string) => setSujet(text);
-
-  const generateKit = async () => {
-    if (!sujet.trim()) return;
-    setLoading(true);
-    setResult(null);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Non authentifié');
-
-      const { data, error } = await supabase.functions.invoke('assistant-ia', {
-        body: {
-          messages: [{ role: 'user', content: sujet }],
-          mode: 'communication',
-        },
-      });
-
-      if (error) throw error;
-
-      // Handle streaming response
-      if (data instanceof ReadableStream) {
-        const reader = data.getReader();
-        const decoder = new TextDecoder();
-        let full = '';
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
-          for (const line of lines) {
-            const json = line.slice(6);
-            if (json === '[DONE]') continue;
-            try {
-              const parsed = JSON.parse(json);
-              const delta = parsed.choices?.[0]?.delta?.content;
-              if (delta) full += delta;
-            } catch {}
-          }
-        }
-        setResult(full);
-      } else if (typeof data === 'string') {
-        setResult(data);
-      } else {
-        setResult(JSON.stringify(data));
-      }
-    } catch (err: any) {
-      toast.error(err.message || 'Erreur de génération');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+function ValeurIndicateur({ indicateur }: { indicateur: Indicateur }) {
+  if (estTracable(indicateur)) {
+    return (
+      <span className="min-w-0">
+        <span className="block text-[0.9rem] font-semibold tabular-nums text-[var(--m-ink)]">
+          {indicateur.valeur}
+        </span>
+        <span className="block text-[0.72rem] leading-snug text-[var(--m-ink-faint)]">
+          {indicateur.methode}
+        </span>
+      </span>
+    );
+  }
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <Megaphone className="h-5 w-5 text-primary" />
-          Préparer un dossier de communication
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Décrivez un sujet à mettre en avant : messages clés, publications et courriel sont préparés pour vous
+    <span className="min-w-0">
+      <span className="block text-[0.82rem] italic text-[var(--m-ink-faint)]">Donnée indisponible</span>
+      <span className="block text-[0.72rem] leading-snug text-[var(--m-ink-faint)]">{indicateur.raison}</span>
+    </span>
+  );
+}
+
+function Engagement({ items }: { items: EngagementReseauItem[] }) {
+  if (items.length === 0) {
+    return <p className="text-[0.84rem] text-[var(--m-ink-soft)]">Aucun réseau collecté sur la période.</p>;
+  }
+  return (
+    <ul className="grid gap-3 sm:grid-cols-2">
+      {items.map((e) => (
+        <li
+          key={e.cle}
+          className="flex items-start gap-3 rounded-lg border border-[var(--m-line)] bg-[var(--m-paper-2)] p-3"
+        >
+          <span className="matinale-mono w-16 shrink-0 text-[0.7rem] uppercase tracking-[0.06em] text-[var(--m-ink-faint)]">
+            {e.libelle}
+          </span>
+          <ValeurIndicateur indicateur={e.indicateur} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function CarteEcho({ echo }: { echo: EchoCommunication }) {
+  return (
+    <section className="rounded-xl border border-[var(--m-line)] bg-[var(--m-paper-2)] p-5" aria-label="Écho médiatique">
+      <p className="matinale-mono text-[0.62rem] uppercase tracking-[0.18em] text-[var(--m-accent)]">
+        Écho médiatique
+      </p>
+      {echo.ratio !== null ? (
+        <>
+          <p className="mt-2 flex items-baseline gap-2">
+            <span className="matinale-serif text-[2.8rem] font-bold leading-none tabular-nums text-[var(--m-ink)]">
+              {echo.ratio.toLocaleString('fr-FR')}
+            </span>
+            <span className="text-[0.82rem] leading-tight text-[var(--m-ink-soft)]">
+              article{echo.ratio > 1 ? 's' : ''} de presse
+              <br />
+              par publication ANSUT
+            </span>
+          </p>
+          <p className="mt-2 text-[0.84rem] leading-snug text-[var(--m-ink-soft)]">
+            <b className="tabular-nums text-[var(--m-ink)]">{echo.earned}</b> reprise
+            {echo.earned > 1 ? 's' : ''} presse (uniques) citant l’ANSUT pour{' '}
+            <b className="tabular-nums text-[var(--m-ink)]">{echo.owned}</b> publication
+            {echo.owned > 1 ? 's' : ''}, sur {echo.fenetreJours} jours.
+          </p>
+        </>
+      ) : (
+        <p className="mt-2 text-[0.84rem] leading-snug text-[var(--m-ink-soft)]">
+          Ratio indisponible : aucune publication ANSUT datée sur {echo.fenetreJours} jours.
+          <span className="mt-1 block tabular-nums">
+            {echo.earned} reprise{echo.earned > 1 ? 's' : ''} presse comptée{echo.earned > 1 ? 's' : ''}.
+          </span>
         </p>
-      </div>
-
-      <Card>
-        <CardContent className="p-4 space-y-3">
-          <Textarea
-            value={sujet}
-            onChange={e => setSujet(e.target.value)}
-            placeholder="Ex: Valoriser le projet de connectivité rurale de l'ANSUT dans la région du Zanzan…"
-            className="min-h-[80px] resize-none"
-          />
-          <div className="flex items-center justify-between">
-            <div className="flex gap-2 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><Target className="h-3 w-3" /> Messages clés</span>
-              <span className="flex items-center gap-1"><Linkedin className="h-3 w-3" /> Post LinkedIn</span>
-              <span className="flex items-center gap-1"><Twitter className="h-3 w-3" /> Post X</span>
-              <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> Email DG</span>
-            </div>
-            <Button onClick={generateKit} disabled={loading || !sujet.trim()} className="gap-2">
-              {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              {loading ? 'Génération…' : 'Générer le kit'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {result && (
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm">Dossier de communication</CardTitle>
-              <CopyButton text={result} label="Dossier" />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-line text-sm">
-              {result}
-            </div>
-          </CardContent>
-        </Card>
       )}
-    </div>
+      <p className="mt-3 border-t border-dashed border-[var(--m-line)] pt-2 text-[0.72rem] leading-snug text-[var(--m-ink-faint)]">
+        <b className="font-semibold text-[var(--m-ink-soft)]">Méthode :</b> {echo.methode}
+      </p>
+      <Link
+        to="/insights"
+        className="matinale-mono mt-3 inline-block text-[0.68rem] uppercase tracking-[0.08em] text-[var(--m-accent)] hover:underline"
+      >
+        Voir le détail et la méthode →
+      </Link>
+    </section>
   );
 }
 
-// --- Section 3: Quick Tools ---
-function QuickToolsSection() {
-  const shortcuts = [
-    { label: 'Publier', icon: FileText, to: '/publier', desc: 'Notes de synthèse et lettres d’information' },
-    { label: 'Assistant', icon: MessageSquare, to: '/assistant', desc: 'Analyser et rédiger avec de l’aide' },
-    { label: 'Accueil', icon: Newspaper, to: '/ce-matin', desc: 'Flux en temps réel' },
-  ];
-
-  return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold flex items-center gap-2">
-        <Lightbulb className="h-5 w-5 text-primary" />
-        Aller plus loin
-      </h2>
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
-        {shortcuts.map(s => (
-          <NavLink key={s.to} to={s.to}>
-            <Card className="hover:bg-accent/50 transition-colors cursor-pointer h-full">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <s.icon className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">{s.label}</p>
-                  <p className="text-xs text-muted-foreground">{s.desc}</p>
-                </div>
-                <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground" />
-              </CardContent>
-            </Card>
-          </NavLink>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// --- Main Page ---
-import { useSearchParams } from 'react-router-dom';
-import ReseauxSociauxPage from '@/pages/ReseauxSociauxPage';
-import { nettoyerExtrait, nettoyerTitre } from '@/lib/nettoyerExtrait';
+/* --------------------------------------------------------------- Page */
 
 export default function CommunicationPage() {
-  const sujetSetterRef = useRef<((text: string) => void) | null>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const VALID_TABS = ['tableau-de-bord', 'social'] as const;
-  type TabValue = typeof VALID_TABS[number];
-
-  const tabFromUrl = searchParams.get('tab');
-  const tabFromStorage = typeof window !== 'undefined' ? window.localStorage.getItem('communication.activeTab') : null;
-  const initialTab: TabValue = (VALID_TABS.includes(tabFromUrl as TabValue) ? tabFromUrl : VALID_TABS.includes(tabFromStorage as TabValue) ? tabFromStorage : 'tableau-de-bord') as TabValue;
-  const [activeTab, setActiveTab] = useState<TabValue>(initialTab);
-
-  // Sync URL → state (back/forward navigation)
-  React.useEffect(() => {
-    const urlTab = searchParams.get('tab');
-    if (VALID_TABS.includes(urlTab as TabValue) && urlTab !== activeTab) {
-      setActiveTab(urlTab as TabValue);
-    }
-  }, [searchParams]);
-
-  // Ensure URL reflects initial tab (so reload preserves it even if loaded from localStorage)
-  React.useEffect(() => {
-    const urlTab = searchParams.get('tab');
-    if (activeTab !== 'tableau-de-bord' && urlTab !== activeTab) {
-      const next = new URLSearchParams(searchParams);
-      next.set('tab', activeTab);
-      setSearchParams(next, { replace: true });
-    } else if (activeTab === 'tableau-de-bord' && urlTab) {
-      const next = new URLSearchParams(searchParams);
-      next.delete('tab');
-      setSearchParams(next, { replace: true });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
-
-  const handleGeneratePost = useCallback((text: string) => {
-    sujetSetterRef.current?.(text);
-    document.getElementById('kit-communication')?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
-
-  const handleTabChange = (value: string) => {
-    if (!VALID_TABS.includes(value as TabValue)) return;
-    setActiveTab(value as TabValue);
-    try {
-      window.localStorage.setItem('communication.activeTab', value);
-    } catch {}
-  };
+  const [fenetre, setFenetre] = useState(30);
+  const { communication, isLoading } = useCommunication(fenetre);
+  const c: Communication = communication;
+  const rien =
+    !isLoading &&
+    c.publications.totalDatees === 0 &&
+    (!c.echo || c.echo.earned === 0) &&
+    c.reprisesPresse.length === 0;
 
   return (
-    <PageContainer>
-      <PageHeader
-        titre="Notre communication"
-        description="Comment l'ANSUT est visible : portée de nos publications, activité de nos comptes et réputation dans les médias."
-        icon={Megaphone}
-      />
-      <div className="w-full space-y-6 mt-6">
-
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="tableau-de-bord" className="gap-2">
-            <Megaphone className="h-4 w-4" />
-            Tableau de bord
-          </TabsTrigger>
-          <TabsTrigger value="social" className="gap-2">
-            <Globe className="h-4 w-4" />
-            Réseaux sociaux
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="tableau-de-bord" className="space-y-8 mt-0">
-          {/* Notre présence en ligne */}
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Globe className="h-5 w-5 text-primary" />
-                Notre présence en ligne
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Ce que l’on dit de l’ANSUT chaque jour, dans la presse et sur les réseaux
-              </p>
-            </div>
-            <AnsutAccountsActivityWidget />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <SocialPulseWidget />
-              <EchoResonanceWidget />
-            </div>
+    <div className="matinale min-h-full bg-[var(--m-paper)] text-[var(--m-ink)]">
+      <div className="mx-auto max-w-[80rem] px-4 py-6 sm:px-6 lg:px-8">
+        {/* Masthead */}
+        <header className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-[var(--m-ink)] pb-4">
+          <div>
+            <p className="matinale-mono text-[0.64rem] uppercase tracking-[0.22em] text-[var(--m-accent)]">
+              Notre communication
+            </p>
+            <h1 className="matinale-serif mt-1 text-[clamp(1.7rem,3.8vw,2.5rem)] font-bold leading-tight tracking-tight text-[var(--m-ink)]">
+              Comment l’ANSUT est visible
+            </h1>
+            <p className="matinale-mono mt-2 text-[0.7rem] tabular-nums text-[var(--m-ink-soft)]">
+              Fenêtre d’observation : {courtJour(c.periode.debutMs ?? Date.now())} →{' '}
+              {courtJour(c.periode.finMs ?? Date.now())}
+            </p>
           </div>
-
-          <Separator />
-          <ReactionAnalyzerSection />
-          <Separator />
-          <SujetsValorisationSection onGeneratePost={handleGeneratePost} />
-          <Separator />
-          <PostsAmplifierSection onPrepareResponse={handleGeneratePost} />
-          <Separator />
-          <MatinaleBriefingSection />
-          <MatinaleHistoryWidget />
-          <Separator />
-          <div id="kit-communication">
-            <ContentGeneratorSection sujetRef={sujetSetterRef} />
+          <div className="flex items-center gap-1 rounded-lg border border-[var(--m-line)] bg-[var(--m-paper-2)] p-0.5">
+            {FENETRES.map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFenetre(f)}
+                aria-pressed={fenetre === f}
+                className={cn(
+                  'matinale-mono rounded-md px-2.5 py-1 text-[0.72rem] tabular-nums transition-colors',
+                  fenetre === f
+                    ? 'bg-[var(--m-accent)] text-[var(--m-paper)]'
+                    : 'text-[var(--m-ink-soft)] hover:bg-[var(--m-paper-3)]',
+                )}
+              >
+                {f} j
+              </button>
+            ))}
           </div>
-          <Separator />
-          <QuickToolsSection />
-        </TabsContent>
+        </header>
 
-        <TabsContent value="social" className="mt-0">
-          <ReseauxSociauxPage />
-        </TabsContent>
-      </Tabs>
+        {rien ? (
+          <div className="mt-6 rounded-xl border border-dashed border-[var(--m-line)] bg-[var(--m-paper-2)] p-10 text-center">
+            <Newspaper className="mx-auto h-6 w-6 text-[var(--m-ink-faint)]" aria-hidden />
+            <p className="matinale-serif mt-3 text-[1.1rem] text-[var(--m-ink)]">
+              Aucune donnée de communication vérifiable sur {fenetre} jours.
+            </p>
+            <p className="mt-1 text-[0.88rem] text-[var(--m-ink-soft)]">
+              Rien de daté et sourcé à afficher — mieux vaut un silence honnête qu’un chiffre fabriqué.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+            {/* Colonne principale */}
+            <div className="min-w-0">
+              <Section
+                titre="Ce que l’ANSUT a publié"
+                question={
+                  c.publications.totalNonDatees > 0
+                    ? `${c.publications.totalDatees} publication${c.publications.totalDatees > 1 ? 's' : ''} datée${c.publications.totalDatees > 1 ? 's' : ''} · ${c.publications.totalNonDatees} à date non vérifiée (non comptée${c.publications.totalNonDatees > 1 ? 's' : ''})`
+                    : `${c.publications.totalDatees} publication${c.publications.totalDatees > 1 ? 's' : ''} datée${c.publications.totalDatees > 1 ? 's' : ''} sur ${fenetre} j`
+                }
+              >
+                <BarresReseaux reseaux={c.publications.parReseau} />
+              </Section>
+
+              <Section titre="Thèmes portés">
+                <Chips items={c.publications.themes} />
+              </Section>
+
+              <Section titre="Engagement" question="Uniquement lorsque la plateforme fournit les chiffres.">
+                <Engagement items={c.engagement} />
+              </Section>
+
+              <Section titre="Reprises presse récentes" question="Documents attribuables, datés, dédupliqués.">
+                {c.reprisesPresse.length > 0 ? (
+                  <ul className="space-y-0.5">
+                    {c.reprisesPresse.map((p) => (
+                      <li key={p.id}>
+                        <PreuveLien preuve={p} />
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-[0.84rem] text-[var(--m-ink-soft)]">
+                    Aucune reprise presse vérifiable sur la période.
+                  </p>
+                )}
+              </Section>
+            </div>
+
+            {/* Colonne latérale */}
+            <aside className="space-y-4">
+              {c.echo && <CarteEcho echo={c.echo} />}
+              {c.publications.formats.length > 0 && (
+                <section className="rounded-xl border border-[var(--m-line)] bg-[var(--m-paper-2)] p-4">
+                  <p className="matinale-mono text-[0.62rem] uppercase tracking-[0.18em] text-[var(--m-ink-faint)]">
+                    Formats
+                  </p>
+                  <div className="mt-3">
+                    <Chips items={c.publications.formats} />
+                  </div>
+                </section>
+              )}
+              {c.partenaires.length > 0 && (
+                <section className="rounded-xl border border-[var(--m-line)] bg-[var(--m-paper-2)] p-4">
+                  <p className="matinale-mono text-[0.62rem] uppercase tracking-[0.18em] text-[var(--m-ink-faint)]">
+                    Organisations citées
+                  </p>
+                  <div className="mt-3">
+                    <Chips items={c.partenaires} />
+                  </div>
+                </section>
+              )}
+            </aside>
+          </div>
+        )}
+
+        {/* Pied */}
+        <footer className="mt-10 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[var(--m-line)] pt-4 text-[0.72rem] text-[var(--m-ink-faint)]">
+          <span className="flex items-center gap-1.5">
+            <Info className="h-3.5 w-3.5" aria-hidden />
+            Chaque chiffre porte sa méthode ; à défaut, « donnée indisponible ». Aucun score fabriqué.
+          </span>
+          <span className="ml-auto flex items-center gap-3">
+            <Link to="/insights" className="inline-flex items-center gap-1 hover:text-[var(--m-accent)]">
+              <Radio className="h-3.5 w-3.5" aria-hidden />
+              Insights
+            </Link>
+            <span aria-hidden>·</span>
+            <Link to="/admin/credibilite" className="hover:text-[var(--m-accent)]">
+              Charte de crédibilité
+            </Link>
+          </span>
+        </footer>
+      </div>
     </div>
-    </PageContainer>
   );
 }
