@@ -92,7 +92,7 @@ export function SPDIBenchmarkPanel({ open, onOpenChange, preselectedActeur }: SP
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Swords className="h-5 w-5 text-primary" />
-            Duel d'Influence
+            Comparaison d'influence
           </DialogTitle>
           <DialogDescription>Comparez côte à côte deux acteurs sur leurs métriques de présence digitale</DialogDescription>
         </DialogHeader>
@@ -232,15 +232,24 @@ export function SPDIBenchmarkPanel({ open, onOpenChange, preselectedActeur }: SP
             {/* Verdict */}
             {verdict.lines.length > 0 && (
               <div className="p-4 rounded-lg border border-primary/20 bg-primary/5">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
                   <Trophy className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold text-primary">Verdict comparatif</span>
+                  <span className="text-sm font-semibold text-primary">Ce que disent les indicateurs</span>
                   {verdict.winner !== 'draw' && (
                     <Badge variant="secondary" className="text-[10px]">
                       Avantage {verdict.winner === 'A' ? `${acteurA.prenom ?? ''} ${acteurA.nom}` : `${acteurB.prenom ?? ''} ${acteurB.nom}`}
+                      {' · '}
+                      {Math.max(verdict.aPoints, verdict.bPoints)}/{verdict.aPoints + verdict.bPoints} indicateurs
                     </Badge>
                   )}
                 </div>
+                {/* Méthode exposée (charte) : « avantage » = mène sur le plus grand
+                    nombre parmi les indicateurs où l'écart est net (score SPDI,
+                    sentiment, part de voix). Aucun classement caché. */}
+                <p className="text-[10px] text-muted-foreground mb-2">
+                  « Avantage » = mène sur le plus grand nombre d'indicateurs à écart
+                  net (score SPDI, sentiment, part de voix).
+                </p>
                 <ul className="space-y-1">
                   {verdict.lines.map((line, i) => (
                     <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
