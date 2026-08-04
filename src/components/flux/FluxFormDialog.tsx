@@ -289,10 +289,10 @@ export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFo
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="text-xl flex items-center gap-2">
             <Zap className="h-5 w-5 text-primary" />
-            {flux ? 'Modifier l\'agent' : 'Configurer un nouvel agent'}
+            {flux ? 'Modifier la veille' : 'Nouvelle veille'}
           </DialogTitle>
           <DialogDescription>
-            Définissez les paramètres de surveillance pour votre flux de veille.
+            Définissez les mots-clés et les sources suivis, et le seuil d’alerte.
           </DialogDescription>
         </DialogHeader>
 
