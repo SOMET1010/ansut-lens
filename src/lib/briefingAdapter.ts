@@ -42,8 +42,33 @@ const MAX_AUTRES_SUJETS = 6;
 const SEUIL_OPPORTUNITE = 3;
 /** Fraîcheur maximale d'un signal remonté « à examiner » (jours). */
 const FRAICHEUR_SIGNAL_JOURS = 30;
+/** Fraîcheur maximale d'une entrée du fil « Activités récentes » (jours). */
+const FRAICHEUR_ACTIVITE_JOURS = 30;
 /** Articles d'écho médiatique affichés comme preuves. */
 const MAX_ARTICLES_ECHO = 8;
+
+/** Canonicalise une URL pour la déduplication ; distingue article vs page d'accueil. */
+function infosUrl(u: string | null | undefined): { canon: string; estArticle: boolean } | null {
+  if (!u) return null;
+  try {
+    const url = new URL(u);
+    const host = url.hostname.replace(/^www\./, '').toLowerCase();
+    const path = url.pathname.replace(/\/+$/, '');
+    return { canon: `${host}${path}`, estArticle: path.length > 1 };
+  } catch {
+    return null;
+  }
+}
+
+/** Titre normalisé (sans casse, accents ni ponctuation) pour la dédup de secours. */
+function titreNorm(t: string): string {
+  return (t || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
 
 /** Données brutes issues des hooks existants — entrée de l'adaptateur. */
 export interface SourceBriefing {
@@ -97,8 +122,21 @@ function condenser(texte: string, maxPhrases = 2): string {
   return phrases.slice(0, maxPhrases).join(' ');
 }
 
-/** Preuves d'un sujet : voix ANSUT, reprise presse, partenaires cités. */
-function preuvesDuSujet(s: Sujet): Preuve[] {
+/**
+ * Documents PROBANTS d'un sujet, dédupliqués et vérifiables — plus les
+ * organisations citées listées À PART. Règles (Charte de crédibilité) :
+ *  - une preuve est un DOCUMENT : publication ANSUT ou reprise presse ;
+ *  - une reprise presse doit être ATTRIBUABLE (source nommée) et ne pas pointer
+ *    vers une simple page d'accueil (lien d'article stable exigé) ;
+ *  - déduplication par URL canonique, à défaut par titre normalisé ;
+ *  - une organisation mentionnée (Orange, MTN…) N'EST PAS une preuve : elle est
+ *    renvoyée à part et jamais additionnée au compteur.
+ */
+function documentsDuSujet(s: Sujet): {
+  documents: Preuve[];
+  organisations: string[];
+  nbReprises: number;
+} {
   const ansut: Preuve[] = s.publications.map((p) => ({
     id: p.id,
     source: libellePlateforme(p.plateforme),
@@ -107,38 +145,54 @@ function preuvesDuSujet(s: Sujet): Preuve[] {
     url: p.url_original ?? null,
     dateMs: dateMsPublication(p),
   }));
-  const presse: Preuve[] = s.articles.map((a) => ({
-    id: a.id,
-    source: a.source_nom ?? 'Source',
-    type: 'presse',
-    titre: nettoyerTitre(a.titre),
-    url: a.source_url ?? null,
-    dateMs: a.date_publication ? new Date(a.date_publication).getTime() : null,
-  }));
-  const partenaires: Preuve[] = s.partenaires.map((nom) => ({
-    id: `part:${s.id}:${nom}`,
-    source: 'Mention',
-    type: 'partenaire',
-    titre: nom,
-    url: null,
-    dateMs: null,
-  }));
-  return [...ansut, ...presse, ...partenaires];
+
+  const vus = new Set<string>();
+  const presse: Preuve[] = [];
+  let nbReprises = 0;
+  for (const a of s.articles) {
+    // Attribuable ? (sinon, non vérifiable → écarté)
+    if (!a.source_nom) continue;
+    // Lien d'article stable — on rejette les pages d'accueil génériques.
+    const info = infosUrl(a.source_url);
+    if (info && !info.estArticle) continue;
+    // Déduplication : URL canonique en priorité, sinon titre normalisé.
+    const cleUrl = info ? `u:${info.canon}` : null;
+    const cleTitre = `t:${titreNorm(nettoyerTitre(a.titre))}`;
+    if ((cleUrl && vus.has(cleUrl)) || vus.has(cleTitre)) {
+      nbReprises += 1;
+      continue;
+    }
+    if (cleUrl) vus.add(cleUrl);
+    vus.add(cleTitre);
+    presse.push({
+      id: a.id,
+      source: a.source_nom,
+      type: 'presse',
+      titre: nettoyerTitre(a.titre),
+      url: a.source_url ?? null,
+      dateMs: a.date_publication ? new Date(a.date_publication).getTime() : null,
+    });
+  }
+
+  return { documents: [...ansut, ...presse], organisations: s.partenaires.slice(), nbReprises };
 }
 
 /** Projette un `Sujet` (moteur existant) sur un `SujetBriefing` (contrat de vue). */
 function versSujetBriefing(s: Sujet, recit: RecitSujet | undefined): SujetBriefing {
   const recitParIA = !!(recit && recit.narrative && recit.narrative.trim());
-  const preuves = preuvesDuSujet(s);
+  const { documents, organisations, nbReprises } = documentsDuSujet(s);
   return {
     id: s.id,
     rubrique: s.nomCourt,
     titre: recit?.headline ? nettoyerTitre(recit.headline) : s.nom,
     chapo: recitParIA ? condenser(recit!.narrative) : s.resumeFactuel,
     recitParIA,
-    tags: s.partenaires.slice(0, 3),
-    preuves,
-    nbPreuves: preuves.length,
+    // Les acteurs cités ne sont pas des thèmes : ils vont dans `organisations`.
+    tags: [],
+    preuves: documents,
+    nbPreuves: documents.length,
+    organisations,
+    nbReprises,
     limites: recit?.limitations?.trim() ? recit.limitations.trim() : null,
   };
 }
@@ -155,11 +209,13 @@ function versEcho(echo: EchoMediatique | null): EchoBriefing | null {
     dateMs: a.dateMs,
   }));
   return {
-    ratio: echo.ratio,
+    // Une seule décimale : deux décimales suggéreraient une précision que six
+    // publications ne portent pas.
+    ratio: echo.ratio == null ? null : Math.round(echo.ratio * 10) / 10,
     earned: echo.earned,
     owned: echo.owned,
     fenetreJours: echo.fenetreJours,
-    methode: `Presse citant « ANSUT » ÷ publications ANSUT sur ${echo.fenetreJours} jours — deux comptages réels, aucune estimation.`,
+    methode: `Presse citant « ANSUT » ÷ publications ANSUT sur ${echo.fenetreJours} jours — deux comptages réels de volumes, sans lien de causalité ni estimation.`,
     articles,
   };
 }
@@ -217,28 +273,40 @@ function versConseil(sujets: Sujet[]): { conseil: ConseilBriefing | null; nbOppo
   };
 }
 
-/** Fil « Activités récentes » — le plus frais de chaque nature. */
+/**
+ * Fil « Activités récentes » — le plus frais de chaque nature, mais seulement
+ * s'il est réellement RÉCENT. Un signal daté d'il y a plusieurs mois n'a rien à
+ * faire entre une activité de 6 h et une de 5 j : au-delà de la fenêtre, on
+ * l'écarte du fil (il reste consultable dans son écran dédié).
+ */
 function versActivites(src: SourceBriefing): ActiviteBriefing[] {
+  const limite = src.maintenantMs - FRAICHEUR_ACTIVITE_JOURS * 24 * 3600 * 1000;
+  const recent = (ms: number | null): ms is number => ms !== null && ms >= limite;
   const acts: ActiviteBriefing[] = [];
+
   const pub = src.publicationsRecentes[0];
-  if (pub) {
+  const pubMs = pub ? dateMsPublication(pub) : null;
+  if (pub && recent(pubMs)) {
     acts.push({
       type: 'publication',
       intitule: 'Nouvelle publication ANSUT',
       detail: libellePlateforme(pub.plateforme),
-      quandMs: dateMsPublication(pub),
+      quandMs: pubMs,
     });
   }
+
   const sig = src.signaux[0];
-  if (sig) {
+  const sigMs = sig ? dateMsSignal(sig) : null;
+  if (sig && recent(sigMs)) {
     acts.push({
       type: 'signal',
       intitule: 'Signal à examiner détecté',
       detail: nettoyerTitre(sig.titre),
-      quandMs: dateMsSignal(sig),
+      quandMs: sigMs,
     });
   }
-  const art = src.presseRecente.find((a) => a.dateMs !== null);
+
+  const art = src.presseRecente.find((a) => recent(a.dateMs));
   if (art) {
     acts.push({
       type: 'presse',
@@ -247,6 +315,7 @@ function versActivites(src: SourceBriefing): ActiviteBriefing[] {
       quandMs: art.dateMs,
     });
   }
+
   return acts;
 }
 

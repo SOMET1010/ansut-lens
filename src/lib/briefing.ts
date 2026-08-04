@@ -49,10 +49,20 @@ export interface SujetBriefing {
   chapo: string;
   /** true si le chapô provient d'un récit IA, false s'il s'agit du résumé factuel. */
   recitParIA: boolean;
-  /** Étiquettes réelles (partenaires cités), jamais décoratives. */
+  /** Étiquettes thématiques (jamais des acteurs — ceux-ci vont dans `organisations`). */
   tags: string[];
+  /**
+   * Preuves = DOCUMENTS vérifiables uniquement (publications ANSUT + reprises
+   * presse attribuables et dédupliquées). Une organisation citée n'est PAS une
+   * preuve : elle est listée à part dans `organisations`.
+   */
   preuves: Preuve[];
+  /** Nombre de documents (= preuves.length) — jamais gonflé par les entités citées. */
   nbPreuves: number;
+  /** Organisations mentionnées dans les contenus (Orange, MTN…), à part des preuves. */
+  organisations: string[];
+  /** Reprises (mêmes URL/titre) écartées à la déduplication — exposé pour transparence. */
+  nbReprises: number;
   /** Limites du récit exposées par l'IA, le cas échéant (traçabilité). */
   limites: string | null;
 }

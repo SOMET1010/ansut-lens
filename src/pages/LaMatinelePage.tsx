@@ -67,8 +67,8 @@ function heure(ms: number): string {
   return format(new Date(ms), 'HH:mm');
 }
 
-function courtJourHeure(ms: number): string {
-  return format(new Date(ms), 'dd/MM HH:mm');
+function courtJour(ms: number): string {
+  return format(new Date(ms), 'dd/MM');
 }
 
 /* ------------------------------------------------------------------ Preuves */
@@ -105,7 +105,6 @@ function GroupesPreuves({ preuves }: { preuves: Preuve[] }) {
   const groupes = [
     { type: 'ansut' as const, label: 'Publications ANSUT' },
     { type: 'presse' as const, label: 'Reprise presse' },
-    { type: 'partenaire' as const, label: 'Partenaires cités' },
   ];
   return (
     <>
@@ -147,13 +146,26 @@ function PourquoiCeSujet({ sujet }: { sujet: SujetBriefing }) {
       </CollapsibleTrigger>
       <CollapsibleContent className="border-t border-[var(--m-line)] px-4 pb-4 pt-1">
         <GroupesPreuves preuves={sujet.preuves} />
+        {sujet.organisations.length > 0 && (
+          <div className="mt-3">
+            <p className="matinale-mono text-[0.6rem] uppercase tracking-[0.16em] text-[var(--m-ink-faint)]">
+              Organisations citées
+            </p>
+            <p className="mt-1 text-[0.82rem] text-[var(--m-ink-soft)]">
+              {sujet.organisations.join(' · ')}
+            </p>
+            <p className="mt-1 text-[0.7rem] italic text-[var(--m-ink-faint)]">
+              Entités mentionnées dans les contenus — pas des preuves du récit.
+            </p>
+          </div>
+        )}
         {sujet.limites && (
           <p className="mt-3 border-t border-dashed border-[var(--m-line)] pt-2 text-[0.72rem] italic text-[var(--m-ink-faint)]">
             Limites du récit&nbsp;: {sujet.limites}
           </p>
         )}
       </CollapsibleContent>
-      <RepartitionPreuves preuves={sujet.preuves} />
+      <RepartitionPreuves sujet={sujet} />
     </Collapsible>
   );
 }
@@ -161,16 +173,22 @@ function PourquoiCeSujet({ sujet }: { sujet: SujetBriefing }) {
 const REPARTITION = [
   { type: 'presse' as const, label: 'Presse', Icone: Newspaper },
   { type: 'ansut' as const, label: 'ANSUT', Icone: Megaphone },
-  { type: 'partenaire' as const, label: 'Partenaires', Icone: Handshake },
 ];
 
-/** Bandeau de répartition des preuves — comptages réels, aucune estimation. */
-function RepartitionPreuves({ preuves }: { preuves: Preuve[] }) {
+/**
+ * Bandeau de répartition — comptages réels. Ne compte QUE des documents ; les
+ * organisations citées sont montrées à part (jamais additionnées aux preuves),
+ * et les reprises dédupliquées sont exposées pour transparence.
+ */
+function RepartitionPreuves({ sujet }: { sujet: SujetBriefing }) {
   const items = REPARTITION.map((r) => ({
     ...r,
-    nb: preuves.filter((p) => p.type === r.type).length,
+    nb: sujet.preuves.filter((p) => p.type === r.type).length,
   })).filter((r) => r.nb > 0);
-  if (items.length === 0) return null;
+  if (items.length === 0 && sujet.organisations.length === 0 && sujet.nbReprises === 0) {
+    return null;
+  }
+  const nbOrg = sujet.organisations.length;
   return (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[var(--m-line)] px-4 py-2.5">
       {items.map(({ type, label, Icone, nb }) => (
@@ -180,6 +198,19 @@ function RepartitionPreuves({ preuves }: { preuves: Preuve[] }) {
           {label}
         </span>
       ))}
+      {nbOrg > 0 && (
+        <span className="flex items-center gap-1.5 text-[0.78rem] text-[var(--m-ink-soft)]">
+          <Handshake className="h-3.5 w-3.5 text-[var(--m-ink-faint)]" aria-hidden />
+          <b className="tabular-nums text-[var(--m-ink)]">{nbOrg}</b>
+          organisation{nbOrg > 1 ? 's' : ''} citée{nbOrg > 1 ? 's' : ''}
+        </span>
+      )}
+      {sujet.nbReprises > 0 && (
+        <span className="matinale-mono text-[0.66rem] tabular-nums text-[var(--m-ink-faint)]">
+          {sujet.nbReprises} reprise{sujet.nbReprises > 1 ? 's' : ''} écartée
+          {sujet.nbReprises > 1 ? 's' : ''}
+        </span>
+      )}
     </div>
   );
 }
@@ -266,7 +297,7 @@ function SujetUne({ sujet, recitLoading }: { sujet: SujetBriefing; recitLoading:
           <>
             <Sparkles className="h-3 w-3 text-[var(--m-accent)]" aria-hidden />
             <span>
-              Récit assemblé par l’IA — <span className="text-[var(--m-ink-soft)]">toujours relié à ses preuves</span>
+              Résumé assemblé par l’IA à partir des preuves ci-dessous — <span className="text-[var(--m-ink-soft)]">à vérifier ; distinguez faits et interprétations</span>
             </span>
           </>
         ) : (
@@ -643,8 +674,8 @@ export default function LaMatinelePage() {
                 <>
                   <span aria-hidden className="text-[var(--m-ink-faint)]">|</span>
                   <span>
-                    Période couverte&nbsp;: {courtJourHeure(periodeCouverte.debutMs)} →{' '}
-                    {courtJourHeure(periodeCouverte.finMs)}
+                    Preuves datées du {courtJour(periodeCouverte.debutMs)} au{' '}
+                    {courtJour(periodeCouverte.finMs)}
                   </span>
                 </>
               )}
@@ -699,7 +730,7 @@ export default function LaMatinelePage() {
         {/* Pied — honnêteté & repère éditorial */}
         <footer className="mt-10 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[var(--m-line)] pt-4 text-[0.72rem] text-[var(--m-ink-faint)]">
           <span className="matinale-mono uppercase tracking-[0.08em]">
-            Le pipeline décide · les écrans présentent
+            Le système classe et documente · l’utilisateur vérifie et décide
           </span>
           <span className="flex items-center gap-1.5">
             <Info className="h-3.5 w-3.5" aria-hidden />
