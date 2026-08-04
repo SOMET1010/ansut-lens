@@ -111,6 +111,9 @@ verify_jwt = false
 [functions.import-publications]
 verify_jwt = false
 
+[functions.import-pige]
+verify_jwt = false
+
 [functions.sync-directions]
 verify_jwt = false
 
