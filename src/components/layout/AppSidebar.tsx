@@ -1,5 +1,7 @@
 import { HelpCircle, LogOut, User } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -88,6 +90,19 @@ export function AppSidebar() {
           )}
           <span className="sr-only">ANSUT Radar, retour à l’accueil</span>
         </NavLink>
+
+        {/* Repère d'édition : rappelle qu'on consulte l'édition du jour, pas une
+            application statique. Date réelle (aucune heure fabriquée). */}
+        {!collapsed && (
+          <div className="mt-3 rounded-md bg-muted/40 px-3 py-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+              Édition
+            </p>
+            <p className="text-xs font-medium capitalize text-foreground/80">
+              {format(new Date(), 'EEEE d MMMM', { locale: fr })}
+            </p>
+          </div>
+        )}
       </SidebarHeader>
 
       <SidebarContent>
@@ -122,26 +137,30 @@ export function AppSidebar() {
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {sections.map((section) => (
-                      <SidebarMenuItem key={section.id}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive(section.path)}
-                          tooltip={`${section.label} — ${section.question}`}
-                          className="h-auto py-2"
-                        >
-                          <NavLink to={section.path} className="flex items-start gap-3">
-                            <section.icon className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
-                            {!collapsed && (
-                              <span className="flex min-w-0 flex-col gap-0.5 leading-tight">
-                                <span className="truncate text-sm font-medium">{section.label}</span>
-                                <span className="truncate text-[11px] text-muted-foreground">
-                                  {section.question}
+                      <div key={section.id}>
+                        <SidebarMenuItem>
+                          <SidebarMenuButton
+                            asChild
+                            isActive={isActive(section.path)}
+                            tooltip={`${section.label} — ${section.question}`}
+                            className="h-auto py-2"
+                          >
+                            <NavLink to={section.path} className="flex items-start gap-3">
+                              <section.icon className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+                              {!collapsed && (
+                                <span className="flex min-w-0 flex-col gap-0.5 leading-tight">
+                                  <span className="truncate text-sm font-medium">{section.label}</span>
+                                  <span className="truncate text-[11px] text-muted-foreground">
+                                    {section.question}
+                                  </span>
                                 </span>
-                              </span>
-                            )}
-                          </NavLink>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
+                              )}
+                            </NavLink>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                        {/* « Ce matin » = porte d'entrée : séparée du reste du flux. */}
+                        {section.id === 'ce-matin' && <SidebarSeparator className="my-2" />}
+                      </div>
                     ))}
                   </SidebarMenu>
                 </SidebarGroupContent>
@@ -153,7 +172,7 @@ export function AppSidebar() {
         {!permissionsLoading && hasAdminAccess && (
           <>
             <SidebarSeparator className="my-2" />
-            <SidebarGroup>
+            <SidebarGroup className="rounded-lg bg-muted/30">
               {!collapsed && (
                 <SidebarGroupLabel className="text-xs text-muted-foreground">
                   Administration
