@@ -118,7 +118,7 @@ export function SPDIDashboardCompact({
               {dashboard.sparklineData.length >= 2 && (
                 <div className={cn('flex items-center gap-0.5 text-[11px] font-bold', variation >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
                   {variation >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                  {variation >= 0 ? '+' : ''}{variation.toFixed(1)}%
+                  {variation >= 0 ? '+' : ''}{Math.round(variation)}%
                 </div>
               )}
             </div>

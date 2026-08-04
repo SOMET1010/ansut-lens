@@ -177,7 +177,7 @@ export function SPDIComparaisonTemporelle() {
                           <div key={p.dataKey} className="flex items-center gap-2 text-xs">
                             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.stroke }} />
                             <span className="truncate max-w-[120px]">{getActorLabel(p.dataKey)}</span>
-                            <span className="font-bold ml-auto">{Number(p.value).toFixed(1)}</span>
+                            <span className="font-bold ml-auto">{Math.round(Number(p.value))}</span>
                           </div>
                         ))}
                       </div>

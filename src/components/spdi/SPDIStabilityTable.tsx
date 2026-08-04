@@ -28,12 +28,16 @@ const getScoreColor = (score: number | null) => {
   return 'bg-red-500/15 text-red-700 dark:text-red-400';
 };
 
-const getConseil = (score: number | null) => {
+// Lecture du score selon les paliers DOCUMENTÉS du SPDI (voir CLAUDE.md :
+// 80-100 forte, 60-79 solide, 40-59 faible, <40 risque). On DÉCRIT le niveau —
+// on ne prescrit pas une action codée en dur (« Renforcer LinkedIn ») comme si
+// elle était calculée.
+const getNiveau = (score: number | null) => {
   if (score == null) return 'Aucune donnée';
-  if (score >= 80) return 'Excellente visibilité';
-  if (score >= 60) return 'Renforcer la présence LinkedIn';
-  if (score >= 40) return 'Augmenter les prises de parole';
-  return 'Action urgente recommandée';
+  if (score >= 80) return 'Présence forte';
+  if (score >= 60) return 'Présence solide';
+  if (score >= 40) return 'Présence faible';
+  return 'À risque';
 };
 
 const TendanceIcon = ({ tendance }: { tendance: string | null }) => {
@@ -138,7 +142,7 @@ export function SPDIStabilityTable() {
                 <TableHead className="text-center"><SortButton label="Score" field="score" /></TableHead>
                 <TableHead className="text-center"><SortButton label="Tendance" field="tendance" /></TableHead>
                 <TableHead className="text-center"><SortButton label="Var. 30j" field="variation" /></TableHead>
-                <TableHead>Conseil</TableHead>
+                <TableHead>Niveau</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -168,7 +172,7 @@ export function SPDIStabilityTable() {
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{getConseil(a.score_spdi_actuel)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{getNiveau(a.score_spdi_actuel)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -44,7 +44,7 @@ export function SPDIEvolutionChart({ evolution, onPeriodeChange }: SPDIEvolution
           <span className={`text-sm font-medium ${
             variation > 0 ? 'text-green-500' : variation < 0 ? 'text-red-500' : 'text-muted-foreground'
           }`}>
-            {variation > 0 ? '+' : ''}{variation}%
+            {variation > 0 ? '+' : ''}{Math.round(variation)}%
           </span>
           <span className="text-xs text-muted-foreground">sur {periode}</span>
         </div>
@@ -79,7 +79,7 @@ export function SPDIEvolutionChart({ evolution, onPeriodeChange }: SPDIEvolution
                         <p className="text-xs text-muted-foreground">
                           {format(parseISO(data.date), 'd MMMM yyyy', { locale: fr })}
                         </p>
-                        <p className="text-primary font-bold">{data.score.toFixed(1)}</p>
+                        <p className="text-primary font-bold">{Math.round(data.score)}</p>
                       </div>
                     );
                   }

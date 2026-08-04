@@ -45,7 +45,7 @@ export function SPDIGaugeCard({ score, variation = 0, tendance = 'stable', compa
         <div className="flex items-center gap-1">
           <TrendIcon className={cn('h-4 w-4', trendColor)} />
           <span className={cn('text-sm', trendColor)}>
-            {variation > 0 ? '+' : ''}{variation}%
+            {variation > 0 ? '+' : ''}{Math.round(variation)}%
           </span>
         </div>
       </div>
@@ -102,7 +102,7 @@ export function SPDIGaugeCard({ score, variation = 0, tendance = 'stable', compa
           <div className="flex items-center justify-center gap-2 mb-3">
             <TrendIcon className={cn('h-4 w-4', trendColor)} />
             <span className={cn('text-sm font-medium', trendColor)}>
-              {variation > 0 ? '+' : ''}{variation}% sur 30 jours
+              {variation > 0 ? '+' : ''}{Math.round(variation)}% sur 30 jours
             </span>
           </div>
           

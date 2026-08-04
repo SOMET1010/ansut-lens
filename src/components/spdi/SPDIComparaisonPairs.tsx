@@ -51,7 +51,8 @@ export function SPDIComparaisonPairs({ comparaison, cercleLabel = 'du cercle' }:
               {rang}/{total}
             </span>
             <p className="text-xs text-muted-foreground">
-              Top {(100 - percentile).toFixed(0)}%
+              {/* À N=1, un « Top 100 % » flatteur n'a aucun sens : on le dit. */}
+              {total > 1 ? `Top ${Math.round(100 - percentile)}%` : 'Seul dans son cercle'}
             </p>
           </div>
         </div>
@@ -108,7 +109,7 @@ export function SPDIComparaisonPairs({ comparaison, cercleLabel = 'du cercle' }:
             ) : (
               <TrendingDown className="h-3 w-3" />
             )}
-            {ecartMoyenne >= 0 ? '+' : ''}{ecartMoyenne.toFixed(1)} pts
+            {ecartMoyenne >= 0 ? '+' : ''}{Math.round(ecartMoyenne)} pts
           </Badge>
         </div>
       </CardContent>
