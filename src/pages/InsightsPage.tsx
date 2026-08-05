@@ -28,6 +28,7 @@ import {
   calculerEchoMediatique,
   construireSyntheseInsights,
   pointsARetenir,
+  serieEcho,
   type EchoMediatique,
   type Evolution,
   type InsightsCommunication,
@@ -207,14 +208,55 @@ function Section({
 }
 
 /**
+ * Micro-courbe SVG de la trajectoire de l'écho presse sur la fenêtre. Comptages
+ * bruts par tranche (aucune interpolation). Rendue uniquement si assez de matière
+ * pour dessiner une forme honnête ; sinon l'appelant ne l'affiche pas.
+ */
+function Sparkline({ data, className }: { data: number[]; className?: string }) {
+  const w = 132;
+  const h = 30;
+  const n = data.length;
+  const max = Math.max(...data, 1);
+  const x = (i: number) => (n <= 1 ? 0 : (i / (n - 1)) * w);
+  const y = (v: number) => h - (v / max) * (h - 2) - 1;
+  const ligne = data.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const aire = `0,${h} ${ligne} ${w},${h}`;
+  return (
+    <svg
+      width={w}
+      height={h}
+      viewBox={`0 0 ${w} ${h}`}
+      className={className}
+      role="img"
+      aria-label="Trajectoire de la reprise presse sur la période"
+      preserveAspectRatio="none"
+    >
+      <polygon points={aire} fill="hsl(var(--primary))" fillOpacity={0.1} />
+      <polyline
+        points={ligne}
+        fill="none"
+        stroke="hsl(var(--primary))"
+        strokeWidth={1.75}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/**
  * NIVEAU 1 — le KPI héroïsé. Le cerveau lit le RÉSULTAT (combien d'articles de
  * presse par publication) avant toute méthode. L'évolution n'apparaît que si elle
- * est réellement calculable (deux fenêtres comparables).
+ * est réellement calculable (deux fenêtres comparables) ; la micro-courbe que si
+ * le volume d'articles suffit à dessiner une forme honnête.
  */
 function HeroEcho({ echo }: { echo: EchoMediatique }) {
   const ratioTexte =
     echo.ratio === null ? '—' : echo.ratio.toLocaleString('fr-FR', { maximumFractionDigits: 1 });
   const v = echo.variationPct;
+  const serie = serieEcho(echo, 12);
+  // Seuil d'honnêteté : sous ~8 articles, une « courbe » serait du bruit.
+  const afficherCourbe = echo.earned >= 8;
 
   return (
     <Card className="border-primary/20 bg-primary/[0.03]">
@@ -245,6 +287,14 @@ function HeroEcho({ echo }: { echo: EchoMediatique }) {
             {v > 0 ? '+' : ''}
             {v}&nbsp;% sur la fenêtre précédente
           </p>
+        )}
+        {afficherCourbe && (
+          <div className="mt-2 flex flex-col items-center gap-0.5">
+            <Sparkline data={serie} className="text-primary" />
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              reprise presse sur la période
+            </span>
+          </div>
         )}
         <p className="mt-1 text-xs text-muted-foreground">
           {echo.earned} article{echo.earned > 1 ? 's' : ''} de presse · {echo.owned} publication

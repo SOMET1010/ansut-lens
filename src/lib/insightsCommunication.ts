@@ -261,6 +261,26 @@ export function construireSyntheseInsights(
   return phrase;
 }
 
+/**
+ * Trajectoire de l'écho presse : répartit les articles comptés en `bins`
+ * tranches de temps égales sur la fenêtre (de la plus ancienne à la plus
+ * récente), et renvoie le nombre réel d'articles par tranche. Sert de
+ * micro-courbe sous le KPI. Aucune interpolation : ce sont des comptages bruts.
+ */
+export function serieEcho(echo: EchoMediatique, bins = 12): number[] {
+  const debut = echo.periodeDebutMs;
+  const span = Math.max(echo.periodeFinMs - debut, 1);
+  const counts = new Array<number>(bins).fill(0);
+  for (const a of echo.articles) {
+    if (a.dateMs === null) continue;
+    let idx = Math.floor(((a.dateMs - debut) / span) * bins);
+    if (idx < 0) idx = 0;
+    if (idx >= bins) idx = bins - 1;
+    counts[idx]++;
+  }
+  return counts;
+}
+
 export interface PointRetenir {
   cle: string;
   texte: string;
