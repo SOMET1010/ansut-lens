@@ -903,9 +903,13 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
     for (const actu of articlesToProcess) {
       if (!actu.titre) continue;
 
-      // ANTI-HALLUCINATION: Reject articles without verified URL (Perplexity/Grok)
-      if (!actu.url_verified && (!actu.url || actu.url === '')) {
-        console.warn(`[collecte-veille] Article rejeté (pas d'URL vérifiée): "${actu.titre}"`);
+      // FILTRE QUALITÉ (commun à toutes les collectes) : on refuse ce qui n'est
+      // pas un article citable — vidéo YouTube, post social, page d'accueil ou
+      // page de rubrique, titre non informatif.
+      const motif = motifRejet(actu.titre, actu.url);
+      if (motif) {
+        rejets[motif] = (rejets[motif] || 0) + 1;
+        console.warn(`[collecte-veille] Rejeté (${motif}): "${actu.titre}" — ${actu.url ?? 'sans URL'}`);
         continue;
       }
 
@@ -913,6 +917,33 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
       const cleTitre = cleDedup(actu.titre);
       if (!cleTitre || titresConnus.has(cleTitre)) continue;
       titresConnus.add(cleTitre);
+
+      // Regroupement par SUJET : on cherche le sujet récent le plus proche.
+      // >= SEUIL_MEME_ARTICLE : même article reformulé → on ne réinsère pas.
+      // >= SEUIL_MEME_SUJET   : même sujet → on hérite de son `cluster_id`.
+      let clusterId: string | null = null;
+      let meilleure = 0;
+      let voisin: { id: string; cluster_id: string | null } | null = null;
+      for (const s of sujetsRecents) {
+        const sim = similariteTitres(actu.titre, s.titre);
+        if (sim > meilleure) {
+          meilleure = sim;
+          voisin = { id: s.id, cluster_id: s.cluster_id };
+        }
+      }
+      if (voisin && meilleure >= SEUIL_MEME_ARTICLE) {
+        rejets['sujet_deja_couvert'] = (rejets['sujet_deja_couvert'] || 0) + 1;
+        continue;
+      }
+      if (voisin && meilleure >= SEUIL_MEME_SUJET) {
+        clusterId = voisin.cluster_id ?? voisin.id;
+        // Le premier article du sujet devient la tête de cluster.
+        if (!voisin.cluster_id) {
+          await supabase.from('actualites').update({ cluster_id: clusterId }).eq('id', voisin.id);
+          for (const s of sujetsRecents) if (s.id === voisin.id) s.cluster_id = clusterId;
+        }
+      }
+
 
       const contenuNorm = normaliserTexte(`${actu.titre} ${actu.resume}`);
 
