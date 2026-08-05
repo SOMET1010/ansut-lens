@@ -92,6 +92,8 @@ export interface InsightsCommunication {
   fenetreJours: number;
   /** Publications datées réellement et comptées dans la fenêtre. */
   totalDatees: number;
+  /** Publications datées dans la fenêtre PRÉCÉDENTE (base de l'évolution de l'écho). */
+  totalDateesAvant: number;
   /** Publications récentes mais à date non vérifiée (non comptées, transparence). */
   totalNonDatees: number;
   parReseau: StatReseau[];
@@ -166,6 +168,13 @@ export interface EchoMediatique {
   earned: number;
   /** earned / owned, arrondi au centième ; null si owned = 0 (quotient impossible). */
   ratio: number | null;
+  /** Ratio de la fenêtre PRÉCÉDENTE (même durée, juste avant) ; null si non calculable. */
+  ratioAvant: number | null;
+  /**
+   * Évolution du ratio en % vs la fenêtre précédente, arrondie à l'entier ;
+   * null si l'un des deux ratios est indisponible (on n'invente pas de tendance).
+   */
+  variationPct: number | null;
   /** Les articles comptés, du plus récent au plus ancien — preuves cliquables. */
   articles: ArticleEcho[];
 }
@@ -183,21 +192,127 @@ export function calculerEchoMediatique(
   owned: number,
   fenetreJours: number,
   maintenantMs: number,
+  /**
+   * Publications propres datées dans la fenêtre PRÉCÉDENTE (fournie par
+   * {@link calculerInsights} via `totalDateesAvant`). Optionnel : sans elle,
+   * aucune tendance n'est calculée (on ne fabrique pas d'évolution).
+   */
+  ownedAvant?: number,
 ): EchoMediatique {
-  const debut = maintenantMs - fenetreJours * 24 * 3600 * 1000;
+  const fenetreMs = fenetreJours * 24 * 3600 * 1000;
+  const debut = maintenantMs - fenetreMs;
   const comptes = (articlesPresse ?? [])
     .filter((a) => a.dateMs !== null && a.dateMs >= debut && a.dateMs <= maintenantMs)
     .sort((a, b) => (b.dateMs ?? 0) - (a.dateMs ?? 0));
   const earned = comptes.length;
+  const ratio = owned > 0 ? Math.round((earned / owned) * 100) / 100 : null;
+
+  // Fenêtre précédente [maintenant - 2·fenêtre, maintenant - fenêtre[ : même
+  // durée, juste avant. On ne calcule l'évolution que si les deux ratios existent.
+  const debutAvant = debut - fenetreMs;
+  const earnedAvant = (articlesPresse ?? []).filter(
+    (a) => a.dateMs !== null && a.dateMs >= debutAvant && a.dateMs < debut,
+  ).length;
+  const ratioAvant =
+    ownedAvant && ownedAvant > 0 ? Math.round((earnedAvant / ownedAvant) * 100) / 100 : null;
+  const variationPct =
+    ratio !== null && ratioAvant !== null && ratioAvant > 0
+      ? Math.round(((ratio - ratioAvant) / ratioAvant) * 100)
+      : null;
+
   return {
     fenetreJours,
     periodeDebutMs: debut,
     periodeFinMs: maintenantMs,
     owned,
     earned,
-    ratio: owned > 0 ? Math.round((earned / owned) * 100) / 100 : null,
+    ratio,
+    ratioAvant,
+    variationPct,
     articles: comptes,
   };
+}
+
+/** Formate un nombre décimal court en français (5 → « 5 », 5.2 → « 5,2 »). */
+function nombreCourt(n: number): string {
+  return n.toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+}
+
+/**
+ * Synthèse d'une phrase, calculée (pas générée par un LLM) à partir des faits
+ * mesurés : combien de publications, sur quels thèmes dominants, avec quel écho
+ * presse moyen. Renvoie `null` s'il n'y a rien de daté à résumer. Chaque membre
+ * n'est ajouté que si la donnée existe (jamais de tendance ni de thème inventé).
+ */
+export function construireSyntheseInsights(
+  ins: InsightsCommunication,
+  echo: EchoMediatique,
+): string | null {
+  if (ins.totalDatees === 0) return null;
+  let phrase = `En ${ins.fenetreJours} jours, l'ANSUT a publié ${ins.totalDatees} fois`;
+  const top = ins.themes.slice(0, 2).map((t) => t.libelle.toLowerCase());
+  if (top.length === 2) phrase += `, surtout sur ${top[0]} et ${top[1]}`;
+  else if (top.length === 1) phrase += `, surtout sur ${top[0]}`;
+  phrase += '.';
+  if (echo.ratio !== null) {
+    const r = nombreCourt(echo.ratio);
+    phrase += ` Chaque publication a généré en moyenne ${r} reprise${echo.ratio >= 2 ? 's' : ''} presse.`;
+  }
+  return phrase;
+}
+
+export interface PointRetenir {
+  cle: string;
+  texte: string;
+}
+
+/**
+ * Points « À retenir » — un résumé (pas une recommandation), entièrement dérivé
+ * des faits mesurés. Chaque point n'apparaît que si sa donnée existe : thème
+ * dominant, réseau dominant, partenaire le plus cité, écho presse et son
+ * évolution. Aucune interprétation, aucun chiffre fabriqué.
+ */
+export function pointsARetenir(ins: InsightsCommunication, echo: EchoMediatique): PointRetenir[] {
+  const points: PointRetenir[] = [];
+
+  if (ins.themes.length > 0 && ins.totalDatees > 0) {
+    const t = ins.themes[0];
+    const pct = Math.round((t.count / ins.totalDatees) * 100);
+    points.push({
+      cle: 'theme',
+      texte: `${t.libelle} concentre ${pct} % des publications (${t.count}/${ins.totalDatees}).`,
+    });
+  }
+
+  if (ins.parReseau.length > 0 && ins.totalDatees > 0) {
+    const r = ins.parReseau[0];
+    const pct = Math.round((r.count / ins.totalDatees) * 100);
+    points.push({
+      cle: 'reseau',
+      texte: `${r.libelle} concentre l'essentiel de l'activité (${pct} %, ${r.count} publication${r.count > 1 ? 's' : ''}).`,
+    });
+  }
+
+  if (ins.partenaires.length > 0) {
+    const p = ins.partenaires[0];
+    points.push({
+      cle: 'partenaire',
+      texte: `${p.libelle} est le partenaire le plus cité (${p.count} mention${p.count > 1 ? 's' : ''}).`,
+    });
+  }
+
+  if (echo.ratio !== null) {
+    let texte = `L'écho presse est de ${nombreCourt(echo.ratio)} article${echo.ratio >= 2 ? 's' : ''} de presse par publication`;
+    if (echo.variationPct !== null && echo.variationPct !== 0) {
+      texte += `, ${echo.variationPct > 0 ? 'en hausse' : 'en baisse'} de ${Math.abs(echo.variationPct)} % vs la période précédente`;
+    } else if (echo.variationPct === 0) {
+      texte += `, stable vs la période précédente`;
+    }
+    texte += '.';
+    points.push({ cle: 'echo', texte });
+  }
+
+  return points;
 }
 
 export function calculerInsights(
@@ -323,6 +438,7 @@ export function calculerInsights(
   return {
     fenetreJours,
     totalDatees: dansFenetre.length,
+    totalDateesAvant: fenetrePrecedente.length,
     totalNonDatees,
     parReseau,
     themes,
