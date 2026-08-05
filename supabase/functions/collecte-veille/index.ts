@@ -265,6 +265,12 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours).`;
         { role: 'user', content: perplexityPrompt }
       ],
       search_recency_filter: 'week',
+      // Qualité de collecte : on exclut à la source les plateformes vidéo et
+      // sociales, qui ne fournissent jamais un article citable comme preuve.
+      search_domain_filter: [
+        '-youtube.com', '-facebook.com', '-x.com', '-twitter.com',
+        '-instagram.com', '-tiktok.com', '-linkedin.com',
+      ],
       response_format: {
         type: 'json_schema',
         json_schema: {
