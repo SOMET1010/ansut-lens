@@ -225,11 +225,11 @@ export default function DossiersPage() {
             </span>
             <span className="min-w-0 flex-1">
               <span className="flex items-center gap-1.5 text-sm font-medium">
-                Matinale
+                Note « Ce matin »
                 <ChevronRight className="h-4 w-4 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" />
               </span>
               <span className="block text-xs leading-relaxed text-muted-foreground">
-                Composer et exporter la note de synthèse du matin.
+                Composer, exporter et diffuser la synthèse du matin.
               </span>
             </span>
           </Link>

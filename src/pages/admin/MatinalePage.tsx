@@ -95,10 +95,10 @@ export default function MatinalePage() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Newspaper className="h-8 w-8 text-primary" />
-              La Matinale Com
+              Ce matin — composition
             </h1>
           <p className="text-muted-foreground">
-            Briefing quotidien automatique pour l'équipe Communication
+            Composer, exporter et diffuser la note de synthèse « Ce matin »
           </p>
           </div>
         </div>
@@ -245,7 +245,7 @@ export default function MatinalePage() {
               <CardContent className="py-12 text-center">
                 <Newspaper className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground mb-4">
-                  Cliquez sur "Prévisualiser" pour générer la matinale du jour
+                  Cliquez sur "Prévisualiser" pour générer la note « Ce matin » du jour
                 </p>
                 <Button variant="outline" onClick={handlePreview}>
                   <Eye className="h-4 w-4 mr-2" />
@@ -301,7 +301,7 @@ export default function MatinalePage() {
                 </div>
               ) : !history || history.length === 0 ? (
                 <p className="text-center text-muted-foreground py-6">
-                  Aucun envoi de matinale enregistré
+                  Aucun envoi de la note « Ce matin » enregistré
                 </p>
               ) : (
                 <Table>
