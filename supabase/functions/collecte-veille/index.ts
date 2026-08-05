@@ -536,12 +536,12 @@ async function collecteGoogleNews(
   console.log('[collecte-veille] Collecte Google News via Firecrawl Search...');
 
   const queries = [
-    `${keywordsString} site:news.google.com OR site:fraternitematin.ci OR site:abidjan.net`,
+    `${keywordsString} site:news.google.com OR site:fraternitematin.ci OR site:abidjan.net -site:youtube.com -site:facebook.com -site:x.com`,
   ];
 
   // Add boost keywords for active events
   if (boostKeywords.length > 0) {
-    queries.push(boostKeywords.join(' OR '));
+    queries.push(`${boostKeywords.join(' OR ')} -site:youtube.com -site:facebook.com -site:x.com`);
   }
 
   const allActualites: CollectedActualite[] = [];
