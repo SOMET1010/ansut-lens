@@ -16,7 +16,7 @@ function computeVigilance(p: Personnalite): { label: string; color: string; icon
     return { label: 'Vigilance haute', color: 'text-red-600 bg-red-50 border-red-200 dark:bg-red-950/40', icon: AlertTriangle };
   }
   if (p.niveau_alerte === 'eleve') {
-    return { label: 'Vigilance élevée', color: 'text-orange-600 bg-orange-50 border-orange-200 dark:bg-orange-950/40', icon: AlertTriangle };
+    return { label: 'Vigilance élevée', color: 'text-attention bg-attention-soft border-attention-border', icon: AlertTriangle };
   }
   return { label: 'Standard', color: 'text-muted-foreground bg-muted/30 border-border', icon: Radio };
 }

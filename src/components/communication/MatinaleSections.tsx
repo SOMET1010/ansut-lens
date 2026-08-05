@@ -696,7 +696,7 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
         status={status(Object.keys(veille).length > 0)}
         errorMessage={error || undefined}
         onRetry={onRetry}
-        emptyHint="Aucun signal classé par pilier sur la fenêtre. Vérifiez les capteurs stratégiques."
+        emptyHint="Aucun signal classé par pilier sur la fenêtre. Vérifiez vos surveillances stratégiques."
         headerExtras={Object.keys(veille).length > 0 && (
           <SourceCountBadge data={safe} section="veille_par_pilier" freshnessHours={freshnessHours} enabled={true} />
         )}
@@ -917,7 +917,7 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
         status={status(signaux.length > 0)}
         errorMessage={error || undefined}
         onRetry={onRetry}
-        emptyHint="Aucun signal faible détecté. Les capteurs continuent de scanner les sources."
+        emptyHint="Aucun signal faible détecté. La veille continue de parcourir les sources."
         headerExtras={signaux.length > 0 && (
           <Badge variant="secondary" className="ml-auto text-xs">{signaux.length}</Badge>
         )}

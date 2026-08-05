@@ -12,6 +12,9 @@ verify_jwt = false
 [functions.generer-acteurs]
 verify_jwt = false
 
+[functions.lier-mentions-acteurs]
+verify_jwt = false
+
 [functions.manage-cron-jobs]
 verify_jwt = false
 

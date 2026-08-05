@@ -99,7 +99,7 @@ function useDetecterProximite() {
 
 const scoreColor = (score: number) => {
   if (score >= 80) return 'bg-destructive/15 text-destructive';
-  if (score >= 60) return 'bg-amber-500/15 text-amber-600';
+  if (score >= 60) return 'bg-attention/15 text-attention';
   return 'bg-muted text-muted-foreground';
 };
 
@@ -534,7 +534,7 @@ export default function RadarProximiteWidget() {
                   onClick={() => setQualityFilter('partial')}
                   disabled={partialCount === 0}
                 >
-                  <CircleHelp className="h-2.5 w-2.5 text-amber-600" />
+                  <CircleHelp className="h-2.5 w-2.5 text-attention" />
                   Indicative <span className="text-muted-foreground">({partialCount})</span>
                 </Button>
               </div>
@@ -564,10 +564,10 @@ export default function RadarProximiteWidget() {
             )}
 
             {allPartial && (
-              <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-2.5 text-[11px] flex items-start gap-2">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="rounded-md border border-attention/40 bg-attention/5 p-2.5 text-[11px] flex items-start gap-2">
+                <AlertTriangle className="h-3.5 w-3.5 text-attention shrink-0 mt-0.5" />
                 <div className="space-y-1.5 flex-1">
-                  <p className="font-semibold text-amber-700 dark:text-amber-400">Pertinence indicative</p>
+                  <p className="font-semibold text-attention">Pertinence indicative</p>
                   <p className="text-muted-foreground">
                     Les scores de similarité ou dates de détection sont incomplets pour tous les projets affichés.
                     L'ordre reste basé sur l'actionnabilité, mais le tri par pertinence est dégradé.
@@ -577,7 +577,7 @@ export default function RadarProximiteWidget() {
                     variant="outline"
                     onClick={() => detecter.mutate()}
                     disabled={detecter.isPending}
-                    className="h-7 gap-1.5 text-[11px] border-amber-500/40"
+                    className="h-7 gap-1.5 text-[11px] border-attention/40"
                     aria-label="Relancer la détection pour enrichir les données manquantes"
                   >
                     {detecter.isPending ? (
@@ -617,7 +617,7 @@ export default function RadarProximiteWidget() {
                 <div className="font-mono text-[10px] bg-background/60 rounded px-2 py-1.5 leading-relaxed">
                   pertinence = <strong className="text-primary">similarité</strong> (0-100)
                   <br />
-                  &nbsp;&nbsp;− <strong className="text-amber-600">fraîcheur</strong> (1 pt par jour, max 30)
+                  &nbsp;&nbsp;− <strong className="text-attention">fraîcheur</strong> (1 pt par jour, max 30)
                   <br />
                   &nbsp;&nbsp;+ <strong className="text-emerald-600">actionnabilité</strong> (+10 reco com, +5 équivalent ANSUT)
                 </div>
@@ -665,7 +665,7 @@ export default function RadarProximiteWidget() {
                                   }
                                   className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                                 >
-                                  <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-600 text-[10px] px-1.5 py-0 cursor-help">
+                                  <Badge variant="outline" className="gap-1 border-attention/40 text-attention text-[10px] px-1.5 py-0 cursor-help">
                                     <CircleHelp className="h-2.5 w-2.5" aria-hidden="true" />
                                     Pertinence indicative
                                   </Badge>
@@ -704,7 +704,7 @@ export default function RadarProximiteWidget() {
                             Source vérifiée
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-600 text-[10px] px-1.5 py-0">
+                          <Badge variant="outline" className="gap-1 border-attention/40 text-attention text-[10px] px-1.5 py-0">
                             <AlertTriangle className="h-2.5 w-2.5" />
                             Sans source
                           </Badge>
@@ -752,7 +752,7 @@ export default function RadarProximiteWidget() {
                           {/* Barre empilée — bordure subtile pour contraste en dark mode */}
                           <div className="flex h-2 sm:h-1.5 w-full rounded-full overflow-hidden bg-muted ring-1 ring-border/50" role="presentation" aria-hidden="true">
                             <div className="bg-primary" style={{ width: `${wSim}%` }} />
-                            <div className="bg-amber-500 dark:bg-amber-400" style={{ width: `${wFresh}%` }} />
+                            <div className="bg-attention" style={{ width: `${wFresh}%` }} />
                             <div className="bg-emerald-600 dark:bg-emerald-400" style={{ width: `${wAction}%` }} />
                           </div>
                           {/* Légende : compacte mobile, contraste renforcé pour dark mode */}
@@ -764,7 +764,7 @@ export default function RadarProximiteWidget() {
                               {Math.round(bd.sim)}
                             </span>
                             <span className="flex items-center gap-1">
-                              <span className="h-2 w-2 rounded-full bg-amber-500 dark:bg-amber-400 shrink-0 ring-1 ring-background" />
+                              <span className="h-2 w-2 rounded-full bg-attention shrink-0 ring-1 ring-background" />
                               <span className="hidden sm:inline">Fraîcheur </span>
                               <span className="sm:hidden">Frais </span>
                               −{Math.round(bd.freshnessPenalty)}

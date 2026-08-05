@@ -531,7 +531,7 @@ function SentimentContent({
               </div>
             </details>
             {dispUnweighted > 0 && (
-              <p className="text-[10px] text-amber-600 dark:text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded px-1.5 py-1 flex items-start gap-1">
+              <p className="text-[10px] text-attention bg-attention/10 border border-attention/30 rounded px-1.5 py-1 flex items-start gap-1">
                 <span className="font-semibold">⚠</span>
                 <span>
                   {dispUnweighted} article{dispUnweighted > 1 ? 's' : ''} sans importance défini{dispUnweighted > 1 ? 's' : 'e'}{isScoped ? ` (parmi les ${FILTER_LABEL[filter]})` : ''} — exclu{dispUnweighted > 1 ? 's' : ''} du calcul pondéré.
@@ -539,7 +539,7 @@ function SentimentContent({
               </p>
             )}
             {isScoped && scopedWeighted.length === 0 && (
-              <p className="text-[10px] text-amber-600 dark:text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded px-1.5 py-1">
+              <p className="text-[10px] text-attention bg-attention/10 border border-attention/30 rounded px-1.5 py-1">
                 Aucun article {FILTER_LABEL[filter]} pondéré sur cette période — la moyenne ne peut pas être calculée.
               </p>
             )}
@@ -699,7 +699,7 @@ function SentimentContent({
                       ) : (
                         <Badge
                           variant="outline"
-                          className="text-[10px] font-mono border-dashed text-amber-600 dark:text-amber-500 border-amber-500/40"
+                          className="text-[10px] font-mono border-dashed text-attention border-attention/40"
                           title="Importance manquante — exclu du calcul pondéré"
                         >
                           Poids — (exclu)
@@ -806,7 +806,7 @@ function SentimentContent({
                   ) : (
                     <Badge
                       variant="outline"
-                      className="text-[10px] font-mono border-dashed text-amber-600 dark:text-amber-500 border-amber-500/40"
+                      className="text-[10px] font-mono border-dashed text-attention border-attention/40"
                     >
                       Poids — (exclu)
                     </Badge>

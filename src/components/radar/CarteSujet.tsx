@@ -46,7 +46,7 @@ interface Props {
 const MOUVEMENT: Record<MouvementSujet, { icon: LucideIcon; libelle: string; classe: string }> = {
   emergent: { icon: Sparkle, libelle: 'Émerge depuis hier', classe: 'text-primary' },
   hausse: { icon: ArrowUp, libelle: 'En hausse', classe: 'text-[hsl(var(--signal-positive))]' },
-  baisse: { icon: ArrowDown, libelle: 'En baisse', classe: 'text-amber-600 dark:text-amber-400' },
+  baisse: { icon: ArrowDown, libelle: 'En baisse', classe: 'text-attention' },
   stable: { icon: Minus, libelle: 'Stable', classe: 'text-muted-foreground' },
 };
 

@@ -21,8 +21,8 @@ const NIVEAU_CONFIG = {
   },
   warning: {
     icon: AlertTriangle,
-    color: 'text-orange-500',
-    bg: 'bg-orange-500/10',
+    color: 'text-attention',
+    bg: 'bg-attention-soft',
     label: 'Avertissement',
   },
   info: {

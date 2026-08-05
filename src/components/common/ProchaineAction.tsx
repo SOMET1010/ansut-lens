@@ -32,8 +32,8 @@ const TONS: Record<TonProchaineAction, { conteneur: string; pastille: string }> 
     pastille: 'bg-primary/10 text-primary',
   },
   attention: {
-    conteneur: 'border-amber-500/30 bg-gradient-to-r from-amber-500/[0.09] to-transparent',
-    pastille: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+    conteneur: 'border-attention/30 bg-gradient-to-r from-attention/10 to-transparent',
+    pastille: 'bg-attention/15 text-attention',
   },
   urgent: {
     conteneur: 'border-destructive/35 bg-gradient-to-r from-destructive/[0.09] to-transparent',

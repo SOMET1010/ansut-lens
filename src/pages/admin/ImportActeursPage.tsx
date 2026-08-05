@@ -368,25 +368,25 @@ export default function ImportActeursPage() {
                   <SelectItem value="1">
                     <span className="flex items-center gap-2">
                       <Badge variant="outline" className={CERCLE_COLORS[1]}>C1</Badge>
-                      Institutionnels Nationaux
+                      Institutions
                     </span>
                   </SelectItem>
                   <SelectItem value="2">
                     <span className="flex items-center gap-2">
                       <Badge variant="outline" className={CERCLE_COLORS[2]}>C2</Badge>
-                      Opérateurs & Connectivité
+                      Opérateurs
                     </span>
                   </SelectItem>
                   <SelectItem value="3">
                     <span className="flex items-center gap-2">
                       <Badge variant="outline" className={CERCLE_COLORS[3]}>C3</Badge>
-                      Bailleurs & Internationaux
+                      Partenaires
                     </span>
                   </SelectItem>
                   <SelectItem value="4">
                     <span className="flex items-center gap-2">
                       <Badge variant="outline" className={CERCLE_COLORS[4]}>C4</Badge>
-                      Experts & Médias
+                      Influenceurs
                     </span>
                   </SelectItem>
                 </SelectContent>

@@ -150,8 +150,8 @@ export function SmartSidebar({
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-1.5 text-xs">
                   {sentimentHealth.pendingCount > 0 ? (
-                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="flex items-center gap-1 text-attention">
+                      <span className="h-1.5 w-1.5 rounded-full bg-attention animate-pulse" />
                       {sentimentHealth.pendingCount} en attente
                     </span>
                   ) : (

@@ -37,7 +37,7 @@ const CONFIG: Record<
   risque: {
     icon: AlertTriangle,
     libelle: 'Signal réputationnel à examiner',
-    classe: 'text-amber-600 dark:text-amber-400',
+    classe: 'text-attention',
   },
   opportunite: {
     icon: TrendingUp,
@@ -52,7 +52,7 @@ const CONFIG: Record<
   'echo-faible': {
     icon: TrendingDown,
     libelle: 'Écho faible',
-    classe: 'text-amber-600 dark:text-amber-400',
+    classe: 'text-attention',
   },
 };
 

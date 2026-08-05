@@ -100,7 +100,7 @@ export function SujetsValorisationSection({ onGeneratePost }: Props) {
 
   const prioriteColors = {
     haute: 'bg-destructive/10 text-destructive border-destructive/20',
-    moyenne: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+    moyenne: 'bg-attention/10 text-attention border-attention/20',
     basse: 'bg-muted text-muted-foreground border-border',
   };
 

@@ -56,7 +56,7 @@ export function ChiffreCle({
       ? 'text-muted-foreground'
       : variation > 0
         ? 'text-emerald-600 dark:text-emerald-400'
-        : 'text-orange-600 dark:text-orange-400';
+        : 'text-attention';
 
   const contenu = (
     <>

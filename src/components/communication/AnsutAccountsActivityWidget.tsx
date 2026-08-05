@@ -343,7 +343,7 @@ export function AnsutAccountsActivityWidget() {
                 </div>
 
                 <div className="p-3 rounded-lg border bg-muted/30">
-                  <div className="flex items-center gap-2 mb-2"><Lightbulb className="h-4 w-4 text-amber-500" /><span className="font-medium text-sm">Recommandations</span></div>
+                  <div className="flex items-center gap-2 mb-2"><Lightbulb className="h-4 w-4 text-attention" /><span className="font-medium text-sm">Recommandations</span></div>
                   <div className="space-y-1.5">
                     {(analysis.recommandations || []).map((r: any, i: number) => (
                       <div key={i} className="flex items-start gap-2 text-xs">
@@ -423,7 +423,7 @@ function DiagnosticPanel({ diag, loading, onRun }: { diag: DiagResponse | null; 
 
   const checkIcon = (st: DiagCheck['status']) => {
     if (st === 'ok') return <CheckCircle2 className="h-3.5 w-3.5 text-[hsl(var(--signal-positive))] shrink-0" />;
-    if (st === 'warn') return <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />;
+    if (st === 'warn') return <AlertTriangle className="h-3.5 w-3.5 text-attention shrink-0" />;
     if (st === 'fail') return <ShieldAlert className="h-3.5 w-3.5 text-[hsl(var(--signal-critical))] shrink-0" />;
     return <Activity className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
   };

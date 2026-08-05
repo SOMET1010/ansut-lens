@@ -2,12 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ANSUT RADAR Design System
-   Palette officielle ANSUT:
-   - Bleu: #2256a3 (HSL: 212 65% 42%)
-   - Orange: #f08224 (HSL: 27 87% 54%)
-   - Noir: #1D1D1B (HSL: 60 6% 11%)
-   - Gris: #878787 (HSL: 0 0% 53%)
+/* ANSUT RADAR Design System — palette SÉMANTIQUE (règle stricte des rôles)
+   Voir docs/DESIGN_TOKENS.md.
+   🔵 Bleu (primary)     navigation, liens, éléments actifs   #2E5F8A
+   🟢 Vert (confirme)    confirmé, contenu ANSUT, validation   #185C47
+   🟠 Ambre (attention)  signal à examiner, action requise     #C56B1A
+   🔴 Rouge (incident)   incident avéré, erreur critique        #B8423A
+   ⚪ Gris (muted)        descriptions, métadonnées, secondaire
+   L'orange n'est PLUS une couleur de remplissage ordinaire : secondary et
+   accent sont neutres ; l'ambre est réservé au rôle « attention ».
 */
 
 @layer base {
@@ -22,41 +25,60 @@
     --popover: 40 33% 99%;
     --popover-foreground: 40 8% 11%;
 
-    /* ANSUT Blue as primary */
-    --primary: 212 65% 42%;
+    /* Bleu institutionnel — couleur de NAVIGATION (liens, éléments actifs). */
+    --primary: 208 52% 37%;
     --primary-foreground: 0 0% 100%;
 
-    /* ANSUT Orange as accent/secondary */
-    --secondary: 27 87% 54%;
-    --secondary-foreground: 0 0% 100%;
+    /* Secondaire = NEUTRE (l'orange n'est plus une couleur de remplissage
+       ordinaire ; il est réservé à l'attention, cf. --attention). */
+    --secondary: 40 16% 90%;
+    --secondary-foreground: 40 10% 24%;
 
     --muted: 40 16% 92%;
     --muted-foreground: 40 6% 43%;
 
-    --accent: 27 87% 54%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent = survols/états neutres discrets (plus d'orange sur les menus). */
+    --accent: 40 24% 93%;
+    --accent-foreground: 40 10% 20%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 4 52% 47%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 40 14% 87%;
     --input: 40 14% 87%;
-    --ring: 212 65% 42%;
+    --ring: 208 52% 37%;
+
+    /* ————— Couleurs SÉMANTIQUES (règle stricte des 4 rôles) —————
+       🟢 confirmé/ANSUT · 🟠 attention · 🔴 incident · 🔵 navigation (=primary) */
+    --confirme: 161 55% 24%;
+    --confirme-foreground: 0 0% 100%;
+    --confirme-soft: 150 30% 94%;
+    --confirme-border: 150 26% 80%;
+
+    --attention: 28 77% 44%;
+    --attention-foreground: 0 0% 100%;
+    --attention-soft: 33 100% 95%;
+    --attention-border: 32 85% 80%;
+
+    --incident: 4 52% 47%;
+    --incident-foreground: 0 0% 100%;
+    --incident-soft: 6 72% 96%;
+    --incident-border: 6 60% 86%;
 
     --radius: 0.75rem;
 
     /* Sidebar - light mode — papier « encre », item actif en accent bleu ANSUT */
     --sidebar-background: 40 30% 98%;
     --sidebar-foreground: 40 8% 11%;
-    --sidebar-primary: 212 65% 42%;
+    --sidebar-primary: 208 52% 37%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 212 55% 92%;
-    --sidebar-accent-foreground: 212 60% 30%;
+    --sidebar-accent: 208 55% 92%;
+    --sidebar-accent-foreground: 208 55% 30%;
     --sidebar-border: 40 14% 89%;
-    --sidebar-ring: 212 65% 42%;
+    --sidebar-ring: 208 52% 37%;
 
     /* ANSUT specific tokens */
-    --ansut-blue: 212 65% 42%;
+    --ansut-blue: 208 52% 37%;
     --ansut-orange: 27 87% 54%;
     --ansut-noir: 60 6% 11%;
     --ansut-gris: 0 0% 53%;
@@ -97,39 +119,56 @@
     --popover: 40 9% 11%;
     --popover-foreground: 40 12% 94%;
 
-    /* ANSUT Blue - brighter for dark mode */
-    --primary: 212 70% 55%;
+    /* Bleu institutionnel — navigation (plus clair pour le fond sombre). */
+    --primary: 208 60% 60%;
     --primary-foreground: 0 0% 100%;
 
-    /* ANSUT Orange - vibrant accent */
-    --secondary: 27 90% 58%;
-    --secondary-foreground: 60 6% 11%;
+    /* Secondaire = neutre sombre (plus d'orange de remplissage). */
+    --secondary: 40 8% 24%;
+    --secondary-foreground: 40 12% 90%;
 
     --muted: 40 8% 18%;
     --muted-foreground: 40 8% 62%;
 
-    --accent: 27 90% 58%;
-    --accent-foreground: 60 6% 11%;
+    /* Accent = survols neutres discrets. */
+    --accent: 40 8% 22%;
+    --accent-foreground: 40 12% 92%;
 
-    --destructive: 0 72% 50%;
+    --destructive: 4 58% 54%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 40 8% 20%;
     --input: 40 8% 20%;
-    --ring: 212 70% 55%;
+    --ring: 208 60% 60%;
+
+    /* ————— Couleurs SÉMANTIQUES (versions sombres) ————— */
+    --confirme: 161 42% 45%;
+    --confirme-foreground: 0 0% 100%;
+    --confirme-soft: 161 30% 15%;
+    --confirme-border: 161 24% 30%;
+
+    --attention: 30 80% 56%;
+    --attention-foreground: 30 40% 12%;
+    --attention-soft: 30 45% 16%;
+    --attention-border: 30 50% 30%;
+
+    --incident: 4 62% 60%;
+    --incident-foreground: 0 0% 100%;
+    --incident-soft: 6 40% 16%;
+    --incident-border: 6 40% 32%;
 
     /* Sidebar - dark mode — papier « encre » sombre, item actif en accent bleu */
     --sidebar-background: 40 9% 10%;
     --sidebar-foreground: 40 12% 94%;
-    --sidebar-primary: 212 70% 55%;
+    --sidebar-primary: 208 60% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 212 45% 24%;
-    --sidebar-accent-foreground: 212 40% 88%;
+    --sidebar-accent: 208 45% 24%;
+    --sidebar-accent-foreground: 208 45% 88%;
     --sidebar-border: 40 8% 18%;
-    --sidebar-ring: 212 70% 55%;
+    --sidebar-ring: 208 60% 60%;
 
     /* ANSUT specific tokens */
-    --ansut-blue: 212 70% 55%;
+    --ansut-blue: 208 60% 60%;
     --ansut-orange: 27 90% 58%;
     --ansut-noir: 60 6% 11%;
     --ansut-gris: 215 20% 65%;
@@ -334,8 +373,8 @@
   --m-accent: hsl(var(--primary));
   --m-accent-2: hsl(var(--primary));
   --m-accent-wash: hsl(var(--primary) / 0.12);
-  --m-signal: hsl(var(--secondary));
-  --m-signal-wash: hsl(var(--secondary) / 0.14);
+  --m-signal: hsl(var(--attention));
+  --m-signal-wash: hsl(var(--attention) / 0.14);
 }
 .matinale-serif {
   font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;

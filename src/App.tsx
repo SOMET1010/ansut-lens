@@ -48,7 +48,6 @@ const SujetsPage = lazy(() => import('@/pages/SujetsPage'));
 
 const InsightsPage = lazy(() => import('@/pages/InsightsPage'));
 const VeillePage = lazy(() => import('@/pages/VeillePage'));
-const PigePage = lazy(() => import('@/pages/PigePage'));
 const BalayagePage = lazy(() => import('@/pages/BalayagePage'));
 const ActeursInfluencePage = lazy(() => import('@/pages/ActeursInfluencePage'));
 const FluxPage = lazy(() => import('@/pages/FluxPage'));
@@ -212,7 +211,8 @@ const App = () => (
                             <Route path="/sujets" element={<SujetsPage />} />
 
                             <Route path="/veille" element={<VeillePage />} />
-                            <Route path="/pige" element={<PigePage />} />
+                            {/* « Pige presse » a fondu dans Veille (une seule expérience). */}
+                            <Route path="/pige" element={<Navigate to="/veille" replace />} />
                             <Route path="/recherche" element={<BalayagePage />} />
                             <Route path="/insights" element={<InsightsPage />} />
                           </Route>

@@ -85,7 +85,7 @@ const EVOLUTION_CFG: Record<
 > = {
   emergent: { icon: Sparkle, libelle: 'Émergent', classe: 'text-primary' },
   hausse: { icon: ArrowUp, libelle: 'En hausse', classe: 'text-[hsl(var(--signal-positive))]' },
-  baisse: { icon: ArrowDown, libelle: 'En baisse', classe: 'text-amber-600 dark:text-amber-400' },
+  baisse: { icon: ArrowDown, libelle: 'En baisse', classe: 'text-attention' },
   disparu: { icon: Minus, libelle: 'Disparu', classe: 'text-muted-foreground' },
   stable: { icon: Minus, libelle: 'Stable', classe: 'text-muted-foreground' },
 };

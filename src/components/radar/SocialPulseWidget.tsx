@@ -33,8 +33,8 @@ const PLATFORM_CONFIG: Record<WebPlateforme, { icon: typeof Newspaper; color: st
   },
   forum: {
     icon: MessagesSquare,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-500/10',
+    color: 'text-attention',
+    bgColor: 'bg-attention/10',
     label: 'Forums',
   },
   news: {

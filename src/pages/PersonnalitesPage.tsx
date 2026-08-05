@@ -25,6 +25,7 @@ import { ActeurDetail } from '@/components/personnalites/ActeurDetail';
 import { ActeurFormDialog } from '@/components/personnalites/ActeurFormDialog';
 import { RadarVisualization } from '@/components/personnalites/RadarVisualization';
 import { SPDIBenchmarkPanel } from '@/components/spdi';
+import { useMentionsRecentes } from '@/hooks/useMentionsRecentes';
 import type { Personnalite, CercleStrategique } from '@/types';
 
 type ViewMode = 'list' | 'radar';
@@ -44,6 +45,8 @@ export default function PersonnalitesPage() {
 
   const { data: personnalites, isLoading, isError, refetch } = usePersonnalites(filters);
   const { data: stats } = usePersonnalitesStats();
+  const mentionsIds = useMemo(() => (personnalites || []).map((p) => p.id), [personnalites]);
+  const { data: mentions7j } = useMentionsRecentes(mentionsIds);
   const updatePersonnalite = useUpdatePersonnalite();
   const deletePersonnalite = useDeletePersonnalite();
 
@@ -221,6 +224,7 @@ export default function PersonnalitesPage() {
                         key={acteur.id}
                         personnalite={acteur}
                         allPersonnalites={personnalites}
+                        mentions7j={mentions7j?.[acteur.id]}
                         onClick={() => handleActeurClick(acteur)}
                         onEdit={isAdmin ? () => openEditDialog(acteur) : undefined}
                         onArchive={isAdmin ? () => handleArchive(acteur) : undefined}
@@ -247,6 +251,7 @@ export default function PersonnalitesPage() {
                       key={acteur.id}
                       personnalite={acteur}
                       allPersonnalites={personnalites}
+                      mentions7j={mentions7j?.[acteur.id]}
                       onClick={() => handleActeurClick(acteur)}
                       onEdit={isAdmin ? () => openEditDialog(acteur) : undefined}
                       onArchive={isAdmin ? () => handleArchive(acteur) : undefined}

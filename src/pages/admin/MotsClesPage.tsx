@@ -305,7 +305,7 @@ export default function MotsClesPage() {
         <Card className="glass">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <BarChart3 className="h-8 w-8 text-secondary" />
+              <BarChart3 className="h-8 w-8 text-primary" />
               <div>
                 <p className="text-2xl font-bold">{categories?.length || 0}</p>
                 <p className="text-sm text-muted-foreground">Catégories</p>

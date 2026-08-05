@@ -99,7 +99,7 @@ export default function ProfilePage() {
                 <Mail className="h-5 w-5 text-primary" />
                 <div>
                   <p className="font-medium text-sm">
-                    <TermeMetier cle="matinale">Matinale</TermeMetier> quotidienne
+                    Note <TermeMetier cle="ce-matin">« Ce matin »</TermeMetier> quotidienne
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Recevez chaque matin un résumé stratégique par email

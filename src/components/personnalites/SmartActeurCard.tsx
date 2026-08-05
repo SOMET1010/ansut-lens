@@ -13,7 +13,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Award, Building2, Pencil, MoreHorizontal, Archive, Trash2, Info, Activity, Flame, Sparkles, AlertTriangle } from 'lucide-react';
+import { Award, Building2, Pencil, MoreHorizontal, Archive, Trash2, Activity, Flame, AlertTriangle, Newspaper, Clock } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { CERCLE_LABELS } from '@/hooks/usePersonnalites';
 import { MiniSparkline } from '@/components/spdi/MiniSparkline';
 import { SentimentBar } from '@/components/spdi/SentimentBar';
@@ -24,6 +26,8 @@ import { cn } from '@/lib/utils';
 interface SmartActeurCardProps {
   personnalite: Personnalite;
   allPersonnalites?: Personnalite[];
+  /** Nombre de mentions réelles sur 7 jours (job lier-mentions-acteurs). */
+  mentions7j?: number;
   onClick?: () => void;
   onEdit?: () => void;
   onArchive?: () => void;
@@ -35,7 +39,7 @@ interface SmartActeurCardProps {
 const getSPDIColor = (score: number) => {
   if (score >= 80) return { text: 'text-green-600 dark:text-green-400', bg: 'bg-green-500', badge: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800' };
   if (score >= 60) return { text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500', badge: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800' };
-  if (score >= 40) return { text: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-500', badge: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/50 dark:text-orange-300 dark:border-orange-800' };
+  if (score >= 40) return { text: 'text-attention', bg: 'bg-attention', badge: 'bg-attention-soft text-attention border-attention-border' };
   return { text: 'text-red-600 dark:text-red-400', bg: 'bg-red-500', badge: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800' };
 };
 
@@ -96,6 +100,7 @@ const getCategorieLabel = (categorie?: string) => {
 
 export function SmartActeurCard({
   personnalite,
+  mentions7j,
   onClick,
   onEdit,
   onArchive,
@@ -103,6 +108,13 @@ export function SmartActeurCard({
 }: SmartActeurCardProps) {
   const cercleStyles = getCercleStyles(personnalite.cercle);
   const initials = `${personnalite.prenom?.[0] || ''}${personnalite.nom[0]}`.toUpperCase();
+
+  // Activité réelle (Charte : n'affiche que ce qui est mesuré et sourcé).
+  const derniereActivite = personnalite.derniere_activite
+    ? new Date(personnalite.derniere_activite)
+    : null;
+  const aDeMentions = typeof mentions7j === 'number' && mentions7j > 0;
+  const aDeLActivite = aDeMentions || !!derniereActivite;
 
   const suiviActif = personnalite.suivi_spdi_actif ?? false;
   const scoreSPDI = personnalite.score_spdi_actuel;
@@ -138,8 +150,9 @@ export function SmartActeurCard({
               </AvatarFallback>
             </Avatar>
             
-            {/* Badge SPDI */}
-            {suiviActif && scoreSPDI != null ? (
+            {/* Badge de présence médiatique — affiché uniquement si la présence
+                est réellement suivie et mesurée (Charte : pas de score fabriqué). */}
+            {suiviActif && scoreSPDI != null && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -154,27 +167,11 @@ export function SmartActeurCard({
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">
-                    <p className="text-xs">Score SPDI — Présence digitale</p>
+                    <p className="text-xs">Présence médiatique observée (0 à 100)</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-            ) : !suiviActif ? (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="absolute -bottom-1 -right-1 bg-background p-0.5 rounded-full shadow-sm">
-                      <div className="flex items-center gap-0.5 bg-muted text-muted-foreground text-[9px] font-medium px-1.5 py-0.5 rounded-full border border-border">
-                        <Info className="h-2 w-2" />
-                        SPDI
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    <p className="text-xs">Suivi SPDI inactif</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ) : null}
+            )}
             {/* Mini sparkline under avatar */}
             {suiviActif && dashboard.sparklineData.length >= 2 && (
               <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
@@ -216,15 +213,9 @@ export function SmartActeurCard({
                 </TooltipProvider>
               )}
               {personnalite.niveau_alerte === 'eleve' && (
-                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800">
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border bg-attention-soft text-attention border-attention-border">
                   <AlertTriangle className="h-2.5 w-2.5" />
                   Vigilance
-                </span>
-              )}
-              {personnalite.cercle === 1 && personnalite.niveau_alerte !== 'critique' && personnalite.niveau_alerte !== 'eleve' && (
-                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800">
-                  <Sparkles className="h-2.5 w-2.5" />
-                  Aligné
                 </span>
               )}
             </div>
@@ -317,6 +308,25 @@ export function SmartActeurCard({
       {suiviActif && (
         <div className="mb-3">
           <SentimentBar {...dashboard.sentimentDistribution} compact />
+        </div>
+      )}
+
+      {/* Activité réelle — affichée uniquement si des mentions sont reliées
+          (job lier-mentions-acteurs). Sinon rien : pas de « 0 » fabriqué. */}
+      {aDeLActivite && (
+        <div className="mt-auto pt-3 border-t border-border/50 flex items-center gap-3 text-[11px] text-muted-foreground">
+          {aDeMentions && (
+            <span className="inline-flex items-center gap-1 font-medium text-foreground/80">
+              <Newspaper className="h-3 w-3" />
+              {mentions7j} {mentions7j! > 1 ? 'mentions' : 'mention'} · 7 j
+            </span>
+          )}
+          {derniereActivite && (
+            <span className="inline-flex items-center gap-1" title="Date de la mention la plus récente">
+              <Clock className="h-3 w-3" />
+              {formatDistanceToNow(derniereActivite, { addSuffix: true, locale: fr })}
+            </span>
+          )}
         </div>
       )}
 

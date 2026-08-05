@@ -125,8 +125,8 @@ export default function ShareOfVoiceWidget() {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
   const gapLevel = data.ratio < 0.3 ? 'critical' : data.ratio < 0.7 ? 'warning' : 'good';
-  const gapColor = gapLevel === 'critical' ? 'text-destructive' : gapLevel === 'warning' ? 'text-amber-500' : 'text-emerald-500';
-  const gapBg = gapLevel === 'critical' ? 'bg-destructive/10' : gapLevel === 'warning' ? 'bg-amber-500/10' : 'bg-emerald-500/10';
+  const gapColor = gapLevel === 'critical' ? 'text-destructive' : gapLevel === 'warning' ? 'text-attention' : 'text-emerald-500';
+  const gapBg = gapLevel === 'critical' ? 'bg-destructive/10' : gapLevel === 'warning' ? 'bg-attention/10' : 'bg-emerald-500/10';
 
   return (
     <Card className="glass border-primary/20">
@@ -256,7 +256,7 @@ export default function ShareOfVoiceWidget() {
         {data.recommandation && (
           <div className="rounded-lg bg-muted/50 p-3">
             <div className="flex items-start gap-2">
-              <Lightbulb className="h-4 w-4 text-amber-500 mt-0.5" />
+              <Lightbulb className="h-4 w-4 text-attention mt-0.5" />
               <p className="text-xs text-muted-foreground">{data.recommandation}</p>
             </div>
           </div>

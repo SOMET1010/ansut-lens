@@ -122,6 +122,14 @@ export default function ComptesSurveillesPage() {
               </Alert>
             )}
 
+            {analyse?.valide && analyse.avertissement && (
+              <Alert className="border-amber-300 bg-amber-50 dark:border-amber-800/60 dark:bg-amber-950/30">
+                <AlertDescription className="text-amber-800 dark:text-amber-300">
+                  {analyse.avertissement}
+                </AlertDescription>
+              </Alert>
+            )}
+
             {analyse?.valide && (
               <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
                 <div className="flex flex-wrap items-center gap-2 text-sm">

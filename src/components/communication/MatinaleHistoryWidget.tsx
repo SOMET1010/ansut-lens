@@ -45,11 +45,11 @@ export function MatinaleHistoryWidget() {
               return (
                 <div key={log.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/40 text-xs">
                   {allSuccess ? (
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-confirme shrink-0" />
                   ) : allFailed ? (
                     <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" />
                   ) : (
-                    <Mail className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                    <Mail className="h-3.5 w-3.5 text-attention shrink-0" />
                   )}
                   <span className="flex-1 truncate font-medium">
                     {format(new Date(log.created_at), "EEE d MMM · HH:mm", { locale: fr })}

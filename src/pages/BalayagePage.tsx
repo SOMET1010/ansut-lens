@@ -565,7 +565,7 @@ export default function BalayagePage() {
               onClick={() =>
                 copyText(
                   [
-                    `# Balayage ${days} jours — ${armedSubject}`,
+                    `# Recherche ${days} jours — ${armedSubject}`,
                     `Depuis le ${ctx!.date}`,
                     '',
                     ...buildLinks().map((l) => `- [${l.name}](${l.url})`),

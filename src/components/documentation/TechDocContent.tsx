@@ -40,9 +40,9 @@ La plateforme répond à 5 objectifs majeurs :
 |--------|-------|-------------|
 | **Ce matin** | \`/ce-matin\` | Synthèse du jour : alertes, chiffres clés, sujets, prochaine action |
 | **Veille** | \`/veille\` | Flux complet des articles collectés, regroupés par sujet |
-| **Recherche** | \`/recherche\` | Balayage approfondi sur trente jours |
+| **Recherche** | \`/recherche\` | Recherche approfondie sur trente jours |
 | **Acteurs** | \`/acteurs\` | Annuaire des acteurs avec score de présence digitale |
-| **Surveillance** | \`/surveillance\` | Capteurs de veille configurables par utilisateur |
+| **Surveillance** | \`/surveillance\` | Surveillances de veille configurables par utilisateur |
 | **Notre communication** | \`/communication\` | Visibilité institutionnelle et réseaux sociaux |
 | **Publier** | \`/publier\` | Notes de synthèse, dossiers et newsletters |
 | **Assistant** | \`/assistant\` | Interface conversationnelle d'aide à l'analyse |
