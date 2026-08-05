@@ -169,7 +169,7 @@ function Engagement({ items }: { items: EngagementReseauItem[] }) {
     return <p className="text-[0.84rem] text-[var(--m-ink-soft)]">Aucun réseau collecté sur la période.</p>;
   }
   return (
-    <ul className="grid gap-3 sm:grid-cols-2">
+    <ul className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">
       {items.map((e) => (
         <li
           key={e.cle}
@@ -243,6 +243,17 @@ export default function CommunicationPage() {
     (!c.echo || c.echo.earned === 0) &&
     c.reprisesPresse.length === 0;
 
+  // Conclusion en tête (patron éditorial : le résultat avant le détail).
+  // Uniquement des chiffres réels ; masquée si rien de daté à conclure.
+  const conclusion =
+    !rien && c.publications.totalDatees > 0 && c.echo?.ratio != null
+      ? `${c.publications.totalDatees} publication${c.publications.totalDatees > 1 ? 's' : ''} en ${fenetre} jours · ${c.echo.ratio.toLocaleString('fr-FR')} reprise${c.echo.ratio > 1 ? 's' : ''} presse par publication.`
+      : null;
+
+  // La liste des reprises peut être longue : on en montre cinq, le reste sous un repli.
+  const reprisesVisibles = c.reprisesPresse.slice(0, 5);
+  const reprisesRestantes = c.reprisesPresse.slice(5);
+
   return (
     <div className="matinale min-h-full bg-[var(--m-paper)] text-[var(--m-ink)]">
       <div className="mx-auto max-w-[80rem] px-4 py-6 sm:px-6 lg:px-8">
@@ -255,6 +266,11 @@ export default function CommunicationPage() {
             <h1 className="matinale-serif mt-1 text-[clamp(1.7rem,3.8vw,2.5rem)] font-bold leading-tight tracking-tight text-[var(--m-ink)]">
               Comment l’ANSUT est visible
             </h1>
+            {conclusion && (
+              <p className="matinale-serif mt-1.5 text-[1.02rem] leading-snug text-[var(--m-ink-soft)]">
+                {conclusion}
+              </p>
+            )}
             <p className="matinale-mono mt-2 text-[0.7rem] tabular-nums text-[var(--m-ink-soft)]">
               Fenêtre d’observation : {courtJour(c.periode.debutMs ?? Date.now())} →{' '}
               {courtJour(c.periode.finMs ?? Date.now())}
@@ -315,13 +331,29 @@ export default function CommunicationPage() {
 
               <Section titre="Reprises presse récentes" question="Documents attribuables, datés, dédupliqués.">
                 {c.reprisesPresse.length > 0 ? (
-                  <ul className="space-y-0.5">
-                    {c.reprisesPresse.map((p) => (
-                      <li key={p.id}>
-                        <PreuveLien preuve={p} />
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    <ul className="space-y-0.5">
+                      {reprisesVisibles.map((p) => (
+                        <li key={p.id}>
+                          <PreuveLien preuve={p} />
+                        </li>
+                      ))}
+                    </ul>
+                    {reprisesRestantes.length > 0 && (
+                      <details className="mt-1.5">
+                        <summary className="matinale-mono cursor-pointer text-[0.7rem] uppercase tracking-[0.08em] text-[var(--m-accent)] hover:underline">
+                          Voir les {c.reprisesPresse.length} reprises documentées
+                        </summary>
+                        <ul className="mt-1 space-y-0.5">
+                          {reprisesRestantes.map((p) => (
+                            <li key={p.id}>
+                              <PreuveLien preuve={p} />
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                  </>
                 ) : (
                   <p className="text-[0.84rem] text-[var(--m-ink-soft)]">
                     Aucune reprise presse vérifiable sur la période.
