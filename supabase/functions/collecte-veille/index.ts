@@ -1246,6 +1246,8 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
       sources_utilisees: sourcesUtilisees,
       alertes_declenchees: alertes,
       duree_ms: duration,
+      // Transparence qualité : combien d'items écartés et pour quel motif.
+      rejets_qualite: rejets,
       citations: allCitations
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
