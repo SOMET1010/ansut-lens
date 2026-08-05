@@ -16,9 +16,10 @@ import {
 import { Users, Sparkles, UserPlus, Plus, List, Target, Swords, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePersonnalites, usePersonnalitesStats, useUpdatePersonnalite, useDeletePersonnalite, CERCLE_LABELS, type PersonnalitesFilters } from '@/hooks/usePersonnalites';
+import { usePersonnalites, usePersonnalitesStats, useUpdatePersonnalite, useDeletePersonnalite, CERCLE_LABELS, type PersonnalitesFilters, type PersonnalitesStats } from '@/hooks/usePersonnalites';
 import { UnifiedFilterBar } from '@/components/personnalites/UnifiedFilterBar';
-import { CompactStats } from '@/components/personnalites/CompactStats';
+import { ActeursStatsBar } from '@/components/personnalites/ActeursStatsBar';
+import { ReseauResume } from '@/components/personnalites/ReseauResume';
 import { SmartActeurCard } from '@/components/personnalites/SmartActeurCard';
 import { CercleHeader } from '@/components/personnalites/CercleHeader';
 import { ActeurDetail } from '@/components/personnalites/ActeurDetail';
@@ -155,9 +156,6 @@ export default function PersonnalitesPage() {
         </div>
         
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Stats compactes */}
-          <CompactStats />
-          
           {/* Toggle Vue Liste / Radar */}
           <ToggleGroup 
             type="single" 
@@ -194,8 +192,16 @@ export default function PersonnalitesPage() {
         </div>
       </div>
 
+      {/* Repères chiffrés réels (Charte : mesures traçables, aucun chiffre fabriqué) */}
+      <ActeursStatsBar
+        personnalites={personnalites}
+        mentions7j={mentions7j}
+        stats={stats}
+        isLoading={isLoading}
+      />
+
       {/* Barre de filtres unifiée */}
-      <UnifiedFilterBar 
+      <UnifiedFilterBar
         filters={filters} 
         onFiltersChange={setFilters}
         activeTab={activeTab}
@@ -225,66 +231,89 @@ export default function PersonnalitesPage() {
 
       {/* Vue Liste */}
       {viewMode === 'list' && (
-        <div className="space-y-8">
-          {isError ? (
-            <ErrorState onRetry={() => refetch()} />
-          ) : isLoading ? (
+        isError ? (
+          <ErrorState onRetry={() => refetch()} />
+        ) : isLoading ? (
+          <div className="space-y-8">
             <LoadingSkeleton />
-          ) : personnalites?.length === 0 ? (
-            <EmptyState onAddManually={openCreateDialog} />
-          ) : activeTab === 'all' ? (
-            // Vue "Tous" - groupée par cercle
-            ([1, 2, 3, 4] as CercleStrategique[]).map((cercle) => {
-              const acteurs = parCercle[cercle];
-              if (!acteurs || acteurs.length === 0) return null;
-              return (
-                <div key={cercle}>
-                  <CercleHeader cercle={cercle} count={acteurs.length} />
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-4">
-                    {acteurs.map((acteur) => (
-                      <SmartActeurCard
-                        key={acteur.id}
-                        personnalite={acteur}
-                        allPersonnalites={personnalites}
-                        mentions7j={mentions7j?.[acteur.id]}
-                        onClick={() => handleActeurClick(acteur)}
-                        onEdit={isAdmin ? () => openEditDialog(acteur) : undefined}
-                        onArchive={isAdmin ? () => handleArchive(acteur) : undefined}
-                        onDelete={isAdmin ? () => handleDeleteRequest(acteur) : undefined}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            // Vue cercle spécifique
-            <>
-              <CercleHeader 
-                cercle={parseInt(activeTab) as CercleStrategique} 
-                count={filteredPersonnalites.length} 
-              />
-              {filteredPersonnalites.length === 0 ? (
-                <EmptyState cercle={parseInt(activeTab) as CercleStrategique} />
+          </div>
+        ) : !personnalites || personnalites.length === 0 ? (
+          <EmptyState onAddManually={openCreateDialog} />
+        ) : (
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+            {/* Colonne principale : acteurs groupés par cercle */}
+            <div className="min-w-0 space-y-8">
+              {activeTab === 'all' ? (
+                ([1, 2, 3, 4] as CercleStrategique[]).map((cercle) => {
+                  const acteurs = parCercle[cercle];
+                  if (!acteurs || acteurs.length === 0) return null;
+                  return (
+                    <div key={cercle}>
+                      <CercleHeader cercle={cercle} count={acteurs.length} />
+                      <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3 mt-4">
+                        {acteurs.map((acteur) => (
+                          <SmartActeurCard
+                            key={acteur.id}
+                            personnalite={acteur}
+                            allPersonnalites={personnalites}
+                            mentions7j={mentions7j?.[acteur.id]}
+                            onClick={() => handleActeurClick(acteur)}
+                            onEdit={isAdmin ? () => openEditDialog(acteur) : undefined}
+                            onArchive={isAdmin ? () => handleArchive(acteur) : undefined}
+                            onDelete={isAdmin ? () => handleDeleteRequest(acteur) : undefined}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })
               ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-4">
-                  {filteredPersonnalites.map((acteur) => (
-                    <SmartActeurCard
-                      key={acteur.id}
-                      personnalite={acteur}
-                      allPersonnalites={personnalites}
-                      mentions7j={mentions7j?.[acteur.id]}
-                      onClick={() => handleActeurClick(acteur)}
-                      onEdit={isAdmin ? () => openEditDialog(acteur) : undefined}
-                      onArchive={isAdmin ? () => handleArchive(acteur) : undefined}
-                      onDelete={isAdmin ? () => handleDeleteRequest(acteur) : undefined}
-                    />
-                  ))}
-                </div>
+                <>
+                  <CercleHeader
+                    cercle={parseInt(activeTab) as CercleStrategique}
+                    count={filteredPersonnalites.length}
+                  />
+                  {filteredPersonnalites.length === 0 ? (
+                    <EmptyState cercle={parseInt(activeTab) as CercleStrategique} />
+                  ) : (
+                    <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3 mt-4">
+                      {filteredPersonnalites.map((acteur) => (
+                        <SmartActeurCard
+                          key={acteur.id}
+                          personnalite={acteur}
+                          allPersonnalites={personnalites}
+                          mentions7j={mentions7j?.[acteur.id]}
+                          onClick={() => handleActeurClick(acteur)}
+                          onEdit={isAdmin ? () => openEditDialog(acteur) : undefined}
+                          onArchive={isAdmin ? () => handleArchive(acteur) : undefined}
+                          onDelete={isAdmin ? () => handleDeleteRequest(acteur) : undefined}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
-            </>
-          )}
-        </div>
+
+              {/* Synthèse honnête (agrégats réels, aucune interprétation fabriquée) */}
+              <SyntheseActeurs
+                personnalites={personnalites}
+                mentions7j={mentions7j}
+                stats={stats}
+              />
+            </div>
+
+            {/* Colonne latérale : résumé réel du réseau */}
+            <div className="self-start xl:sticky xl:top-4">
+              <ReseauResume
+                personnalites={personnalites}
+                mentions7j={mentions7j}
+                stats={stats}
+                onActeurClick={handleActeurClick}
+                onVoirRadar={() => setViewMode('radar')}
+              />
+            </div>
+          </div>
+        )
       )}
 
       {/* Detail panel */}
@@ -458,6 +487,79 @@ function EmptyState({ cercle, onAddManually }: { cercle?: CercleStrategique; onA
           <span>Contactez un administrateur pour alimenter la base</span>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Bande de synthèse « À retenir » en bas de la cartographie.
+ *
+ * Charte : la maquette de référence terminait par une phrase interprétée
+ * (« Le Ministre concentre l'essentiel des prises de parole… »). On ne produit
+ * ici qu'un constat d'agrégats RÉELS (répartition, mentions reliées, alertes
+ * déclarées) — jamais une intention ou une causalité inventée.
+ */
+function SyntheseActeurs({
+  personnalites,
+  mentions7j,
+  stats,
+}: {
+  personnalites?: Personnalite[];
+  mentions7j?: Record<string, number>;
+  stats?: PersonnalitesStats;
+}) {
+  const total = stats?.total ?? personnalites?.length ?? 0;
+  if (total === 0) return null;
+
+  const parCercle = stats?.parCercle ?? { 1: 0, 2: 0, 3: 0, 4: 0 };
+  const dominant = ([1, 2, 3, 4] as CercleStrategique[]).reduce<CercleStrategique>(
+    (best, c) => ((parCercle[c] ?? 0) > (parCercle[best] ?? 0) ? c : best),
+    1,
+  );
+  const domN = parCercle[dominant] ?? 0;
+
+  const compte = mentions7j ?? {};
+  const actifs = Object.values(compte).filter((n) => n > 0).length;
+  const aSurveiller = stats?.alertesElevees ?? 0;
+
+  const phrases: string[] = [];
+  if (domN > 0) {
+    phrases.push(
+      `${total} acteur${total > 1 ? 's' : ''} suivi${total > 1 ? 's' : ''}, ` +
+        `dont ${domN} dans le cercle ${CERCLE_LABELS[dominant].label.toLowerCase()}.`,
+    );
+  } else {
+    phrases.push(`${total} acteur${total > 1 ? 's' : ''} suivi${total > 1 ? 's' : ''}.`);
+  }
+  phrases.push(
+    actifs > 0
+      ? `${actifs} ${actifs > 1 ? 'ont' : 'a'} été nommé${actifs > 1 ? 's' : ''} dans un contenu sourcé cette semaine.`
+      : `Aucun n'a été nommé dans un contenu sourcé cette semaine.`,
+  );
+  phrases.push(
+    aSurveiller > 0
+      ? `${aSurveiller} ${aSurveiller > 1 ? 'sont signalés' : 'est signalé'} à surveiller.`
+      : `Aucun n'est signalé à surveiller.`,
+  );
+
+  return (
+    <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 shadow-sm">
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 rounded-lg bg-primary/10 p-1.5 text-primary">
+          <Sparkles className="h-4 w-4" aria-hidden />
+        </span>
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+            À retenir
+          </p>
+          <p className="mt-1 text-sm leading-relaxed text-foreground/90">
+            {phrases.join(' ')}
+          </p>
+          <p className="mt-1.5 text-[11px] text-muted-foreground/70">
+            Constat d'agrégats mesurés — pas d'interprétation.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

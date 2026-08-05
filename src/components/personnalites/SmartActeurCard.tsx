@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Award, Building2, Pencil, MoreHorizontal, Archive, Trash2, Activity, Flame, AlertTriangle, Newspaper, Clock } from 'lucide-react';
+import { Award, Building2, Pencil, MoreHorizontal, Archive, Trash2, Activity, Flame, AlertTriangle, Newspaper, Clock, Radio } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CERCLE_LABELS } from '@/hooks/usePersonnalites';
@@ -126,7 +126,7 @@ export function SmartActeurCard({
   return (
     <div 
       className={cn(
-        'group bg-card rounded-2xl p-5 border border-border/50 shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300 flex flex-col h-full relative overflow-hidden cursor-pointer'
+        'group bg-card rounded-2xl p-5 border border-border/60 shadow-md hover:shadow-lg hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full relative overflow-hidden cursor-pointer'
       )}
       onClick={onClick}
     >
@@ -311,24 +311,52 @@ export function SmartActeurCard({
         </div>
       )}
 
-      {/* Activité réelle — affichée uniquement si des mentions sont reliées
-          (job lier-mentions-acteurs). Sinon rien : pas de « 0 » fabriqué. */}
-      {aDeLActivite && (
-        <div className="mt-auto pt-3 border-t border-border/50 flex items-center gap-3 text-[11px] text-muted-foreground">
-          {aDeMentions && (
-            <span className="inline-flex items-center gap-1 font-medium text-foreground/80">
-              <Newspaper className="h-3 w-3" />
-              {mentions7j} {mentions7j! > 1 ? 'mentions' : 'mention'} · 7 j
-            </span>
-          )}
-          {derniereActivite && (
-            <span className="inline-flex items-center gap-1" title="Date de la mention la plus récente">
-              <Clock className="h-3 w-3" />
-              {formatDistanceToNow(derniereActivite, { addSuffix: true, locale: fr })}
-            </span>
-          )}
-        </div>
-      )}
+      {/* Bloc signal — TOUJOURS présent (Charte + fin du « trop vide »).
+          On ne fabrique aucun chiffre : selon ce qui est réellement mesuré,
+          on montre la présence médiatique suivie, les mentions reliées, ou —
+          à défaut — un micro-état honnête plutôt qu'une carte qui « retombe »
+          à blanc. Audit UX Lot 3 #90. */}
+      <div className="mt-auto pt-3 border-t border-border/50">
+        {suiviActif && scoreSPDI != null ? (
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Présence médiatique
+              </p>
+              <p className="text-sm font-bold text-foreground tabular-nums">
+                {Math.round(scoreSPDI)}
+                <span className="text-xs font-normal text-muted-foreground">/100</span>
+              </p>
+            </div>
+            {dashboard.sparklineData.length >= 2 && (
+              <MiniSparkline data={dashboard.sparklineData} width={64} height={24} />
+            )}
+          </div>
+        ) : aDeLActivite ? (
+          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+            {aDeMentions && (
+              <span className="inline-flex items-center gap-1 font-medium text-foreground/80">
+                <Newspaper className="h-3 w-3" />
+                {mentions7j} {mentions7j! > 1 ? 'mentions' : 'mention'} · 7 j
+              </span>
+            )}
+            {derniereActivite && (
+              <span
+                className="inline-flex items-center gap-1"
+                title="Date de la mention la plus récente"
+              >
+                <Clock className="h-3 w-3" />
+                {formatDistanceToNow(derniereActivite, { addSuffix: true, locale: fr })}
+              </span>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground/80">
+            <Radio className="h-3 w-3 shrink-0" aria-hidden />
+            <span>Pas encore de signal médiatique relié</span>
+          </div>
+        )}
+      </div>
 
     </div>
   );
