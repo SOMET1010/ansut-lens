@@ -5,6 +5,7 @@ import { findSection, NAV_SECTIONS } from '@/config/navigation';
 /** Libelles lisibles pour les segments de route qui ne sont pas des sections. */
 const SEGMENT_LABELS: Record<string, string> = {
   admin: 'Administration',
+  sujets: 'Tous les sujets',
   users: 'Utilisateurs',
   roles: 'Rôles et permissions',
   'audit-logs': 'Journal des actions',
