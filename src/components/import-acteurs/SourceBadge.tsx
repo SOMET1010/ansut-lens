@@ -48,22 +48,22 @@ function detecterTypeSource(url: string): { type: SourceType; domaine: string } 
 const TYPE_CONFIG: Record<SourceType, { icon: typeof Globe; className: string; label: string }> = {
   officiel: { 
     icon: Building2, 
-    className: 'bg-blue-500/20 text-blue-400 border-blue-500/30 hover:bg-blue-500/30',
+    className: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/30 hover:bg-blue-500/20',
     label: 'Site officiel'
   },
   gouvernement: { 
     icon: FileText, 
-    className: 'bg-purple-500/20 text-purple-400 border-purple-500/30 hover:bg-purple-500/30',
+    className: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/30 hover:bg-purple-500/20',
     label: 'Gouvernement'
   },
   presse: { 
     icon: Newspaper, 
-    className: 'bg-amber-500/20 text-amber-400 border-amber-500/30 hover:bg-amber-500/30',
+    className: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20',
     label: 'Presse'
   },
   linkedin: { 
     icon: Linkedin, 
-    className: 'bg-sky-500/20 text-sky-400 border-sky-500/30 hover:bg-sky-500/30',
+    className: 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30 hover:bg-sky-500/20',
     label: 'LinkedIn'
   },
   autre: { 
