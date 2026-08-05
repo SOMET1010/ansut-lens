@@ -150,6 +150,16 @@ export default {
         "spin-slow": "spin-slow 8s linear infinite",
       },
       boxShadow: {
+        /* Échelle d'ombres CHAUDES (encre brune, pas noir pur) : donne du relief
+           aux cartes sur le papier clair — le produit paraissait « trop blanc/plat »
+           parce que le shadow-sm par défaut de Tailwind (~5 % de noir) était
+           invisible. Ces ombres teintées lisent comme de la profondeur, pas de la
+           saleté. Réf. geste systémique de l'audit UX. */
+        sm: "0 1px 2px 0 hsl(34 30% 16% / 0.06)",
+        DEFAULT:
+          "0 1px 3px 0 hsl(34 30% 16% / 0.09), 0 1px 2px -1px hsl(34 30% 16% / 0.08)",
+        md: "0 4px 10px -2px hsl(34 30% 16% / 0.10), 0 2px 4px -2px hsl(34 30% 16% / 0.07)",
+        lg: "0 12px 24px -6px hsl(34 30% 16% / 0.12), 0 4px 8px -4px hsl(34 30% 16% / 0.08)",
         glow: "0 0 20px hsl(var(--primary) / 0.3)",
         "glow-accent": "0 0 20px hsl(var(--accent) / 0.3)",
         "glow-critical": "0 0 15px hsl(var(--signal-critical) / 0.4)",
