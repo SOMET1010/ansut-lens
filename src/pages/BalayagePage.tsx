@@ -384,8 +384,8 @@ export default function BalayagePage() {
               Un sujet, toutes les sources — liens de recherche réels, aucun résultat fabriqué.
             </p>
           </div>
-          <Badge variant="outline" className="ml-auto font-mono text-[11px] border-primary/40 text-primary">
-            SIGNAL v1 · un sujet, toutes les sources, 30 derniers jours
+          <Badge variant="outline" className="ml-auto text-[11px] border-primary/40 text-primary">
+            Recherche multi-source · liens réels · 30 derniers jours
           </Badge>
         </div>
       </header>
@@ -395,7 +395,7 @@ export default function BalayagePage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Radio className="h-4 w-4 text-primary" aria-hidden="true" />
-            Lancer une recherche
+            Quel sujet voulez-vous comprendre ?
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -417,13 +417,17 @@ export default function BalayagePage() {
             <div className="flex items-end">
               <Button size="lg" className="h-12 gap-2 w-full sm:w-auto" onClick={() => arm()}>
                 <Satellite className="h-4 w-4" aria-hidden="true" />
-                Armer
+                Préparer la recherche
               </Button>
             </div>
           </div>
 
-          {/* Options */}
-          <div className="grid gap-4 md:grid-cols-4">
+          {/* Options avancées — repliées par défaut pour ne pas noyer l'intention. */}
+          <details className="group rounded-md border border-border/60 bg-muted/20 px-3 py-2">
+            <summary className="cursor-pointer select-none text-sm font-medium text-muted-foreground hover:text-foreground">
+              Affiner la recherche
+            </summary>
+            <div className="mt-3 grid gap-4 md:grid-cols-4">
             <div className="space-y-1.5">
               <Label id="balayage-fenetre-label">Fenêtre</Label>
               <div
@@ -480,7 +484,8 @@ export default function BalayagePage() {
                 onChange={(e) => setMinEngagement(Number(e.target.value) || 0)}
               />
             </div>
-          </div>
+            </div>
+          </details>
 
           {/* Suggestions & récents */}
           <div className="space-y-3">

@@ -549,8 +549,8 @@ export default function AssistantPage() {
                 className="flex items-center gap-1.5 text-xs text-muted-foreground"
                 title="Récupère des articles collectés pour ancrer la réponse et éviter l'hallucination"
               >
-                <Switch checked={ancrageAuto} onCheckedChange={setAncrageAuto} aria-label="Ancrage sources" />
-                <span className="hidden sm:inline">Ancrage sources</span>
+                <Switch checked={ancrageAuto} onCheckedChange={setAncrageAuto} aria-label="Réponses sourcées" />
+                <span className="hidden sm:inline">Réponses sourcées</span>
               </label>
               
               {/* Context Indicator */}
@@ -566,7 +566,9 @@ export default function AssistantPage() {
                       <Settings2 className="h-3.5 w-3.5 text-primary" />
                     )}
                     <span className="text-xs hidden sm:inline">
-                      {contextStats.actualites} actu • {contextStats.dossiers} dossiers
+                      {contextStats.isLoading
+                        ? 'Vérification des sources…'
+                        : `${contextStats.actualites} actu • ${contextStats.dossiers} dossiers`}
                     </span>
                   </Badge>
                 </PopoverTrigger>
