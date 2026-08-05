@@ -1,0 +1,1 @@
+ALTER TABLE public.collectes_log ADD COLUMN IF NOT EXISTS rejets_qualite jsonb NOT NULL DEFAULT '{}'::jsonb;
