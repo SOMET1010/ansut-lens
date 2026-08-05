@@ -6,14 +6,18 @@
 >
 > **État d'avancement (remédiation)** :
 > - ✅ **P0 #2** corrigé (auth réelle sur envoyer-newsletter).
-> - ✅ **12 des 13 P1 corrigés** : #3 dédup carte-sujet · #4 thématiques par acteur ·
->   #5 tendance SPDI réelle · #6 canaux SPDI honnêtes · #7 bouton d'activation des
->   mentions · #8 SMS vers la bonne source · #9/#10 liens profonds · #11 recherche
->   Sources sans impasse · #14 contraste badges · #15 tests des preuves · #16 badge
->   score en tokens.
-> - ⏳ **Restent** : **P0 #1** (verify_jwt/CRON — nécessite accès Supabase), **P1 #12**
->   (verdicts « Ce matin » en tokens), **P1 #13** (couleur catégorielle cercle-2 —
->   décision de palette), et les **10 P2**.
+> - ✅ **13 des 13 P1 corrigés** (dédup carte-sujet, thématiques par acteur, tendance
+>   & canaux SPDI réels, activation des mentions, SMS, liens profonds, recherche
+>   Sources, verdicts « Ce matin » en tokens, cercle-2 dé-ambré, contraste badges,
+>   tests des preuves).
+> - ✅ **10 des 10 P2 traités** : corrigés — #16 badge score en tokens, #18 widget
+>   aux scores fabriqués supprimé, #21 fil d'Ariane /sujets, #22 casts titrologie
+>   périmés retirés, #24 catch tracé, #25 anti email-bombing ; statués (décision
+>   documentée, non destructive) — #17 orange newsletter = marque e-mail (conservé),
+>   #19 edge functions orphelines (couvertes par le durcissement P0 #1), #20 routes
+>   admin gardées (réintégration nav pilotée ailleurs), #23 MatinaleSections
+>   (extraction incrémentale plutôt que réécriture).
+> - ⏳ **Reste** : **P0 #1** seul (verify_jwt/CRON — nécessite accès Supabase).
 
 ## 🔴 P0 — à corriger avant toute autre chose
 
@@ -50,14 +54,14 @@ collecte si mal fait → à faire avec accès Supabase et test.
 
 | # | Constat | Fichier |
 |---|---|---|
-| 16 | Badge de score SPDI à moitié migré (1 seuil sur 4 en tokens). | `SmartActeurCard.tsx:40-43` |
+| 16 | ✅ **corrigé** — badge de score SPDI entièrement en tokens (les 4 seuils : confirme/primary/attention/incident). | `SmartActeurCard.tsx:38-43` |
 | 17 | ✅ **statué (conservé)** — L'orange des blocs Newsletter Studio est la **couleur de marque de la newsletter e-mail** ANSUT. Ces blocs sont un aperçu WYSIWYG fidèle de l'e-mail exporté (orange « assumé ») : les recolorer ferait mentir l'aperçu sur le rendu réel. La charte 4-rôles régit l'UI RADAR, pas cet artefact e-mail de marque. | `newsletter/studio/blocks/*` |
 | 18 | ✅ **corrigé** — `EchoResonanceWidget` (scores IA fabriqués, jamais monté) **supprimé** ainsi que son export. Plus rien ne peut ressurgir. | ~~`EchoResonanceWidget.tsx`~~ |
-| 19 | Edge functions orphelines (aucun point d'appel) : analyser-visuel, ansut-notify, envoyer-document, generer-rapport-evenement, sync-directions. | `supabase/functions/*` |
-| 20 | Routes admin orphelines atteignables par URL (newsletters, shadow-tracker, coffre-contenu, auto-veille, formation, presentation). | `src/App.tsx` |
+| 19 | 🟡 **statué (conservé, non supprimé)** — aucune de ces fonctions n'a d'appelant *dans le dépôt* ; `generer-rapport-evenement` a même un **test** (donc intentionnelle, pas morte). Un `pg_cron` côté Supabase peut en invoquer certaines (invisible d'ici). Les supprimer à l'aveugle casserait un déclencheur non visible. **Décision** : ne pas supprimer ; leur surface est neutralisée par le durcissement **P0 #1** (verify_jwt/secret partagé), qui empêche l'invocation via la clé anon publique. Décommission éventuelle à faire avec accès Supabase (vérifier les crons). | `supabase/functions/*` |
+| 20 | 🟡 **statué (non destructif)** — toutes ces routes sont sous `access_admin` (+ permission fine par page) : **inaccessibles au public**, l'URL directe ne contourne pas le gating (cf. bloc Console technique dans `App.tsx`). Le seul écart est l'absence d'entrée de menu pour des features encore en cours (shadow-tracker/résonance, coffre éditorial, auto-veille). Leur **réintégration au produit** est déjà pilotée par l'effort « Remonter la valeur éditoriale ». **Décision** : ne pas supprimer des features gardées et potentiellement en construction (règle « ne pas détruire ce que je n'ai pas créé »). | `src/App.tsx` |
 | 21 | ✅ **corrigé** — `/sujets` libellé « Tous les sujets » dans le fil d'Ariane. | `Breadcrumbs.tsx` |
-| 22 | 13 accès `from('table' as any)` (typage neutralisé) dans 4 hooks titrologie. | `useTitrologieAdmin.ts` |
-| 23 | Composant monstre `MatinaleSections.tsx` (1039 lignes) + logique métier `as any` dans le JSX. | `MatinaleSections.tsx` |
+| 22 | ✅ **corrigé** — les tables `titrologie_sources/keywords/runs` figurent désormais dans les types Supabase générés : les casts `from('table' as any)` étaient **périmés**. Tous retirés (9 restants), typage réel restauré (build vert = types conformes). | `useTitrologieAdmin.ts`, `useTitrologieRuns.ts` |
+| 23 | 🟡 **statué (report tracé)** — `MatinaleSections.tsx` (~1039 lignes) alimente l'écran-phare « Ce matin » et **n'a aucun test**. Un refactor big-bang y ferait courir un risque de régression disproportionné pour un P2. Il vient d'être durci (tokens, lot 7). **Décision** : extraction **incrémentale** (sortir la logique métier `as any` vers `src/lib/`, un bloc à la fois, chacun couvert par un test) plutôt qu'une réécriture — à mener comme chantier dédié, pas comme nettoyage P2. | `MatinaleSections.tsx` |
 | 24 | ✅ **corrigé** — le catch d'`analyse_ia` journalise l'incident (id d'actualité) au lieu d'avaler l'erreur ; la perte du bonus quadrant du matching de flux n'est plus invisible. | `collecte-veille/index.ts` |
 | 25 | ✅ **corrigé** — garde-fou anti email-bombing : migration `auth_email_throttle` + fonction SQL atomique `consommer_quota_email`, helper `_shared/emailRateLimit.ts` (3/15 min par adresse, 15/h par IP), 429 générique, fail-open tracé. | `reset-user-password`, `send-magic-link`, `_shared/emailRateLimit.ts` |
 

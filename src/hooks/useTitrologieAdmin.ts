@@ -43,7 +43,7 @@ export function useTitrologieSources() {
     queryKey: ['titrologie_sources'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('titrologie_sources' as any)
+        .from('titrologie_sources')
         .select('*')
         .order('priorite', { ascending: false });
       if (error) throw error;
@@ -58,8 +58,8 @@ export function useUpsertSource() {
     mutationFn: async (s: Partial<TitrologieSource> & { nom: string; url: string }) => {
       const payload: any = { ...s };
       const { error } = s.id
-        ? await supabase.from('titrologie_sources' as any).update(payload).eq('id', s.id)
-        : await supabase.from('titrologie_sources' as any).insert(payload);
+        ? await supabase.from('titrologie_sources').update(payload).eq('id', s.id)
+        : await supabase.from('titrologie_sources').insert(payload);
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['titrologie_sources'] }); toast.success('Source enregistrée'); },
@@ -71,7 +71,7 @@ export function useDeleteSource() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('titrologie_sources' as any).delete().eq('id', id);
+      const { error } = await supabase.from('titrologie_sources').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['titrologie_sources'] }); toast.success('Source supprimée'); },
@@ -85,7 +85,7 @@ export function useTitrologieKeywords() {
     queryKey: ['titrologie_keywords'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('titrologie_keywords' as any)
+        .from('titrologie_keywords')
         .select('*')
         .order('poids', { ascending: false });
       if (error) throw error;
@@ -100,8 +100,8 @@ export function useUpsertKeyword() {
     mutationFn: async (k: Partial<TitrologieKeyword> & { mot_cle: string }) => {
       const payload: any = { ...k };
       const { error } = k.id
-        ? await supabase.from('titrologie_keywords' as any).update(payload).eq('id', k.id)
-        : await supabase.from('titrologie_keywords' as any).insert(payload);
+        ? await supabase.from('titrologie_keywords').update(payload).eq('id', k.id)
+        : await supabase.from('titrologie_keywords').insert(payload);
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['titrologie_keywords'] }); toast.success('Mot-clé enregistré'); },
@@ -113,7 +113,7 @@ export function useDeleteKeyword() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('titrologie_keywords' as any).delete().eq('id', id);
+      const { error } = await supabase.from('titrologie_keywords').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['titrologie_keywords'] }); toast.success('Mot-clé supprimé'); },
