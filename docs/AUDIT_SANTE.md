@@ -51,11 +51,11 @@ collecte si mal fait → à faire avec accès Supabase et test.
 | # | Constat | Fichier |
 |---|---|---|
 | 16 | Badge de score SPDI à moitié migré (1 seuil sur 4 en tokens). | `SmartActeurCard.tsx:40-43` |
-| 17 | Orange décoratif dans les blocs Newsletter Studio (aperçu in-app hors charte ; export e-mail assumé). | `newsletter/studio/blocks/*` |
-| 18 | `EchoResonanceWidget` affiche des scores IA fabriqués (widget non monté en prod, mais prêt à ressurgir). | `EchoResonanceWidget.tsx:46-59` |
+| 17 | ✅ **statué (conservé)** — L'orange des blocs Newsletter Studio est la **couleur de marque de la newsletter e-mail** ANSUT. Ces blocs sont un aperçu WYSIWYG fidèle de l'e-mail exporté (orange « assumé ») : les recolorer ferait mentir l'aperçu sur le rendu réel. La charte 4-rôles régit l'UI RADAR, pas cet artefact e-mail de marque. | `newsletter/studio/blocks/*` |
+| 18 | ✅ **corrigé** — `EchoResonanceWidget` (scores IA fabriqués, jamais monté) **supprimé** ainsi que son export. Plus rien ne peut ressurgir. | ~~`EchoResonanceWidget.tsx`~~ |
 | 19 | Edge functions orphelines (aucun point d'appel) : analyser-visuel, ansut-notify, envoyer-document, generer-rapport-evenement, sync-directions. | `supabase/functions/*` |
 | 20 | Routes admin orphelines atteignables par URL (newsletters, shadow-tracker, coffre-contenu, auto-veille, formation, presentation). | `src/App.tsx` |
-| 21 | Fil d'Ariane de `/sujets` affiche le segment brut minuscule. | `Breadcrumbs.tsx:78-96` |
+| 21 | ✅ **corrigé** — `/sujets` libellé « Tous les sujets » dans le fil d'Ariane. | `Breadcrumbs.tsx` |
 | 22 | 13 accès `from('table' as any)` (typage neutralisé) dans 4 hooks titrologie. | `useTitrologieAdmin.ts` |
 | 23 | Composant monstre `MatinaleSections.tsx` (1039 lignes) + logique métier `as any` dans le JSX. | `MatinaleSections.tsx` |
 | 24 | Catch vide qui avale une erreur de parsing et supprime un bonus de scoring sans trace. | `collecte-veille/index.ts:1111` |

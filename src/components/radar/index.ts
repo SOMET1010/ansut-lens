@@ -12,7 +12,6 @@ export { RealtimeAlertFeed } from './RealtimeAlertFeed';
 export { WeakSignalDetector } from './WeakSignalDetector';
 export { default as MediaImpactWidget } from './MediaImpactWidget';
 export { default as ShareOfVoiceWidget } from './ShareOfVoiceWidget';
-export { default as EchoResonanceWidget } from './EchoResonanceWidget';
 export { default as InfluenceursMetierWidget } from './InfluenceursMetierWidget';
 export { default as RadarProximiteWidget } from './RadarProximiteWidget';
 export { default as CriticalAlertsCard } from './CriticalAlertsCard';
