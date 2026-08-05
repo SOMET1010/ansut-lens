@@ -41,6 +41,7 @@ import {
   Bell,
   Zap,
   ArrowLeft,
+  Check,
 } from 'lucide-react';
 import {
   useCategoriesVeille,
@@ -52,6 +53,8 @@ import {
   type MotCleVeille,
 } from '@/hooks/useMotsClesVeille';
 
+// Domaines de veille (ancien « quadrant » — le terme interne est retiré de
+// l'interface). Les 4 valeurs restent en base ; seuls les libellés sont métier.
 const quadrantLabels: Record<string, string> = {
   tech: 'Technologie',
   regulation: 'Régulation',
@@ -65,6 +68,15 @@ const quadrantColors: Record<string, string> = {
   market: 'bg-emerald-500 text-white',
   reputation: 'bg-attention text-white',
 };
+
+// Priorité de veille — traduit le score numérique (conservé en base) en un
+// langage métier explicite. L'interface ne montre plus « 100 / 95 / 90 ».
+function prioriteVeille(score: number): { label: string; dot: string; text: string } {
+  if (score >= 90) return { label: 'Priorité critique', dot: 'bg-incident', text: 'text-incident' };
+  if (score >= 70) return { label: 'Priorité élevée', dot: 'bg-attention', text: 'text-attention' };
+  if (score >= 40) return { label: 'Priorité normale', dot: 'bg-muted-foreground', text: 'text-foreground/80' };
+  return { label: 'Veille contextuelle', dot: 'bg-muted-foreground/40', text: 'text-muted-foreground' };
+}
 
 export default function MotsClesPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -155,9 +167,9 @@ export default function MotsClesPage() {
         <div className="flex items-center gap-3">
           <Link to="/admin"><Button variant="ghost" size="icon" aria-label="Revenir"><ArrowLeft size={20} /></Button></Link>
           <div>
-            <h1 className="text-3xl font-bold">Mots-Clés de Veille</h1>
+            <h1 className="text-3xl font-bold">Signaux de veille</h1>
           <p className="text-muted-foreground">
-            Gérer les {totalMotsCles} mots-clés de surveillance ANSUT RADAR
+            {totalMotsCles} signaux surveillés — mots, expressions, entités et variantes
           </p>
           </div>
         </div>
@@ -165,16 +177,16 @@ export default function MotsClesPage() {
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Ajouter un mot-clé
+              Ajouter un signal
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Nouveau mot-clé de veille</DialogTitle>
+              <DialogTitle>Nouveau signal de veille</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>Mot-clé principal</Label>
+                <Label>Signal principal</Label>
                 <Input
                   value={newMotCle.mot_cle}
                   onChange={(e) =>
@@ -214,7 +226,7 @@ export default function MotsClesPage() {
                 </Select>
               </div>
               <div>
-                <Label>Quadrant Radar</Label>
+                <Label>Domaine</Label>
                 <Select
                   value={newMotCle.quadrant}
                   onValueChange={(v) =>
@@ -225,7 +237,7 @@ export default function MotsClesPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un quadrant" />
+                    <SelectValue placeholder="Sélectionner un domaine" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="tech">Technologie</SelectItem>
@@ -236,7 +248,7 @@ export default function MotsClesPage() {
                 </Select>
               </div>
               <div>
-                <Label>Score de criticité (0-100)</Label>
+                <Label>Priorité de veille (0-100)</Label>
                 <Input
                   type="number"
                   min={0}
@@ -275,7 +287,7 @@ export default function MotsClesPage() {
               <Tag className="h-8 w-8 text-primary" />
               <div>
                 <p className="text-2xl font-bold">{totalMotsCles}</p>
-                <p className="text-sm text-muted-foreground">Total mots-clés</p>
+                <p className="text-sm text-muted-foreground">Total signaux</p>
               </div>
             </div>
           </CardContent>
@@ -317,9 +329,9 @@ export default function MotsClesPage() {
 
       <Tabs defaultValue="list">
         <TabsList>
-          <TabsTrigger value="list">Liste des mots-clés</TabsTrigger>
+          <TabsTrigger value="list">Liste des signaux</TabsTrigger>
           <TabsTrigger value="categories">Par catégorie</TabsTrigger>
-          <TabsTrigger value="test">Tester le matching</TabsTrigger>
+          <TabsTrigger value="test">Tester la détection</TabsTrigger>
         </TabsList>
 
         <TabsContent value="list" className="space-y-4">
@@ -372,12 +384,12 @@ export default function MotsClesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Mot-clé</TableHead>
+                    <TableHead>Signal</TableHead>
                     <TableHead>Variantes</TableHead>
                     <TableHead>Catégorie</TableHead>
-                    <TableHead>Quadrant</TableHead>
-                    <TableHead className="text-center">Criticité</TableHead>
-                    <TableHead className="text-center">Alerte</TableHead>
+                    <TableHead>Domaine</TableHead>
+                    <TableHead>Priorité de veille</TableHead>
+                    <TableHead className="text-center">Alerte auto</TableHead>
                     <TableHead className="text-center">Actif</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -399,18 +411,23 @@ export default function MotsClesPage() {
                       <TableRow key={mc.id}>
                         <TableCell className="font-medium">{mc.mot_cle}</TableCell>
                         <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {mc.variantes?.slice(0, 3).map((v, i) => (
-                              <Badge key={i} variant="outline" className="text-xs">
-                                {v}
-                              </Badge>
-                            ))}
-                            {mc.variantes && mc.variantes.length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{mc.variantes.length - 3}
-                              </Badge>
-                            )}
-                          </div>
+                          {mc.variantes && mc.variantes.length > 0 ? (
+                            <details className="group">
+                              <summary className="flex w-fit cursor-pointer list-none items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                                <Check className="h-3 w-3 text-confirme" />
+                                {mc.variantes.length} variante{mc.variantes.length > 1 ? 's' : ''}
+                              </summary>
+                              <div className="mt-1.5 flex flex-wrap gap-1">
+                                {mc.variantes.map((v, i) => (
+                                  <Badge key={i} variant="outline" className="text-xs">
+                                    {v}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </details>
+                          ) : (
+                            <span className="text-xs text-muted-foreground/50">—</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           {mc.categories_veille ? (
@@ -433,26 +450,32 @@ export default function MotsClesPage() {
                             </Badge>
                           )}
                         </TableCell>
-                        <TableCell className="text-center">
-                          <span
-                            className={`font-bold ${
-                              mc.score_criticite >= 90
-                                ? 'text-destructive'
-                                : mc.score_criticite >= 70
-                                ? 'text-attention'
-                                : 'text-muted-foreground'
-                            }`}
-                          >
-                            {mc.score_criticite}
-                          </span>
+                        <TableCell>
+                          {(() => {
+                            const p = prioriteVeille(mc.score_criticite);
+                            return (
+                              <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${p.text}`}>
+                                <span className={`h-2 w-2 rounded-full ${p.dot}`} />
+                                {p.label}
+                              </span>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell className="text-center">
-                          <Switch
-                            checked={mc.alerte_auto}
-                            onCheckedChange={() =>
-                              handleToggleAlerte(mc.id, mc.alerte_auto)
-                            }
-                          />
+                          <div className="flex items-center justify-center gap-2">
+                            {mc.alerte_auto && (
+                              <Badge className="gap-1 bg-incident text-incident-foreground text-[10px] px-1.5 py-0">
+                                <Zap className="h-3 w-3" />
+                                Alerte auto
+                              </Badge>
+                            )}
+                            <Switch
+                              checked={mc.alerte_auto}
+                              onCheckedChange={() =>
+                                handleToggleAlerte(mc.id, mc.alerte_auto)
+                              }
+                            />
+                          </div>
                         </TableCell>
                         <TableCell className="text-center">
                           <Switch
@@ -504,9 +527,9 @@ export default function MotsClesPage() {
                     </p>
                     <div className="flex gap-4 text-sm">
                       <span>
-                        <strong>{catMotsCles?.length || 0}</strong> mots-clés
+                        <strong>{catMotsCles?.length || 0}</strong> signaux
                       </span>
-                      <span className="text-emerald-500">
+                      <span className="text-confirme">
                         <strong>{activeCount}</strong> actifs
                       </span>
                       {alerteCount > 0 && (
@@ -525,7 +548,7 @@ export default function MotsClesPage() {
         <TabsContent value="test" className="space-y-4">
           <Card className="glass">
             <CardHeader>
-              <CardTitle>Tester le matching de mots-clés</CardTitle>
+              <CardTitle>Tester la détection de signaux</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea
@@ -543,7 +566,7 @@ export default function MotsClesPage() {
                       <CardContent className="pt-4">
                         <p className="text-2xl font-bold">{matchResults.length}</p>
                         <p className="text-sm text-muted-foreground">
-                          Mots-clés détectés
+                          Signaux détectés
                         </p>
                       </CardContent>
                     </Card>

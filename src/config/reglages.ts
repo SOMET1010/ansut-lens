@@ -158,8 +158,8 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
       },
       {
         id: 'mots-cles',
-        titre: 'Mots-clés et thèmes',
-        description: 'Définir le vocabulaire qui déclenche la détection des sujets.',
+        titre: 'Signaux de veille',
+        description: 'Mots, expressions, entités et variantes qui déclenchent la détection des sujets.',
         path: '/admin/mots-cles',
         icon: Tag,
         permission: 'manage_keywords',
