@@ -142,7 +142,10 @@ async function injectIntoActualites(supabase: any, pub: {
     categorie: "institutionnel",
     tags: pub.hashtags || [],
     importance: pub.est_officiel ? 75 : 60,
-    score_pertinence: 90,
+    // Charte de crédibilité : pas de pertinence codée en dur (90 écrasait tout
+    // classement). La pertinence est laissée à null puis calculée par
+    // `aligner-actualites` sur la base des piliers stratégiques réels.
+    score_pertinence: null,
     impact_ansut: "Publication propre de l'ANSUT",
   });
 
