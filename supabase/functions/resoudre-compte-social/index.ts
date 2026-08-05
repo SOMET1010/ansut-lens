@@ -1,3 +1,4 @@
+import { refuserSiNonAutorise } from "../_shared/habilitation.ts";
 /**
  * « Va sur le compte et donne-moi les paramètres. »
  *
@@ -10,7 +11,7 @@
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-internal-token",
 };
 
 function nettoyerNom(titre: string): string {
@@ -23,6 +24,11 @@ function nettoyerNom(titre: string): string {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Habilitation (audit P0 #1) : cron interne (x-internal-token) ou utilisateur connecté.
+  const refus = await refuserSiNonAutorise(req, { cors: corsHeaders });
+  if (refus) return refus;
+
 
   try {
     const { url_profil } = await req.json().catch(() => ({}));

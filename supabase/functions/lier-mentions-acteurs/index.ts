@@ -1,3 +1,4 @@
+import { refuserSiNonAutorise } from "../_shared/habilitation.ts";
 // Using native Deno.serve
 //
 // lier-mentions-acteurs
@@ -25,7 +26,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-internal-token",
 };
 
 /** Minuscule + sans accents, pour un appariement robuste. */
@@ -57,6 +58,11 @@ function contientNom(texteNormalise: string, nomNormalise: string): boolean {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Habilitation (audit P0 #1) : cron interne (x-internal-token) ou utilisateur connecté.
+  const refus = await refuserSiNonAutorise(req, { cors: corsHeaders });
+  if (refus) return refus;
+
 
   const startTime = Date.now();
   try {

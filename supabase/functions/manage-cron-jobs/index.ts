@@ -138,6 +138,7 @@ Deno.serve(async (req) => {
           
           // Appeler la fonction Edge directement
           const { error: invokeError } = await supabaseAdmin.functions.invoke(functionName, {
+            headers: { 'x-internal-token': Deno.env.get('INTERNAL_FUNCTION_SECRET') ?? '' },
             body: { triggered_by: 'manual', user_id: user.id }
           });
           

@@ -1,9 +1,10 @@
+import { refuserSiNonAutorise } from "../_shared/habilitation.ts";
 // Using native Deno.serve
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, x-internal-token",
 };
 
 const SYSTEM_PROMPT = `Tu es un expert en veille stratégique télécom pour l'ANSUT (Agence Nationale du Service Universel des Télécommunications) en Côte d'Ivoire.
@@ -32,6 +33,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Habilitation (audit P0 #1) : cron interne (x-internal-token) ou utilisateur connecté.
+  const refus = await refuserSiNonAutorise(req, { cors: corsHeaders });
+  if (refus) return refus;
+
 
   try {
     // --- Authentication ---
