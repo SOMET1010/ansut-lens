@@ -1,6 +1,12 @@
 // Using native Deno.serve
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { canonicalUrl, estPageArticle } from "../_shared/dedup-actualites.ts";
+import {
+  motifRejet,
+  similariteTitres,
+  SEUIL_MEME_SUJET,
+  SEUIL_MEME_ARTICLE,
+} from "../_shared/qualiteContenu.ts";
 import { refuserSiNonAutorise } from "../_shared/habilitation.ts";
 
 /**
