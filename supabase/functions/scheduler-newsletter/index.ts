@@ -106,6 +106,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       const genResponse = await supabase.functions.invoke('generer-newsletter', {
+        headers: { 'x-internal-token': Deno.env.get('INTERNAL_FUNCTION_SECRET') ?? '' },
         body: {
           periode: programmation.frequence,
           ton: programmation.ton_defaut,
@@ -182,6 +183,7 @@ const handler = async (req: Request): Promise<Response> => {
       for (const newsletter of newslettersToSend) {
         console.log(`📤 Envoi automatique newsletter #${newsletter.numero}`);
         const sendResponse = await supabase.functions.invoke('envoyer-newsletter', {
+          headers: { 'x-internal-token': Deno.env.get('INTERNAL_FUNCTION_SECRET') ?? '' },
           body: { newsletterId: newsletter.id },
         });
         if (sendResponse.error) {

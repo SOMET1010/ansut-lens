@@ -1,3 +1,4 @@
+import { estAppelInterne } from "../_shared/habilitation.ts";
 // Using native Deno.serve
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -41,8 +42,9 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const interne = estAppelInterne(req);
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!interne && !authHeader) {
       return new Response(
         JSON.stringify({ error: "Non autorisé" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -57,16 +59,20 @@ Deno.serve(async (req) => {
     // (un « Bearer n'importe_quoi » déclenchait un envoi de masse au nom de
     // l'ANSUT). On valide le jeton et on exige le rôle admin, comme invite-user.
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
+      global: { headers: { Authorization: authHeader ?? "" } },
     });
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
-    if (userError || !user) {
+    const { data: { user }, error: userError } = interne
+      ? { data: { user: null }, error: null } as any
+      : await userClient.auth.getUser();
+    if (!interne && (userError || !user)) {
       return new Response(
         JSON.stringify({ error: "Jeton invalide" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    const { data: isAdmin } = await userClient.rpc("has_role", { _user_id: user.id, _role: "admin" });
+    const { data: isAdmin } = interne
+      ? { data: true }
+      : await userClient.rpc("has_role", { _user_id: user!.id, _role: "admin" });
     if (!isAdmin) {
       return new Response(
         JSON.stringify({ error: "Réservé aux administrateurs" }),

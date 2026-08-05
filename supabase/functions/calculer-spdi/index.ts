@@ -41,6 +41,7 @@ Deno.serve(async (req) => {
             headers: {
               "Content-Type": "application/json",
               "Authorization": `Bearer ${supabaseKey}`,
+              "x-internal-token": Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "",
             },
             body: JSON.stringify({ personnalite_id: acteur.id }),
           });
