@@ -245,6 +245,8 @@ Mais inclut aussi toute actualité récente sur:
 
 IMPORTANT: Pour chaque actualité, indique le NUMÉRO de la citation source (ex: [1], [2], etc.) correspondant aux sources que tu as consultées. Ne fabrique JAMAIS d'URL.
 
+INTERDIT: aucune vidéo (YouTube, Dailymotion, Vimeo) ni aucun post de réseau social (Facebook, X/Twitter, LinkedIn, Instagram, TikTok). Uniquement des ARTICLES de presse ou des publications institutionnelles avec une page dédiée.
+
 Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours).`;
 
   const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
