@@ -255,7 +255,7 @@ export function NewsletterGenerator({ onGenerated }: NewsletterGeneratorProps) {
                     <div className="text-xs text-muted-foreground">Actualités</div>
                   </div>
                   <div className="text-center p-3 bg-background rounded-lg">
-                    <div className="text-2xl font-bold text-orange-500">{previewStats.ansut}</div>
+                    <div className="text-2xl font-bold text-confirme">{previewStats.ansut}</div>
                     <div className="text-xs text-muted-foreground">ANSUT</div>
                   </div>
                   <div className="text-center p-3 bg-background rounded-lg">
@@ -415,7 +415,7 @@ export function NewsletterGenerator({ onGenerated }: NewsletterGeneratorProps) {
                       <div className="flex-1 p-1.5 space-y-1">
                         <div className="h-2 bg-muted/60 rounded w-full" />
                         <div className="h-2 bg-muted/40 rounded w-3/4" />
-                        <div className="h-3 bg-orange-100 rounded mt-1" />
+                        <div className="h-3 bg-muted rounded mt-1" />
                         <div className="h-3 bg-blue-100 rounded" />
                       </div>
                     </div>

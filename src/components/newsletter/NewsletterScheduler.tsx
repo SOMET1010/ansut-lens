@@ -388,7 +388,7 @@ export function NewsletterScheduler() {
               <Separator />
               <div className="space-y-2">
                 <h4 className="text-sm font-medium flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                  <AlertCircle className="h-4 w-4 text-attention" />
                   Newsletters en attente de validation
                 </h4>
                 {pendingNewsletters.map((newsletter) => (
@@ -411,7 +411,7 @@ export function NewsletterScheduler() {
                     </div>
                     <div className="flex items-center gap-2">
                       {newsletter.rappel_envoye && (
-                        <Badge variant="outline" className="text-amber-600">
+                        <Badge variant="outline" className="text-attention">
                           Rappel envoyé
                         </Badge>
                       )}
