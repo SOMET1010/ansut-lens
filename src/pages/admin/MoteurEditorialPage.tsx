@@ -67,6 +67,7 @@ export default function MoteurEditorialPage() {
   const [collecte, setCollecte] = useState<Etat>({ enCours: false });
   const [diag, setDiag] = useState<Etat>({ enCours: false });
   const [backfill, setBackfill] = useState<Etat>({ enCours: false });
+  const [mentions, setMentions] = useState<Etat>({ enCours: false });
 
   async function lancer(
     fonction: string,
@@ -132,9 +133,20 @@ export default function MoteurEditorialPage() {
           onClick={() => lancer('requalifier-contenus', { mode: 'backfill' }, setBackfill, 'Backfill')}
         />
 
+        <Bloc
+          titre="4. Relier les mentions aux acteurs"
+          description="Apparie les acteurs suivis aux articles et posts récents (par nom, frontière de mot) et écrit les mentions réelles. Après exécution, les cartes de l'écran « Acteurs » affichent « N mentions · 7 j » et la dernière mention. Idempotent."
+          bouton="Relier les mentions"
+          icon={PlayCircle}
+          etat={mentions}
+          variant="secondary"
+          onClick={() => lancer('lier-mentions-acteurs', { sinceDays: 30 }, setMentions, 'Liaison des mentions')}
+        />
+
         <p className="text-xs text-muted-foreground">
           <RefreshCw className="mr-1 inline h-3 w-3" />
           Après un backfill, ouvrez « Insights Communication » : les publications datées apparaîtront dans les fenêtres 7 / 30 / 90 jours.
+          Après « Relier les mentions », ouvrez « Acteurs » : les compteurs de mentions apparaissent sur les cartes.
         </p>
       </div>
     </PageContainer>

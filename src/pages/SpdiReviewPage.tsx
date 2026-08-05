@@ -33,16 +33,41 @@ export default function SpdiReviewPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('personnalites')
-        .select('score_spdi_actuel, tendance_spdi')
+        .select('id, score_spdi_actuel')
         .eq('suivi_spdi_actif', true);
       if (error) throw error;
 
       const rows = data || [];
       const scores = rows.map(r => Number(r.score_spdi_actuel) || 0);
+
+      // « En hausse » dérivé de la VARIATION 30 j RÉELLE (dernier − premier score
+      // mesuré), pas du champ tendance_spdi (level-based, valeurs 'up/down' →
+      // comptait toujours 0). Audit P1 #5.
+      let enHausse = 0;
+      const ids = rows.map(r => r.id);
+      if (ids.length > 0) {
+        const date30 = new Date();
+        date30.setDate(date30.getDate() - 30);
+        const { data: metrics } = await supabase
+          .from('presence_digitale_metrics')
+          .select('personnalite_id, score_spdi, date_mesure')
+          .in('personnalite_id', ids)
+          .gte('date_mesure', date30.toISOString().split('T')[0])
+          .order('date_mesure', { ascending: true });
+        const byActor = new Map<string, { first: number; last: number }>();
+        for (const m of metrics || []) {
+          const score = Number(m.score_spdi) || 0;
+          const e = byActor.get(m.personnalite_id);
+          if (!e) byActor.set(m.personnalite_id, { first: score, last: score });
+          else e.last = score;
+        }
+        byActor.forEach((v) => { if (v.last - v.first > 0.5) enHausse += 1; });
+      }
+
       return {
         total: rows.length,
         scoreMoyen: rows.length ? Math.round(scores.reduce((s, v) => s + v, 0) / rows.length * 10) / 10 : 0,
-        enHausse: rows.filter(r => r.tendance_spdi === 'hausse').length,
+        enHausse,
         enAlerte: rows.filter(r => (Number(r.score_spdi_actuel) || 0) < 40).length,
       };
     },
