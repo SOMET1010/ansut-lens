@@ -40,9 +40,18 @@ const getNiveau = (score: number | null) => {
   return 'À risque';
 };
 
-const TendanceIcon = ({ tendance }: { tendance: string | null }) => {
-  if (tendance === 'hausse') return <TrendingUp className="h-4 w-4 text-green-500" />;
-  if (tendance === 'baisse') return <TrendingDown className="h-4 w-4 text-red-500" />;
+// Tendance dérivée de la VARIATION 30 j RÉELLE (dernier − premier score mesuré),
+// et non du champ tendance_spdi (calculé sur le niveau absolu, valeurs 'up/down'
+// jamais reconnues par l'UI → icônes toujours neutres). Audit P1 #5.
+function tendanceDepuisVariation(variation: number | null): 'hausse' | 'baisse' | 'stable' {
+  if (variation == null || Math.abs(variation) < 0.5) return 'stable';
+  return variation > 0 ? 'hausse' : 'baisse';
+}
+
+const TendanceIcon = ({ variation }: { variation: number | null }) => {
+  const t = tendanceDepuisVariation(variation);
+  if (t === 'hausse') return <TrendingUp className="h-4 w-4 text-confirme" />;
+  if (t === 'baisse') return <TrendingDown className="h-4 w-4 text-incident" />;
   return <Minus className="h-4 w-4 text-muted-foreground" />;
 };
 
@@ -159,8 +168,8 @@ export function SPDIStabilityTable() {
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
-                      <TendanceIcon tendance={a.tendance_spdi} />
-                      <span className="text-xs capitalize">{a.tendance_spdi || 'stable'}</span>
+                      <TendanceIcon variation={a.variation30j} />
+                      <span className="text-xs capitalize">{tendanceDepuisVariation(a.variation30j)}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-center">

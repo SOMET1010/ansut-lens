@@ -1,4 +1,4 @@
-import { Linkedin, Newspaper, Mic } from 'lucide-react';
+import { Linkedin, Newspaper } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PresenceCanauxProps {
@@ -8,10 +8,12 @@ interface PresenceCanauxProps {
   className?: string;
 }
 
+// Charte : on n'affiche que les canaux réellement alimentés. « Conférences »
+// (nb_invitations_panels) était codé en dur à 0 → canal retiré. « Presse »
+// mesurait en réalité des citations → renommé « Citations ». Audit P1 #6.
 const channels = [
   { key: 'linkedin' as const, label: 'LinkedIn', Icon: Linkedin },
-  { key: 'presse' as const, label: 'Presse', Icon: Newspaper },
-  { key: 'conferences' as const, label: 'Conf.', Icon: Mic },
+  { key: 'presse' as const, label: 'Citations', Icon: Newspaper },
 ];
 
 export function PresenceCanaux({ linkedin, presse, conferences, className }: PresenceCanauxProps) {
