@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { autoriserEnvoiEmail } from '../_shared/emailRateLimit.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,6 +51,16 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    const emailNormalise = String(email).trim().toLowerCase();
+    const autorise = await autoriserEnvoiEmail(adminClient, req, emailNormalise, 'magic-link');
+    if (!autorise) {
+      // Message générique : ne révèle ni l'existence du compte ni le détail du quota.
+      return new Response(
+        JSON.stringify({ success: true, message: 'Si un compte existe avec cet email, un lien de connexion a été envoyé.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Check if user exists
     const { data: users, error: listError } = await adminClient.auth.admin.listUsers();

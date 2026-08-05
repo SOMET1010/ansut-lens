@@ -58,8 +58,8 @@ collecte si mal fait → à faire avec accès Supabase et test.
 | 21 | ✅ **corrigé** — `/sujets` libellé « Tous les sujets » dans le fil d'Ariane. | `Breadcrumbs.tsx` |
 | 22 | 13 accès `from('table' as any)` (typage neutralisé) dans 4 hooks titrologie. | `useTitrologieAdmin.ts` |
 | 23 | Composant monstre `MatinaleSections.tsx` (1039 lignes) + logique métier `as any` dans le JSX. | `MatinaleSections.tsx` |
-| 24 | Catch vide qui avale une erreur de parsing et supprime un bonus de scoring sans trace. | `collecte-veille/index.ts:1111` |
-| 25 | Endpoints publics d'email (reset-password, magic-link) sans rate-limiting → risque d'email bombing. | `reset-user-password`, `send-magic-link` |
+| 24 | ✅ **corrigé** — le catch d'`analyse_ia` journalise l'incident (id d'actualité) au lieu d'avaler l'erreur ; la perte du bonus quadrant du matching de flux n'est plus invisible. | `collecte-veille/index.ts` |
+| 25 | ✅ **corrigé** — garde-fou anti email-bombing : migration `auth_email_throttle` + fonction SQL atomique `consommer_quota_email`, helper `_shared/emailRateLimit.ts` (3/15 min par adresse, 15/h par IP), 429 générique, fail-open tracé. | `reset-user-password`, `send-magic-link`, `_shared/emailRateLimit.ts` |
 
 ---
 
