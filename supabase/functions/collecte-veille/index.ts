@@ -1,6 +1,7 @@
 // Using native Deno.serve
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { canonicalUrl, estPageArticle } from "../_shared/dedup-actualites.ts";
+import { refuserSiNonAutorise } from "../_shared/habilitation.ts";
 
 /**
  * Extrait une date de publication du CHEMIN de l'URL (…/2024/10/15/… ou
@@ -18,7 +19,7 @@ function dateDepuisUrl(url: string | null | undefined): string | null {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-internal-token, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface MotCleVeille {
@@ -585,6 +586,10 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Habilitation (audit P0 #1) : cron interne ou utilisateur RADAR connecté.
+  const refus = await refuserSiNonAutorise(req, { cors: corsHeaders });
+  if (refus) return refus;
 
   const startTime = Date.now();
   const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');

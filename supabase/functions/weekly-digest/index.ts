@@ -1,9 +1,10 @@
+import { refuserSiNonAutorise } from "../_shared/habilitation.ts";
 // Using native Deno.serve
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-internal-token",
 };
 
 async function sendViaGateway(to: string, subject: string, htmlContent: string) {
@@ -24,6 +25,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Habilitation (audit P0 #1) : cron interne (x-internal-token) ou utilisateur connecté.
+  const refus = await refuserSiNonAutorise(req, { cors: corsHeaders });
+  if (refus) return refus;
+
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

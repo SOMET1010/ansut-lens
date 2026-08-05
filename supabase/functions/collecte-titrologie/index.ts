@@ -1,3 +1,4 @@
+import { refuserSiNonAutorise } from "../_shared/habilitation.ts";
 // Edge function: collecte-titrologie
 // Collects daily Ivorian press front pages, runs OCR + visual analysis (Gemini 2.5 Pro multimodal),
 // extracts titles, themes, tone, ANSUT risk. Stores results in titrologie_unes.
@@ -6,7 +7,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-internal-token',
 };
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -177,7 +178,7 @@ async function ocrAndAnalyze(une: RawUne): Promise<any> {
       type: 'text',
       text: `Analyse cette une de presse ivoirienne. Nom indicatif du journal (peu fiable, souvent un identifiant technique) : "${une.journal}". Titre indicatif : "${une.titre_une}".
 Tâches :
-0. Nom du journal : lis le bandeau-titre (le logo / masthead en haut de la une) et renvoie le nom EXACT du journal dans `journal` (ex. « Fraternité Matin », « Le Nouveau Réveil », « Soir Info »). N'utilise JAMAIS le nom indicatif s'il ressemble à un identifiant (suite de chiffres/lettres). Si le bandeau est illisible, renvoie null.
+0. Nom du journal : lis le bandeau-titre (le logo / masthead en haut de la une) et renvoie le nom EXACT du journal dans \`journal\` (ex. « Fraternité Matin », « Le Nouveau Réveil », « Soir Info »). N'utilise JAMAIS le nom indicatif s'il ressemble à un identifiant (suite de chiffres/lettres). Si le bandeau est illisible, renvoie null.
 1. OCR : extrait tous les titres visibles (gros titres, sous-titres). Renvoie le texte brut concaténé dans raw_ocr.
 2. Titre principal de la une.
 3. titres_secondaires : tableau des autres titres visibles (chapeaux, sous-titres, encadrés), un titre par item, déjà nettoyés.
@@ -446,6 +447,11 @@ async function runCollecte(supabase: any, runId: string | undefined, today: stri
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+
+  // Habilitation (audit P0 #1) : cron interne (x-internal-token) ou utilisateur connecté.
+  const refus = await refuserSiNonAutorise(req, { cors: corsHeaders });
+  if (refus) return refus;
+
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
   const startedAt = Date.now();

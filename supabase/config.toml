@@ -1,7 +1,8 @@
 project_id = "lpkfwxisranmetbtgxrv"
 
 [functions.assistant-ia]
-verify_jwt = false
+# Appelée uniquement depuis l'interface par un utilisateur connecté (audit P0 #1).
+verify_jwt = true
 
 [functions.collecte-veille]
 verify_jwt = false
@@ -16,31 +17,37 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.manage-cron-jobs]
-verify_jwt = false
+# Appelée uniquement depuis l'interface par un utilisateur connecté (audit P0 #1).
+verify_jwt = true
 
 [functions.send-flux-digest]
 verify_jwt = false
 
 [functions.invite-user]
-verify_jwt = false
+# Appelée uniquement depuis l'interface par un utilisateur connecté (audit P0 #1).
+verify_jwt = true
 
 [functions.manage-user]
-verify_jwt = false
+# Appelée uniquement depuis l'interface par un utilisateur connecté (audit P0 #1).
+verify_jwt = true
 
 [functions.update-user-role]
-verify_jwt = false
+# Appelée uniquement depuis l'interface par un utilisateur connecté (audit P0 #1).
+verify_jwt = true
 
 [functions.generer-newsletter]
 verify_jwt = false
 
 [functions.envoyer-newsletter]
-verify_jwt = false
+# Appelée uniquement depuis l'interface par un utilisateur connecté (audit P0 #1).
+verify_jwt = true
 
 [functions.scheduler-newsletter]
 verify_jwt = false
 
 [functions.list-users-status]
-verify_jwt = false
+# Appelée uniquement depuis l'interface par un utilisateur connecté (audit P0 #1).
+verify_jwt = true
 
 [functions.generate-password-link]
 verify_jwt = false
@@ -52,7 +59,8 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.envoyer-sms]
-verify_jwt = false
+# Appelée uniquement depuis l'interface par un utilisateur connecté (audit P0 #1).
+verify_jwt = true
 
 [functions.reset-user-password]
 verify_jwt = false
