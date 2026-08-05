@@ -45,7 +45,7 @@ export function useTitrologieRuns(limit = 20) {
     queryKey: ['titrologie_runs', limit],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('titrologie_runs' as any)
+        .from('titrologie_runs')
         .select('*')
         .order('started_at', { ascending: false })
         .limit(limit);
