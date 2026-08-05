@@ -18,7 +18,7 @@ interface RadarVisualizationProps {
 const getCercleColor = (cercle: CercleStrategique) => {
   switch (cercle) {
     case 1: return { fill: '#3B82F6', stroke: '#2563EB' }; // blue
-    case 2: return { fill: '#F97316', stroke: '#EA580C' }; // orange
+    case 2: return { fill: '#14B8A6', stroke: '#0D9488' }; // teal
     case 3: return { fill: '#22C55E', stroke: '#16A34A' }; // green
     case 4: return { fill: '#A855F7', stroke: '#9333EA' }; // purple
   }
@@ -85,7 +85,7 @@ export function RadarVisualization({ personnalites, onActeurClick }: RadarVisual
           <span>C1</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="h-2 w-2 rounded-full bg-orange-500" />
+          <div className="h-2 w-2 rounded-full bg-teal-500" />
           <span>C2</span>
         </div>
         <div className="flex items-center gap-1">
@@ -145,7 +145,7 @@ export function RadarVisualization({ personnalites, onActeurClick }: RadarVisual
                     <span className={cn(
                       'px-1.5 py-0.5 rounded-full',
                       personnalite.cercle === 1 && 'bg-blue-100 text-blue-700',
-                      personnalite.cercle === 2 && 'bg-orange-100 text-orange-700',
+                      personnalite.cercle === 2 && 'bg-teal-100 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300',
                       personnalite.cercle === 3 && 'bg-green-100 text-green-700',
                       personnalite.cercle === 4 && 'bg-purple-100 text-purple-700',
                     )}>

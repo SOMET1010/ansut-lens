@@ -51,9 +51,9 @@ const getCercleStyles = (cercle: CercleStrategique) => {
       bar: 'bg-blue-500'
     };
     case 2: return { 
-      badge: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/50 dark:text-orange-300 dark:border-orange-800', 
-      avatar: 'bg-orange-50 text-orange-700 border-orange-100 dark:bg-orange-950 dark:text-orange-300',
-      bar: 'bg-orange-500'
+      badge: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/50 dark:text-teal-300 dark:border-teal-800', 
+      avatar: 'bg-teal-50 text-teal-700 border-teal-100 dark:bg-teal-950 dark:text-teal-300',
+      bar: 'bg-teal-500'
     };
     case 3: return { 
       badge: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800', 
@@ -70,8 +70,8 @@ const getCercleStyles = (cercle: CercleStrategique) => {
 
 const getCategorieStyle = (categorie?: string) => {
   const styles: Record<string, string> = {
-    regulateur: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/50 dark:text-orange-300 dark:border-orange-800',
-    politique: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/50 dark:text-orange-300 dark:border-orange-800',
+    regulateur: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800',
+    politique: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800',
     operateur: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800',
     fai: 'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950/50 dark:text-cyan-300 dark:border-cyan-800',
     fintech: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800',

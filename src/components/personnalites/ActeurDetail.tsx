@@ -41,7 +41,7 @@ interface ActeurDetailProps {
 const getCercleColors = (cercle: CercleStrategique) => {
   switch (cercle) {
     case 1: return { bg: 'bg-blue-500/10', text: 'text-blue-500', border: 'border-blue-500' };
-    case 2: return { bg: 'bg-orange-500/10', text: 'text-orange-500', border: 'border-orange-500' };
+    case 2: return { bg: 'bg-teal-500/10', text: 'text-teal-600 dark:text-teal-400', border: 'border-teal-500' };
     case 3: return { bg: 'bg-green-500/10', text: 'text-green-500', border: 'border-green-500' };
     case 4: return { bg: 'bg-purple-500/10', text: 'text-purple-500', border: 'border-purple-500' };
   }

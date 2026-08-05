@@ -274,7 +274,7 @@ export const CERCLE_LABELS: Record<CercleStrategique, { label: string; court: st
   2: {
     label: 'Opérateurs',
     court: 'Opérateurs',
-    color: 'bg-orange-500',
+    color: 'bg-teal-500',
     description: 'Télécoms, FAI, Fintech, Équipementiers'
   },
   3: {
