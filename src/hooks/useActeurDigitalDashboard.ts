@@ -192,42 +192,53 @@ export function useActeurDigitalDashboard(
     queryKey: ['spdi-thematiques', personnaliteId, periode],
     enabled: !!personnaliteId,
     queryFn: async () => {
-      // Get mention_ids for this actor
-      const { data: links } = await supabase
-        .from('personnalites_mentions')
-        .select('mention_id')
-        .eq('personnalite_id', personnaliteId!);
+      // Charte : les thématiques doivent être ATTRIBUABLES à CET acteur. La
+      // version précédente comptait les hashtags GLOBAUX de tous les
+      // social_insights (aucun filtre par acteur) → deux acteurs comparés
+      // affichaient la même liste. On ne retient donc que les contenus qui
+      // nomment réellement l'acteur ; à défaut, on retombe honnêtement sur ses
+      // thématiques déclarées. Audit P1 #4.
+      const { data: perso } = await supabase
+        .from('personnalites')
+        .select('nom, prenom, thematiques')
+        .eq('id', personnaliteId!)
+        .single();
 
-      if (!links?.length) return [];
+      const declarees = (perso?.thematiques ?? []).slice(0, 6);
+      const nomComplet = `${perso?.prenom ?? ''} ${perso?.nom ?? ''}`.trim().toLowerCase();
+      if (!nomComplet) return declarees;
 
-      const mentionIds = links.map(l => l.mention_id);
-
-      // Get social_insights linked to these mentions (via source correlation)
-      // Since there's no direct FK, we query social_insights with date filter
       const { data: insights } = await supabase
         .from('social_insights')
-        .select('hashtags, entites_detectees')
+        .select('hashtags, entites_detectees, contenu, auteur')
         .gte('date_publication', dateDebut)
-        .limit(200);
+        .limit(400);
 
-      if (!insights?.length) return [];
+      const pertinents = (insights ?? []).filter((row) => {
+        const foin = `${(row.entites_detectees ?? []).join(' ')} ${row.auteur ?? ''} ${row.contenu ?? ''}`.toLowerCase();
+        return foin.includes(nomComplet);
+      });
+
+      if (pertinents.length === 0) return declarees;
 
       const counts = new Map<string, number>();
-      for (const row of insights) {
+      for (const row of pertinents) {
         for (const tag of row.hashtags ?? []) {
           const t = tag.toLowerCase().replace(/^#/, '');
           if (t.length > 1) counts.set(t, (counts.get(t) ?? 0) + 1);
         }
         for (const ent of row.entites_detectees ?? []) {
           const e = ent.toLowerCase();
-          if (e.length > 1) counts.set(e, (counts.get(e) ?? 0) + 1);
+          if (e.length > 1 && e !== nomComplet) counts.set(e, (counts.get(e) ?? 0) + 1);
         }
       }
 
-      return Array.from(counts.entries())
+      const derives = Array.from(counts.entries())
         .sort((a, b) => b[1] - a[1])
         .slice(0, 6)
         .map(([term]) => term);
+
+      return derives.length > 0 ? derives : declarees;
     },
   });
 
