@@ -40,6 +40,12 @@ export interface CompteAnalyse {
   urlProfil: string;
   /** Explication quand l'analyse est incertaine ou invalide. */
   raison?: string;
+  /**
+   * Avertissement NON bloquant : le compte reste enregistrable, mais quelque
+   * chose mérite l'attention de l'utilisateur (ex. un profil personnel Facebook
+   * là où l'on attend une Page). L'UI l'affiche sans empêcher la sauvegarde.
+   */
+  avertissement?: string;
 }
 
 /** Nettoie un segment de chemin : enlève « @ », espaces, slash final. */
@@ -72,12 +78,20 @@ export function analyserUrlCompte(entree: string): CompteAnalyse {
   const host = hoteSansWww(u.hostname);
   const segs = u.pathname.split('/').filter(Boolean);
 
-  // Facebook
+  // Facebook. Une organisation publie sur une PAGE, pas sur un profil personnel.
+  // On accepte les deux (le compte reste enregistrable), mais on avertit quand
+  // l'URL désigne un profil personnel (`profile.php?id=…`), car la collecte n'y
+  // trouvera pas les publications institutionnelles.
   if (host.endsWith('facebook.com') || host === 'fb.com' || host === 'm.facebook.com') {
     if (segs[0] === 'profile.php') {
       const id = u.searchParams.get('id') ?? '';
       if (!id) return invalide('facebook', 'Profil Facebook sans identifiant lisible.');
-      return ok('facebook', id, `https://www.facebook.com/profile.php?id=${id}`);
+      return ok(
+        'facebook',
+        id,
+        `https://www.facebook.com/profile.php?id=${id}`,
+        'Ceci ressemble à un profil personnel Facebook. Les actualités d’une organisation sont publiées sur sa Page (facebook.com/NomDeLaPage) : indiquez plutôt l’URL de la Page, sinon la collecte ne trouvera pas les publications.',
+      );
     }
     const id = segment(segs[0]);
     if (!id) return invalide('facebook', 'URL Facebook sans nom de page.');
@@ -148,8 +162,13 @@ export function analyserUrlCompte(entree: string): CompteAnalyse {
   };
 }
 
-function ok(plateforme: PlateformeSociale, identifiant: string, urlProfil: string): CompteAnalyse {
-  return { valide: true, plateforme, identifiant, urlProfil };
+function ok(
+  plateforme: PlateformeSociale,
+  identifiant: string,
+  urlProfil: string,
+  avertissement?: string,
+): CompteAnalyse {
+  return { valide: true, plateforme, identifiant, urlProfil, avertissement };
 }
 function invalide(plateforme: PlateformeSociale, raison: string): CompteAnalyse {
   return { valide: false, plateforme, identifiant: '', urlProfil: '', raison };
