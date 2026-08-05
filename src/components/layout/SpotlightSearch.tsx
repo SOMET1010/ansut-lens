@@ -83,6 +83,10 @@ export function SpotlightSearch({ open, onOpenChange }: SpotlightSearchProps) {
     const timer = setTimeout(async () => {
       setLoading(true);
       const motif = `%${query.trim()}%`;
+      // Les « Sources » renvoient vers /admin/sources (réservé à manage_sources).
+      // On ne propose donc ce groupe qu'aux utilisateurs habilités, pour ne pas
+      // les mener à une impasse « Accès refusé » (cohérence avec les accès rapides).
+      const peutVoirSources = hasPermission('manage_sources');
       const [actualites, personnalites, sources, dossiers] = await Promise.all([
         supabase.from('actualites').select('id, titre, source_nom').ilike('titre', motif).limit(5),
         supabase
@@ -90,7 +94,9 @@ export function SpotlightSearch({ open, onOpenChange }: SpotlightSearchProps) {
           .select('id, nom, prenom, fonction, organisation')
           .or(`nom.ilike.${motif},fonction.ilike.${motif},organisation.ilike.${motif}`)
           .limit(5),
-        supabase.from('sources_media').select('id, nom, type').ilike('nom', motif).limit(5),
+        peutVoirSources
+          ? supabase.from('sources_media').select('id, nom, type').ilike('nom', motif).limit(5)
+          : Promise.resolve({ data: [] as { id: string; nom: string; type: string }[] }),
         supabase.from('dossiers').select('id, titre, categorie').ilike('titre', motif).limit(5),
       ]);
       setResults({

@@ -21,6 +21,7 @@ import { MISSIONS_STRATEGIQUES } from '@/config/missions';
 import { piliersDeLActu } from '@/lib/missions';
 import { partenairesDansTexte } from '@/lib/syntheseAnsut';
 import { dansLaFenetre, qualifier } from '@/lib/qualificationContenu';
+import { dedupParUrl } from '@/lib/dedup';
 
 const JOUR_MS = 24 * 3600 * 1000;
 
@@ -116,8 +117,18 @@ export function construireSujets(
   const debut24 = maintenantMs - JOUR_MS;
   const debut48 = maintenantMs - 2 * JOUR_MS;
 
+  // Déduplication à l'ENTRÉE (Charte : chiffre reproductible). Une URL
+  // recollectée ne doit pas gonfler nbArticles ni diverger des preuves
+  // dédoublonnées de La Matinale (documentsProbants -> dedupParUrl) pour le
+  // même sujet.
+  const externesUniques = dedupParUrl(
+    externes ?? [],
+    (a) => a.source_url,
+    (a) => a.titre,
+  ).uniques;
+
   // Articles de veille datés RÉELLEMENT dans la période.
-  const articlesPeriode = (externes ?? []).filter((a) => {
+  const articlesPeriode = externesUniques.filter((a) => {
     const ms = dateMs(a.date_publication);
     return ms !== null && ms >= debut && ms <= maintenantMs;
   });
