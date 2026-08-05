@@ -1108,7 +1108,14 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
                 if (analyse.quadrant_dominant && fluxQuadrants.includes(analyse.quadrant_dominant)) {
                   scoreMatch += 15;
                 }
-              } catch (_e) {}
+              } catch (parseErr) {
+                // analyse_ia illisible : on renonce au bonus quadrant mais on trace,
+                // sinon la perte de points de matching des flux reste invisible.
+                console.warn(
+                  `[collecte-veille] analyse_ia non parsable pour actualité ${actu.id} — bonus quadrant ignoré:`,
+                  parseErr instanceof Error ? parseErr.message : String(parseErr),
+                );
+              }
             }
 
             const importanceMin = flux.importance_min || 0;
