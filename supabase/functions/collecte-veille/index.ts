@@ -1242,6 +1242,9 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
         mots_cles_utilises: topKeywords,
         sources_utilisees: sourcesUtilisees,
         duree_ms: duration,
+        // Diagnostic qualité : détail des contenus écartés, motif par motif.
+        rejets_qualite: rejets,
+
       });
 
     console.log(`[collecte-veille] Terminé: ${insertedCount} actualités insérées en ${duration}ms (sources: ${sourcesUtilisees.join(', ')})`);

@@ -76,6 +76,8 @@ const SourcesPage = lazy(() => import('@/pages/admin/SourcesPage'));
 const RolesPage = lazy(() => import('@/pages/admin/RolesPage'));
 const MatinalePage = lazy(() => import('@/pages/admin/MatinalePage'));
 const FreshnessPage = lazy(() => import('@/pages/admin/FreshnessPage'));
+const QualiteCollectePage = lazy(() => import('@/pages/admin/QualiteCollectePage'));
+
 const ScoringPage = lazy(() => import('@/pages/admin/ScoringPage'));
 const EvenementsPage = lazy(() => import('@/pages/admin/EvenementsPage'));
 const ShadowTrackerPage = lazy(() => import('@/pages/admin/ShadowTrackerPage'));
@@ -312,6 +314,11 @@ const App = () => (
                                   path="/admin/moteur-editorial"
                                   element={<MoteurEditorialPage />}
                                 />
+                                <Route
+                                  path="/admin/qualite-collecte"
+                                  element={<QualiteCollectePage />}
+                                />
+
                                 <Route
                                   path="/admin/import-manuel"
                                   element={<ImportManuelPage />}

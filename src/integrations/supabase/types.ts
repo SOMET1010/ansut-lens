@@ -329,6 +329,7 @@ export type Database = {
           id: string
           mots_cles_utilises: string[] | null
           nb_resultats: number | null
+          rejets_qualite: Json
           sources_utilisees: string[] | null
           statut: string
           type: string
@@ -340,6 +341,7 @@ export type Database = {
           id?: string
           mots_cles_utilises?: string[] | null
           nb_resultats?: number | null
+          rejets_qualite?: Json
           sources_utilisees?: string[] | null
           statut: string
           type: string
@@ -351,6 +353,7 @@ export type Database = {
           id?: string
           mots_cles_utilises?: string[] | null
           nb_resultats?: number | null
+          rejets_qualite?: Json
           sources_utilisees?: string[] | null
           statut?: string
           type?: string

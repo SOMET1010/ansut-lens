@@ -12,6 +12,8 @@ import {
   Newspaper,
   Radar,
   Shield,
+  ShieldAlert,
+
   ShieldCheck,
   Sliders,
   Tag,
@@ -279,6 +281,17 @@ export const GROUPES_REGLAGES: GroupeReglages[] = [
         permission: 'manage_cron_jobs',
         synonymes: ['pipeline', 'collecte', 'qualification', 'backfill'],
       },
+      {
+        id: 'qualite-collecte',
+        titre: 'Qualité de collecte',
+        description:
+          'Voir ce qui a été écarté à l\'entrée (vidéos, pages de menu, titres vides), les doublons évités et le regroupement par sujet.',
+        path: '/admin/qualite-collecte',
+        icon: ShieldAlert,
+        permission: 'manage_cron_jobs',
+        synonymes: ['rejets', 'doublons', 'cluster', 'diagnostic', 'qualité'],
+      },
+
       {
         id: 'import-manuel',
         titre: 'Import manuel de publications',
