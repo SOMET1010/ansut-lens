@@ -1057,6 +1057,8 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
         const newId = inserted?.[0]?.id;
         if (newId) {
           insertedArticles.push({ id: newId, titre: actu.titre, resume: actu.resume });
+          // L'article entre dans l'index des sujets du cycle en cours.
+          sujetsRecents.push({ id: newId, titre: actu.titre, cluster_id: clusterId });
         }
       }
 
