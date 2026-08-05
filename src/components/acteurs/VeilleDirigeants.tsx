@@ -14,7 +14,7 @@ import { fr } from "date-fns/locale";
 
 const niveauColors: Record<string, string> = {
   normal: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
-  attention: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+  attention: "bg-attention/10 text-attention border-attention/30",
   critique: "bg-red-500/10 text-red-400 border-red-500/30",
 };
 
@@ -133,8 +133,8 @@ export function VeilleDirigeants() {
           <p className="text-3xl font-bold">{alertes?.length || 0}</p>
           <p className="text-sm text-muted-foreground">Posts analysés</p>
         </CardContent></Card>
-        <Card className={alertesNonTraitees.length > 0 ? "border-amber-500/50" : ""}><CardContent className="pt-4 text-center">
-          <p className="text-3xl font-bold text-amber-400">{alertesNonTraitees.length}</p>
+        <Card className={alertesNonTraitees.length > 0 ? "border-attention/50" : ""}><CardContent className="pt-4 text-center">
+          <p className="text-3xl font-bold text-attention">{alertesNonTraitees.length}</p>
           <p className="text-sm text-muted-foreground">À traiter</p>
         </CardContent></Card>
         <Card className={alertesCritiques.length > 0 ? "border-red-500/50" : ""}><CardContent className="pt-4 text-center">
@@ -161,7 +161,7 @@ export function VeilleDirigeants() {
             alertes?.map(alerte => {
               const analyse = alerte.analyse_conformite as any;
               return (
-                <Card key={alerte.id} className={alerte.niveau_risque === "critique" ? "border-red-500/30" : alerte.niveau_risque === "attention" ? "border-amber-500/30" : ""}>
+                <Card key={alerte.id} className={alerte.niveau_risque === "critique" ? "border-red-500/30" : alerte.niveau_risque === "attention" ? "border-attention/30" : ""}>
                   <CardContent className="pt-4 space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2">
@@ -182,7 +182,7 @@ export function VeilleDirigeants() {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                         <div><span className="text-muted-foreground">Conformité:</span> <span className="font-bold">{analyse.conformite_score}/100</span></div>
                         <div><span className="text-muted-foreground">Alignement:</span> <span className="font-bold">{analyse.alignement_strategie}</span></div>
-                        <div><span className="text-muted-foreground">Hashtags manquants:</span> <span className="text-amber-400">{analyse.hashtags_manquants?.join(", ") || "Aucun"}</span></div>
+                        <div><span className="text-muted-foreground">Hashtags manquants:</span> <span className="text-attention">{analyse.hashtags_manquants?.join(", ") || "Aucun"}</span></div>
                         <div><span className="text-muted-foreground">Thèmes:</span> {analyse.themes_detectes?.join(", ")}</div>
                       </div>
                     )}
@@ -241,7 +241,7 @@ export function VeilleDirigeants() {
                 <CardTitle className="flex items-center gap-2"><Shield size={20} className="text-red-400" />Checklist de Crise Générée</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Badge variant="outline" className={checklist.urgence === "haute" ? "text-red-400" : "text-amber-400"}>Urgence: {checklist.urgence}</Badge>
+                <Badge variant="outline" className={checklist.urgence === "haute" ? "text-red-400" : "text-attention"}>Urgence: {checklist.urgence}</Badge>
                 <div>
                   <p className="font-semibold mb-2">Actions immédiates:</p>
                   <ul className="space-y-1">{checklist.actions_immediates?.map((a: string, i: number) => <li key={i} className="flex items-start gap-2 text-sm"><CheckCircle size={14} className="mt-0.5 text-muted-foreground" />{a}</li>)}</ul>

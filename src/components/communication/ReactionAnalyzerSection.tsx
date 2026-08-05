@@ -111,7 +111,7 @@ export function ReactionAnalyzerSection() {
   const sentimentConfig = {
     positif: { icon: ThumbsUp, label: 'Positif', className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
     negatif: { icon: ThumbsDown, label: 'Négatif', className: 'bg-destructive/10 text-destructive border-destructive/20' },
-    mitige: { icon: Minus, label: 'Mitigé', className: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
+    mitige: { icon: Minus, label: 'Mitigé', className: 'bg-attention/10 text-attention border-attention/20' },
     neutre: { icon: Minus, label: 'Neutre', className: 'bg-muted text-muted-foreground border-border' },
   };
 

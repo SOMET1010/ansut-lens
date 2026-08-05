@@ -70,7 +70,7 @@ export function CitationsPreview({ content }: CitationsPreviewProps) {
           <Eye className="h-3.5 w-3.5" />
           Aperçu des liens ({total})
           {broken > 0 && (
-            <span className="inline-flex items-center gap-1 text-amber-600">
+            <span className="inline-flex items-center gap-1 text-attention">
               <AlertTriangle className="h-3 w-3" />
               {broken} sans URL
             </span>
@@ -95,7 +95,7 @@ export function CitationsPreview({ content }: CitationsPreviewProps) {
                       role="text"
                       aria-disabled="true"
                       data-broken-citation={item.num}
-                      className="border-amber-400 border-dashed bg-amber-50 text-amber-800 font-bold text-[10px] gap-1 cursor-not-allowed"
+                      className="border-attention border-dashed bg-attention-soft text-attention font-bold text-[10px] gap-1 cursor-not-allowed"
                       title="Lien manquant — apparaîtra non cliquable dans l'export"
                     >
                       <AlertTriangle className="h-2.5 w-2.5" />
