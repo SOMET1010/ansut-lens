@@ -17,7 +17,7 @@ import { useSourceReliability, type SourceReliabilityStats } from '@/hooks/useSo
 
 function scoreLabel(score: number): { text: string; color: string; bg: string; border: string; emoji: string } {
   if (score >= 70) return { text: 'Fiable', color: 'text-emerald-600', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', emoji: '✅' };
-  if (score >= 40) return { text: 'Modérée', color: 'text-amber-600', bg: 'bg-amber-500/10', border: 'border-amber-500/30', emoji: '⚠️' };
+  if (score >= 40) return { text: 'Modérée', color: 'text-attention', bg: 'bg-attention/10', border: 'border-attention/30', emoji: '⚠️' };
   return { text: 'Faible', color: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/30', emoji: '🔴' };
 }
 
@@ -44,7 +44,7 @@ function ScoreBadge({ score }: { score: number }) {
 
 function progressColor(score: number) {
   if (score >= 70) return '[&>div]:bg-emerald-500';
-  if (score >= 40) return '[&>div]:bg-amber-500';
+  if (score >= 40) return '[&>div]:bg-attention';
   return '[&>div]:bg-destructive';
 }
 

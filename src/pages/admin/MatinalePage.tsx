@@ -216,7 +216,7 @@ export default function MatinalePage() {
                 </Badge>
                 {freshnessMeta.articles_total_raw > freshnessMeta.articles_kept && (
                   <Badge variant="outline" className="gap-1">
-                    <XCircle className="h-3 w-3 text-amber-600" />
+                    <XCircle className="h-3 w-3 text-attention" />
                     {freshnessMeta.articles_total_raw - freshnessMeta.articles_kept} écartés (trop anciens)
                   </Badge>
                 )}

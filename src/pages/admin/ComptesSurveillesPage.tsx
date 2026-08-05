@@ -123,8 +123,8 @@ export default function ComptesSurveillesPage() {
             )}
 
             {analyse?.valide && analyse.avertissement && (
-              <Alert className="border-amber-300 bg-amber-50 dark:border-amber-800/60 dark:bg-amber-950/30">
-                <AlertDescription className="text-amber-800 dark:text-amber-300">
+              <Alert className="border-attention-border bg-attention-soft">
+                <AlertDescription className="text-attention">
                   {analyse.avertissement}
                 </AlertDescription>
               </Alert>
@@ -156,7 +156,7 @@ export default function ComptesSurveillesPage() {
                       <CheckCircle2 className="h-3 w-3" /> {verif.note}
                     </span>
                   ) : verif.note ? (
-                    <span className="text-amber-600 dark:text-amber-400">{verif.note}</span>
+                    <span className="text-attention">{verif.note}</span>
                   ) : null}
                   {!verif.enCours && (
                     <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => verifierEnLigne(analyse)}>

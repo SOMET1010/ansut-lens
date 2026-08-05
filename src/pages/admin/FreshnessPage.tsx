@@ -95,8 +95,8 @@ export default function FreshnessPage() {
             <Badge variant="secondary" className="text-xs">Parfois manquante</Badge>
           </div>
 
-          <Alert className="md:col-span-2 border-amber-500/30 bg-amber-500/5">
-            <FileWarning className="h-4 w-4 text-amber-600" />
+          <Alert className="md:col-span-2 border-attention/30 bg-attention/5">
+            <FileWarning className="h-4 w-4 text-attention" />
             <AlertTitle>Cas problématique</AlertTitle>
             <AlertDescription className="text-sm">
               Un article publié en <strong>juin 2025</strong> mais ré-indexé aujourd'hui aurait un
@@ -141,7 +141,7 @@ export default function FreshnessPage() {
                   tone="success"
                 />
                 <StatTile
-                  icon={<XCircle className="h-4 w-4 text-amber-600" />}
+                  icon={<XCircle className="h-4 w-4 text-attention" />}
                   label="Écartés (trop anciens)"
                   value={filteredOut}
                   hint={`${filterRate}% des ingérés`}
@@ -279,7 +279,7 @@ export default function FreshnessPage() {
               {/* Alertes automatiques */}
               <div>
                 <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
-                  <FileWarning className="h-4 w-4 text-amber-600" />
+                  <FileWarning className="h-4 w-4 text-attention" />
                   Alerte automatique de fraîcheur dégradée
                 </h3>
                 <p className="text-xs text-muted-foreground mb-4">
@@ -365,7 +365,7 @@ function StatTile({
   const toneClasses = {
     default: 'border-border',
     success: 'border-emerald-500/30 bg-emerald-500/5',
-    warning: 'border-amber-500/30 bg-amber-500/5',
+    warning: 'border-attention/30 bg-attention/5',
   };
   return (
     <div className={`rounded-lg border p-4 ${toneClasses[tone]}`}>

@@ -79,7 +79,7 @@ function StepIndicator({ completed, isCurrent, icon: Icon, label }: {
                 completed
                   ? 'bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400'
                   : isCurrent
-                    ? 'bg-amber-500/15 border-amber-500 text-amber-600 dark:text-amber-400 animate-pulse'
+                    ? 'bg-attention/15 border-attention text-attention animate-pulse'
                     : 'bg-muted border-muted-foreground/20 text-muted-foreground/40'
               )}
             >
@@ -88,7 +88,7 @@ function StepIndicator({ completed, isCurrent, icon: Icon, label }: {
             <span className={cn(
               'text-[10px] font-medium leading-tight text-center max-w-[52px]',
               completed ? 'text-emerald-600 dark:text-emerald-400'
-                : isCurrent ? 'text-amber-600 dark:text-amber-400'
+                : isCurrent ? 'text-attention'
                   : 'text-muted-foreground/50'
             )}>
               {label}
@@ -274,13 +274,13 @@ export function InvitationTracker({ users, usersStatus, onResendInvite, isResend
         <CollapsibleTrigger asChild>
           <button className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-colors text-left group">
             <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-md bg-amber-500/10">
-                <Send className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <div className="p-1.5 rounded-md bg-attention/10">
+                <Send className="h-4 w-4 text-attention" />
               </div>
               <span className="font-semibold text-sm">
                 Suivi des invitations
               </span>
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400">
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-attention/10 text-attention">
                 {pendingCount} en cours
               </span>
             </div>

@@ -63,7 +63,7 @@ const quadrantColors: Record<string, string> = {
   tech: 'bg-primary text-primary-foreground',
   regulation: 'bg-purple-500 text-white',
   market: 'bg-emerald-500 text-white',
-  reputation: 'bg-amber-500 text-white',
+  reputation: 'bg-attention text-white',
 };
 
 export default function MotsClesPage() {
@@ -439,7 +439,7 @@ export default function MotsClesPage() {
                               mc.score_criticite >= 90
                                 ? 'text-destructive'
                                 : mc.score_criticite >= 70
-                                ? 'text-amber-500'
+                                ? 'text-attention'
                                 : 'text-muted-foreground'
                             }`}
                           >

@@ -24,7 +24,7 @@ const getScoreColor = (score: number | null) => {
   if (score == null) return 'bg-muted text-muted-foreground';
   if (score >= 80) return 'bg-green-500/15 text-green-700 dark:text-green-400';
   if (score >= 60) return 'bg-blue-500/15 text-blue-700 dark:text-blue-400';
-  if (score >= 40) return 'bg-orange-500/15 text-orange-700 dark:text-orange-400';
+  if (score >= 40) return 'bg-attention/15 text-attention';
   return 'bg-red-500/15 text-red-700 dark:text-red-400';
 };
 

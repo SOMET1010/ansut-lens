@@ -272,7 +272,7 @@ export default function TitrologieAdminPage() {
 
 function statutBadge(s: string) {
   if (s === 'success') return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 text-[10px]"><CheckCircle2 className="h-3 w-3 mr-1" />OK</Badge>;
-  if (s === 'partial') return <Badge className="bg-amber-100 text-amber-700 border-amber-300 text-[10px]"><AlertCircle className="h-3 w-3 mr-1" />Partiel</Badge>;
+  if (s === 'partial') return <Badge className="bg-attention-soft text-attention border-attention-border text-[10px]"><AlertCircle className="h-3 w-3 mr-1" />Partiel</Badge>;
   if (s === 'error') return <Badge className="bg-red-100 text-red-700 border-red-300 text-[10px]"><XCircle className="h-3 w-3 mr-1" />Erreur</Badge>;
   return <Badge variant="outline" className="text-[10px]">{s}</Badge>;
 }
@@ -346,8 +346,8 @@ function LogsTechniques() {
                   )}
 
                   {failures.length > 0 && (
-                    <details className="rounded border border-amber-500/30 bg-amber-500/5 p-2" open={failures.length <= 3}>
-                      <summary className="cursor-pointer text-xs font-semibold text-amber-700 flex items-center gap-1.5">
+                    <details className="rounded border border-attention/30 bg-attention/5 p-2" open={failures.length <= 3}>
+                      <summary className="cursor-pointer text-xs font-semibold text-attention flex items-center gap-1.5">
                         <AlertCircle className="h-3.5 w-3.5" /> {failures.length} journal{failures.length > 1 ? 'aux' : ''} mal lu{failures.length > 1 ? 's' : ''} (seuil OCR : {threshold}/100)
                       </summary>
                       <div className="overflow-x-auto mt-2">

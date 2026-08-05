@@ -27,7 +27,7 @@ export function SPDIComparaisonPairs({ comparaison, cercleLabel = 'du cercle' }:
   const getPositionColor = () => {
     if (percentile >= 75) return 'text-green-500';
     if (percentile >= 50) return 'text-blue-500';
-    if (percentile >= 25) return 'text-orange-500';
+    if (percentile >= 25) return 'text-attention';
     return 'text-red-500';
   };
 

@@ -48,18 +48,18 @@ const PILIER_META: Record<string, { label: string; icon: any; color: string }> =
   connectivite: { label: 'Connectivité & Infrastructures', icon: Radar, color: 'text-sky-600' },
   usages_services: { label: 'Usages & Services Numériques', icon: Layers, color: 'text-violet-600' },
   regulation_souverainete: { label: 'Régulation & Souveraineté', icon: Scale, color: 'text-emerald-600' },
-  concurrence_marche: { label: 'Concurrence & Marché', icon: BarChart3, color: 'text-amber-600' },
+  concurrence_marche: { label: 'Concurrence & Marché', icon: BarChart3, color: 'text-attention' },
 };
 
 function NiveauBadge({ niveau }: { niveau?: string }) {
   if (!niveau) return null;
   const map: Record<string, string> = {
     ROUGE: 'bg-red-500/15 text-red-600 border-red-500/30',
-    ORANGE: 'bg-amber-500/15 text-amber-600 border-amber-500/30',
+    ORANGE: 'bg-attention/15 text-attention border-attention/30',
     VERT: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
     BLEU: 'bg-blue-500/15 text-blue-600 border-blue-500/30',
     'ÉLEVÉ': 'bg-red-500/15 text-red-600 border-red-500/30',
-    'MOYEN': 'bg-amber-500/15 text-amber-600 border-amber-500/30',
+    'MOYEN': 'bg-attention/15 text-attention border-attention/30',
     'FAIBLE': 'bg-blue-500/15 text-blue-600 border-blue-500/30',
     'AUCUN': 'bg-muted text-muted-foreground',
   };
@@ -175,16 +175,16 @@ function TitrologieBilanBlock({
             <div className="text-[10px] uppercase text-emerald-700">Exploitables</div>
             <div className="text-xl font-bold text-emerald-700">{unesExploitables}<span className="text-xs text-muted-foreground">/{unes.length}</span></div>
           </div>
-          <div className="rounded bg-amber-500/10 p-2">
-            <div className="text-[10px] uppercase text-amber-700">Lectures KO</div>
-            <div className="text-xl font-bold text-amber-700">{defaillances.length}</div>
+          <div className="rounded bg-attention/10 p-2">
+            <div className="text-[10px] uppercase text-attention">Lectures KO</div>
+            <div className="text-xl font-bold text-attention">{defaillances.length}</div>
           </div>
         </div>
       </div>
 
       {defaillances.length > 0 && (
-        <details className="text-xs rounded border border-amber-500/30 bg-amber-500/5 p-2" open={defaillances.length <= 3}>
-          <summary className="cursor-pointer font-semibold text-amber-700 flex items-center gap-1.5">
+        <details className="text-xs rounded border border-attention/30 bg-attention/5 p-2" open={defaillances.length <= 3}>
+          <summary className="cursor-pointer font-semibold text-attention flex items-center gap-1.5">
             ⚠ {defaillances.length} journal{defaillances.length > 1 ? 'aux' : ''} mal lu{defaillances.length > 1 ? 's' : ''} — exclu{defaillances.length > 1 ? 's' : ''} du briefing
           </summary>
           <ul className="mt-2 space-y-1.5">
@@ -243,7 +243,7 @@ interface Props {
 
 const RISQUE_BADGE: Record<TitrologieRisque, string> = {
   ROUGE: 'bg-red-500/15 text-red-600 border-red-500/30',
-  ORANGE: 'bg-amber-500/15 text-amber-600 border-amber-500/30',
+  ORANGE: 'bg-attention/15 text-attention border-attention/30',
   VERT: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
 };
 
@@ -257,7 +257,7 @@ function confianceClass(c?: number): string {
   if (typeof c !== 'number') return 'bg-muted text-muted-foreground border-border';
   if (c >= 75) return 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30';
   if (c >= 50) return 'bg-blue-500/15 text-blue-600 border-blue-500/30';
-  if (c >= 25) return 'bg-amber-500/15 text-amber-600 border-amber-500/30';
+  if (c >= 25) return 'bg-attention/15 text-attention border-attention/30';
   return 'bg-red-500/15 text-red-600 border-red-500/30';
 }
 
@@ -500,7 +500,7 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
                   ];
                   const intensityClass = (n: number) =>
                     n >= 3 ? 'bg-red-500/15 text-red-600 border-red-500/30'
-                    : n === 2 ? 'bg-amber-500/15 text-amber-600 border-amber-500/30'
+                    : n === 2 ? 'bg-attention/15 text-attention border-attention/30'
                     : n === 1 ? 'bg-blue-500/15 text-blue-600 border-blue-500/30'
                     : 'bg-muted/30 text-muted-foreground border-border';
                   const activeAngles = angleEntries.filter(([, a]) => a && a.intensite >= 1);
@@ -835,7 +835,7 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
       <MatinaleSectionShell
         icon={ListChecks}
         title="Actions immédiates"
-        cardClassName="glass border-amber-500/30"
+        cardClassName="glass border-attention/30"
         status={status(actions.length > 0)}
         errorMessage={error || undefined}
         onRetry={onRetry}
@@ -901,8 +901,8 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
             )}
           </div>
           {reput?.confusion_role && (
-            <div className="rounded-md bg-amber-500/5 border border-dashed border-amber-500/30 p-3 text-xs">
-              <span className="font-semibold text-amber-600">Confusion de rôle détectée : </span>{reput.confusion_role}
+            <div className="rounded-md bg-attention/5 border border-dashed border-attention/30 p-3 text-xs">
+              <span className="font-semibold text-attention">Confusion de rôle détectée : </span>{reput.confusion_role}
             </div>
           )}
         </div>
@@ -1014,7 +1014,7 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
           </Badge>
           <Badge className={
             activite?.visibilite === 'Fort' ? 'bg-emerald-500/15 text-emerald-600'
-            : activite?.visibilite === 'Moyen' ? 'bg-amber-500/15 text-amber-600'
+            : activite?.visibilite === 'Moyen' ? 'bg-attention/15 text-attention'
             : 'bg-muted text-muted-foreground'
           }>
             Visibilité : {activite?.visibilite ?? 'Faible'}

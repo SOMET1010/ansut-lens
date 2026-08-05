@@ -11,7 +11,7 @@ export function AlertesSlide() {
           <p className="text-white/60 text-sm">Notifications instantanées sur les événements critiques</p>
         </div>
         <div className="bg-white/5 rounded-xl p-6">
-          <AlertTriangle className="w-8 h-8 text-orange-400 mb-4" />
+          <AlertTriangle className="w-8 h-8 text-attention mb-4" />
           <h3 className="text-white font-semibold mb-2">Niveaux de criticité</h3>
           <p className="text-white/60 text-sm">Classification : info, warning, critique</p>
         </div>

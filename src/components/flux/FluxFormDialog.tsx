@@ -38,7 +38,7 @@ const quadrantOptions = [
   { id: 'tech', label: 'Technologie', icon: Cpu, colorClass: 'text-blue-500', bgClass: 'bg-blue-500/10', borderClass: 'border-blue-500' },
   { id: 'market', label: 'Marché', icon: TrendingUp, colorClass: 'text-green-500', bgClass: 'bg-green-500/10', borderClass: 'border-green-500' },
   { id: 'regulation', label: 'Régulation', icon: Scale, colorClass: 'text-purple-500', bgClass: 'bg-purple-500/10', borderClass: 'border-purple-500' },
-  { id: 'reputation', label: 'Réputation', icon: Star, colorClass: 'text-orange-500', bgClass: 'bg-orange-500/10', borderClass: 'border-orange-500' },
+  { id: 'reputation', label: 'Réputation', icon: Star, colorClass: 'text-attention', bgClass: 'bg-attention/10', borderClass: 'border-attention' },
 ];
 
 // Volume estimation based on criteria
@@ -50,7 +50,7 @@ function estimateVolume(keywords: string[], quadrants: string[], importance: num
   
   if (totalScore < 40) return { level: 1, label: 'Faible (~5/sem)', colorClass: 'bg-yellow-500' };
   if (totalScore < 80) return { level: 2, label: 'Modéré (~15/sem)', colorClass: 'bg-green-500' };
-  return { level: 3, label: 'Élevé (~30+/sem)', colorClass: 'bg-orange-500' };
+  return { level: 3, label: 'Élevé (~30+/sem)', colorClass: 'bg-attention' };
 }
 
 // Helper components
@@ -109,7 +109,7 @@ function VolumeIndicator({ keywords, quadrants, importance }: { keywords: string
       </div>
       <span className={cn(
         "font-medium",
-        level === 1 ? "text-yellow-600" : level === 2 ? "text-green-600" : "text-orange-600"
+        level === 1 ? "text-yellow-600" : level === 2 ? "text-green-600" : "text-attention"
       )}>
         {label}
       </span>

@@ -306,7 +306,7 @@ export const INTERPRETATION_LABELS: Record<InterpretationSPDI, { label: string; 
   },
   visibilite_faible: {
     label: 'Visibilité faible',
-    color: 'text-orange-500',
+    color: 'text-attention',
     description: 'Présence digitale insuffisante',
   },
   risque_invisibilite: {

@@ -31,7 +31,7 @@ function ActorHeader({ acteur, side }: { acteur: Personnalite | null; side: 'A' 
   if (!acteur) return <div className="h-16 flex items-center justify-center text-sm text-muted-foreground">Sélectionnez un acteur</div>;
   const initials = `${acteur.prenom?.[0] ?? ''}${acteur.nom[0]}`.toUpperCase();
   const score = acteur.score_spdi_actuel ?? 0;
-  const sideColor = side === 'A' ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400';
+  const sideColor = side === 'A' ? 'text-blue-600 dark:text-blue-400' : 'text-attention';
 
   return (
     <div className="flex items-center gap-3">
@@ -153,7 +153,7 @@ export function SPDIBenchmarkPanel({ open, onOpenChange, preselectedActeur }: SP
               <div className="p-4 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
                 <ActorHeader acteur={acteurA} side="A" />
               </div>
-              <div className="p-4 rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20">
+              <div className="p-4 rounded-lg border border-attention-border bg-attention-soft/50">
                 <ActorHeader acteur={acteurB} side="B" />
               </div>
             </div>

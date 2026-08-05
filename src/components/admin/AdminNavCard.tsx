@@ -28,9 +28,9 @@ const colorThemes: Record<CardColor, { iconBg: string; iconText: string; hoverIc
     hoverIcon: 'group-hover:bg-purple-600 group-hover:text-white',
   },
   orange: {
-    iconBg: 'bg-orange-500/10',
-    iconText: 'text-orange-600 dark:text-orange-400',
-    hoverIcon: 'group-hover:bg-orange-600 group-hover:text-white',
+    iconBg: 'bg-attention/10',
+    iconText: 'text-attention',
+    hoverIcon: 'group-hover:bg-attention group-hover:text-white',
   },
   emerald: {
     iconBg: 'bg-emerald-500/10',
@@ -47,7 +47,7 @@ const colorThemes: Record<CardColor, { iconBg: string; iconText: string; hoverIc
 const badgeVariants: Record<BadgeVariant, string> = {
   default: 'bg-muted text-muted-foreground border-border',
   success: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-  warning: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+  warning: 'bg-attention/10 text-attention border-attention/20',
   info: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
 };
 

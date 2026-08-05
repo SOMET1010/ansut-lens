@@ -88,11 +88,11 @@ export function SecurityKpiCards({
       />
       
       <KpiCard
-        icon={<Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />}
+        icon={<Clock className="h-5 w-5 text-attention" />}
         value={pendingInvitations}
         label="Invitations en attente"
         subtext={pendingInvitations > 0 ? "En attente d'activation" : "Aucune invitation"}
-        colorClass="bg-amber-500/10"
+        colorClass="bg-attention/10"
         isLoading={isLoading}
       />
       

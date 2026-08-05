@@ -21,7 +21,7 @@ const ALERT_STYLES = {
   warning: {
     icon: '⚠️',
     duration: 10000,
-    className: 'border-orange-500 bg-orange-500/10',
+    className: 'border-attention bg-attention/10',
   },
   info: {
     icon: 'ℹ️',

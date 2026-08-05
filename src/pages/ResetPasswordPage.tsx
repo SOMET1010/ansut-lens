@@ -35,7 +35,7 @@ function PasswordStrength({ password }: { password: string }) {
     { label: 'Un caractère spécial', ok: /[^a-zA-Z0-9]/.test(password) },
   ];
   const score = checks.filter(c => c.ok).length;
-  const color = score <= 1 ? 'bg-destructive' : score <= 2 ? 'bg-orange-500' : score <= 3 ? 'bg-amber-500' : 'bg-emerald-500';
+  const color = score <= 1 ? 'bg-destructive' : score <= 2 ? 'bg-attention' : score <= 3 ? 'bg-attention' : 'bg-emerald-500';
 
   if (!password) return null;
 

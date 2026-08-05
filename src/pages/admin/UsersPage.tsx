@@ -71,7 +71,7 @@ const roleLabels: Record<AppRole, string> = {
 const roleColors: Record<AppRole, string> = {
   admin: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
   user: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  council_user: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
+  council_user: 'bg-attention-soft text-attention',
   guest: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
 };
 
@@ -96,7 +96,7 @@ function TableActivityBadge({ category, lastActiveAt }: { category: ActivityCate
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 gap-1 cursor-help">
+            <Badge variant="secondary" className="bg-attention-soft text-attention gap-1 cursor-help">
               <Clock className="h-3 w-3" />
               En attente
             </Badge>
@@ -147,7 +147,7 @@ function TableActivityBadge({ category, lastActiveAt }: { category: ActivityCate
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Badge variant="secondary" className="bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 gap-1 cursor-help">
+            <Badge variant="secondary" className="bg-attention-soft text-attention gap-1 cursor-help">
               <Clock className="h-3 w-3" />
               Inactif
             </Badge>
@@ -715,7 +715,7 @@ export default function UsersPage() {
               </SelectItem>
               <SelectItem value="pending">
                 <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-amber-500" />
+                  <span className="h-2 w-2 rounded-full bg-attention" />
                   En attente
                 </div>
               </SelectItem>
@@ -858,7 +858,7 @@ export default function UsersPage() {
                       category === 'online' ? 'text-emerald-600 dark:text-emerald-400 font-medium' :
                       category === 'never_connected' ? 'text-slate-400 dark:text-slate-500 italic' :
                       category === 'password_not_set' ? 'text-rose-600 dark:text-rose-400 italic' :
-                      category === 'dormant' ? 'text-orange-600 dark:text-orange-400' :
+                      category === 'dormant' ? 'text-attention' :
                       '';
 
                     return (
@@ -876,7 +876,7 @@ export default function UsersPage() {
                                 <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-background" />
                               )}
                               {category === 'dormant' && (
-                                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-orange-400 border-2 border-background" />
+                                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-attention border-2 border-background" />
                               )}
                               {category === 'password_not_set' && (
                                 <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-rose-500 border-2 border-background" />

@@ -179,7 +179,7 @@ export default function AdminPage() {
                 <div
                   className={cn(
                     'rounded-xl border-l-4 bg-muted/30 px-4 py-3',
-                    meta.ton === 'technique' && 'border-l-amber-500 bg-amber-500/5',
+                    meta.ton === 'technique' && 'border-l-amber-500 bg-attention/5',
                     meta.ton === 'neutre' && 'border-l-primary',
                   )}
                 >
