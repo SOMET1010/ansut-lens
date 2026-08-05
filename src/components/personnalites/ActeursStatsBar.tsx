@@ -27,8 +27,10 @@ interface Tuile {
   methode: string;
   icon: typeof Users;
   alerte?: boolean;
-  /** Aucune donnée réelle : la tuile reste présente mais s'affiche en creux. */
+  /** Aucune donnée réelle : la tuile assume le vide (phrase, pas un « 0 »). */
   vide?: boolean;
+  /** Phrase honnête affichée à la place du chiffre quand la mesure est nulle. */
+  videTexte?: string;
 }
 
 /**
@@ -74,41 +76,37 @@ export function ActeursStatsBar({
         cle: 'actifs',
         libelle: 'Actifs médiatiquement · 7 j',
         valeur: actifs,
-        lecture:
-          actifs > 0
-            ? `Nommés dans un contenu sur ${total || '—'}`
-            : 'Aucun acteur nommé cette semaine',
+        lecture: `Nommés dans un contenu sur ${total || '—'}`,
         methode:
           'Acteurs cités dans au moins un contenu sourcé sur 7 jours, via le lien acteur↔contenu (job lier-mentions-acteurs). Une mention = l’acteur est nommé, pas une prise de parole.',
         icon: Newspaper,
         vide: actifs === 0,
+        videTexte:
+          'Aucun acteur nommé cette semaine. Les premières citations apparaîtront après la prochaine collecte.',
       },
       {
         cle: 'mentions',
         libelle: 'Mentions reliées · 7 j',
         valeur: mentionsTotal,
-        lecture:
-          mentionsTotal > 0
-            ? 'Citations rattachées à un acteur'
-            : 'En attente de mentions reliées',
+        lecture: 'Citations rattachées à un acteur',
         methode:
           'Volume total de citations sourcées reliées à un acteur sur 7 jours. Chaque mention est traçable au contenu d’origine.',
         icon: MessageSquareQuote,
         vide: mentionsTotal === 0,
+        videTexte:
+          'Le rattachement des citations aux acteurs se constitue au fil des collectes.',
       },
       {
         cle: 'surveiller',
         libelle: 'À surveiller',
         valeur: aSurveiller,
-        lecture:
-          aSurveiller > 0
-            ? 'Sensibilité élevée déclarée'
-            : 'Aucun acteur signalé',
+        lecture: 'Sensibilité élevée déclarée',
         methode:
           'Acteurs dont le niveau d’alerte a été fixé à « élevé » ou « critique » par un éditeur. Réglage humain, non calculé.',
         icon: AlertTriangle,
         alerte: aSurveiller > 0,
         vide: aSurveiller === 0,
+        videTexte: 'Aucun acteur signalé à surveiller.',
       },
     ];
   }, [personnalites, mentions7j, stats]);
@@ -168,20 +166,28 @@ export function ActeursStatsBar({
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <span
-                className={cn(
-                  'text-2xl font-bold tabular-nums sm:text-3xl',
-                  t.vide ? 'text-muted-foreground/70' : 'text-foreground',
-                )}
-              >
-                {t.valeur}
-              </span>
-              <div className="space-y-0.5">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  {t.libelle}
-                </p>
-                <p className="text-xs leading-snug text-muted-foreground/90">{t.lecture}</p>
-              </div>
+              {t.vide ? (
+                <div className="flex flex-1 flex-col justify-center">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t.libelle}
+                  </p>
+                  <p className="mt-1 text-xs leading-snug text-muted-foreground/80">
+                    {t.videTexte}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <span className="text-2xl font-bold tabular-nums text-foreground sm:text-3xl">
+                    {t.valeur}
+                  </span>
+                  <div className="space-y-0.5">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {t.libelle}
+                    </p>
+                    <p className="text-xs leading-snug text-muted-foreground/90">{t.lecture}</p>
+                  </div>
+                </>
+              )}
             </div>
           );
         })}

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -192,6 +192,15 @@ export default function PersonnalitesPage() {
         </div>
       </div>
 
+      {/* Phrase de synthèse — signature éditoriale de RADAR. Le directeur lit
+          l'essentiel en 5 s ; tuiles et cartes ne font que le prouver. */}
+      <SyntheseActeurs
+        personnalites={personnalites}
+        mentions7j={mentions7j}
+        stats={stats}
+        isLoading={isLoading}
+      />
+
       {/* Repères chiffrés réels (Charte : mesures traçables, aucun chiffre fabriqué) */}
       <ActeursStatsBar
         personnalites={personnalites}
@@ -293,13 +302,6 @@ export default function PersonnalitesPage() {
                   )}
                 </>
               )}
-
-              {/* Synthèse honnête (agrégats réels, aucune interprétation fabriquée) */}
-              <SyntheseActeurs
-                personnalites={personnalites}
-                mentions7j={mentions7j}
-                stats={stats}
-              />
             </div>
 
             {/* Colonne latérale : résumé réel du réseau */}
@@ -492,24 +494,57 @@ function EmptyState({ cercle, onAddManually }: { cercle?: CercleStrategique; onA
 }
 
 /**
- * Bande de synthèse « À retenir » en bas de la cartographie.
+ * Phrase de synthèse en tête d'Acteurs — la signature éditoriale de RADAR.
  *
- * Charte : la maquette de référence terminait par une phrase interprétée
- * (« Le Ministre concentre l'essentiel des prises de parole… »). On ne produit
- * ici qu'un constat d'agrégats RÉELS (répartition, mentions reliées, alertes
- * déclarées) — jamais une intention ou une causalité inventée.
+ * Charte : la maquette de référence proposait une phrase INTERPRÉTÉE (« le
+ * Ministre domine les échanges sur la connectivité… »). On tient la même forme
+ * — un lead que le directeur lit en 5 secondes — mais on n'énonce qu'un constat
+ * d'agrégats RÉELS (répartition, mentions reliées, alertes déclarées), jamais
+ * une causalité ni une intention inventée.
  */
 function SyntheseActeurs({
   personnalites,
   mentions7j,
   stats,
+  isLoading,
 }: {
   personnalites?: Personnalite[];
   mentions7j?: Record<string, number>;
   stats?: PersonnalitesStats;
+  isLoading?: boolean;
 }) {
   const total = stats?.total ?? personnalites?.length ?? 0;
-  if (total === 0) return null;
+
+  const Cadre = ({ children }: { children: ReactNode }) => (
+    <div className="border-l-2 border-primary/40 pl-4">
+      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary/80">
+        Synthèse · cette semaine
+      </p>
+      <div className="mt-1.5">{children}</div>
+    </div>
+  );
+
+  if (isLoading && total === 0) {
+    return (
+      <Cadre>
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-5 w-1/2" />
+        </div>
+      </Cadre>
+    );
+  }
+
+  if (total === 0) {
+    return (
+      <Cadre>
+        <p className="text-base leading-relaxed text-foreground/90 sm:text-lg">
+          La cartographie des acteurs n'est pas encore constituée. Les repères
+          apparaîtront dès les premières fiches et mentions reliées.
+        </p>
+      </Cadre>
+    );
+  }
 
   const parCercle = stats?.parCercle ?? { 1: 0, 2: 0, 3: 0, 4: 0 };
   const dominant = ([1, 2, 3, 4] as CercleStrategique[]).reduce<CercleStrategique>(
@@ -536,30 +571,20 @@ function SyntheseActeurs({
       ? `${actifs} ${actifs > 1 ? 'ont' : 'a'} été nommé${actifs > 1 ? 's' : ''} dans un contenu sourcé cette semaine.`
       : `Aucun n'a été nommé dans un contenu sourcé cette semaine.`,
   );
-  phrases.push(
-    aSurveiller > 0
-      ? `${aSurveiller} ${aSurveiller > 1 ? 'sont signalés' : 'est signalé'} à surveiller.`
-      : `Aucun n'est signalé à surveiller.`,
-  );
+  if (aSurveiller > 0) {
+    phrases.push(
+      `${aSurveiller} ${aSurveiller > 1 ? 'sont signalés' : 'est signalé'} à surveiller.`,
+    );
+  }
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 shadow-sm">
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5 rounded-lg bg-primary/10 p-1.5 text-primary">
-          <Sparkles className="h-4 w-4" aria-hidden />
-        </span>
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-            À retenir
-          </p>
-          <p className="mt-1 text-sm leading-relaxed text-foreground/90">
-            {phrases.join(' ')}
-          </p>
-          <p className="mt-1.5 text-[11px] text-muted-foreground/70">
-            Constat d'agrégats mesurés — pas d'interprétation.
-          </p>
-        </div>
-      </div>
-    </div>
+    <Cadre>
+      <p className="text-base leading-relaxed text-foreground/90 sm:text-lg">
+        {phrases.join(' ')}
+      </p>
+      <p className="mt-1.5 text-[11px] text-muted-foreground/70">
+        Constat d'agrégats mesurés, sans interprétation.
+      </p>
+    </Cadre>
   );
 }
