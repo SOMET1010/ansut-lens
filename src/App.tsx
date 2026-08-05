@@ -315,6 +315,11 @@ const App = () => (
                                   element={<MoteurEditorialPage />}
                                 />
                                 <Route
+                                  path="/admin/qualite-collecte"
+                                  element={<QualiteCollectePage />}
+                                />
+
+                                <Route
                                   path="/admin/import-manuel"
                                   element={<ImportManuelPage />}
                                 />
