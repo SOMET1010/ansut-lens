@@ -23,7 +23,7 @@ const CERCLE_LABELS: Record<number, string> = {
 
 const CERCLE_COLORS: Record<number, string> = {
   1: 'bg-red-500',
-  2: 'bg-orange-500',
+  2: 'bg-teal-500',
   3: 'bg-blue-500',
   4: 'bg-green-500',
 };

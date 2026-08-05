@@ -54,13 +54,13 @@ const PILIER_META: Record<string, { label: string; icon: any; color: string }> =
 function NiveauBadge({ niveau }: { niveau?: string }) {
   if (!niveau) return null;
   const map: Record<string, string> = {
-    ROUGE: 'bg-red-500/15 text-red-600 border-red-500/30',
+    ROUGE: 'bg-incident/15 text-incident border-incident/30',
     ORANGE: 'bg-attention/15 text-attention border-attention/30',
-    VERT: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
-    BLEU: 'bg-blue-500/15 text-blue-600 border-blue-500/30',
-    'ÉLEVÉ': 'bg-red-500/15 text-red-600 border-red-500/30',
+    VERT: 'bg-confirme/15 text-confirme border-confirme/30',
+    BLEU: 'bg-primary/15 text-primary border-primary/30',
+    'ÉLEVÉ': 'bg-incident/15 text-incident border-incident/30',
     'MOYEN': 'bg-attention/15 text-attention border-attention/30',
-    'FAIBLE': 'bg-blue-500/15 text-blue-600 border-blue-500/30',
+    'FAIBLE': 'bg-primary/15 text-primary border-primary/30',
     'AUCUN': 'bg-muted text-muted-foreground',
   };
   return <Badge variant="outline" className={`${map[niveau] || ''} text-[10px] px-1.5 py-0 border`}>{niveau}</Badge>;
@@ -161,7 +161,7 @@ function TitrologieBilanBlock({
           <ul className="space-y-0.5">
             {TITROLOGIE_SOURCES_LIST.map(s => (
               <li key={s} className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-3 w-3 text-emerald-600" /> {s}
+                <CheckCircle2 className="h-3 w-3 text-confirme" /> {s}
               </li>
             ))}
           </ul>
@@ -242,9 +242,9 @@ interface Props {
 }
 
 const RISQUE_BADGE: Record<TitrologieRisque, string> = {
-  ROUGE: 'bg-red-500/15 text-red-600 border-red-500/30',
+  ROUGE: 'bg-incident/15 text-incident border-incident/30',
   ORANGE: 'bg-attention/15 text-attention border-attention/30',
-  VERT: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
+  VERT: 'bg-confirme/15 text-confirme border-confirme/30',
 };
 
 const ENTITE_META: Record<string, { label: string; cls: string }> = {
@@ -256,9 +256,9 @@ const ENTITE_META: Record<string, { label: string; cls: string }> = {
 function confianceClass(c?: number): string {
   if (typeof c !== 'number') return 'bg-muted text-muted-foreground border-border';
   if (c >= 75) return 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30';
-  if (c >= 50) return 'bg-blue-500/15 text-blue-600 border-blue-500/30';
+  if (c >= 50) return 'bg-primary/15 text-primary border-primary/30';
   if (c >= 25) return 'bg-attention/15 text-attention border-attention/30';
-  return 'bg-red-500/15 text-red-600 border-red-500/30';
+  return 'bg-incident/15 text-incident border-incident/30';
 }
 
 function ConfianceBadge({ value, prefix = 'Confiance' }: { value?: number; prefix?: string }) {
@@ -436,8 +436,8 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
                 </ul>
               </div>
             )}
-            {synth.opportunite_communication && <div className="text-xs"><span className="font-semibold text-emerald-600">Opportunité com :</span> {synth.opportunite_communication}</div>}
-            {synth.risque_a_surveiller && <div className="text-xs"><span className="font-semibold text-red-600">Risque à surveiller :</span> {synth.risque_a_surveiller}</div>}
+            {synth.opportunite_communication && <div className="text-xs"><span className="font-semibold text-confirme">Opportunité com :</span> {synth.opportunite_communication}</div>}
+            {synth.risque_a_surveiller && <div className="text-xs"><span className="font-semibold text-incident">Risque à surveiller :</span> {synth.risque_a_surveiller}</div>}
             <div className="text-xs pt-1 border-t border-primary/20"><span className="font-semibold">Action recommandée :</span> {synth.action_recommandee}</div>
           </div>
         )}
@@ -499,9 +499,9 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
                     ['Rep', angles.reputationnel],
                   ];
                   const intensityClass = (n: number) =>
-                    n >= 3 ? 'bg-red-500/15 text-red-600 border-red-500/30'
+                    n >= 3 ? 'bg-incident/15 text-incident border-incident/30'
                     : n === 2 ? 'bg-attention/15 text-attention border-attention/30'
-                    : n === 1 ? 'bg-blue-500/15 text-blue-600 border-blue-500/30'
+                    : n === 1 ? 'bg-primary/15 text-primary border-primary/30'
                     : 'bg-muted/30 text-muted-foreground border-border';
                   const activeAngles = angleEntries.filter(([, a]) => a && a.intensite >= 1);
                   return (
@@ -774,13 +774,13 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
               <div className="grid md:grid-cols-2 gap-3 text-xs">
                 {s.opportunites?.length > 0 && (
                   <div className="rounded-md bg-emerald-500/5 border border-emerald-500/20 p-2">
-                    <div className="text-[10px] font-semibold uppercase text-emerald-600 mb-1">Opportunités</div>
+                    <div className="text-[10px] font-semibold uppercase text-confirme mb-1">Opportunités</div>
                     <ul className="list-disc list-inside space-y-0.5">{s.opportunites.map((o: string, k: number) => <li key={k}>{o}</li>)}</ul>
                   </div>
                 )}
                 {s.risques?.length > 0 && (
                   <div className="rounded-md bg-red-500/5 border border-red-500/20 p-2">
-                    <div className="text-[10px] font-semibold uppercase text-red-600 mb-1">Risques</div>
+                    <div className="text-[10px] font-semibold uppercase text-incident mb-1">Risques</div>
                     <ul className="list-disc list-inside space-y-0.5">{s.risques.map((r: string, k: number) => <li key={k}>{r}</li>)}</ul>
                   </div>
                 )}
@@ -885,7 +885,7 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
           <div className="grid md:grid-cols-2 gap-3">
             {reput?.positif?.length > 0 && (
               <div className="rounded-md bg-emerald-500/5 border border-emerald-500/20 p-3">
-                <div className="text-[10px] font-semibold uppercase text-emerald-600 mb-1.5 flex items-center gap-1">
+                <div className="text-[10px] font-semibold uppercase text-confirme mb-1.5 flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3" /> Signaux positifs
                 </div>
                 <ul className="text-xs list-disc list-inside space-y-0.5">{reput.positif.map((p: string, k: number) => <li key={k}>{p}</li>)}</ul>
@@ -893,7 +893,7 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
             )}
             {reput?.negatif?.length > 0 && (
               <div className="rounded-md bg-red-500/5 border border-red-500/20 p-3">
-                <div className="text-[10px] font-semibold uppercase text-red-600 mb-1.5 flex items-center gap-1">
+                <div className="text-[10px] font-semibold uppercase text-incident mb-1.5 flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3" /> Signaux négatifs
                 </div>
                 <ul className="text-xs list-disc list-inside space-y-0.5">{reput.negatif.map((n: string, k: number) => <li key={k}>{n}</li>)}</ul>
@@ -979,7 +979,7 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
                           ) : (
                             <span className="font-medium text-muted-foreground">{it.titre}</span>
                           )}
-                          <Badge variant="outline" className={`gap-1 text-[10px] px-1.5 py-0 ${ok ? 'border-emerald-500/40 text-emerald-600' : 'border-destructive/40 text-destructive'}`}>
+                          <Badge variant="outline" className={`gap-1 text-[10px] px-1.5 py-0 ${ok ? 'border-confirme/40 text-confirme' : 'border-destructive/40 text-destructive'}`}>
                             {ok ? <CheckCircle2 className="h-2.5 w-2.5" /> : <XCircle className="h-2.5 w-2.5" />}
                             {ok ? 'URL valide' : 'URL invalide'}
                           </Badge>
@@ -1013,7 +1013,7 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
             {activite?.publications_count ?? 0} publication(s)
           </Badge>
           <Badge className={
-            activite?.visibilite === 'Fort' ? 'bg-emerald-500/15 text-emerald-600'
+            activite?.visibilite === 'Fort' ? 'bg-confirme/15 text-confirme'
             : activite?.visibilite === 'Moyen' ? 'bg-attention/15 text-attention'
             : 'bg-muted text-muted-foreground'
           }>
