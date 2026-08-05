@@ -11,11 +11,13 @@ import {
   Info,
   Megaphone,
   Newspaper,
+  PenLine,
   Radio,
   Sparkles,
   Star,
   Target,
 } from 'lucide-react';
+import { useUserPermissions } from '@/hooks/useUserPermissions';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -616,6 +618,7 @@ function SqueletteMatinale() {
 export default function LaMatinelePage() {
   const { briefing, isLoading, recitLoading } = useBriefing();
   const { periodeCouverte, derniereCollecteMs } = briefing;
+  const { hasPermission } = useUserPermissions();
 
   return (
     <div className="matinale min-h-full bg-[var(--m-paper)] text-[var(--m-ink)]">
@@ -642,6 +645,17 @@ export default function LaMatinelePage() {
               )}
             </p>
           </div>
+          {/* Production : « Ce matin » (lecture) et sa composition ne font qu'un.
+              Accès réservé à qui peut réellement produire/diffuser. */}
+          {hasPermission('manage_newsletters') && (
+            <Link
+              to="/admin/matinale"
+              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--m-line)] px-3 py-1.5 text-[0.72rem] font-medium text-[var(--m-ink-soft)] transition-colors hover:border-[var(--m-accent)] hover:text-[var(--m-accent)]"
+            >
+              <PenLine className="h-3.5 w-3.5" aria-hidden />
+              Composer / exporter
+            </Link>
+          )}
         </header>
 
         {isLoading && !briefing.sujetUne ? (

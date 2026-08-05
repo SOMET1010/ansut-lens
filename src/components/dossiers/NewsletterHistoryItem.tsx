@@ -48,7 +48,7 @@ export function NewsletterHistoryItem({ newsletter, onClick }: NewsletterHistory
           ) : (
             <Badge 
               variant="outline" 
-              className="text-orange-600 bg-orange-50 dark:bg-orange-950 dark:text-orange-400 border-0 text-[10px]"
+              className="text-attention bg-attention-soft border-0 text-[10px]"
             >
               <Edit3 className="h-3 w-3 mr-1" />
               Brouillon

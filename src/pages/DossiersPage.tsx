@@ -225,11 +225,11 @@ export default function DossiersPage() {
             </span>
             <span className="min-w-0 flex-1">
               <span className="flex items-center gap-1.5 text-sm font-medium">
-                Matinale
+                Note « Ce matin »
                 <ChevronRight className="h-4 w-4 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" />
               </span>
               <span className="block text-xs leading-relaxed text-muted-foreground">
-                Composer et exporter la note de synthèse du matin.
+                Composer, exporter et diffuser la synthèse du matin.
               </span>
             </span>
           </Link>
@@ -295,10 +295,10 @@ export default function DossiersPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-muted-foreground">En préparation</p>
-                        <p className="text-3xl font-bold text-orange-500">{brouillons.length}</p>
+                        <p className="text-3xl font-bold text-attention">{brouillons.length}</p>
                       </div>
-                      <div className="h-12 w-12 bg-orange-500/10 rounded-full flex items-center justify-center">
-                        <Edit3 className="h-6 w-6 text-orange-500" />
+                      <div className="h-12 w-12 bg-attention/10 rounded-full flex items-center justify-center">
+                        <Edit3 className="h-6 w-6 text-attention" />
                       </div>
                     </div>
                   </CardContent>
@@ -434,7 +434,7 @@ export default function DossiersPage() {
                 {/* Brouillons de newsletters */}
                 {recentDraftNewsletters.length > 0 && (
                   <div className="space-y-3">
-                    <h3 className="text-xs font-bold uppercase text-orange-500 flex items-center gap-1">
+                    <h3 className="text-xs font-bold uppercase text-attention flex items-center gap-1">
                       <Edit3 className="h-3 w-3" /> Brouillons à finaliser
                     </h3>
                     {recentDraftNewsletters.map(newsletter => (
