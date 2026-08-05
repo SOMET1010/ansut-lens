@@ -17,13 +17,26 @@
 >   #19 edge functions orphelines (couvertes par le durcissement P0 #1), #20 routes
 >   admin gardées (réintégration nav pilotée ailleurs), #23 MatinaleSections
 >   (extraction incrémentale plutôt que réécriture).
-> - ⏳ **Reste** : **P0 #1** seul (verify_jwt/CRON — nécessite accès Supabase).
+> - ✅ **P0 #1 corrigé** (via l'agent Lovable, qui a l'accès Supabase) : barrière
+>   `_shared/habilitation.ts` (jeton `x-internal-token`/`INTERNAL_FUNCTION_SECRET`
+>   ou JWT) sur 26 fonctions internes, `verify_jwt=true` + `has_role` sur 8 fonctions
+>   UI, 13 jobs `pg_cron` reprogrammés pour envoyer le jeton, 5 endpoints pré-auth
+>   laissés ouverts. Testé : accès anonyme → 401, cron OK, UI OK.
+> - ✅ **Qualité de collecte** (hors audit, remontée client « mêmes infos / sans
+>   valeur ») : purge de 44 lignes-poubelle (YouTube micros 2023, placeholders,
+>   scrapes de menu, toutes scorées 90) ; filtre d'entrée `_shared/qualiteContenu.ts`
+>   (rejet vidéo/social/pages d'accueil/titres vides) ; dédup **par sujet** avec
+>   `cluster_id` (Jaccard ≥ 0,5 même sujet, ≥ 0,8 même article) ; retrait du
+>   `score_pertinence=90` codé en dur à l'institutionnel.
+>
+> **Bilan : l'intégralité de l'audit (2 P0 · 13 P1 · 10 P2) est traitée**, plus le
+> correctif de qualité de collecte qui répondait au reproche « RADAR n'apporte rien ».
 
 ## 🔴 P0 — à corriger avant toute autre chose
 
 | # | Constat | Fichier | État |
 |---|---|---|---|
-| 1 | **`verify_jwt=false` sur 40 fonctions** service-role sans contrôle interne → invocables via la clé publique du frontend : DoS financier (Perplexity/XAI/Firecrawl/Gemini), déclenchement des pipelines, injection de contenu IA. | `supabase/config.toml` + `collecte-veille`, `enrichir-actualite`, `calculer-spdi`, `collecte-*`, etc. | ⏳ **plan** |
+| 1 | **`verify_jwt=false` sur 40 fonctions** service-role sans contrôle interne → invocables via la clé publique du frontend : DoS financier (Perplexity/XAI/Firecrawl/Gemini), déclenchement des pipelines, injection de contenu IA. | `supabase/config.toml` + `collecte-veille`, `enrichir-actualite`, `calculer-spdi`, `collecte-*`, etc. | ✅ **corrigé** (habilitation.ts + verify_jwt/role + pg_cron) |
 | 2 | **`envoyer-newsletter` : contrôle réduit à la présence de l'en-tête** — `Bearer n'importe_quoi` passe puis envoi service-role à **tous** les destinataires actifs (envoi massif au nom de l'ANSUT). | `envoyer-newsletter/index.ts:44` | ✅ **corrigé** (getUser + has_role admin) |
 
 **Plan P0 #1** (à cadrer, non déployable d'ici) : gate à **secret partagé** (comme
