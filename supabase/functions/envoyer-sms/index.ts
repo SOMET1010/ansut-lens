@@ -97,16 +97,23 @@ Deno.serve(async (req) => {
 
       message = `🚨 ALERTE ${alerte.niveau?.toUpperCase()} - ${alerte.titre}\n${alerte.message || ""}`.trim();
 
-      const { data: dests, error: destError } = await supabase
-        .from("sms_destinataires")
-        .select("numero")
-        .eq("actif", true);
+      // Les numéros SMS sont gérés par l'UI dans diffusion_programmation
+      // (canal « sms »), comme diffuser-resume. L'ancienne table
+      // sms_destinataires n'était jamais peuplée → les alertes ne partaient à
+      // personne. Audit P1 #8.
+      const { data: config, error: destError } = await supabase
+        .from("diffusion_programmation")
+        .select("destinataires")
+        .eq("canal", "sms")
+        .single();
 
-      if (destError) {
+      if (destError && destError.code !== "PGRST116") {
         throw new Error(`Erreur récupération destinataires: ${destError.message}`);
       }
 
-      destinataires = (dests || []).map((d) => d.numero);
+      destinataires = ((config?.destinataires as any[]) || [])
+        .map((d) => (typeof d === "string" ? d : d?.numero))
+        .filter(Boolean);
     } else if (payload.message && payload.destinataires?.length) {
       message = payload.message;
       destinataires = payload.destinataires;
