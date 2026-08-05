@@ -37,10 +37,10 @@ interface SmartActeurCardProps {
 // --- SPDI helpers ---
 
 const getSPDIColor = (score: number) => {
-  if (score >= 80) return { text: 'text-green-600 dark:text-green-400', bg: 'bg-green-500', badge: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800' };
-  if (score >= 60) return { text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500', badge: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800' };
+  if (score >= 80) return { text: 'text-confirme', bg: 'bg-confirme', badge: 'bg-confirme-soft text-confirme border-confirme-border' };
+  if (score >= 60) return { text: 'text-primary', bg: 'bg-primary', badge: 'bg-primary/10 text-primary border-primary/20' };
   if (score >= 40) return { text: 'text-attention', bg: 'bg-attention', badge: 'bg-attention-soft text-attention border-attention-border' };
-  return { text: 'text-red-600 dark:text-red-400', bg: 'bg-red-500', badge: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800' };
+  return { text: 'text-incident', bg: 'bg-incident', badge: 'bg-incident-soft text-incident border-incident-border' };
 };
 
 const getCercleStyles = (cercle: CercleStrategique) => {
