@@ -285,9 +285,9 @@ function SujetUne({ sujet, recitLoading }: { sujet: SujetBriefing; recitLoading:
         <span aria-hidden>·</span>
         <span>Le sujet du jour</span>
       </p>
-      <h2 className="matinale-serif mt-2 text-balance text-[clamp(1.6rem,3.4vw,2.4rem)] font-bold leading-[1.08] tracking-tight text-[var(--m-ink)]">
+      <h1 className="matinale-serif mt-2 text-balance text-[clamp(1.9rem,4.2vw,2.85rem)] font-bold leading-[1.06] tracking-tight text-[var(--m-ink)]">
         {sujet.titre}
-      </h2>
+      </h1>
 
       <p className="matinale-serif mt-3 max-w-[42rem] text-[1.08rem] leading-relaxed text-[var(--m-ink)]">
         {sujet.chapo}
@@ -629,9 +629,11 @@ export default function LaMatinelePage() {
             <p className="matinale-mono text-[0.64rem] uppercase tracking-[0.22em] text-[var(--m-accent)]">
               Ce matin
             </p>
-            <h1 className="matinale-serif mt-1 text-[clamp(1.8rem,4vw,2.7rem)] font-bold leading-none tracking-tight text-[var(--m-ink)]">
+            {/* La date n'est plus le plus gros signal de l'écran : elle devient une
+                métadonnée d'édition. Le titre dominant (h1) est le sujet du jour. */}
+            <p className="matinale-serif mt-1 text-[1.2rem] font-semibold leading-tight text-[var(--m-ink)]">
               {capitaliser(format(new Date(briefing.genereLeMs), "'Édition du' EEEE d MMMM yyyy", { locale: fr }))}
-            </h1>
+            </p>
             <p className="matinale-mono mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.7rem] tabular-nums text-[var(--m-ink-soft)]">
               {derniereCollecteMs && <span>Mise à jour&nbsp;: {heure(derniereCollecteMs)}</span>}
               {periodeCouverte.debutMs && periodeCouverte.finMs && (
