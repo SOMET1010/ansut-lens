@@ -1026,6 +1026,8 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
           source_nom: sourceNom,
           source_url: sourceUrl,
           source_type: actu.source_type,
+          // Regroupement par sujet : null si le sujet est inédit.
+          cluster_id: clusterId,
           // Date réelle uniquement : null si non vérifiée (fin de la date du jour
           // fabriquée). Les vues fenêtrées excluent honnêtement les dates nulles.
           date_publication: actu.date_publication ?? null,
