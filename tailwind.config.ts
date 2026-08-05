@@ -43,6 +43,26 @@ export default {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
+        // Couleurs sémantiques (règle stricte des 4 rôles — cf. docs/DESIGN_TOKENS.md).
+        // 🔵 navigation = `primary`. 🟢 confirmé · 🟠 attention · 🔴 incident :
+        confirme: {
+          DEFAULT: "hsl(var(--confirme))",
+          foreground: "hsl(var(--confirme-foreground))",
+          soft: "hsl(var(--confirme-soft))",
+          border: "hsl(var(--confirme-border))",
+        },
+        attention: {
+          DEFAULT: "hsl(var(--attention))",
+          foreground: "hsl(var(--attention-foreground))",
+          soft: "hsl(var(--attention-soft))",
+          border: "hsl(var(--attention-border))",
+        },
+        incident: {
+          DEFAULT: "hsl(var(--incident))",
+          foreground: "hsl(var(--incident-foreground))",
+          soft: "hsl(var(--incident-soft))",
+          border: "hsl(var(--incident-border))",
+        },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",

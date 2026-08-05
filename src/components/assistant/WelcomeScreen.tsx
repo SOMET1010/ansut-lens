@@ -39,7 +39,7 @@ const PROMPTS_BY_MODE: Record<AssistantMode, { title: string; prompt: string; ic
 // Remplacement des couleurs litterales par des classes semantiques
 const MODE_INFO: Record<AssistantMode, { label: string; tone: string; color: string }> = {
   recherche: { label: 'Recherche', tone: 'Réponses synthétiques sourcées', color: 'bg-primary/10 text-primary border-primary/20' },
-  redaction: { label: 'Rédaction', tone: 'Documents structurés exportables', color: 'bg-accent/10 text-accent border-accent/20' },
+  redaction: { label: 'Rédaction', tone: 'Documents structurés exportables', color: 'bg-confirme-soft text-confirme border-confirme-border' },
   analyse: { label: 'Analyse', tone: 'Tendances, signaux & risques', color: 'bg-muted text-muted-foreground border-border' },
   communication: { label: 'Communication', tone: 'Posts, communiqués, Q&R', color: 'bg-card text-card-foreground border-border' },
 };

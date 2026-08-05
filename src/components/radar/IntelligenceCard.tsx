@@ -166,7 +166,7 @@ export function IntelligenceCard({ actualite, onOpenSource, onSave, onShare }: I
         )}
         <button 
           title="Sauvegarder"
-          className="p-2 text-muted-foreground hover:text-secondary hover:bg-secondary/10 rounded-md transition-colors"
+          className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
           onClick={() => onSave?.(actualite)}
         >
           <Bookmark size={16} />
