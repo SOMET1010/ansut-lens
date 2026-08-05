@@ -4,9 +4,16 @@
 > au code (fichier:ligne). **2 P0 · 13 P1 · 10 P2.** Les P0 se corrigent avant
 > tout le reste.
 >
-> **État d'avancement** : P0 #2 corrigé (envoyer-newsletter). P0 #1 = plan proposé
-> (coordination CRON + secret, non déployable depuis l'agent). Le reste à traiter
-> par ordre de rang.
+> **État d'avancement (remédiation)** :
+> - ✅ **P0 #2** corrigé (auth réelle sur envoyer-newsletter).
+> - ✅ **12 des 13 P1 corrigés** : #3 dédup carte-sujet · #4 thématiques par acteur ·
+>   #5 tendance SPDI réelle · #6 canaux SPDI honnêtes · #7 bouton d'activation des
+>   mentions · #8 SMS vers la bonne source · #9/#10 liens profonds · #11 recherche
+>   Sources sans impasse · #14 contraste badges · #15 tests des preuves · #16 badge
+>   score en tokens.
+> - ⏳ **Restent** : **P0 #1** (verify_jwt/CRON — nécessite accès Supabase), **P1 #12**
+>   (verdicts « Ce matin » en tokens), **P1 #13** (couleur catégorielle cercle-2 —
+>   décision de palette), et les **10 P2**.
 
 ## 🔴 P0 — à corriger avant toute autre chose
 
