@@ -15,15 +15,18 @@
 
 @layer base {
   :root {
-    /* Light mode — neutres « encre » (papier chaud + encre), accent ANSUT bleu */
-    --background: 40 30% 97%;
-    --foreground: 40 8% 11%;
+    /* Light mode — neutres « encre » (papier chaud + encre), accent ANSUT bleu.
+       Le fond de page est volontairement plus BAS que les cartes : l'écart de
+       clarté (page 95,5 % vs carte 99,3 %) fait « lever » les cartes. Avant, page
+       97 % et carte 99 % ne se distinguaient pas → aplat « trop blanc ». */
+    --background: 38 34% 95.5%;
+    --foreground: 34 10% 11%;
 
-    --card: 40 33% 99%;
-    --card-foreground: 40 8% 11%;
+    --card: 40 45% 99.3%;
+    --card-foreground: 34 10% 11%;
 
-    --popover: 40 33% 99%;
-    --popover-foreground: 40 8% 11%;
+    --popover: 40 45% 99.3%;
+    --popover-foreground: 34 10% 11%;
 
     /* Bleu institutionnel — couleur de NAVIGATION (liens, éléments actifs). */
     --primary: 208 52% 37%;
@@ -31,21 +34,22 @@
 
     /* Secondaire = NEUTRE (l'orange n'est plus une couleur de remplissage
        ordinaire ; il est réservé à l'attention, cf. --attention). */
-    --secondary: 40 16% 90%;
-    --secondary-foreground: 40 10% 24%;
+    --secondary: 38 22% 89%;
+    --secondary-foreground: 34 12% 24%;
 
-    --muted: 40 16% 92%;
-    --muted-foreground: 40 6% 43%;
+    --muted: 38 24% 90.5%;
+    --muted-foreground: 36 8% 42%;
 
     /* Accent = survols/états neutres discrets (plus d'orange sur les menus). */
-    --accent: 40 24% 93%;
-    --accent-foreground: 40 10% 20%;
+    --accent: 38 28% 91%;
+    --accent-foreground: 34 12% 20%;
 
     --destructive: 4 52% 47%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 40 14% 87%;
-    --input: 40 14% 87%;
+    /* Bordures un cran plus présentes : les cartes sont mieux détourées. */
+    --border: 36 18% 84%;
+    --input: 36 18% 84%;
     --ring: 208 52% 37%;
 
     /* ————— Couleurs SÉMANTIQUES (règle stricte des 4 rôles) —————
@@ -207,6 +211,23 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* Voile chaud très léger en haut de page : casse l'aplat uniforme (« trop
+       blanc ») et donne de la profondeur sans bruit. Fixe, ne défile pas. */
+    background-image: radial-gradient(
+      1200px 620px at 88% -8%,
+      hsl(38 55% 92% / 0.55),
+      transparent 62%
+    );
+    background-attachment: fixed;
+  }
+
+  .dark body {
+    /* Variante sombre : halo bleu institutionnel discret, jamais blanc. */
+    background-image: radial-gradient(
+      1200px 620px at 88% -8%,
+      hsl(208 45% 22% / 0.35),
+      transparent 62%
+    );
   }
 
   /* Smooth scrolling */
