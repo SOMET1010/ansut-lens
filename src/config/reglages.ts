@@ -12,6 +12,8 @@ import {
   Newspaper,
   Radar,
   Shield,
+  ShieldAlert,
+
   ShieldCheck,
   Sliders,
   Tag,
