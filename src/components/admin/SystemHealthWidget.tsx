@@ -29,10 +29,10 @@ export function SystemHealthWidget({
       return { label: 'Erreur Détectée', color: 'text-red-400', bg: 'bg-red-500/20', pulse: true };
     }
     if (hoursAgo > 24) {
-      return { label: 'Inactif', color: 'text-amber-400', bg: 'bg-amber-500/20', pulse: false };
+      return { label: 'Inactif', color: 'text-attention', bg: 'bg-attention/20', pulse: false };
     }
     if (hoursAgo > 6) {
-      return { label: 'Dégradé', color: 'text-amber-400', bg: 'bg-amber-500/20', pulse: true };
+      return { label: 'Dégradé', color: 'text-attention', bg: 'bg-attention/20', pulse: true };
     }
     return { label: 'Opérationnel', color: 'text-emerald-400', bg: 'bg-emerald-500/20', pulse: true };
   };
@@ -99,7 +99,7 @@ export function SystemHealthWidget({
             </span>
             <span className={cn(
               'text-sm font-mono font-bold',
-              lastCollecteDuration && lastCollecteDuration > 5000 ? 'text-amber-500' : 'text-chart-2'
+              lastCollecteDuration && lastCollecteDuration > 5000 ? 'text-attention' : 'text-chart-2'
             )}>
               {formatDuration(lastCollecteDuration)}
             </span>

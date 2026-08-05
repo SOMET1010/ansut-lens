@@ -18,7 +18,7 @@ export interface Dossier {
 
 export const CATEGORIE_LABELS: Record<DossierCategorie, { label: string; color: string; icon: string }> = {
   sut: { label: 'Service Universel', color: 'bg-blue-500', icon: '📡' },
-  ia: { label: 'Intelligence Artificielle', color: 'bg-orange-500', icon: '🤖' },
+  ia: { label: 'Intelligence Artificielle', color: 'bg-attention', icon: '🤖' },
   acteurs: { label: 'Acteurs Clés', color: 'bg-green-500', icon: '👥' },
   general: { label: 'Général', color: 'bg-gray-500', icon: '📋' },
 };

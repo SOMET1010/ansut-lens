@@ -44,13 +44,13 @@ function BadgeStatut({ validation }: { validation: string }) {
   }
   if (validation === 'suppose') {
     return (
-      <Badge variant="outline" className="border-amber-500/50 text-[10px] text-amber-600 dark:text-amber-400">
+      <Badge variant="outline" className="border-attention/50 text-[10px] text-attention">
         🟠 Supposé — à confirmer
       </Badge>
     );
   }
   return (
-    <Badge variant="outline" className="border-amber-500/50 text-[10px] text-amber-600 dark:text-amber-400">
+    <Badge variant="outline" className="border-attention/50 text-[10px] text-attention">
       🟡 À valider
     </Badge>
   );
@@ -107,10 +107,10 @@ export default function AdminRevueConnaissancePage() {
         />
 
         {/* Bandeau : lecture seule, rien n'est validé. */}
-        <div className="flex items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-500/[0.06] p-4">
-          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
+        <div className="flex items-start gap-3 rounded-xl border border-attention/40 bg-attention/[0.06] p-4">
+          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-attention" aria-hidden />
           <div className="space-y-1 text-sm">
-            <p className="font-semibold text-amber-700 dark:text-amber-300">
+            <p className="font-semibold text-attention">
               Lecture seule — aucune donnée n'est validée ici.
             </p>
             <p className="text-muted-foreground">
@@ -165,7 +165,7 @@ export default function AdminRevueConnaissancePage() {
                         )}
 
                         {e.note_maturite && (
-                          <p className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+                          <p className="flex items-start gap-1.5 text-xs text-attention">
                             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
                             {e.note_maturite}
                           </p>
@@ -226,7 +226,7 @@ export default function AdminRevueConnaissancePage() {
                                     <td className="py-1 pr-2">
                                       {ind.libelle}
                                       {ind.note && (
-                                        <span className="block text-[10px] text-amber-700 dark:text-amber-400">
+                                        <span className="block text-[10px] text-attention">
                                           {ind.note}
                                         </span>
                                       )}
@@ -251,10 +251,10 @@ export default function AdminRevueConnaissancePage() {
         {/* Ambiguïtés & décisions à prendre */}
         <section className="space-y-3">
           <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
-            <HelpCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" aria-hidden />
+            <HelpCircle className="h-4 w-4 text-attention" aria-hidden />
             Ambiguïtés &amp; décisions restant à prendre
           </h2>
-          <Card className="border-amber-500/30">
+          <Card className="border-attention/30">
             <CardContent className="p-4">
               <ul className="list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
                 {data.ambiguites.map((a, i) => (

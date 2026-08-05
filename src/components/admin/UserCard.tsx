@@ -55,7 +55,7 @@ const roleLabels: Record<AppRole, string> = {
 const roleColors: Record<AppRole, string> = {
   admin: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700',
   user: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700',
-  council_user: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700',
+  council_user: 'bg-attention-soft text-attention border-attention-border',
   guest: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600',
 };
 
@@ -75,7 +75,7 @@ function AvatarPresenceIndicator({ category }: { category: ActivityCategory }) {
   }
   if (category === 'dormant') {
     return (
-      <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-orange-400 border-2 border-background" />
+      <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-attention border-2 border-background" />
     );
   }
   if (category === 'password_not_set') {
@@ -108,7 +108,7 @@ function ActivityStatusBadge({ category, lastActiveAt }: { category: ActivityCat
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 gap-1 text-xs cursor-help">
+            <Badge variant="secondary" className="bg-attention-soft text-attention gap-1 text-xs cursor-help">
               <Clock className="h-3 w-3" />
               En attente
             </Badge>
@@ -162,7 +162,7 @@ function ActivityStatusBadge({ category, lastActiveAt }: { category: ActivityCat
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Badge variant="secondary" className="bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 gap-1 text-xs cursor-help">
+            <Badge variant="secondary" className="bg-attention-soft text-attention gap-1 text-xs cursor-help">
               <Clock className="h-3 w-3" />
               Inactif
             </Badge>
@@ -226,7 +226,7 @@ export function UserCard({
     category === 'online' && "text-emerald-600 dark:text-emerald-400",
     category === 'never_connected' && "text-slate-400 dark:text-slate-500 italic",
     category === 'password_not_set' && "text-rose-600 dark:text-rose-400 italic",
-    category === 'dormant' && "text-orange-600 dark:text-orange-400",
+    category === 'dormant' && "text-attention",
     category === 'active' && "text-foreground",
     (category === 'disabled' || category === 'pending') && "text-foreground",
   );

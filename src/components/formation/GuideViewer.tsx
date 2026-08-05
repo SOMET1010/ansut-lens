@@ -95,7 +95,7 @@ export function GuideViewer({ content, className }: GuideViewerProps) {
             </td>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-amber-400 bg-amber-50 pl-4 py-2 my-3 text-gray-700 text-sm">
+            <blockquote className="border-l-4 border-attention bg-attention-soft pl-4 py-2 my-3 text-gray-700 text-sm">
               {children}
             </blockquote>
           ),

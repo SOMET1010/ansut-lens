@@ -11,7 +11,7 @@ export function FluxSlide() {
           <p className="text-white/60 text-sm">Créez vos propres flux avec mots-clés et filtres sur mesure</p>
         </div>
         <div className="bg-white/5 rounded-xl p-6">
-          <Rss className="w-8 h-8 text-orange-400 mb-4" />
+          <Rss className="w-8 h-8 text-attention mb-4" />
           <h3 className="text-white font-semibold mb-2">Agrégation</h3>
           <p className="text-white/60 text-sm">Centralisation des actualités correspondant à vos critères</p>
         </div>

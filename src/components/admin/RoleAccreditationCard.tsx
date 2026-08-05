@@ -36,10 +36,10 @@ const THEME_STYLES = {
     badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
   },
   amber: {
-    bg: 'bg-amber-500/10',
-    border: 'border-amber-500/20',
-    icon: 'bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400',
-    badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+    bg: 'bg-attention/10',
+    border: 'border-attention/20',
+    icon: 'bg-attention-soft text-attention',
+    badge: 'bg-attention-soft text-attention',
   },
   slate: {
     bg: 'bg-slate-500/10',
@@ -149,7 +149,7 @@ export function RoleAccreditationCard({
               <span className={cn(
                 'text-[10px] px-1.5 py-0.5 rounded font-medium',
                 status === 'full' && 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
-                status === 'partial' && 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+                status === 'partial' && 'bg-attention-soft text-attention',
                 status === 'none' && 'bg-muted text-muted-foreground'
               )}>
                 {statusLabel}

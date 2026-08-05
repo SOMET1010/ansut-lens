@@ -45,7 +45,7 @@ const CATEGORIES = [
 
 const CERCLE_COLORS: Record<number, string> = {
   1: 'bg-red-500/20 text-red-400 border-red-500/30',
-  2: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  2: 'bg-attention/20 text-attention border-attention/30',
   3: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   4: 'bg-green-500/20 text-green-400 border-green-500/30',
 };

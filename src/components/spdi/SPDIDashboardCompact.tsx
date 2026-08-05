@@ -31,7 +31,7 @@ interface SPDIDashboardCompactProps {
 const getSPDIColor = (score: number) => {
   if (score >= 80) return 'text-emerald-600 dark:text-emerald-400';
   if (score >= 60) return 'text-blue-600 dark:text-blue-400';
-  if (score >= 40) return 'text-orange-600 dark:text-orange-400';
+  if (score >= 40) return 'text-attention';
   return 'text-red-600 dark:text-red-400';
 };
 

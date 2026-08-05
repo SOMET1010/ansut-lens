@@ -56,7 +56,7 @@ const STATUS_META: Record<
   },
   partial: {
     label: 'Partiel',
-    className: 'bg-amber-100 text-amber-800 border-amber-300',
+    className: 'bg-attention-soft text-attention border-attention-border',
     Icon: AlertTriangle,
   },
   missing: {
@@ -158,8 +158,8 @@ export default function ConnecteursSociauxPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription className="text-amber-700">Partiels</CardDescription>
-            <CardTitle className="text-2xl text-amber-700">{totals.partial}</CardTitle>
+            <CardDescription className="text-attention">Partiels</CardDescription>
+            <CardTitle className="text-2xl text-attention">{totals.partial}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
@@ -228,7 +228,7 @@ export default function ConnecteursSociauxPage() {
                           ) : s.required ? (
                             <XCircle className="h-4 w-4 text-red-600" />
                           ) : (
-                            <AlertTriangle className="h-4 w-4 text-amber-500" />
+                            <AlertTriangle className="h-4 w-4 text-attention" />
                           )}
                           <div>
                             <div className="font-medium">{s.label}</div>

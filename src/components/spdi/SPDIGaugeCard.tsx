@@ -22,14 +22,14 @@ export function SPDIGaugeCard({ score, variation = 0, tendance = 'stable', compa
   const getScoreColor = () => {
     if (score >= 80) return 'text-green-500';
     if (score >= 60) return 'text-blue-500';
-    if (score >= 40) return 'text-orange-500';
+    if (score >= 40) return 'text-attention';
     return 'text-red-500';
   };
   
   const getGradient = () => {
     if (score >= 80) return 'from-green-500 to-green-400';
     if (score >= 60) return 'from-blue-500 to-blue-400';
-    if (score >= 40) return 'from-orange-500 to-orange-400';
+    if (score >= 40) return 'from-attention to-attention';
     return 'from-red-500 to-red-400';
   };
 

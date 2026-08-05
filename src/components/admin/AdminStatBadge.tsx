@@ -13,7 +13,7 @@ interface AdminStatBadgeProps {
 
 const variantStyles: Record<BadgeVariant, string> = {
   success: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-  warning: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+  warning: 'bg-attention/10 text-attention border-attention/20',
   error: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
   info: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
   muted: 'bg-muted text-muted-foreground border-border'
@@ -41,7 +41,7 @@ export function AdminStatBadge({
       <span className={cn(
         'w-1.5 h-1.5 rounded-full',
         variant === 'success' && 'bg-emerald-500',
-        variant === 'warning' && 'bg-amber-500',
+        variant === 'warning' && 'bg-attention',
         variant === 'error' && 'bg-red-500',
         variant === 'info' && 'bg-blue-500',
         variant === 'muted' && 'bg-muted-foreground'

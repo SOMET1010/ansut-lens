@@ -26,12 +26,12 @@ export function SPDIAlerteBanner({ variation, periode = '14 jours', onAction }: 
       <div className="flex items-start gap-3">
         <div className={cn(
           'p-2 rounded-lg',
-          severity === 'critical' ? 'bg-red-500/20' : 'bg-orange-500/20'
+          severity === 'critical' ? 'bg-red-500/20' : 'bg-attention/20'
         )}>
           {severity === 'critical' ? (
             <AlertTriangle className="h-5 w-5 text-red-500" />
           ) : (
-            <TrendingDown className="h-5 w-5 text-orange-500" />
+            <TrendingDown className="h-5 w-5 text-attention" />
           )}
         </div>
         

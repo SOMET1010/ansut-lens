@@ -55,7 +55,7 @@ import {
 
 const SOURCE_TYPES = [
   { value: 'site_web', label: 'Site web', icon: Globe, color: 'text-blue-500' },
-  { value: 'flux_rss', label: 'Flux RSS', icon: Rss, color: 'text-orange-500' },
+  { value: 'flux_rss', label: 'Flux RSS', icon: Rss, color: 'text-attention' },
   { value: 'api', label: 'API', icon: Code, color: 'text-purple-500' },
   { value: 'reseau_social', label: 'Réseau social', icon: Share2, color: 'text-pink-500' },
 ];
@@ -225,7 +225,7 @@ export default function SourcesPage() {
         </Card>
         <Card className="glass">
           <CardContent className="pt-4 flex items-center gap-3">
-            <Rss className="h-8 w-8 text-orange-500" />
+            <Rss className="h-8 w-8 text-attention" />
             <div>
               <p className="text-2xl font-bold">{stats.rss}</p>
               <p className="text-xs text-muted-foreground">Flux RSS</p>

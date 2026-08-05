@@ -35,7 +35,7 @@ const platformIcon = (p: string) => {
 
 const resonanceColor = (score: number) => {
   if (score >= 70) return 'text-emerald-500';
-  if (score >= 40) return 'text-amber-500';
+  if (score >= 40) return 'text-attention';
   return 'text-red-500';
 };
 

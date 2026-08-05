@@ -43,7 +43,7 @@ const FENETRES = [7, 30, 90] as const;
 
 const EVOLUTION: Record<Evolution, { icon: typeof ArrowUp; classe: string; libelle: string }> = {
   hausse: { icon: ArrowUp, classe: 'text-[hsl(var(--signal-positive))]', libelle: 'en hausse' },
-  baisse: { icon: ArrowDown, classe: 'text-amber-600 dark:text-amber-400', libelle: 'en baisse' },
+  baisse: { icon: ArrowDown, classe: 'text-attention', libelle: 'en baisse' },
   stable: { icon: Minus, classe: 'text-muted-foreground', libelle: 'stable' },
 };
 

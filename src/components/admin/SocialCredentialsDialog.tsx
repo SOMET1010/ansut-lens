@@ -392,7 +392,7 @@ export function SocialCredentialsDialog({
         )}
 
         {rotationMode && (
-          <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <div className="rounded-md border border-attention-border bg-attention-soft px-3 py-2 text-xs text-attention">
             🔄 Mode rotation actif — saisissez les <strong>nouvelles</strong> valeurs ci-dessous puis cliquez sur Enregistrer.
           </div>
         )}
@@ -501,7 +501,7 @@ export function SocialCredentialsDialog({
             })}
 
             {missingRequired.length > 0 && (
-              <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 flex gap-2">
+              <div className="rounded-md border border-attention-border bg-attention-soft px-3 py-2 text-xs text-attention flex gap-2">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                 <div>
                   Champs requis manquants :{' '}

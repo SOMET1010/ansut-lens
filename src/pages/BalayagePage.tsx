@@ -255,7 +255,7 @@ const MAX_RECENTS = 12;
 
 const precisionStyles: Record<Precision, string> = {
   exacte: 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30',
-  approx: 'bg-amber-500/15 text-amber-500 border-amber-500/30',
+  approx: 'bg-attention/15 text-attention border-attention/30',
   'sans date': 'bg-muted text-muted-foreground border-border',
 };
 
