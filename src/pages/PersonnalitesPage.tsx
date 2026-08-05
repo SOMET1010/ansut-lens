@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -65,6 +65,28 @@ export default function PersonnalitesPage() {
     setSelectedActeur(acteur);
     setDetailOpen(true);
   };
+
+  // Lien profond /acteurs?id=<id> : ouvrir directement la fiche ciblée (depuis
+  // la recherche globale, les alertes, l'Assistant). Sinon le clic retombait
+  // sur la liste (traçabilité rompue — audit P1 #10).
+  const [searchParams, setSearchParams] = useSearchParams();
+  const focusId = searchParams.get('id');
+  useEffect(() => {
+    if (!focusId || !personnalites) return;
+    const cible = personnalites.find((p) => p.id === focusId);
+    if (cible) {
+      setSelectedActeur(cible);
+      setDetailOpen(true);
+      setSearchParams(
+        (prev) => {
+          const p = new URLSearchParams(prev);
+          p.delete('id');
+          return p;
+        },
+        { replace: true },
+      );
+    }
+  }, [focusId, personnalites, setSearchParams]);
 
   const openCreateDialog = () => {
     setEditingActeur(null);

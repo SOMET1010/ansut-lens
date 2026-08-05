@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { BarChart3, Loader2, Newspaper, Sparkles } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -139,6 +139,32 @@ export default function VeillePage() {
   );
 
   const clusters = useArticleClusters(actualitesFiltrees);
+
+  // Lien profond /veille?article=<id> : scroller et surligner l'article ciblé
+  // (depuis les citations de l'Assistant, la recherche, les alertes, « Preuves
+  // par axe »…). Sans ça, le clic retombait sur la liste — traçabilité rompue
+  // (audit P1 #9).
+  const articleFocusId = searchParams.get('article');
+  useEffect(() => {
+    if (!articleFocusId || clusters.length === 0) return;
+    const t = setTimeout(() => {
+      const el = document.getElementById(`article-${articleFocusId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('ring-2', 'ring-primary');
+        setTimeout(() => el.classList.remove('ring-2', 'ring-primary'), 2500);
+      }
+      setSearchParams(
+        (prev) => {
+          const p = new URLSearchParams(prev);
+          p.delete('article');
+          return p;
+        },
+        { replace: true },
+      );
+    }, 400);
+    return () => clearTimeout(t);
+  }, [articleFocusId, clusters.length, setSearchParams]);
   const analytics = useSidebarAnalytics(actualitesFiltrees, articlesHier, filtresActifs);
 
   const changerOnglet = (valeur: string) => {
