@@ -855,10 +855,21 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
     const trenteJours = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const { data: titresRecents } = await supabase
       .from('actualites')
-      .select('titre')
+      .select('id, titre, cluster_id')
       .gte('created_at', trenteJours)
       .limit(5000);
     const titresConnus = new Set<string>((titresRecents || []).map(r => cleDedup(r.titre)));
+    // Index des sujets récents pour le regroupement par SUJET (Jaccard sur titres) :
+    // deux dépêches du même événement partagent désormais un `cluster_id`, au lieu
+    // d'apparaître comme deux « informations » distinctes.
+    const sujetsRecents: { id: string; titre: string; cluster_id: string | null }[] =
+      (titresRecents || []).map(r => ({
+        id: r.id as string,
+        titre: (r.titre as string) || '',
+        cluster_id: (r.cluster_id as string | null) ?? null,
+      }));
+    // Compteur de rejets qualité, exposé dans la réponse pour diagnostic.
+    const rejets: Record<string, number> = {};
 
     // Déduplication par URL canonique : on charge les URLs des 30 derniers jours
     // et on écarte tout article dont l'URL (host + chemin, sans query) est déjà
