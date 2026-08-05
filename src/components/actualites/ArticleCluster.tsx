@@ -67,7 +67,10 @@ export function ArticleCluster({
   const needsEnrichment = !mainArticle.importance || mainArticle.importance === 0;
 
   return (
-    <Card className="overflow-hidden border-border/50 bg-card hover:shadow-md transition-shadow">
+    <Card
+      id={`article-${mainArticle.id}`}
+      className="scroll-mt-24 overflow-hidden border-border/50 bg-card transition-shadow target:ring-2 target:ring-primary hover:shadow-md"
+    >
       {/* Header principal */}
       <div className="p-5">
         <div className="flex justify-between items-start mb-3">
@@ -251,7 +254,7 @@ export function ArticleCluster({
             Autres couvertures du sujet
           </p>
           {relatedArticles.map((article) => (
-            <div key={article.id} className="flex justify-between items-center text-sm group">
+            <div key={article.id} id={`article-${article.id}`} className="scroll-mt-24 flex justify-between items-center text-sm group">
               <div className="flex items-center gap-3 overflow-hidden">
                 <span className="text-muted-foreground text-xs font-mono shrink-0 w-28 truncate">
                   {article.source_nom}
