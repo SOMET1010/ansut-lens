@@ -1,6 +1,12 @@
 // Using native Deno.serve
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { canonicalUrl, estPageArticle } from "../_shared/dedup-actualites.ts";
+import {
+  motifRejet,
+  similariteTitres,
+  SEUIL_MEME_SUJET,
+  SEUIL_MEME_ARTICLE,
+} from "../_shared/qualiteContenu.ts";
 import { refuserSiNonAutorise } from "../_shared/habilitation.ts";
 
 /**
@@ -239,6 +245,8 @@ Mais inclut aussi toute actualité récente sur:
 
 IMPORTANT: Pour chaque actualité, indique le NUMÉRO de la citation source (ex: [1], [2], etc.) correspondant aux sources que tu as consultées. Ne fabrique JAMAIS d'URL.
 
+INTERDIT: aucune vidéo (YouTube, Dailymotion, Vimeo) ni aucun post de réseau social (Facebook, X/Twitter, LinkedIn, Instagram, TikTok). Uniquement des ARTICLES de presse ou des publications institutionnelles avec une page dédiée.
+
 Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours).`;
 
   const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -257,6 +265,12 @@ Retourne les 5 à 10 actualités les plus récentes (derniers 7 jours).`;
         { role: 'user', content: perplexityPrompt }
       ],
       search_recency_filter: 'week',
+      // Qualité de collecte : on exclut à la source les plateformes vidéo et
+      // sociales, qui ne fournissent jamais un article citable comme preuve.
+      search_domain_filter: [
+        '-youtube.com', '-facebook.com', '-x.com', '-twitter.com',
+        '-instagram.com', '-tiktok.com', '-linkedin.com',
+      ],
       response_format: {
         type: 'json_schema',
         json_schema: {
@@ -522,12 +536,12 @@ async function collecteGoogleNews(
   console.log('[collecte-veille] Collecte Google News via Firecrawl Search...');
 
   const queries = [
-    `${keywordsString} site:news.google.com OR site:fraternitematin.ci OR site:abidjan.net`,
+    `${keywordsString} site:news.google.com OR site:fraternitematin.ci OR site:abidjan.net -site:youtube.com -site:facebook.com -site:x.com`,
   ];
 
   // Add boost keywords for active events
   if (boostKeywords.length > 0) {
-    queries.push(boostKeywords.join(' OR '));
+    queries.push(`${boostKeywords.join(' OR ')} -site:youtube.com -site:facebook.com -site:x.com`);
   }
 
   const allActualites: CollectedActualite[] = [];
@@ -849,10 +863,21 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
     const trenteJours = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const { data: titresRecents } = await supabase
       .from('actualites')
-      .select('titre')
+      .select('id, titre, cluster_id')
       .gte('created_at', trenteJours)
       .limit(5000);
     const titresConnus = new Set<string>((titresRecents || []).map(r => cleDedup(r.titre)));
+    // Index des sujets récents pour le regroupement par SUJET (Jaccard sur titres) :
+    // deux dépêches du même événement partagent désormais un `cluster_id`, au lieu
+    // d'apparaître comme deux « informations » distinctes.
+    const sujetsRecents: { id: string; titre: string; cluster_id: string | null }[] =
+      (titresRecents || []).map(r => ({
+        id: r.id as string,
+        titre: (r.titre as string) || '',
+        cluster_id: (r.cluster_id as string | null) ?? null,
+      }));
+    // Compteur de rejets qualité, exposé dans la réponse pour diagnostic.
+    const rejets: Record<string, number> = {};
 
     // Déduplication par URL canonique : on charge les URLs des 30 derniers jours
     // et on écarte tout article dont l'URL (host + chemin, sans query) est déjà
@@ -886,9 +911,13 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
     for (const actu of articlesToProcess) {
       if (!actu.titre) continue;
 
-      // ANTI-HALLUCINATION: Reject articles without verified URL (Perplexity/Grok)
-      if (!actu.url_verified && (!actu.url || actu.url === '')) {
-        console.warn(`[collecte-veille] Article rejeté (pas d'URL vérifiée): "${actu.titre}"`);
+      // FILTRE QUALITÉ (commun à toutes les collectes) : on refuse ce qui n'est
+      // pas un article citable — vidéo YouTube, post social, page d'accueil ou
+      // page de rubrique, titre non informatif.
+      const motif = motifRejet(actu.titre, actu.url);
+      if (motif) {
+        rejets[motif] = (rejets[motif] || 0) + 1;
+        console.warn(`[collecte-veille] Rejeté (${motif}): "${actu.titre}" — ${actu.url ?? 'sans URL'}`);
         continue;
       }
 
@@ -896,6 +925,33 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
       const cleTitre = cleDedup(actu.titre);
       if (!cleTitre || titresConnus.has(cleTitre)) continue;
       titresConnus.add(cleTitre);
+
+      // Regroupement par SUJET : on cherche le sujet récent le plus proche.
+      // >= SEUIL_MEME_ARTICLE : même article reformulé → on ne réinsère pas.
+      // >= SEUIL_MEME_SUJET   : même sujet → on hérite de son `cluster_id`.
+      let clusterId: string | null = null;
+      let meilleure = 0;
+      let voisin: { id: string; cluster_id: string | null } | null = null;
+      for (const s of sujetsRecents) {
+        const sim = similariteTitres(actu.titre, s.titre);
+        if (sim > meilleure) {
+          meilleure = sim;
+          voisin = { id: s.id, cluster_id: s.cluster_id };
+        }
+      }
+      if (voisin && meilleure >= SEUIL_MEME_ARTICLE) {
+        rejets['sujet_deja_couvert'] = (rejets['sujet_deja_couvert'] || 0) + 1;
+        continue;
+      }
+      if (voisin && meilleure >= SEUIL_MEME_SUJET) {
+        clusterId = voisin.cluster_id ?? voisin.id;
+        // Le premier article du sujet devient la tête de cluster.
+        if (!voisin.cluster_id) {
+          await supabase.from('actualites').update({ cluster_id: clusterId }).eq('id', voisin.id);
+          for (const s of sujetsRecents) if (s.id === voisin.id) s.cluster_id = clusterId;
+        }
+      }
+
 
       const contenuNorm = normaliserTexte(`${actu.titre} ${actu.resume}`);
 
@@ -978,6 +1034,8 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
           source_nom: sourceNom,
           source_url: sourceUrl,
           source_type: actu.source_type,
+          // Regroupement par sujet : null si le sujet est inédit.
+          cluster_id: clusterId,
           // Date réelle uniquement : null si non vérifiée (fin de la date du jour
           // fabriquée). Les vues fenêtrées excluent honnêtement les dates nulles.
           date_publication: actu.date_publication ?? null,
@@ -1007,6 +1065,8 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
         const newId = inserted?.[0]?.id;
         if (newId) {
           insertedArticles.push({ id: newId, titre: actu.titre, resume: actu.resume });
+          // L'article entre dans l'index des sujets du cycle en cours.
+          sujetsRecents.push({ id: newId, titre: actu.titre, cluster_id: clusterId });
         }
       }
 
@@ -1194,6 +1254,8 @@ Pour chaque article, détermine s'il impacte les missions de l'ANSUT. Note la pe
       sources_utilisees: sourcesUtilisees,
       alertes_declenchees: alertes,
       duree_ms: duration,
+      // Transparence qualité : combien d'items écartés et pour quel motif.
+      rejets_qualite: rejets,
       citations: allCitations
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
