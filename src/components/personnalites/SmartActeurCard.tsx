@@ -39,7 +39,7 @@ interface SmartActeurCardProps {
 const getSPDIColor = (score: number) => {
   if (score >= 80) return { text: 'text-green-600 dark:text-green-400', bg: 'bg-green-500', badge: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800' };
   if (score >= 60) return { text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500', badge: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800' };
-  if (score >= 40) return { text: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-500', badge: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/50 dark:text-orange-300 dark:border-orange-800' };
+  if (score >= 40) return { text: 'text-attention', bg: 'bg-attention', badge: 'bg-attention-soft text-attention border-attention-border' };
   return { text: 'text-red-600 dark:text-red-400', bg: 'bg-red-500', badge: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800' };
 };
 
@@ -213,7 +213,7 @@ export function SmartActeurCard({
                 </TooltipProvider>
               )}
               {personnalite.niveau_alerte === 'eleve' && (
-                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800">
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border bg-attention-soft text-attention border-attention-border">
                   <AlertTriangle className="h-2.5 w-2.5" />
                   Vigilance
                 </span>

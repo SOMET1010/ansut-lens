@@ -140,11 +140,11 @@ export function RadarKpiTiles({
       },
     },
     {
-      icon: <TrendingUp className="h-5 w-5 text-amber-600 dark:text-amber-400" />,
+      icon: <TrendingUp className="h-5 w-5 text-attention" />,
       value: scoreInfluence,
       label: "Score d'influence",
       subtext: 'Moyenne des mentions',
-      colorClass: 'bg-amber-500/10',
+      colorClass: 'bg-attention-soft',
       evidence: {
         title: "Score d'influence",
         description: 'Mentions ayant le plus contribué au score',

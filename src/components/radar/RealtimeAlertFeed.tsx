@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 const LEVEL_CONFIG = {
   critical: { icon: ShieldAlert, color: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/30' },
-  warning: { icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
+  warning: { icon: AlertTriangle, color: 'text-attention', bg: 'bg-attention-soft', border: 'border-attention/30' },
   info: { icon: Info, color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
 } as const;
 

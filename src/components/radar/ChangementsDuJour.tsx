@@ -33,10 +33,10 @@ interface Props {
 const CFG: Record<SensChangement, { icon: LucideIcon; classe: string }> = {
   hausse: { icon: ArrowUp, classe: 'text-[hsl(var(--signal-positive))]' },
   emergent: { icon: Sparkle, classe: 'text-primary' },
-  baisse: { icon: ArrowDown, classe: 'text-amber-600 dark:text-amber-400' },
+  baisse: { icon: ArrowDown, classe: 'text-attention' },
   disparu: { icon: ArrowDown, classe: 'text-muted-foreground' },
   ansut: { icon: Megaphone, classe: 'text-foreground/70' },
-  negatif: { icon: TriangleAlert, classe: 'text-amber-600 dark:text-amber-400' },
+  negatif: { icon: TriangleAlert, classe: 'text-attention' },
   calme: { icon: Minus, classe: 'text-muted-foreground' },
 };
 

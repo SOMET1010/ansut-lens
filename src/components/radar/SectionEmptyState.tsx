@@ -24,7 +24,7 @@ const defaultIcons: Record<Variant, React.ReactNode> = {
 const variantStyles: Record<Variant, string> = {
   empty: 'text-muted-foreground bg-muted/30',
   error: 'text-destructive bg-destructive/10',
-  offline: 'text-amber-600 dark:text-amber-400 bg-amber-500/10',
+  offline: 'text-attention bg-attention-soft',
 };
 
 export function SectionEmptyState({
