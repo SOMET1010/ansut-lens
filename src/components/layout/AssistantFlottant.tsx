@@ -12,8 +12,11 @@ import { useUserPermissions } from '@/hooks/useUserPermissions';
  * La convention etablie pour ce type de fonction est le bouton flottant
  * permanent, place en bas a droite.
  *
- * Le bouton s'efface sur la page de l'assistant elle-meme, et se decale
- * au-dessus de la navigation mobile pour ne pas la recouvrir.
+ * Il s'efface sur la page de l'assistant elle-meme. Sur mobile il est MASQUE :
+ * l'assistant y est deja une des cinq destinations de la barre basse, si bien que
+ * le bouton flottant faisait double emploi et recouvrait le coin bas du contenu
+ * (constat d'audit UX). Il ne reste donc que sur desktop, ou il n'y a pas de barre
+ * basse et ou la place ne manque pas.
  */
 export function AssistantFlottant() {
   const location = useLocation();
@@ -28,7 +31,7 @@ export function AssistantFlottant() {
         <Link
           to="/assistant"
           aria-label="Ouvrir l’assistant"
-          className="fixed bottom-[4.5rem] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:bottom-6 md:right-6"
+          className="fixed bottom-6 right-6 z-40 hidden h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:flex"
         >
           <Bot className="h-6 w-6" aria-hidden />
         </Link>
