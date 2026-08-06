@@ -1,6 +1,7 @@
 export { ChiffreCle } from './ChiffreCle';
 export { PageContainer } from './PageContainer';
 export { PageHeader } from './PageHeader';
+export { PhraseSynthese } from './PhraseSynthese';
 export { ProchaineAction } from './ProchaineAction';
 export { RouteSkeleton } from './RouteSkeleton';
 export { SectionRepliable } from './SectionRepliable';

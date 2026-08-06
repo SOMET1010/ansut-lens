@@ -172,7 +172,7 @@ export function SpotlightSearch({ open, onOpenChange }: SpotlightSearchProps) {
                 <HelpCircle className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
                 <span>Glossaire des termes</span>
                 <span className="ml-auto pl-3 text-xs text-muted-foreground">
-                  SPDI, quadrant, titrologie…
+                  cercle, quadrant, titrologie…
                 </span>
               </CommandItem>
             </CommandGroup>

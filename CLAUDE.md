@@ -229,6 +229,21 @@ false-precision indicators. Prefer an honest "no data" to an artificial number.
 Classify each datum 🟢 real / 🟡 calculated (keep if documented) / 🔴 interpreted
 (keep only if the method is clear and exposed).
 
+### Color Charter (permanent rule)
+
+Color carries **meaning**, never decoration, per
+**[`docs/CHARTE_COULEUR.md`](docs/CHARTE_COULEUR.md)**. One role per colour, and
+signal colours must stay **rare** to keep their power. The tokens already encode
+it: **blue** (`primary`/`ring`) = **navigation & selection only** (links, active
+tab, focus, action buttons, "voir →" affordances) — nothing else; **green**
+(`confirme`) = confirmed positive fact; **orange** (`attention`) = attention /
+notable change; **red** (`incident`) = real alert; **grey** (`muted-foreground`,
+`border`, `muted`) = context & secondary info (metadata, kickers, section icons,
+separators). The default is neutral ink on paper: add a colour only when it
+*means* something, and every coloured signal must be justified by real data (see
+Credibility Charter). Before painting an element blue, ask *does it click?* — if
+not, it is context → grey.
+
 ### Security Notes
 
 - Row-Level Security on all tables

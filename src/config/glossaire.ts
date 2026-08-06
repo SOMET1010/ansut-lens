@@ -26,15 +26,6 @@ export interface TermeGlossaire {
 
 export const GLOSSAIRE: TermeGlossaire[] = [
   {
-    cle: 'spdi',
-    terme: 'SPDI',
-    sigle: 'Score de Presence Digitale Institutionnelle',
-    definition:
-      'Note de 0 a 100 mesurant a quel point une personnalite ou une organisation est visible et active en ligne.',
-    precision:
-      'Le score combine la frequence de publication, la portee des messages, la qualite des interactions et la coherence institutionnelle du discours.',
-  },
-  {
     cle: 'quadrant',
     terme: 'Quadrant',
     definition:
@@ -115,12 +106,6 @@ export const GLOSSAIRE: TermeGlossaire[] = [
     terme: 'Coffre a contenus',
     definition:
       'Reserve de contenus rediges a l’avance, prets a etre publies lorsque le moment est opportun.',
-  },
-  {
-    cle: 'revue-stabilite',
-    terme: 'Revue de stabilite',
-    definition:
-      'Controle periodique verifiant que les scores de presence digitale ne varient pas de facon anormale.',
   },
   {
     cle: 'fraicheur',

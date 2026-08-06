@@ -9,41 +9,28 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Map, BarChart3, TrendingUp, Swords } from 'lucide-react';
+import { Map, Users } from 'lucide-react';
 
 const STORAGE_KEY = 'acteurs-tour-dismissed';
 
 /**
  * Presentation des vues de la page Acteurs.
  *
- * Ce panneau decrivait les anciens libelles — « Dashboard SPDI », « Revue
- * Stabilite », « Benchmark » — que la refonte a remplaces. Il contredisait donc
- * l'interface qu'il etait charge d'expliquer, ce qui est pire que l'absence
- * d'aide : l'utilisateur cherchait des onglets inexistants.
- *
- * Les descriptions sont reformulees sans sigle non explique, chaque vue etant
- * presentee par la question a laquelle elle repond.
+ * Les onglets « Scores de présence » et « Revue de stabilité » (score composite
+ * SPDI 0-100) ainsi que la « Comparaison » par score ont été retirés : ils
+ * présentaient une précision interprétée, contraire à la Charte de crédibilité.
+ * Ne restent que des vues fondées sur des FAITS sourcés.
  */
 const VUES = [
   {
     icon: Map,
     label: 'Cartographie',
-    desc: 'Qui sont les acteurs du secteur, comment ils se situent les uns par rapport aux autres et quel est leur niveau de proximité avec l’ANSUT.',
+    desc: 'Qui sont les acteurs du secteur, leur proximité avec l’ANSUT, et — pour chacun — ses mentions réelles dans la presse et les réseaux suivis (des faits sourcés, jamais un score).',
   },
   {
-    icon: BarChart3,
-    label: 'Scores de présence',
-    desc: 'À quel point chaque personnalité ou organisation est visible et active en ligne, sur une échelle de 0 à 100.',
-  },
-  {
-    icon: TrendingUp,
-    label: 'Revue de stabilité',
-    desc: 'Comment ces scores de présence évoluent dans le temps, pour repérer les progressions et les décrochages.',
-  },
-  {
-    icon: Swords,
-    label: 'Comparer des acteurs',
-    desc: 'Mettre deux acteurs côte à côte pour situer leur influence respective. Accessible par le bouton en haut de la page.',
+    icon: Users,
+    label: 'Veille dirigeants',
+    desc: 'Le suivi rapproché des dirigeants et personnalités clés du secteur.',
   },
 ] as const;
 
@@ -87,7 +74,7 @@ export function ActeursQuickTour({ forceOpen, onOpenChange }: ActeursQuickTourPr
         <DialogHeader>
           <DialogTitle className="text-xl">Comment lire cette page</DialogTitle>
           <DialogDescription>
-            Quatre vues répondent chacune à une question différente sur les acteurs du secteur.
+            Deux vues répondent chacune à une question différente sur les acteurs du secteur.
           </DialogDescription>
         </DialogHeader>
 

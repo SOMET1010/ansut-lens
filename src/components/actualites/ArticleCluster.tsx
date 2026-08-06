@@ -111,7 +111,7 @@ export function ArticleCluster({
             {estVoixAnsut(mainArticle) && (
               <Badge
                 variant="outline"
-                className="border-primary/30 text-[10px] font-semibold text-primary"
+                className="border-confirme-border text-[10px] font-semibold text-confirme"
               >
                 Source officielle ANSUT
               </Badge>
@@ -181,11 +181,11 @@ export function ArticleCluster({
           pas encombrer les articles non encore analysés.
         */}
         {(mainArticle.pourquoi_important || mainArticle.action_suggeree || mainArticle.pilier_id) && (
-          <div className="mb-4 space-y-1.5 rounded-lg border border-primary/20 bg-primary/[0.04] p-3">
+          <div className="mb-4 space-y-1.5 rounded-lg border border-border bg-muted/30 p-3">
             {(() => {
               const pilier = MISSIONS_STRATEGIQUES.find((m) => m.id === mainArticle.pilier_id);
               return pilier ? (
-                <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium text-primary">
+                <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium text-muted-foreground">
                   <Target className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   Impacte {pilier.code} — {pilier.nom}
                 </div>

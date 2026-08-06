@@ -1,4 +1,3 @@
-import React from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -7,25 +6,15 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { 
+import {
   Building2, MapPin, AlertTriangle, Bell,
-  Twitter, Linkedin, Newspaper, ExternalLink,
-  Wifi, Wallet, Landmark, GraduationCap, Activity, Pencil,
-  Archive, Trash2, Eye, MessageSquare, Award, Users, Lightbulb, Zap, Swords
+  Twitter, Linkedin, ExternalLink,
+  Wifi, Wallet, Landmark, GraduationCap, Pencil,
+  Archive, Trash2,
 } from 'lucide-react';
 import { CERCLE_LABELS, SOUS_CATEGORIE_LABELS } from '@/hooks/usePersonnalites';
-import { 
-  useDerniereMetriqueSPDI, 
-  useRecommandationsSPDI, 
-  useToggleSuiviSPDI,
-  INTERPRETATION_LABELS,
-} from '@/hooks/usePresenceDigitale';
-import { SPDIDashboardCompact } from '@/components/spdi';
-import { ActeurStrategicIntelligence } from './ActeurStrategicIntelligence';
 import { useAuth } from '@/contexts/AuthContext';
-import type { Personnalite, CercleStrategique, Tendance } from '@/types';
+import type { Personnalite, CercleStrategique } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface ActeurDetailProps {
@@ -35,7 +24,6 @@ interface ActeurDetailProps {
   onEdit?: () => void;
   onArchive?: () => void;
   onDelete?: () => void;
-  onCompare?: (acteur: Personnalite) => void;
 }
 
 const getCercleColors = (cercle: CercleStrategique) => {
@@ -58,56 +46,15 @@ const getCategorieIcon = (categorie?: string) => {
   }
 };
 
-// Conseils par axe faible
-const AXES_CONSEILS: Record<string, { icon: typeof Eye; label: string; conseil: string }> = {
-  visibilite: { icon: Eye, label: 'Visibilité', conseil: 'Augmenter la fréquence des publications et communiqués de presse' },
-  qualite: { icon: MessageSquare, label: 'Qualité', conseil: 'Améliorer le sentiment en diversifiant les prises de parole positives' },
-  autorite: { icon: Award, label: 'Autorité', conseil: 'Participer à davantage de panels et conférences sectorielles' },
-  presence: { icon: Users, label: 'Présence', conseil: "Intensifier l'activité LinkedIn et l'engagement communautaire" },
-};
-
-const getAxesFaibles = (metrique: any) => {
-  if (!metrique) return [];
-  const axes = [
-    { key: 'visibilite', score: metrique.score_visibilite },
-    { key: 'qualite', score: metrique.score_qualite },
-    { key: 'autorite', score: metrique.score_autorite },
-    { key: 'presence', score: metrique.score_presence },
-  ];
-  return axes.filter(a => a.score != null && a.score < 40);
-};
-
-export function ActeurDetail({ personnalite, open, onOpenChange, onEdit, onArchive, onDelete, onCompare }: ActeurDetailProps) {
+export function ActeurDetail({ personnalite, open, onOpenChange, onEdit, onArchive, onDelete }: ActeurDetailProps) {
   const { isAdmin } = useAuth();
-  const toggleSuivi = useToggleSuiviSPDI();
-  const [calculLoading, setCalculLoading] = React.useState(false);
-  
-  // Récupérer les données SPDI si le suivi est actif (accès direct aux champs optionnels)
-  const { data: metriqueSPDI } = useDerniereMetriqueSPDI(
-    personnalite?.suivi_spdi_actif ? personnalite?.id : undefined
-  );
-  const { data: recommandationsSPDI } = useRecommandationsSPDI(
-    personnalite?.suivi_spdi_actif ? personnalite?.id : undefined
-  );
-  
+
   if (!personnalite) return null;
 
   const cercleColors = getCercleColors(personnalite.cercle);
   const CategorieIcon = getCategorieIcon(personnalite.categorie);
   const initials = `${personnalite.prenom?.[0] || ''}${personnalite.nom[0]}`.toUpperCase();
   const cercleInfo = CERCLE_LABELS[personnalite.cercle];
-  
-  // Accès direct aux champs SPDI optionnels (sans cast)
-  const suiviSPDIActif = personnalite.suivi_spdi_actif ?? false;
-  const scoreSPDI = personnalite.score_spdi_actuel ?? 0;
-  const tendanceSPDI = (personnalite.tendance_spdi ?? 'stable') as Tendance;
-  
-  const handleToggleSuivi = () => {
-    toggleSuivi.mutate({ 
-      personnaliteId: personnalite.id, 
-      actif: !suiviSPDIActif 
-    });
-  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -184,11 +131,6 @@ export function ActeurDetail({ personnalite, open, onOpenChange, onEdit, onArchi
 
           <Separator className="my-4" />
 
-          {/* Intelligence stratégique */}
-          <ActeurStrategicIntelligence personnalite={personnalite} />
-
-          <Separator className="my-4" />
-
           {/* Bio */}
           {personnalite.bio && (
             <div className="mb-4">
@@ -231,50 +173,6 @@ export function ActeurDetail({ personnalite, open, onOpenChange, onEdit, onArchi
                   </a>
                 ))}
               </div>
-            </div>
-          )}
-
-          <Separator className="my-4" />
-
-          {/* Section SPDI - Dashboard Compact */}
-          <SPDIDashboardCompact
-            personnalite={personnalite}
-            suiviActif={suiviSPDIActif}
-            scoreSPDI={scoreSPDI}
-            tendance={tendanceSPDI}
-            onToggleSuivi={handleToggleSuivi}
-            toggleLoading={toggleSuivi.isPending}
-            recommandations={recommandationsSPDI ?? undefined}
-            hasMetrique={!!metriqueSPDI}
-            onLancerCalcul={async () => {
-              setCalculLoading(true);
-              try {
-                const { error } = await supabase.functions.invoke('calculer-spdi', {
-                  body: { personnalite_id: personnalite.id },
-                });
-                if (error) throw error;
-                toast.success('Calcul SPDI lancé avec succès');
-              } catch (err: any) {
-                toast.error(`Erreur: ${err.message}`);
-              } finally {
-                setCalculLoading(false);
-              }
-            }}
-            calculLoading={calculLoading}
-          />
-
-          {/* Compare button */}
-          {suiviSPDIActif && onCompare && (
-            <div className="flex justify-end mt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
-                onClick={() => onCompare(personnalite)}
-              >
-                <Swords className="h-3.5 w-3.5" />
-                Comparer avec un pair
-              </Button>
             </div>
           )}
 

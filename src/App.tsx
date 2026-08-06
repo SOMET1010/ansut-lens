@@ -189,11 +189,11 @@ const App = () => (
                         />
                         <Route
                           path="/presence-digitale"
-                          element={<Navigate to="/acteurs?tab=spdi" replace />}
+                          element={<Navigate to="/acteurs?tab=cartographie" replace />}
                         />
                         <Route
                           path="/spdi-review"
-                          element={<Navigate to="/acteurs?tab=revue" replace />}
+                          element={<Navigate to="/acteurs?tab=cartographie" replace />}
                         />
                         <Route
                           path="/reseaux-sociaux"

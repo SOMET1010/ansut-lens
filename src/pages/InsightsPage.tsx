@@ -18,7 +18,7 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
-import { PageContainer, PageHeader } from '@/components/common';
+import { PageContainer, PageHeader, PhraseSynthese } from '@/components/common';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -72,7 +72,7 @@ const EVOLUTION: Record<Evolution, { icon: typeof ArrowUp; classe: string; libel
 function NiveauTitre({ index, titre, sous }: { index: number; titre: string; sous: string }) {
   return (
     <div className="flex items-baseline gap-2">
-      <span className="text-xs font-semibold tabular-nums text-primary">{index}</span>
+      <span className="text-xs font-semibold tabular-nums text-muted-foreground">{index}</span>
       <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground">{titre}</h2>
       <span className="text-xs text-muted-foreground">· {sous}</span>
     </div>
@@ -91,8 +91,10 @@ function Barres({ items, vide }: { items: StatCompte[]; vide: string }) {
             {it.libelle}
           </span>
           <span className="h-2.5 rounded-full bg-muted" aria-hidden>
+            {/* Barre de volume à série unique : marque de données neutre, pas
+                de bleu de navigation (charte couleur). */}
             <span
-              className="block h-2.5 rounded-full bg-primary"
+              className="block h-2.5 rounded-full bg-muted-foreground/45"
               style={{ width: `${Math.max((it.count / max) * 100, 4)}%` }}
             />
           </span>
@@ -198,7 +200,7 @@ function Section({
     <Card>
       <CardContent className="space-y-3 p-5">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <Icon className="h-4 w-4 text-primary" aria-hidden />
+          <Icon className="h-4 w-4 text-muted-foreground" aria-hidden />
           {titre}
         </h3>
         {children}
@@ -259,9 +261,9 @@ function HeroEcho({ echo }: { echo: EchoMediatique }) {
   const afficherCourbe = echo.earned >= 8;
 
   return (
-    <Card className="border-primary/20 bg-primary/[0.03]">
+    <Card className="border-border bg-muted/20">
       <CardContent className="flex flex-col items-center gap-1 p-6 text-center">
-        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
+        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <Newspaper className="h-3.5 w-3.5" aria-hidden />
           Écho médiatique
         </p>
@@ -321,7 +323,7 @@ function PreuveEcho({ echo }: { echo: EchoMediatique }) {
       <CardContent className="space-y-4 p-5">
         <div>
           <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Newspaper className="h-4 w-4 text-primary" aria-hidden />
+            <Newspaper className="h-4 w-4 text-muted-foreground" aria-hidden />
             Comment ce chiffre est établi
           </h3>
           <p className="text-xs text-muted-foreground">
@@ -474,12 +476,8 @@ export default function InsightsPage() {
           }
         />
 
-        {/* Synthèse d'une phrase — le DG comprend en 5 secondes. */}
-        {synthese && (
-          <p className="border-l-2 border-primary/40 pl-3 text-[15px] italic leading-relaxed text-muted-foreground">
-            {synthese}
-          </p>
-        )}
+        {/* Synthèse d'une phrase — signature RADAR, le DG comprend en 5 secondes. */}
+        {synthese && <PhraseSynthese contexte={`${fenetre} j`} phrase={synthese} />}
 
         {isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -513,13 +511,13 @@ export default function InsightsPage() {
                 <Card>
                   <CardContent className="space-y-2 p-5">
                     <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                      <Lightbulb className="h-4 w-4 text-primary" aria-hidden />
+                      <Lightbulb className="h-4 w-4 text-muted-foreground" aria-hidden />
                       Ce qu’il faut retenir
                     </h3>
                     <ul className="space-y-1.5">
                       {retenir.map((p) => (
                         <li key={p.cle} className="flex gap-2 text-sm">
-                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/40" aria-hidden />
                           <span>{p.texte}</span>
                         </li>
                       ))}
