@@ -32,6 +32,7 @@ import {
   DestinataireManager,
   NewsletterScheduler
 } from '@/components/newsletter';
+import { PhraseSynthese } from '@/components/common';
 import { NewsletterStudio } from '@/components/newsletter/studio';
 import { CoffreContenu } from '@/components/dossiers/CoffreContenu';
 import { FocusBanner } from '@/components/radar';
@@ -105,6 +106,9 @@ export default function DossiersPage() {
   // Get recent newsletters (both sent and drafts)
   const recentSentNewsletters = newsletters?.filter(n => n.statut === 'envoye').slice(0, 3) || [];
   const recentDraftNewsletters = newsletters?.filter(n => n.statut === 'brouillon' || n.statut === 'en_revision').slice(0, 2) || [];
+
+  // Totaux réels (non tronqués) pour la phrase de synthèse — comptages bruts.
+  const totalNewslettersEnvoyees = newsletters?.filter(n => n.statut === 'envoye').length ?? 0;
 
 
   const handleEditDossier = (dossier: Dossier) => {
@@ -206,6 +210,40 @@ export default function DossiersPage() {
           Mode {currentConfig.label}
         </Badge>
       </div>
+
+      {/* Phrase de synthèse — signature RADAR. Constat d'état de la production
+          éditoriale (comptages bruts), jamais un objectif ni un chiffre inventé. */}
+      {isLoadingDossiers && !dossiers ? (
+        <PhraseSynthese contexte="production" phrase="" isLoading />
+      ) : (publies.length > 0 || brouillons.length > 0 || totalNewslettersEnvoyees > 0) ? (
+        <PhraseSynthese
+          contexte="production"
+          phrase={
+            <>
+              <span className="font-semibold">
+                {publies.length} dossier{publies.length > 1 ? 's' : ''} publié{publies.length > 1 ? 's' : ''}
+              </span>
+              {brouillons.length > 0 && (
+                <>, {brouillons.length} en préparation</>
+              )}
+              {'.'}
+              {totalNewslettersEnvoyees > 0 && (
+                <>
+                  {' '}
+                  {totalNewslettersEnvoyees} newsletter{totalNewslettersEnvoyees > 1 ? 's' : ''} diffusée
+                  {totalNewslettersEnvoyees > 1 ? 's' : ''}.
+                </>
+              )}
+            </>
+          }
+          note="Comptages bruts de la base éditoriale."
+        />
+      ) : (
+        <PhraseSynthese
+          contexte="production"
+          phrase="Aucune production éditoriale pour l'instant. Les dossiers et notes publiés apparaîtront ici."
+        />
+      )}
 
       {/*
         Produire & diffuser — la fabrication et l'envoi de la matinale et des

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, type ReactNode } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,6 +17,7 @@ import { Users, Sparkles, UserPlus, Plus, List, Target, Swords, AlertCircle, Ref
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePersonnalites, usePersonnalitesStats, useUpdatePersonnalite, useDeletePersonnalite, CERCLE_LABELS, type PersonnalitesFilters, type PersonnalitesStats } from '@/hooks/usePersonnalites';
+import { PhraseSynthese } from '@/components/common';
 import { UnifiedFilterBar } from '@/components/personnalites/UnifiedFilterBar';
 import { ActeursStatsBar } from '@/components/personnalites/ActeursStatsBar';
 import { ReseauResume } from '@/components/personnalites/ReseauResume';
@@ -515,34 +516,16 @@ function SyntheseActeurs({
 }) {
   const total = stats?.total ?? personnalites?.length ?? 0;
 
-  const Cadre = ({ children }: { children: ReactNode }) => (
-    <div className="border-l-2 border-primary/40 pl-4">
-      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary/80">
-        Synthèse · cette semaine
-      </p>
-      <div className="mt-1.5">{children}</div>
-    </div>
-  );
-
   if (isLoading && total === 0) {
-    return (
-      <Cadre>
-        <div className="space-y-2">
-          <Skeleton className="h-5 w-3/4" />
-          <Skeleton className="h-5 w-1/2" />
-        </div>
-      </Cadre>
-    );
+    return <PhraseSynthese contexte="cette semaine" phrase="" isLoading />;
   }
 
   if (total === 0) {
     return (
-      <Cadre>
-        <p className="text-base leading-relaxed text-foreground/90 sm:text-lg">
-          La cartographie des acteurs n'est pas encore constituée. Les repères
-          apparaîtront dès les premières fiches et mentions reliées.
-        </p>
-      </Cadre>
+      <PhraseSynthese
+        contexte="cette semaine"
+        phrase="La cartographie des acteurs n'est pas encore constituée. Les repères apparaîtront dès les premières fiches et mentions reliées."
+      />
     );
   }
 
@@ -578,13 +561,10 @@ function SyntheseActeurs({
   }
 
   return (
-    <Cadre>
-      <p className="text-base leading-relaxed text-foreground/90 sm:text-lg">
-        {phrases.join(' ')}
-      </p>
-      <p className="mt-1.5 text-[11px] text-muted-foreground/70">
-        Constat d'agrégats mesurés, sans interprétation.
-      </p>
-    </Cadre>
+    <PhraseSynthese
+      contexte="cette semaine"
+      phrase={phrases.join(' ')}
+      note="Constat d'agrégats mesurés, sans interprétation."
+    />
   );
 }

@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   PageContainer,
   PageHeader,
+  PhraseSynthese,
   SectionRepliable,
   TermeMetier,
 } from '@/components/common';
@@ -208,27 +209,29 @@ export default function VeillePage() {
           icon={Newspaper}
         />
 
-        {/* Conclusion avant les commandes : le lecteur sait immédiatement combien de
-            sujets structurent la période et lequel domine — calculé, jamais fabriqué. */}
+        {/* Conclusion avant les commandes : signature RADAR. Le lecteur sait
+            immédiatement combien de sujets structurent la période et lequel
+            domine — calculé, jamais fabriqué. */}
         {clusters.length > 0 && actualitesFiltrees.length > 0 && (
-          <div className="rounded-lg border border-primary/20 bg-primary/[0.03] px-4 py-3">
-            <p className="text-[15px] leading-snug text-foreground">
-              <span className="font-semibold">
-                {clusters.length} sujet{clusters.length > 1 ? 's' : ''}
-              </span>{' '}
-              regroupe{clusters.length > 1 ? 'nt' : ''} les {actualitesFiltrees.length} article
-              {actualitesFiltrees.length > 1 ? 's' : ''} de la période.
-              {clusters[0]?.mainArticle?.titre && (
-                <>
-                  {' '}En tête&nbsp;:{' '}
-                  <span className="font-medium">{clusters[0].mainArticle.titre}</span>.
-                </>
-              )}
-            </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Regroupement par similarité de titre, tri par pertinence.
-            </p>
-          </div>
+          <PhraseSynthese
+            contexte="aujourd'hui"
+            phrase={
+              <>
+                <span className="font-semibold">
+                  {clusters.length} sujet{clusters.length > 1 ? 's' : ''}
+                </span>{' '}
+                regroupe{clusters.length > 1 ? 'nt' : ''} les {actualitesFiltrees.length} article
+                {actualitesFiltrees.length > 1 ? 's' : ''} de la période.
+                {clusters[0]?.mainArticle?.titre && (
+                  <>
+                    {' '}En tête&nbsp;:{' '}
+                    <span className="font-medium">{clusters[0].mainArticle.titre}</span>.
+                  </>
+                )}
+              </>
+            }
+            note="Regroupement par similarité de titre, tri par pertinence."
+          />
         )}
 
         {missionActive && (

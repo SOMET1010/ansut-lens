@@ -18,7 +18,7 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
-import { PageContainer, PageHeader } from '@/components/common';
+import { PageContainer, PageHeader, PhraseSynthese } from '@/components/common';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -474,12 +474,8 @@ export default function InsightsPage() {
           }
         />
 
-        {/* Synthèse d'une phrase — le DG comprend en 5 secondes. */}
-        {synthese && (
-          <p className="border-l-2 border-primary/40 pl-3 text-[15px] italic leading-relaxed text-muted-foreground">
-            {synthese}
-          </p>
-        )}
+        {/* Synthèse d'une phrase — signature RADAR, le DG comprend en 5 secondes. */}
+        {synthese && <PhraseSynthese contexte={`${fenetre} j`} phrase={synthese} />}
 
         {isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2">
