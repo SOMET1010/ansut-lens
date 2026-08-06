@@ -193,7 +193,7 @@ export default function DossiersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3">
-            <ModeIcon className="h-7 w-7 text-primary" />
+            <ModeIcon className="h-7 w-7 text-muted-foreground" />
             {currentConfig.title}
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -258,7 +258,7 @@ export default function DossiersPage() {
             to="/admin/matinale"
             className="group flex items-start gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
               <Newspaper className="h-5 w-5" />
             </span>
             <span className="min-w-0 flex-1">
@@ -275,7 +275,7 @@ export default function DossiersPage() {
             to="/admin/diffusion"
             className="group flex items-start gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
               <Radio className="h-5 w-5" />
             </span>
             <span className="min-w-0 flex-1">
@@ -319,10 +319,10 @@ export default function DossiersPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-muted-foreground">Notes publiées</p>
-                        <p className="text-3xl font-bold text-primary">{publies.length}</p>
+                        <p className="text-3xl font-bold text-foreground">{publies.length}</p>
                       </div>
-                      <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center">
-                        <Send className="h-6 w-6 text-primary" />
+                      <div className="h-12 w-12 bg-muted rounded-full flex items-center justify-center">
+                        <Send className="h-6 w-6 text-muted-foreground" />
                       </div>
                     </div>
                   </CardContent>
@@ -347,10 +347,10 @@ export default function DossiersPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-muted-foreground">Newsletters envoyées</p>
-                        <p className="text-3xl font-bold text-blue-500">{recentSentNewsletters.length}</p>
+                        <p className="text-3xl font-bold text-foreground">{recentSentNewsletters.length}</p>
                       </div>
-                      <div className="h-12 w-12 bg-blue-500/10 rounded-full flex items-center justify-center">
-                        <Mail className="h-6 w-6 text-blue-500" />
+                      <div className="h-12 w-12 bg-muted rounded-full flex items-center justify-center">
+                        <Mail className="h-6 w-6 text-muted-foreground" />
                       </div>
                     </div>
                   </CardContent>
