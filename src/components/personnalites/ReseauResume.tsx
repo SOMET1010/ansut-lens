@@ -69,7 +69,7 @@ export function ReseauResume({
         <section className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
           <header className="mb-4 flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-sm font-bold text-foreground">
-              <Network className="h-4 w-4 text-primary" aria-hidden />
+              <Network className="h-4 w-4 text-muted-foreground" aria-hidden />
               Répartition par cercle
             </h3>
             <Tooltip>
@@ -143,7 +143,7 @@ export function ReseauResume({
         <section className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
           <header className="mb-3 flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-sm font-bold text-foreground">
-              <Newspaper className="h-4 w-4 text-primary" aria-hidden />
+              <Newspaper className="h-4 w-4 text-muted-foreground" aria-hidden />
               Le plus mentionné · 7 j
             </h3>
             <Tooltip>
@@ -179,7 +179,7 @@ export function ReseauResume({
                     alt={plusMentionne.acteur.nom}
                   />
                 )}
-                <AvatarFallback className="bg-primary/10 text-sm font-bold text-primary">
+                <AvatarFallback className="bg-muted text-sm font-bold text-foreground/80">
                   {`${plusMentionne.acteur.prenom?.[0] ?? ''}${plusMentionne.acteur.nom[0]}`.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -191,7 +191,8 @@ export function ReseauResume({
                   {plusMentionne.acteur.fonction || plusMentionne.acteur.organisation || '—'}
                 </p>
               </div>
-              <span className="shrink-0 rounded-lg bg-primary/10 px-2 py-1 text-xs font-bold tabular-nums text-primary">
+              {/* Mentions = activité réelle confirmée → signal vert (charte couleur). */}
+              <span className="shrink-0 rounded-lg bg-confirme-soft px-2 py-1 text-xs font-bold tabular-nums text-confirme">
                 {plusMentionne.n} {plusMentionne.n > 1 ? 'mentions' : 'mention'}
               </span>
             </button>

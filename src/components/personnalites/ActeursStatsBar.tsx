@@ -144,9 +144,11 @@ export function ActeursStatsBar({
                 <span
                   className={cn(
                     'flex items-center gap-1.5 rounded-lg p-1.5',
+                    // Charte couleur : l'orange n'apparaît que si la tuile porte
+                    // réellement une alerte ; sinon icône neutre (contexte).
                     t.alerte
                       ? 'bg-attention/15 text-attention'
-                      : 'bg-primary/10 text-primary',
+                      : 'bg-muted text-muted-foreground',
                   )}
                 >
                   <Icon className="h-4 w-4" aria-hidden />

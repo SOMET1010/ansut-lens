@@ -26,8 +26,10 @@ interface PhraseSyntheseProps {
  */
 export function PhraseSynthese({ contexte, phrase, note, isLoading }: PhraseSyntheseProps) {
   return (
-    <div className="border-l-2 border-primary/40 pl-4">
-      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary/80">
+    // Charte couleur : la signature est du CONTEXTE éditorial, pas de la
+    // navigation — kicker et filet en gris, jamais en bleu.
+    <div className="border-l-2 border-border pl-4">
+      <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
         Synthèse · {contexte}
       </p>
       <div className="mt-1.5">
