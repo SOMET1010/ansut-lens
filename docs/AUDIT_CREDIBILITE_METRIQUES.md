@@ -54,9 +54,11 @@ Les indicateurs opaques restants ne sont **montés sur aucun des 8 écrans** :
 
 1. **Ne pas ré-monter** les composants `spdi/*` et `radar/*` sans repasser leurs
    affichages au crible de la charte (score → fait, ou méthode exposée).
-2. **Garde anti-régression** (proposé, non fait ici) : test/lint interdisant
-   `Math.random` et les libellés de score nus (`/100`, `%` de confiance) dans un
-   composant affiché, pour empêcher la fausse précision de revenir.
+2. **Garde anti-régression** ✅ *fait* : `src/lib/__tests__/credibiliteGuard.test.ts`
+   échoue en CI si `Math.random()` réapparaît dans `src/pages` ou `src/components`
+   (hors génération d'ID / primitives shadcn, via ALLOWLIST). Câblé au workflow
+   `citation-tests.yml`. Extension possible plus tard aux libellés de score nus
+   (`/100`, `%` de confiance).
 3. Le composeur admin peut afficher `score_pertinence` s'il **expose sa méthode**
    (une infobulle « pertinence calculée sur … »).
 

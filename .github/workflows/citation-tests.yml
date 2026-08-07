@@ -48,6 +48,12 @@ jobs:
             src/components/assistant/__tests__/citationRefs.test.ts \
             --reporter=verbose
 
+      - name: Charte de crédibilité — garde anti-régression (Vitest)
+        run: |
+          bunx vitest run \
+            src/lib/__tests__/credibiliteGuard.test.ts \
+            --reporter=verbose
+
       - name: Verify DOCX export assertions (citationExportFixtures)
         run: |
           bunx vitest run \
