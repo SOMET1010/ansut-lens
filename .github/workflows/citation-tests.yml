@@ -54,6 +54,7 @@ jobs:
             src/lib/__tests__/credibiliteGuard.test.ts \
             src/lib/__tests__/politiquesEditoriales.test.ts \
             src/lib/__tests__/qualificationParity.test.ts \
+            src/lib/__tests__/qualificationLecture.test.ts \
             --reporter=verbose
 
       - name: Verify DOCX export assertions (citationExportFixtures)

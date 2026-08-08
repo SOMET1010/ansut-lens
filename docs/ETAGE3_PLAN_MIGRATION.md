@@ -60,9 +60,13 @@ fonction partagée. « Persister la fraîcheur » n'a pas de sens ; persister la
    unique). Tests : `politiquesEditoriales.test.ts` (dérivation + parité
    calculé/lu) et `qualificationParity.test.ts`, **gardés en CI**. Aucun
    changement de comportement (parité verte).
-2. `useQualification(contentKeys[])` : hook React Query lisant
-   `editorial_qualifications`, dérivant via le service, avec **fallback**
-   `qualifier()` + `log` quand la ligne manque. Test mockable.
+2. ✅ **FAIT** — `src/hooks/useQualification.ts` : hook React Query lisant
+   `editorial_qualifications`, reconstruisant la `Qualification` via
+   `qualifierDepuisRow()` (mapper pur, source unique). API : `parCle`,
+   `aQualification(key)`, `qualificationDe(key, brut)` avec **fallback** honnête
+   `qualifier()` + `console.warn` quand la ligne manque. Test de parité
+   lecture-vs-calcul `qualificationLecture.test.ts`, **gardé en CI**. Non branché
+   à un écran (aucun changement produit) — le rebranchement suit avec vérif visuelle.
 3. Rebrancher **un** consommateur (Insights) → build + capture → valider.
 4. Étendre aux 3 autres, un par un, avec capture à chaque étape.
 5. Décision « fraîcheur unique » (produit) → appliquer si go.

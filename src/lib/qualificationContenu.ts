@@ -25,7 +25,7 @@
  */
 
 import { piliersPourTexte } from '@/lib/missions';
-import { deriverEligibilites, dansFenetre, dateEnMs } from '@/lib/politiquesEditoriales';
+import { deriverEligibilites, dansFenetre, dateEnMs, faitsDepuisRow } from '@/lib/politiquesEditoriales';
 
 function normaliser(s: string): string {
   return (s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -192,4 +192,38 @@ export function qualifier(c: ContenuBrut, maintenantMs: number): Qualification {
 /** Vrai si le contenu (daté réellement) tombe dans la fenêtre glissante. */
 export function dansLaFenetre(q: Qualification, fenetreJours: number): boolean {
   return dansFenetre(q.ageJours, fenetreJours);
+}
+
+/**
+ * Sous-ensemble d'une ligne `editorial_qualifications` nécessaire à la lecture.
+ * (Étage 3 : les écrans LISENT ces faits persistés au lieu de les recalculer.)
+ */
+export interface LigneQualification {
+  editorial_date: string | null;
+  category: string;
+  secondary_themes: string[];
+  is_institutional: boolean;
+  is_ansut_voice: boolean;
+}
+
+/**
+ * Reconstruit une `Qualification` à partir d'une ligne PERSISTÉE + l'instant
+ * courant : les faits stables (catégorie, thèmes, institutionnel, voix) sont lus
+ * tels quels ; les éligibilités time-relative sont dérivées par le service unique
+ * (`politiquesEditoriales.ts`) — donc STRICTEMENT identiques au chemin `qualifier()`.
+ */
+export function qualifierDepuisRow(row: LigneQualification, maintenantMs: number): Qualification {
+  const elig = deriverEligibilites(faitsDepuisRow(row), maintenantMs);
+  return {
+    dateEditoriale: elig.dateVerifiee ? row.editorial_date : null,
+    dateVerifiee: elig.dateVerifiee,
+    ageJours: elig.ageJours,
+    categorie: row.category as CategorieCommunication,
+    // secondary_themes == piliersPourTexte(texte) (cf. test de parité étage 2).
+    themes: row.secondary_themes,
+    estInstitutionnel: row.is_institutional,
+    estVoixAnsut: row.is_ansut_voice,
+    eligibleProfilStrategique: elig.eligibleProfilStrategique,
+    eligibleVeilleExterne: elig.eligibleVeilleExterne,
+  };
 }
