@@ -53,11 +53,20 @@ fonction partagée. « Persister la fraîcheur » n'a pas de sens ; persister la
 
 ## Ordre proposé (incrémental, vérifiable)
 
-1. `useQualification` + fallback + **test unitaire** (mockable, sans déploiement).
-2. Rebrancher **un** consommateur (Insights) → build + capture → valider.
-3. Étendre aux 3 autres, un par un, avec capture à chaque étape.
-4. Décision « fraîcheur unique » (produit) → appliquer si go.
-5. Garde de parité écrans + doc.
+1. ✅ **FAIT** — `src/lib/politiquesEditoriales.ts` : service PUR et versionné de
+   dérivation des éligibilités (datation, âge, `dansFenetre`, éligibilités),
+   + `faitsDepuisRow()` pour dériver depuis une ligne `editorial_qualifications`.
+   `qualifier()` délègue désormais sa partie éligibilités à ce service (source
+   unique). Tests : `politiquesEditoriales.test.ts` (dérivation + parité
+   calculé/lu) et `qualificationParity.test.ts`, **gardés en CI**. Aucun
+   changement de comportement (parité verte).
+2. `useQualification(contentKeys[])` : hook React Query lisant
+   `editorial_qualifications`, dérivant via le service, avec **fallback**
+   `qualifier()` + `log` quand la ligne manque. Test mockable.
+3. Rebrancher **un** consommateur (Insights) → build + capture → valider.
+4. Étendre aux 3 autres, un par un, avec capture à chaque étape.
+5. Décision « fraîcheur unique » (produit) → appliquer si go.
+6. Garde de parité écrans + doc.
 
 Chaque étape = un commit vérifiable ; on ne bascule l'ingestion qu'une fois le
 chemin de lecture prouvé côté front.

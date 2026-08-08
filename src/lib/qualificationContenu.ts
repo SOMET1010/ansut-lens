@@ -25,6 +25,7 @@
  */
 
 import { piliersPourTexte } from '@/lib/missions';
+import { deriverEligibilites, dansFenetre, dateEnMs } from '@/lib/politiquesEditoriales';
 
 function normaliser(s: string): string {
   return (s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -152,42 +153,43 @@ export interface Qualification {
   eligibleVeilleExterne: boolean;
 }
 
-function dateEditorialeMs(published_at: string | null): number | null {
-  if (!published_at) return null;
-  const ms = new Date(published_at).getTime();
-  return Number.isNaN(ms) ? null : ms;
-}
-
 /**
  * Qualifie un contenu. `maintenantMs` sert uniquement à calculer l'âge éditorial
  * (jamais à fabriquer une date).
+ *
+ * La partie FAITS (catégorie, thèmes, institutionnel) est déterministe ici ; la
+ * partie ÉLIGIBILITÉS (datation, âge, éligibilités) est déléguée au service unique
+ * de politiques (`politiquesEditoriales.ts`) — même code que le chemin de LECTURE
+ * de la qualification persistée, donc aucune divergence calculé/lu.
  */
 export function qualifier(c: ContenuBrut, maintenantMs: number): Qualification {
-  const ms = dateEditorialeMs(c.published_at);
-  const dateVerifiee = ms !== null && ms <= maintenantMs;
-  const dateEditoriale = dateVerifiee ? c.published_at : null;
-  const ageJours = dateVerifiee ? (maintenantMs - (ms as number)) / (24 * 3600 * 1000) : null;
-
   const themes = piliersPourTexte(c.texte ?? '');
   const categorie = categoriserCommunication(c.texte);
   const estInstitutionnel = themes.length > 0 && CATEGORIES_INSTITUTIONNELLES.has(categorie);
 
+  const elig = deriverEligibilites(
+    {
+      editorialDateMs: dateEnMs(c.published_at),
+      estInstitutionnel,
+      estVoixAnsut: c.source_officielle_ansut,
+    },
+    maintenantMs,
+  );
+
   return {
-    dateEditoriale,
-    dateVerifiee,
-    ageJours,
+    dateEditoriale: elig.dateVerifiee ? c.published_at : null,
+    dateVerifiee: elig.dateVerifiee,
+    ageJours: elig.ageJours,
     categorie,
     themes,
     estInstitutionnel,
     estVoixAnsut: c.source_officielle_ansut,
-    // Un contenu ne détermine les thèmes que s'il est institutionnel ET daté.
-    eligibleProfilStrategique: estInstitutionnel && dateVerifiee,
-    // La veille externe = voix NON-ANSUT et datée.
-    eligibleVeilleExterne: !c.source_officielle_ansut && dateVerifiee,
+    eligibleProfilStrategique: elig.eligibleProfilStrategique,
+    eligibleVeilleExterne: elig.eligibleVeilleExterne,
   };
 }
 
 /** Vrai si le contenu (daté réellement) tombe dans la fenêtre glissante. */
 export function dansLaFenetre(q: Qualification, fenetreJours: number): boolean {
-  return q.ageJours !== null && q.ageJours >= 0 && q.ageJours <= fenetreJours;
+  return dansFenetre(q.ageJours, fenetreJours);
 }
