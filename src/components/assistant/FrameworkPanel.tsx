@@ -70,7 +70,7 @@ function DimensionRow({ label, active }: { label: string; active: boolean }) {
   return (
     <div className="flex items-center gap-2 text-xs py-1">
       {active ? (
-        <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+        <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
       ) : (
         <Circle className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
       )}
@@ -111,7 +111,7 @@ export function FrameworkPanel({
       {/* Header */}
       <div className="px-4 py-3 border-b bg-muted/30">
         <div className="flex items-center gap-2">
-          <Compass className="h-4 w-4 text-primary" />
+          <Compass className="h-4 w-4 text-muted-foreground" />
           <h3 className="font-bold text-sm">Cadre d'analyse ANSUT</h3>
         </div>
         <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -197,7 +197,7 @@ export function FrameworkPanel({
                     {analysis.usedActuIds.length > 0 && (
                       <div>
                         <div className="flex items-center gap-1.5 mb-1">
-                          <BookOpen className="h-3 w-3 text-primary" />
+                          <BookOpen className="h-3 w-3 text-muted-foreground" />
                           <span className="text-[11px] font-medium">
                             Actualités ({analysis.usedActuIds.length}/{contextActuIds.length})
                           </span>
@@ -221,7 +221,7 @@ export function FrameworkPanel({
                     {analysis.usedDossierIds.length > 0 && (
                       <div>
                         <div className="flex items-center gap-1.5 mb-1">
-                          <FileText className="h-3 w-3 text-primary" />
+                          <FileText className="h-3 w-3 text-muted-foreground" />
                           <span className="text-[11px] font-medium">
                             Dossiers ({analysis.usedDossierIds.length}/{contextDossierIds.length})
                           </span>

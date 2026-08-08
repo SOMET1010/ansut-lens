@@ -25,6 +25,7 @@
  */
 
 import { piliersPourTexte } from '@/lib/missions';
+import { deriverEligibilites, dansFenetre, dateEnMs, faitsDepuisRow } from '@/lib/politiquesEditoriales';
 
 function normaliser(s: string): string {
   return (s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -152,42 +153,77 @@ export interface Qualification {
   eligibleVeilleExterne: boolean;
 }
 
-function dateEditorialeMs(published_at: string | null): number | null {
-  if (!published_at) return null;
-  const ms = new Date(published_at).getTime();
-  return Number.isNaN(ms) ? null : ms;
-}
-
 /**
  * Qualifie un contenu. `maintenantMs` sert uniquement à calculer l'âge éditorial
  * (jamais à fabriquer une date).
+ *
+ * La partie FAITS (catégorie, thèmes, institutionnel) est déterministe ici ; la
+ * partie ÉLIGIBILITÉS (datation, âge, éligibilités) est déléguée au service unique
+ * de politiques (`politiquesEditoriales.ts`) — même code que le chemin de LECTURE
+ * de la qualification persistée, donc aucune divergence calculé/lu.
  */
 export function qualifier(c: ContenuBrut, maintenantMs: number): Qualification {
-  const ms = dateEditorialeMs(c.published_at);
-  const dateVerifiee = ms !== null && ms <= maintenantMs;
-  const dateEditoriale = dateVerifiee ? c.published_at : null;
-  const ageJours = dateVerifiee ? (maintenantMs - (ms as number)) / (24 * 3600 * 1000) : null;
-
   const themes = piliersPourTexte(c.texte ?? '');
   const categorie = categoriserCommunication(c.texte);
   const estInstitutionnel = themes.length > 0 && CATEGORIES_INSTITUTIONNELLES.has(categorie);
 
+  const elig = deriverEligibilites(
+    {
+      editorialDateMs: dateEnMs(c.published_at),
+      estInstitutionnel,
+      estVoixAnsut: c.source_officielle_ansut,
+    },
+    maintenantMs,
+  );
+
   return {
-    dateEditoriale,
-    dateVerifiee,
-    ageJours,
+    dateEditoriale: elig.dateVerifiee ? c.published_at : null,
+    dateVerifiee: elig.dateVerifiee,
+    ageJours: elig.ageJours,
     categorie,
     themes,
     estInstitutionnel,
     estVoixAnsut: c.source_officielle_ansut,
-    // Un contenu ne détermine les thèmes que s'il est institutionnel ET daté.
-    eligibleProfilStrategique: estInstitutionnel && dateVerifiee,
-    // La veille externe = voix NON-ANSUT et datée.
-    eligibleVeilleExterne: !c.source_officielle_ansut && dateVerifiee,
+    eligibleProfilStrategique: elig.eligibleProfilStrategique,
+    eligibleVeilleExterne: elig.eligibleVeilleExterne,
   };
 }
 
 /** Vrai si le contenu (daté réellement) tombe dans la fenêtre glissante. */
 export function dansLaFenetre(q: Qualification, fenetreJours: number): boolean {
-  return q.ageJours !== null && q.ageJours >= 0 && q.ageJours <= fenetreJours;
+  return dansFenetre(q.ageJours, fenetreJours);
+}
+
+/**
+ * Sous-ensemble d'une ligne `editorial_qualifications` nécessaire à la lecture.
+ * (Étage 3 : les écrans LISENT ces faits persistés au lieu de les recalculer.)
+ */
+export interface LigneQualification {
+  editorial_date: string | null;
+  category: string;
+  secondary_themes: string[];
+  is_institutional: boolean;
+  is_ansut_voice: boolean;
+}
+
+/**
+ * Reconstruit une `Qualification` à partir d'une ligne PERSISTÉE + l'instant
+ * courant : les faits stables (catégorie, thèmes, institutionnel, voix) sont lus
+ * tels quels ; les éligibilités time-relative sont dérivées par le service unique
+ * (`politiquesEditoriales.ts`) — donc STRICTEMENT identiques au chemin `qualifier()`.
+ */
+export function qualifierDepuisRow(row: LigneQualification, maintenantMs: number): Qualification {
+  const elig = deriverEligibilites(faitsDepuisRow(row), maintenantMs);
+  return {
+    dateEditoriale: elig.dateVerifiee ? row.editorial_date : null,
+    dateVerifiee: elig.dateVerifiee,
+    ageJours: elig.ageJours,
+    categorie: row.category as CategorieCommunication,
+    // secondary_themes == piliersPourTexte(texte) (cf. test de parité étage 2).
+    themes: row.secondary_themes,
+    estInstitutionnel: row.is_institutional,
+    estVoixAnsut: row.is_ansut_voice,
+    eligibleProfilStrategique: elig.eligibleProfilStrategique,
+    eligibleVeilleExterne: elig.eligibleVeilleExterne,
+  };
 }

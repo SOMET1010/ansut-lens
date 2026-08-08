@@ -854,8 +854,8 @@ export function DocumentWorkspace({
     return (
       <div className="w-full h-full bg-card rounded-2xl border shadow-sm flex flex-col overflow-hidden">
         <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-          <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
-            <FileText className="h-8 w-8 text-primary" />
+          <div className="h-16 w-16 bg-muted rounded-2xl flex items-center justify-center mb-4">
+            <FileText className="h-8 w-8 text-muted-foreground" />
           </div>
           <h3 className="font-bold text-foreground mb-2">Espace de travail</h3>
           <p className="text-sm text-muted-foreground mb-6">
@@ -885,8 +885,8 @@ export function DocumentWorkspace({
     return (
       <div className="w-full h-full bg-card rounded-2xl border shadow-sm flex flex-col overflow-hidden">
         <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-          <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 animate-pulse">
-            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+          <div className="h-16 w-16 bg-muted rounded-2xl flex items-center justify-center mb-4 animate-pulse">
+            <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
           </div>
           <h3 className="font-bold text-foreground mb-2">Génération en cours...</h3>
           <p className="text-sm text-muted-foreground">
@@ -901,8 +901,8 @@ export function DocumentWorkspace({
   return (
     <div className="w-full h-full bg-card rounded-2xl border shadow-sm flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-4 border-b bg-primary/5 flex justify-between items-center">
-        <div className="flex items-center gap-2 text-primary min-w-0">
+      <div className="px-5 py-4 border-b bg-muted/40 flex justify-between items-center">
+        <div className="flex items-center gap-2 text-foreground min-w-0">
           <FileText className="h-4 w-4 shrink-0" />
           <span className="font-bold text-sm truncate">{document?.title}</span>
         </div>
@@ -954,7 +954,7 @@ export function DocumentWorkspace({
             {document?.content || ''}
           </ReactMarkdown>
           {isGenerating && (
-            <span className="inline-block w-2 h-4 bg-primary animate-pulse" />
+            <span className="inline-block w-2 h-4 bg-foreground animate-pulse" />
           )}
         </div>
       </ScrollArea>

@@ -43,15 +43,6 @@ export function FreshnessIndicator({
     }
   };
 
-  const getFreshnessScore = (ageHours: number): number => {
-    if (ageHours < 6) return 100;
-    if (ageHours < 24) return 80;
-    if (ageHours < 48) return 60;
-    if (ageHours < 72) return 40;
-    if (ageHours < 168) return 20;
-    return 0;
-  };
-
   return (
     <div className={cn('flex items-center gap-2 text-sm', className)}>
       <span className="flex items-center gap-1">
@@ -74,7 +65,9 @@ export function FreshnessIndicator({
             freshness.level === 'old' && 'border-muted-foreground text-muted-foreground'
           )}
         >
-          {getFreshnessScore(freshness.ageHours)}%
+          {/* Charte de crédibilité : on affiche le NIVEAU honnête de fraîcheur,
+              jamais un « score » en % dérivé de l'âge (fausse précision). */}
+          {getFreshnessText(freshness.level)}
         </Badge>
       )}
 
