@@ -40,17 +40,17 @@ const RELATION_LABEL: Record<string, string> = {
 
 function BadgeStatut({ validation }: { validation: string }) {
   if (validation === 'valide') {
-    return <Badge className="bg-[hsl(var(--signal-positive))] text-[10px]">🟢 Validé</Badge>;
+    return <Badge className="bg-[hsl(var(--signal-positive))] text-xs">🟢 Validé</Badge>;
   }
   if (validation === 'suppose') {
     return (
-      <Badge variant="outline" className="border-attention/50 text-[10px] text-attention">
+      <Badge variant="outline" className="border-attention/50 text-xs text-attention">
         🟠 Supposé — à confirmer
       </Badge>
     );
   }
   return (
-    <Badge variant="outline" className="border-attention/50 text-[10px] text-attention">
+    <Badge variant="outline" className="border-attention/50 text-xs text-attention">
       🟡 À valider
     </Badge>
   );
@@ -154,7 +154,7 @@ export default function AdminRevueConnaissancePage() {
                       <CardContent className="space-y-2.5 p-4">
                         <div className="flex flex-wrap items-center gap-2">
                           {e.code && (
-                            <span className="text-xs font-semibold text-muted-foreground/70">{e.code}</span>
+                            <span className="text-xs font-semibold text-muted-foreground">{e.code}</span>
                           )}
                           <h3 className="text-sm font-semibold">{e.libelle}</h3>
                           <BadgeStatut validation="a_valider" />
@@ -173,7 +173,7 @@ export default function AdminRevueConnaissancePage() {
 
                         {/* Preuve documentaire */}
                         <div className="rounded-lg border border-border/50 bg-muted/30 p-2.5">
-                          <p className="mb-0.5 flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+                          <p className="mb-0.5 flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                             <Info className="h-3 w-3" aria-hidden /> Preuve · {e.slide ?? '—'}
                           </p>
                           <p className="text-xs italic text-muted-foreground">« {e.texte ?? '—'} »</p>
@@ -209,7 +209,7 @@ export default function AdminRevueConnaissancePage() {
                             le suivi des KPI relève du Cockpit. */}
                         {indics.length > 0 && (
                           <div className="overflow-x-auto">
-                            <p className="mb-1 text-[10px] italic text-muted-foreground/70">
+                            <p className="mb-1 text-xs italic text-muted-foreground">
                               Indicateurs de référence (documentaires) — non suivis par RADAR.
                             </p>
                             <table className="w-full text-[11px]">
@@ -226,7 +226,7 @@ export default function AdminRevueConnaissancePage() {
                                     <td className="py-1 pr-2">
                                       {ind.libelle}
                                       {ind.note && (
-                                        <span className="block text-[10px] text-attention">
+                                        <span className="block text-xs text-attention">
                                           {ind.note}
                                         </span>
                                       )}

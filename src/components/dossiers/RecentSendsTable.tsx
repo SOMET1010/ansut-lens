@@ -23,7 +23,7 @@ export function RecentSendsTable({ dossiers, onSelect }: RecentSendsTableProps) 
   if (dossiers.length === 0) {
     return (
       <Card className="p-8 text-center">
-        <FileText className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+        <FileText className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
         <p className="text-sm text-muted-foreground">
           Aucun document envoyé pour le moment.
         </p>
@@ -62,7 +62,7 @@ export function RecentSendsTable({ dossiers, onSelect }: RecentSendsTableProps) 
                 <TableCell>
                   <Badge 
                     variant="secondary"
-                    className={`${categorieInfo.color} text-white border-0 text-[10px]`}
+                    className={`${categorieInfo.color} text-white border-0 text-xs`}
                   >
                     {categorieInfo.icon} {categorieInfo.label}
                   </Badge>

@@ -203,7 +203,7 @@ export default function ConnecteursSociauxPage() {
                     <div>
                       <CardTitle className="text-lg flex items-center gap-2">
                         {c.name}
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-xs">
                           {c.category === 'social' ? 'Réseau social' : 'Messagerie'}
                         </Badge>
                       </CardTitle>
@@ -232,7 +232,7 @@ export default function ConnecteursSociauxPage() {
                           )}
                           <div>
                             <div className="font-medium">{s.label}</div>
-                            <code className="text-[10px] text-muted-foreground">
+                            <code className="text-xs text-muted-foreground">
                               {s.name}
                             </code>
                           </div>
@@ -240,12 +240,12 @@ export default function ConnecteursSociauxPage() {
                         <div className="flex flex-col items-end gap-1">
                           <Badge
                             variant={s.required ? 'default' : 'outline'}
-                            className="text-[10px]"
+                            className="text-xs"
                           >
                             {s.required ? 'Requis' : 'Optionnel'}
                           </Badge>
                           <span
-                            className={`text-[10px] ${
+                            className={`text-xs ${
                               s.present ? 'text-emerald-700' : 'text-muted-foreground'
                             }`}
                           >

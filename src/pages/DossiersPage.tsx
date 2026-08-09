@@ -35,7 +35,7 @@ import {
 import { PhraseSynthese } from '@/components/common';
 import { NewsletterStudio } from '@/components/newsletter/studio';
 import { CoffreContenu } from '@/components/dossiers/CoffreContenu';
-import { FocusBanner } from '@/components/radar';
+import { FocusBanner } from '@/components/radar/FocusBanner';
 import { SectionEmptyState } from '@/components/radar/SectionEmptyState';
 import { toErrorMessage } from '@/utils/errors';
 import type { Newsletter } from '@/types/newsletter';
@@ -255,7 +255,7 @@ export default function DossiersPage() {
       {hasPermission('manage_newsletters') && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Link
-            to="/admin/matinale"
+            to="/publier/matinale"
             className="group flex items-start gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
@@ -264,7 +264,7 @@ export default function DossiersPage() {
             <span className="min-w-0 flex-1">
               <span className="flex items-center gap-1.5 text-sm font-medium">
                 Note « Ce matin »
-                <ChevronRight className="h-4 w-4 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" />
+                <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
               </span>
               <span className="block text-xs leading-relaxed text-muted-foreground">
                 Composer, exporter et diffuser la synthèse du matin.
@@ -272,7 +272,7 @@ export default function DossiersPage() {
             </span>
           </Link>
           <Link
-            to="/admin/diffusion"
+            to="/publier/diffusion"
             className="group flex items-start gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
@@ -281,7 +281,7 @@ export default function DossiersPage() {
             <span className="min-w-0 flex-1">
               <span className="flex items-center gap-1.5 text-sm font-medium">
                 Canaux de diffusion
-                <ChevronRight className="h-4 w-4 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" />
+                <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
               </span>
               <span className="block text-xs leading-relaxed text-muted-foreground">
                 Programmer l’envoi du résumé par courriel, SMS ou Telegram.
@@ -297,7 +297,7 @@ export default function DossiersPage() {
           {/* Empty State when no published content */}
           {publies.length === 0 && !isLoadingDossiers && (
             <Card className="p-12 text-center border-dashed border-2">
-              <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+              <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-bold mb-2">Aucune statistique disponible</h3>
               <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
                 La vue statistique affiche les documents validés et les indicateurs d'activité. 

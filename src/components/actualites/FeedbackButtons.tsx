@@ -1,6 +1,12 @@
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { ThumbsUp, ThumbsDown, Star, Archive } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ThumbsUp, ThumbsDown, Star, Archive, MoreHorizontal, Check } from 'lucide-react';
 import { useActualiteFeedback, useMyFeedback } from '@/hooks/useUserIntelligence';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -67,7 +73,13 @@ export function FeedbackButtons({ actualiteId, compact = false }: FeedbackButton
         <TooltipContent>Non pertinent — RADAR apprend</TooltipContent>
       </Tooltip>
 
-      {!compact && (
+      {/*
+        Important + Archiver. En mode plein, boutons inline. En mode compact
+        (fil principal), regroupés dans un menu « ⋯ » pour ne pas encombrer la
+        rangée : le chargé de veille peut prioriser et nettoyer sans ouvrir le
+        détail (correctif audit UX Lot 4).
+      */}
+      {!compact ? (
         <>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -75,7 +87,7 @@ export function FeedbackButtons({ actualiteId, compact = false }: FeedbackButton
                 variant="ghost"
                 size="icon"
                 // Remplacement des couleurs littérales par les tokens sémantiques
-                className={cn(btnSize, currentFeedback === 'important' && 'text-[hsl(var(--signal-warning))] bg-[hsl(var(--signal-warning))]/10')}
+                className={cn(btnSize, currentFeedback === 'important' && 'text-attention bg-attention/10')}
                 onClick={(e) => { e.stopPropagation(); handleFeedback('important'); }}
                 disabled={submitFeedback.isPending} aria-label="Marquer comme important">
                 <Star className={size} aria-hidden="true" />
@@ -99,6 +111,39 @@ export function FeedbackButtons({ actualiteId, compact = false }: FeedbackButton
             <TooltipContent>Archiver</TooltipContent>
           </Tooltip>
         </>
+      ) : (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={btnSize}
+              onClick={(e) => e.stopPropagation()}
+              disabled={submitFeedback.isPending}
+              aria-label="Plus d'actions de qualification"
+            >
+              <MoreHorizontal className={size} aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuItem
+              onClick={(e) => { e.stopPropagation(); handleFeedback('important'); }}
+              disabled={submitFeedback.isPending}
+            >
+              <Star className="mr-2 h-4 w-4" aria-hidden="true" />
+              <span>Marquer important</span>
+              {currentFeedback === 'important' && <Check className="ml-auto h-4 w-4" aria-hidden="true" />}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => { e.stopPropagation(); handleFeedback('archive'); }}
+              disabled={submitFeedback.isPending}
+            >
+              <Archive className="mr-2 h-4 w-4" aria-hidden="true" />
+              <span>Archiver</span>
+              {currentFeedback === 'archive' && <Check className="ml-auto h-4 w-4" aria-hidden="true" />}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       )}
     </div>
   );

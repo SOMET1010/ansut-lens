@@ -238,7 +238,7 @@ export default function VeillePage() {
           <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2">
             <span className="text-xs text-muted-foreground">Filtré par l’objectif</span>
             <Badge variant="secondary" className="gap-1">
-              <span className="text-muted-foreground/70">{missionActive.code}</span>
+              <span className="text-muted-foreground">{missionActive.code}</span>
               {missionActive.nom}
             </Badge>
             <Button
@@ -347,7 +347,7 @@ export default function VeillePage() {
                 ) : clusters.length === 0 ? (
                   <Card className="border-dashed">
                     <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
-                      <Newspaper className="h-12 w-12 text-muted-foreground/60" aria-hidden />
+                      <Newspaper className="h-12 w-12 text-muted-foreground" aria-hidden />
                       <p className="text-sm text-muted-foreground">
                         {termeRecherche || filtresActifs.length > 0
                           ? 'Aucun article ne correspond à vos critères.'

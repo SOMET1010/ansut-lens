@@ -157,7 +157,7 @@ export function ActeursStatsBar({
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      className="rounded p-0.5 text-muted-foreground/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="rounded p-0.5 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       aria-label={`Méthode : ${t.libelle}`}
                     >
                       <Info className="h-3.5 w-3.5" aria-hidden />

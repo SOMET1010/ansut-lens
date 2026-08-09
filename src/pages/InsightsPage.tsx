@@ -169,7 +169,7 @@ function ListeAvatars({ items, vide }: { items: StatCompte[]; vide: string }) {
       {items.map((it, i) => (
         <li key={it.cle} className="flex items-center gap-3 text-sm">
           <span
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
             style={{ backgroundColor: COULEURS_DONUT[i % COULEURS_DONUT.length] }}
             aria-hidden
           >
@@ -293,7 +293,7 @@ function HeroEcho({ echo }: { echo: EchoMediatique }) {
         {afficherCourbe && (
           <div className="mt-2 flex flex-col items-center gap-0.5">
             <Sparkline data={serie} className="text-primary" />
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">
               reprise presse sur la période
             </span>
           </div>

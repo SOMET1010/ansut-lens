@@ -49,7 +49,7 @@ function sentimentBadge(s: number | null | undefined) {
       : 'bg-muted text-muted-foreground';
   const label = v > 0.2 ? 'Positif' : v < -0.2 ? 'Négatif' : 'Neutre';
   return (
-    <Badge variant="outline" className={`${cls} text-[10px]`}>
+    <Badge variant="outline" className={`${cls} text-xs`}>
       {label} ({v.toFixed(2)})
     </Badge>
   );
@@ -211,33 +211,33 @@ export function MatinaleDrillDownModal({
                         </div>
                       </div>
 
-                      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px]">
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
                         {a.source_nom && (
-                          <Badge variant="outline" className="text-[10px]">
+                          <Badge variant="outline" className="text-xs">
                             {a.source_nom}
                           </Badge>
                         )}
                         {a.date_publication && (
-                          <Badge variant="outline" className="gap-1 text-[10px]">
+                          <Badge variant="outline" className="gap-1 text-xs">
                             <Clock className="h-2.5 w-2.5" />
                             {format(new Date(a.date_publication), 'dd MMM HH:mm', { locale: fr })}
                           </Badge>
                         )}
                         {a.score_pertinence !== null && (
-                          <Badge variant="outline" className="gap-1 text-[10px]">
+                          <Badge variant="outline" className="gap-1 text-xs">
                             <Star className="h-2.5 w-2.5" />
                             Pertinence {a.score_pertinence}
                           </Badge>
                         )}
                         {a.importance !== null && (
-                          <Badge variant="outline" className="gap-1 text-[10px]">
+                          <Badge variant="outline" className="gap-1 text-xs">
                             <TrendingUp className="h-2.5 w-2.5" />
                             Importance {a.importance}
                           </Badge>
                         )}
                         {sentimentBadge(a.sentiment)}
                         {a.categorie && (
-                          <Badge variant="secondary" className="text-[10px]">
+                          <Badge variant="secondary" className="text-xs">
                             {a.categorie}
                           </Badge>
                         )}
@@ -248,7 +248,7 @@ export function MatinaleDrillDownModal({
                           {a.tags.slice(0, 6).map((t: string, i: number) => (
                             <span
                               key={i}
-                              className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
+                              className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
                             >
                               #{t}
                             </span>

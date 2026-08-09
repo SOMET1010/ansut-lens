@@ -118,7 +118,7 @@ function SourceDetailDialog({ source, open, onOpenChange }: { source: SourceReli
                   <div className="flex items-center gap-2">
                     <c.icon className={`h-4 w-4 ${c.color}`} />
                     <span className="text-sm font-medium">{c.label}</span>
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">{c.weight}</Badge>
+                    <Badge variant="outline" className="text-xs px-1.5 py-0">{c.weight}</Badge>
                   </div>
                   <span className={`text-sm font-bold ${c.color}`}>{c.value}</span>
                 </div>

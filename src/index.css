@@ -59,7 +59,9 @@
     --confirme-soft: 150 30% 94%;
     --confirme-border: 150 26% 80%;
 
-    --attention: 28 77% 44%;
+    /* Foncé (44%→36%) pour atteindre ≥ 4,5:1 en texte sur fond ET en blanc sur
+       aplat (badges pleins). Contraste mesuré ≈ 5,3:1 dans les deux sens. */
+    --attention: 28 80% 36%;
     --attention-foreground: 0 0% 100%;
     --attention-soft: 33 100% 95%;
     --attention-border: 32 85% 80%;
@@ -388,7 +390,8 @@
   --m-paper-3: hsl(var(--muted));
   --m-ink: hsl(var(--foreground));
   --m-ink-soft: hsl(var(--muted-foreground));
-  --m-ink-faint: hsl(var(--foreground) / 0.55);
+  /* /55 → /75 : 3,72:1 était sous le seuil AA sur du texte porteur. */
+  --m-ink-faint: hsl(var(--foreground) / 0.75);
   --m-line: hsl(var(--border));
   --m-line-soft: hsl(var(--border) / 0.55);
   --m-accent: hsl(var(--primary));

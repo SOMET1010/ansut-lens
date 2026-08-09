@@ -64,7 +64,7 @@ export function ChiffreCle({
         <p className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {libelle}
         </p>
-        {Icon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground/70" aria-hidden />}
+        {Icon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />}
       </div>
       <div className="flex items-baseline gap-2">
         <span className="text-2xl font-bold tabular-nums sm:text-3xl">{valeur}</span>

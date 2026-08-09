@@ -426,7 +426,7 @@ export default function MotsClesPage() {
                               </div>
                             </details>
                           ) : (
-                            <span className="text-xs text-muted-foreground/50">—</span>
+                            <span className="text-xs text-muted-foreground">—</span>
                           )}
                         </TableCell>
                         <TableCell>
@@ -464,7 +464,7 @@ export default function MotsClesPage() {
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center gap-2">
                             {mc.alerte_auto && (
-                              <Badge className="gap-1 bg-incident text-incident-foreground text-[10px] px-1.5 py-0">
+                              <Badge className="gap-1 bg-incident text-incident-foreground text-xs px-1.5 py-0">
                                 <Zap className="h-3 w-3" />
                                 Alerte auto
                               </Badge>

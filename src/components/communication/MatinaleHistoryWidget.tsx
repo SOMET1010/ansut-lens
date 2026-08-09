@@ -60,7 +60,7 @@ export function MatinaleHistoryWidget() {
                   </span>
                   <Badge
                     variant={allSuccess ? 'secondary' : allFailed ? 'destructive' : 'secondary'}
-                    className={allSuccess ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] px-1.5' : 'text-[10px] px-1.5'}
+                    className={allSuccess ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs px-1.5' : 'text-xs px-1.5'}
                   >
                     {allSuccess ? '✓' : allFailed ? '✗' : 'partiel'}
                   </Badge>

@@ -98,7 +98,7 @@ export function AdminNavCard({
           {badge !== undefined && (
             <span
               className={cn(
-                'text-[10px] font-bold px-1.5 py-0.5 rounded border',
+                'text-xs font-bold px-1.5 py-0.5 rounded border',
                 badgeVariants[badgeVariant]
               )}
             >

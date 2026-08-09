@@ -158,7 +158,7 @@ export default function EvenementsPage() {
                         {evt.mots_cles.length > 0 && (
                           <div className="flex flex-wrap gap-1">
                             {evt.mots_cles.slice(0, 5).map(k => (
-                              <Badge key={k} variant="outline" className="text-[10px] py-0">
+                              <Badge key={k} variant="outline" className="text-xs py-0">
                                 <Tag className="h-2.5 w-2.5 mr-1" />{k}
                               </Badge>
                             ))}

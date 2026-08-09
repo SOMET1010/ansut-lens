@@ -87,7 +87,7 @@ export function UnifiedFilterBar({
           Tous
           {stats && (
             <span className={cn(
-              'text-[10px] px-1.5 py-0.5 rounded-full',
+              'text-xs px-1.5 py-0.5 rounded-full',
               activeTab === 'all' ? 'bg-primary/10 text-primary' : 'bg-muted'
             )}>
               {stats.total}
@@ -115,7 +115,7 @@ export function UnifiedFilterBar({
               <div className={cn('h-2 w-2 rounded-full', color)} />
               {court}
               <span className={cn(
-                'text-[10px] px-1.5 py-0.5 rounded-full',
+                'text-xs px-1.5 py-0.5 rounded-full',
                 isActive ? 'bg-primary/10 text-primary' : 'bg-muted'
               )}>
                 {count}

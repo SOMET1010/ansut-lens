@@ -23,7 +23,7 @@ export function NewsletterHistoryItem({ newsletter, onClick }: NewsletterHistory
     >
       {/* Date badge */}
       <div className="flex flex-col items-center justify-center h-12 w-12 bg-primary/10 text-primary rounded-lg shrink-0">
-        <span className="text-[10px] font-bold uppercase">
+        <span className="text-xs font-bold uppercase">
           {format(date, 'MMM', { locale: fr })}
         </span>
         <span className="text-lg font-bold leading-none">
@@ -40,7 +40,7 @@ export function NewsletterHistoryItem({ newsletter, onClick }: NewsletterHistory
           {isEnvoye ? (
             <Badge 
               variant="outline" 
-              className="text-green-600 bg-green-50 dark:bg-green-950 dark:text-green-400 border-0 text-[10px]"
+              className="text-green-600 bg-green-50 dark:bg-green-950 dark:text-green-400 border-0 text-xs"
             >
               <Send className="h-3 w-3 mr-1" />
               Envoyé
@@ -48,7 +48,7 @@ export function NewsletterHistoryItem({ newsletter, onClick }: NewsletterHistory
           ) : (
             <Badge 
               variant="outline" 
-              className="text-attention bg-attention-soft border-0 text-[10px]"
+              className="text-attention bg-attention-soft border-0 text-xs"
             >
               <Edit3 className="h-3 w-3 mr-1" />
               Brouillon

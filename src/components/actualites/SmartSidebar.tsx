@@ -63,7 +63,7 @@ const TrendIndicator = ({
   // Si stable ou delta = 0
   if (direction === 'stable' || delta === 0) {
     return (
-      <span className="flex items-center gap-0.5 text-muted-foreground text-[10px]">
+      <span className="flex items-center gap-0.5 text-muted-foreground text-xs">
         <Minus className="h-2.5 w-2.5" />
         <span>0%</span>
       </span>
@@ -84,7 +84,7 @@ const TrendIndicator = ({
   const Icon = direction === 'up' ? TrendingUp : TrendingDown;
   
   return (
-    <span className={cn("flex items-center gap-0.5 text-[10px] font-medium", colorClass)}>
+    <span className={cn("flex items-center gap-0.5 text-xs font-medium", colorClass)}>
       <Icon className="h-2.5 w-2.5" />
       <span>{direction === 'up' ? '+' : '-'}{delta}%</span>
     </span>
@@ -112,7 +112,7 @@ export function SmartSidebar({
             <Activity className="h-3.5 w-3.5" /> Tonalité générale
             <Tooltip>
               <TooltipTrigger asChild>
-                <button type="button" className="text-muted-foreground/60 hover:text-primary transition-colors normal-case">
+                <button type="button" className="text-muted-foreground hover:text-primary transition-colors normal-case">
                   <AlertCircle className="h-3 w-3" />
                 </button>
               </TooltipTrigger>
@@ -124,7 +124,7 @@ export function SmartSidebar({
               </TooltipContent>
             </Tooltip>
             {sentimentHealth.alertActive && (
-              <span className="ml-auto flex items-center gap-1 text-[10px] font-semibold text-destructive normal-case">
+              <span className="ml-auto flex items-center gap-1 text-xs font-semibold text-destructive normal-case">
                 <AlertTriangle className="h-3 w-3" /> Seuil critique
               </span>
             )}
@@ -142,7 +142,7 @@ export function SmartSidebar({
                 {sentimentHealth.overallAvg > 0.1 ? 'Plutôt positive' :
                  sentimentHealth.overallAvg < -0.1 ? 'Plutôt négative' : 'Neutre'}
               </span>
-              <span className="text-[10px] text-muted-foreground leading-tight">
+              <span className="text-xs text-muted-foreground leading-tight">
                 Tonalité<br/>d'ensemble
               </span>
             </div>
@@ -181,7 +181,7 @@ export function SmartSidebar({
           {/* Per-category breakdown */}
           {sentimentHealth.byCategory.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Par catégorie</p>
+              <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Par catégorie</p>
               {sentimentHealth.byCategory.map(cat => (
                 <div key={cat.category} className="flex items-center gap-2 text-xs">
                   <span className={cn(
@@ -215,7 +215,7 @@ export function SmartSidebar({
           </h3>
           
           {topConcepts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-20 text-muted-foreground/50">
+            <div className="flex flex-col items-center justify-center h-20 text-muted-foreground">
               <AlertCircle className="h-5 w-5 mb-1 opacity-50" />
               <span className="text-xs">En attente d'analyse...</span>
             </div>

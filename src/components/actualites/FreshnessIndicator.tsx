@@ -25,7 +25,7 @@ export function FreshnessIndicator({
       case 'fresh':
         return <CheckCircle2 className="h-3 w-3 text-[hsl(var(--signal-positive))]" aria-hidden="true" />;
       case 'recent':
-        return <AlertCircle className="h-3 w-3 text-[hsl(var(--signal-warning))]" aria-hidden="true" />;
+        return <AlertCircle className="h-3 w-3 text-attention" aria-hidden="true" />;
       case 'old':
         return <XCircle className="h-3 w-3 text-[hsl(var(--signal-critical))]" aria-hidden="true" />;
     }
@@ -61,7 +61,7 @@ export function FreshnessIndicator({
             'text-xs',
             // Remplacement des couleurs Tailwind littérales par les tokens sémantiques
             freshness.level === 'fresh' && 'border-[hsl(var(--signal-positive))] text-[hsl(var(--signal-positive))]',
-            freshness.level === 'recent' && 'border-[hsl(var(--signal-warning))] text-[hsl(var(--signal-warning))]',
+            freshness.level === 'recent' && 'border-attention text-attention',
             freshness.level === 'old' && 'border-muted-foreground text-muted-foreground'
           )}
         >

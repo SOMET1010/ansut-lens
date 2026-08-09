@@ -74,7 +74,7 @@ export function AppHeader() {
           >
             <Search className="h-4 w-4 shrink-0" aria-hidden />
             <span className="flex-1 text-left">Rechercher…</span>
-            <kbd className="inline-flex h-5 items-center rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium">
+            <kbd className="inline-flex h-5 items-center rounded border border-border bg-background px-1.5 font-mono text-xs font-medium">
               ⌘K
             </kbd>
           </button>

@@ -71,7 +71,7 @@ export function BriefingCard({ dossier, onClick, onEdit }: BriefingCardProps) {
         <div className="flex justify-between items-start mb-3">
           <Badge 
             variant="secondary"
-            className={`${categorieInfo.color} text-white border-0 text-[10px] font-bold uppercase`}
+            className={`${categorieInfo.color} text-white border-0 text-xs font-bold uppercase`}
           >
             {categorieInfo.icon} {categorieInfo.label}
           </Badge>
@@ -109,7 +109,7 @@ export function BriefingCard({ dossier, onClick, onEdit }: BriefingCardProps) {
         <div className="flex items-center justify-between border-t border-border pt-3 mt-auto">
           <div className="flex items-center gap-2">
             <Avatar className="h-5 w-5">
-              <AvatarFallback className="text-[9px] bg-muted">
+              <AvatarFallback className="text-xs bg-muted">
                 {dossier.auteur_id ? 'AU' : 'AN'}
               </AvatarFallback>
             </Avatar>
@@ -120,7 +120,7 @@ export function BriefingCard({ dossier, onClick, onEdit }: BriefingCardProps) {
           
           <Badge 
             variant="outline"
-            className={`${statutInfo.color} text-[10px] font-medium flex items-center gap-1 border-0`}
+            className={`${statutInfo.color} text-xs font-medium flex items-center gap-1 border-0`}
           >
             <StatusIcon className="h-3 w-3" />
             {statutInfo.label}

@@ -95,7 +95,7 @@ export function AppSidebar() {
             application statique. Date réelle (aucune heure fabriquée). */}
         {!collapsed && (
           <div className="mt-3 rounded-md bg-muted/40 px-3 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Édition
             </p>
             <p className="text-xs font-medium capitalize text-foreground/80">

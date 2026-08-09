@@ -113,7 +113,7 @@ export function PostsAmplifierSection({ onPrepareResponse }: Props) {
                       <span className="text-xs text-muted-foreground">• {post.auteur}</span>
                     )}
                   </div>
-                  <Badge variant="outline" className="text-[10px]">
+                  <Badge variant="outline" className="text-xs">
                     {post.engagement_score} points d’engagement
                   </Badge>
                 </div>
@@ -127,7 +127,7 @@ export function PostsAmplifierSection({ onPrepareResponse }: Props) {
                 {post.hashtags && post.hashtags.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {post.hashtags.slice(0, 4).map((h, i) => (
-                      <Badge key={i} variant="secondary" className="text-[10px] px-1.5 py-0">
+                      <Badge key={i} variant="secondary" className="text-xs px-1.5 py-0">
                         {h}
                       </Badge>
                     ))}

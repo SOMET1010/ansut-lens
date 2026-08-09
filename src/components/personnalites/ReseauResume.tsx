@@ -76,7 +76,7 @@ export function ReseauResume({
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  className="rounded p-0.5 text-muted-foreground/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="rounded p-0.5 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label="Méthode de la répartition"
                 >
                   <Info className="h-3.5 w-3.5" aria-hidden />
@@ -108,7 +108,7 @@ export function ReseauResume({
                         {CERCLE_LABELS[c].label}
                       </span>
                       <span className="tabular-nums text-muted-foreground">
-                        {n} <span className="text-muted-foreground/60">· {pct}%</span>
+                        {n} <span className="text-muted-foreground">· {pct}%</span>
                       </span>
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -150,7 +150,7 @@ export function ReseauResume({
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  className="rounded p-0.5 text-muted-foreground/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="rounded p-0.5 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label="Méthode du classement"
                 >
                   <Info className="h-3.5 w-3.5" aria-hidden />

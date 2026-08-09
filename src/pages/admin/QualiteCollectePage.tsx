@@ -191,15 +191,15 @@ export default function QualiteCollectePage() {
                     <span className="text-xs text-muted-foreground">
                       {format(new Date(ex.createdAt), 'dd MMM yyyy à HH:mm', { locale: fr })}
                     </span>
-                    <Badge variant="secondary" className="text-[10px]">
+                    <Badge variant="secondary" className="text-xs">
                       {ex.nbResultats} retenu(s)
                     </Badge>
                     {ex.qualiteMesuree ? (
-                      <Badge variant="outline" className="text-[10px]">
+                      <Badge variant="outline" className="text-xs">
                         {ex.totalRejets} écarté(s)
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                      <Badge variant="outline" className="text-xs text-muted-foreground">
                         Qualité non mesurée
                       </Badge>
                     )}

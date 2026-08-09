@@ -132,7 +132,7 @@ export function RoleAccreditationCard({
 
         {/* Permission summary by category */}
         <div className="space-y-2 mb-6">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
             Accès autorisés
           </p>
           
@@ -142,12 +142,12 @@ export function RoleAccreditationCard({
                 {status !== 'none' ? (
                   <Check className="h-3.5 w-3.5 text-green-500" />
                 ) : (
-                  <X className="h-3.5 w-3.5 text-muted-foreground/50" />
+                  <X className="h-3.5 w-3.5 text-muted-foreground" />
                 )}
                 {label} ({enabledCount}/{totalCount})
               </span>
               <span className={cn(
-                'text-[10px] px-1.5 py-0.5 rounded font-medium',
+                'text-xs px-1.5 py-0.5 rounded font-medium',
                 status === 'full' && 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
                 status === 'partial' && 'bg-attention-soft text-attention',
                 status === 'none' && 'bg-muted text-muted-foreground'

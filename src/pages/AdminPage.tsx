@@ -164,7 +164,7 @@ export default function AdminPage() {
         {zonesVisibles.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-              <SlidersHorizontal className="h-10 w-10 text-muted-foreground/60" aria-hidden />
+              <SlidersHorizontal className="h-10 w-10 text-muted-foreground" aria-hidden />
               <p className="text-sm text-muted-foreground">
                 {recherche
                   ? 'Essayez un autre mot, ou parcourez les groupes en effaçant la recherche.'
@@ -186,7 +186,7 @@ export default function AdminPage() {
                   <h2 id={`zone-${zone}`} className="text-base font-semibold">
                     {meta.titre}
                     {meta.ton === 'technique' && (
-                      <Badge variant="secondary" className="ml-2 align-middle text-[10px] font-normal">
+                      <Badge variant="secondary" className="ml-2 align-middle text-xs font-normal">
                         profils techniques
                       </Badge>
                     )}
@@ -227,7 +227,7 @@ export default function AdminPage() {
                                   {valeur && (
                                     <Badge
                                       variant={estAlerte(entree) ? 'destructive' : 'secondary'}
-                                      className="shrink-0 text-[10px] font-normal"
+                                      className="shrink-0 text-xs font-normal"
                                     >
                                       {valeur}
                                     </Badge>
@@ -238,7 +238,7 @@ export default function AdminPage() {
                                 </span>
                               </span>
                               <ChevronRight
-                                className="mt-2 h-4 w-4 shrink-0 text-muted-foreground/50"
+                                className="mt-2 h-4 w-4 shrink-0 text-muted-foreground"
                                 aria-hidden
                               />
                             </Link>
