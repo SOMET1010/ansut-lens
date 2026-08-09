@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -56,6 +57,20 @@ export default function MatinalePage() {
   const send = useMatinaleSend();
   const { data: history, isLoading: historyLoading } = useMatinaleHistory();
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  // Défense en profondeur : l'aperçu HTML (généré par l'edge function) est
+  // toujours nettoyé côté client avant injection — anti-XSS, même config que le
+  // Newsletter Studio.
+  const safePreviewHtml = useMemo(
+    () =>
+      previewHtml
+        ? DOMPurify.sanitize(previewHtml, {
+            USE_PROFILES: { html: true },
+            FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form'],
+            FORBID_ATTR: ['onerror', 'onload', 'onclick', 'formaction'],
+          })
+        : '',
+    [previewHtml],
+  );
   const [matinaleData, setMatinaleData] = useState<import('@/types/matinale').MatinaleData | null>(null);
   const [titrologie, setTitrologie] = useState<import('@/types/matinale').TitrologieData | null>(null);
   const [freshnessMeta, setFreshnessMeta] = useState<any>(null);
@@ -276,7 +291,7 @@ export default function MatinalePage() {
               <CardContent>
                 <div
                   className="rounded-lg overflow-hidden border"
-                  dangerouslySetInnerHTML={{ __html: previewHtml }}
+                  dangerouslySetInnerHTML={{ __html: safePreviewHtml }}
                 />
               </CardContent>
             </Card>

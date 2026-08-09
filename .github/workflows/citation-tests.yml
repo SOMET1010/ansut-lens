@@ -48,6 +48,15 @@ jobs:
             src/components/assistant/__tests__/citationRefs.test.ts \
             --reporter=verbose
 
+      - name: Crédibilité & Étage 3 — gardes (Vitest)
+        run: |
+          bunx vitest run \
+            src/lib/__tests__/credibiliteGuard.test.ts \
+            src/lib/__tests__/politiquesEditoriales.test.ts \
+            src/lib/__tests__/qualificationParity.test.ts \
+            src/lib/__tests__/qualificationLecture.test.ts \
+            --reporter=verbose
+
       - name: Verify DOCX export assertions (citationExportFixtures)
         run: |
           bunx vitest run \

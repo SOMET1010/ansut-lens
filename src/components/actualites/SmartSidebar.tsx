@@ -261,7 +261,7 @@ export function SmartSidebar({
                 </span>
                 <span className={cn(
                   "font-bold bg-muted px-2 py-0.5 rounded text-xs",
-                  i === 0 ? "text-primary" : "text-muted-foreground"
+                  i === 0 ? "text-foreground" : "text-muted-foreground"
                 )}>
                   {source.count}
                 </span>
@@ -291,7 +291,7 @@ export function SmartSidebar({
                   </span>
                   <span className={cn(
                     "font-bold bg-muted px-2 py-0.5 rounded text-xs",
-                    i === 0 ? "text-primary" : "text-muted-foreground"
+                    i === 0 ? "text-foreground" : "text-muted-foreground"
                   )}>
                     {person.mentions}
                   </span>

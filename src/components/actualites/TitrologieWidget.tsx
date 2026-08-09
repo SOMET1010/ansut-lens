@@ -21,7 +21,7 @@ interface TitreJournal {
 
 // Remplacement des couleurs Tailwind litterales par des classes semantiques du theme
 const typeConfig: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  nationale: { label: 'Presse Nationale', icon: <Newspaper className="h-3.5 w-3.5" aria-hidden />, color: 'bg-primary/10 text-primary' },
+  nationale: { label: 'Presse Nationale', icon: <Newspaper className="h-3.5 w-3.5" aria-hidden />, color: 'bg-secondary text-secondary-foreground' },
   en_ligne: { label: 'Presse en Ligne', icon: <Globe className="h-3.5 w-3.5" aria-hidden />, color: 'bg-accent/10 text-accent-foreground' },
   economique: { label: 'Économique & Tech', icon: <BarChart3 className="h-3.5 w-3.5" aria-hidden />, color: 'bg-muted text-muted-foreground' },
 };
@@ -107,11 +107,11 @@ export function TitrologieWidget() {
   }
 
   return (
-    <Card className="border-primary/20">
+    <Card className="border-border">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
-            <Newspaper className="h-5 w-5 text-primary" aria-hidden />
+            <Newspaper className="h-5 w-5 text-muted-foreground" aria-hidden />
             Revue de presse — unes du jour
           </CardTitle>
           {/* Ajout d'un aria-label pour le bouton reduit a une icone */}
@@ -166,14 +166,14 @@ export function TitrologieWidget() {
                 {items.map((t, i) => (
                   <div
                     key={`${type}-${i}`}
-                    className="pl-3 border-l-2 border-primary/30 hover:border-primary transition-colors"
+                    className="pl-3 border-l-2 border-border transition-colors"
                   >
                     {(() => {
                       const src = libelleJournal(t.journal);
                       return (
                         <p
                           className={`text-[11px] font-semibold ${
-                            src.identifie ? 'text-primary' : 'italic text-muted-foreground'
+                            src.identifie ? 'text-foreground' : 'italic text-muted-foreground'
                           }`}
                           title={src.identifie ? undefined : 'Le nom du journal n’a pas pu être lu sur la une'}
                         >

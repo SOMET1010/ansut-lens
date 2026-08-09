@@ -58,7 +58,7 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
             <span className="whitespace-pre-wrap">{content}</span>
           )}
           {isStreaming && (
-            <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-1" />
+            <span className="inline-block w-2 h-4 bg-foreground animate-pulse ml-1" />
           )}
         </div>
         
@@ -75,7 +75,7 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
                   variant="outline" 
                   className="text-xs bg-background/50"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary mr-1.5" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 mr-1.5" />
                   <span className="max-w-[120px] truncate">{src}</span>
                 </Badge>
               ))}

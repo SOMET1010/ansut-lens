@@ -60,7 +60,7 @@ export function useVipAccountStatuses() {
       const countMap: Record<string, number> = {};
       const latestMap: Record<string, string> = {};
 
-      for (const p of (recentPosts || []) as any[]) {
+      for (const p of (recentPosts ?? [])) {
         if (!p.vip_compte_id) continue;
         const pubDate = p.date_publication || '';
         if (pubDate >= since24h) {
@@ -139,7 +139,7 @@ export function useSocialKpis() {
         .gte('created_at', since24h);
 
       if (error) throw error;
-      const insights = (data || []) as any[];
+      const insights = (data ?? []);
 
       const totalPosts = insights.length;
       const avgEngagement = totalPosts > 0
@@ -168,7 +168,7 @@ export function useEngagementTimeline(days = 7) {
 
       // Group by day and platform
       const byDay: Record<string, Record<string, number>> = {};
-      for (const row of (data || []) as any[]) {
+      for (const row of (data ?? [])) {
         const day = (row.created_at as string).substring(0, 10);
         if (!byDay[day]) byDay[day] = { twitter: 0, linkedin: 0, facebook: 0 };
         const p = row.plateforme as string;
