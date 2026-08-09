@@ -156,7 +156,9 @@ export default function AuditLogsPage() {
     },
   });
 
-  const logs = logsData?.logs ?? [];
+  // Référence stabilisée : `?? []` crée un tableau neuf à chaque rendu, ce qui
+  // invaliderait les useMemo en aval (stats, filteredLogs) à chaque fois.
+  const logs = useMemo(() => logsData?.logs ?? [], [logsData]);
   const totalCount = logsData?.total ?? 0;
   const totalPages = logsData?.totalPages ?? 1;
 

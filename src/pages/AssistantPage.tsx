@@ -225,16 +225,21 @@ export default function AssistantPage() {
   const [selectedActualites, setSelectedActualites] = useState<Set<string>>(new Set());
   const [selectedDossiers, setSelectedDossiers] = useState<Set<string>>(new Set());
   
+  // Pré-sélection des défauts au premier chargement des données. On lit la
+  // sélection courante via le setter fonctionnel (prev) plutôt que via une
+  // dépendance externe : on ne re-sélectionne que si rien n'est encore choisi.
   useEffect(() => {
-    if (availableActualites.length > 0 && selectedActualites.size === 0) {
-      setSelectedActualites(new Set(availableActualites.slice(0, 5).map(a => a.id)));
-    }
+    if (availableActualites.length === 0) return;
+    setSelectedActualites((prev) =>
+      prev.size === 0 ? new Set(availableActualites.slice(0, 5).map((a) => a.id)) : prev,
+    );
   }, [availableActualites]);
-  
+
   useEffect(() => {
-    if (availableDossiers.length > 0 && selectedDossiers.size === 0) {
-      setSelectedDossiers(new Set(availableDossiers.slice(0, 3).map(d => d.id)));
-    }
+    if (availableDossiers.length === 0) return;
+    setSelectedDossiers((prev) =>
+      prev.size === 0 ? new Set(availableDossiers.slice(0, 3).map((d) => d.id)) : prev,
+    );
   }, [availableDossiers]);
 
   const handleToggleActualite = useCallback((id: string) => {

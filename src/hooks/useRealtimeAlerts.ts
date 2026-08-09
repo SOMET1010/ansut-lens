@@ -159,7 +159,9 @@ export function useRealtimeAlerts(): UseRealtimeAlertsReturn {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+    // triggerSmsCritical est un useCallback stable ([]), l'inclure ne re-souscrit
+    // pas le canal mais garde la référence à jour (évite une closure périmée).
+  }, [triggerSmsCritical]);
 
   const markAsRead = useCallback(async (alertId: string) => {
     const { error } = await supabase

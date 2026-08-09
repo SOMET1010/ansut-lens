@@ -95,7 +95,7 @@ export default function AdminPage() {
         );
       }),
     })).filter((groupe) => groupe.entrees.length > 0);
-  }, [recherche, hasPermission, stats]);
+  }, [recherche, hasPermission]);
 
   // La Console technique (exploitation) est réservée aux profils habilités :
   // elle ne doit jamais encombrer le quotidien de la DIRCOM. Le droit dédié

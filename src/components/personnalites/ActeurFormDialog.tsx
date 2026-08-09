@@ -59,27 +59,29 @@ interface ActeurFormDialogProps {
   acteur?: Personnalite;
 }
 
+// Valeurs par défaut statiques : hissées au niveau module pour une référence
+// stable (sinon un objet recréé à chaque rendu forcerait l'effet de reset).
+const defaultValues = {
+  nom: '',
+  prenom: '',
+  fonction: '',
+  organisation: '',
+  cercle: 2,
+  categorie: '',
+  sous_categorie: '',
+  pays: "Côte d'Ivoire",
+  zone: "Afrique de l'Ouest",
+  bio: '',
+  score_influence: 50,
+  twitter: '',
+  linkedin: '',
+  notes: '',
+};
+
 export function ActeurFormDialog({ open, onOpenChange, onSuccess, acteur }: ActeurFormDialogProps) {
   const createPersonnalite = useCreatePersonnalite();
   const updatePersonnalite = useUpdatePersonnalite();
   const isEditMode = !!acteur;
-
-  const defaultValues = {
-    nom: '',
-    prenom: '',
-    fonction: '',
-    organisation: '',
-    cercle: 2,
-    categorie: '',
-    sous_categorie: '',
-    pays: "Côte d'Ivoire",
-    zone: "Afrique de l'Ouest",
-    bio: '',
-    score_influence: 50,
-    twitter: '',
-    linkedin: '',
-    notes: '',
-  };
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
