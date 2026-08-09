@@ -10,6 +10,7 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { NAV_SECTIONS } from '@/config/navigation';
 import { useUserPermissions } from '@/hooks/useUserPermissions';
@@ -61,8 +62,16 @@ export function SpotlightSearch({ open, onOpenChange }: SpotlightSearchProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResults>(emptyResults);
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState(false);
+  const [retryToken, setRetryToken] = useState(0);
 
   const accesRapides = NAV_SECTIONS.filter((section) => hasPermission(section.permission));
+  // Les « Sources » renvoient vers /admin/sources (réservé à manage_sources) : on
+  // ne propose ce groupe qu'aux habilités. Dérivé au niveau composant (booléen
+  // primitif) pour l'ajouter aux deps de l'effet sans boucle de rendu — le hook
+  // `hasPermission` n'est pas mémoïsé, mais cette valeur ne change que lorsque
+  // les permissions arrivent, ce qui doit précisément relancer la recherche.
+  const peutVoirSources = hasPermission('manage_sources');
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -78,15 +87,13 @@ export function SpotlightSearch({ open, onOpenChange }: SpotlightSearchProps) {
   useEffect(() => {
     if (!query.trim()) {
       setResults(emptyResults);
+      setSearchError(false);
       return;
     }
     const timer = setTimeout(async () => {
       setLoading(true);
+      setSearchError(false);
       const motif = `%${query.trim()}%`;
-      // Les « Sources » renvoient vers /admin/sources (réservé à manage_sources).
-      // On ne propose donc ce groupe qu'aux utilisateurs habilités, pour ne pas
-      // les mener à une impasse « Accès refusé » (cohérence avec les accès rapides).
-      const peutVoirSources = hasPermission('manage_sources');
       const [actualites, personnalites, sources, dossiers] = await Promise.all([
         supabase.from('actualites').select('id, titre, source_nom').ilike('titre', motif).limit(5),
         supabase
@@ -96,9 +103,17 @@ export function SpotlightSearch({ open, onOpenChange }: SpotlightSearchProps) {
           .limit(5),
         peutVoirSources
           ? supabase.from('sources_media').select('id, nom, type').ilike('nom', motif).limit(5)
-          : Promise.resolve({ data: [] as { id: string; nom: string; type: string }[] }),
+          : Promise.resolve({ data: [] as { id: string; nom: string; type: string }[], error: null }),
         supabase.from('dossiers').select('id, titre, categorie').ilike('titre', motif).limit(5),
       ]);
+      // Une panne réseau / RLS renvoie `data: null` + une `error` : sans la lire,
+      // on afficherait « Aucun résultat » (mensonger). On distingue l'échec.
+      if (actualites.error || personnalites.error || sources.error || dossiers.error) {
+        setResults(emptyResults);
+        setSearchError(true);
+        setLoading(false);
+        return;
+      }
       setResults({
         actualites: actualites.data ?? [],
         personnalites: personnalites.data ?? [],
@@ -108,7 +123,7 @@ export function SpotlightSearch({ open, onOpenChange }: SpotlightSearchProps) {
       setLoading(false);
     }, 300);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, peutVoirSources, retryToken]);
 
   const aller = useCallback(
     (path: string) => {
@@ -134,7 +149,19 @@ export function SpotlightSearch({ open, onOpenChange }: SpotlightSearchProps) {
         onValueChange={setQuery}
       />
       <CommandList>
-        {enRecherche && !loading && nbResultats === 0 && (
+        {enRecherche && searchError && !loading && (
+          <div className="space-y-2 py-6 text-center">
+            <p className="text-sm">Recherche indisponible</p>
+            <p className="text-xs text-muted-foreground">
+              Un problème de connexion empêche la recherche. Vérifiez votre réseau.
+            </p>
+            <Button variant="outline" size="sm" onClick={() => setRetryToken((t) => t + 1)}>
+              Réessayer
+            </Button>
+          </div>
+        )}
+
+        {enRecherche && !searchError && !loading && nbResultats === 0 && (
           <CommandEmpty>
             <div className="space-y-1 py-4 text-center">
               <p className="text-sm">Aucun résultat pour « {query} »</p>

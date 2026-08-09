@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { messageErreurAuth } from '@/lib/authErrors';
 import { ArrowLeft, Loader2, Mail, KeyRound, Sparkles } from 'lucide-react';
 import logoAnsut from '@/assets/logo-ansut.png';
 
@@ -51,6 +52,7 @@ export default function AuthPage() {
   const [mode, setMode] = useState<AuthMode>('login');
   const [loading, setLoading] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const { user, isLoading, signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -83,11 +85,19 @@ export default function AuthPage() {
     }
   }, [user, isLoading, from, navigate]);
 
+  // Décompte anti-spam pour le renvoi du lien magique.
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => setResendCooldown((s) => (s <= 1 ? 0 : s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
+
   const handleModeChange = (newMode: AuthMode) => {
     form.reset();
     resetForm.reset();
     magicLinkForm.reset();
     setMagicLinkSent(false);
+    setResendCooldown(0);
     setMode(newMode);
   };
 
@@ -96,7 +106,7 @@ export default function AuthPage() {
     try {
       const { error } = await signIn(data.email, data.password);
       if (error) {
-        toast.error(error.message || 'Erreur de connexion');
+        toast.error(messageErreurAuth(error));
       } else {
         toast.success('Connexion réussie');
         navigate(from, { replace: true });
@@ -145,6 +155,7 @@ export default function AuthPage() {
         toast.error(result.error);
       } else {
         setMagicLinkSent(true);
+        setResendCooldown(60);
         toast.success(result?.message || 'Lien magique envoyé ! Vérifiez votre boîte mail.');
       }
     } catch {
@@ -152,6 +163,14 @@ export default function AuthPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Renvoie réellement un lien à l'adresse déjà saisie (le formulaire n'est pas
+  // réinitialisé après envoi), en respectant l'anti-spam de 60 s.
+  const handleResendMagicLink = () => {
+    const email = magicLinkForm.getValues('email');
+    if (!email || loading || resendCooldown > 0) return;
+    onMagicLinkSubmit({ email });
   };
 
   // ── Magic link view ──
@@ -181,12 +200,25 @@ export default function AuthPage() {
                   <Mail className="h-8 w-8 text-primary" />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Un lien de connexion a été envoyé à votre adresse email. 
+                  Un lien de connexion a été envoyé à votre adresse email.
                   Il est valable pendant 1 heure.
                 </p>
-                <Button variant="outline" onClick={() => setMagicLinkSent(false)} className="w-full">
-                  Renvoyer le lien
+                <Button
+                  variant="outline"
+                  onClick={handleResendMagicLink}
+                  disabled={loading || resendCooldown > 0}
+                  className="w-full"
+                >
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {resendCooldown > 0 ? `Renvoyer le lien (${resendCooldown}s)` : 'Renvoyer le lien'}
                 </Button>
+                <button
+                  type="button"
+                  onClick={() => { setMagicLinkSent(false); setResendCooldown(0); }}
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Utiliser une autre adresse
+                </button>
               </div>
             ) : (
               <Form {...magicLinkForm}>
@@ -198,7 +230,7 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>Email professionnel</FormLabel>
                         <FormControl>
-                          <Input type="email" placeholder="vous@ansut.ci" {...field} />
+                          <Input type="email" autoComplete="email" placeholder="vous@ansut.ci" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -250,7 +282,7 @@ export default function AuthPage() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="vous@ansut.ci" {...field} />
+                        <Input type="email" autoComplete="email" placeholder="vous@ansut.ci" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -301,7 +333,7 @@ export default function AuthPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="vous@ansut.ci" {...field} />
+                      <Input type="email" autoComplete="email" placeholder="vous@ansut.ci" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -323,7 +355,7 @@ export default function AuthPage() {
                       </button>
                     </div>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <Input type="password" autoComplete="current-password" placeholder="••••••••" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
