@@ -95,7 +95,7 @@ export function CitationsPreview({ content }: CitationsPreviewProps) {
                       role="text"
                       aria-disabled="true"
                       data-broken-citation={item.num}
-                      className="border-attention border-dashed bg-attention-soft text-attention font-bold text-[10px] gap-1 cursor-not-allowed"
+                      className="border-attention border-dashed bg-attention-soft text-attention font-bold text-xs gap-1 cursor-not-allowed"
                       title="Lien manquant — apparaîtra non cliquable dans l'export"
                     >
                       <AlertTriangle className="h-2.5 w-2.5" />
@@ -113,7 +113,7 @@ export function CitationsPreview({ content }: CitationsPreviewProps) {
                   >
                     <Badge
                       variant="outline"
-                      className="border-slate-300 bg-slate-100 text-slate-700 font-bold text-[10px] gap-1 hover:bg-slate-200 cursor-pointer"
+                      className="border-slate-300 bg-slate-100 text-slate-700 font-bold text-xs gap-1 hover:bg-slate-200 cursor-pointer"
                     >
                       [{item.num}]
                       <ExternalLink className="h-2.5 w-2.5" />
@@ -136,8 +136,8 @@ export function CitationsPreview({ content }: CitationsPreviewProps) {
                     variant="outline"
                     className={
                       isActu
-                        ? 'border-blue-300 bg-blue-100 text-blue-800 font-bold text-[10px] gap-1 hover:bg-blue-200 cursor-pointer'
-                        : 'border-purple-300 bg-purple-100 text-purple-800 font-bold text-[10px] gap-1 hover:bg-purple-200 cursor-pointer'
+                        ? 'border-blue-300 bg-blue-100 text-blue-800 font-bold text-xs gap-1 hover:bg-blue-200 cursor-pointer'
+                        : 'border-purple-300 bg-purple-100 text-purple-800 font-bold text-xs gap-1 hover:bg-purple-200 cursor-pointer'
                     }
                   >
                     <span>{isActu ? '◆' : '■'}</span>

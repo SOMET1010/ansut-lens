@@ -46,17 +46,17 @@ export function MatinaleSectionShell({
           {title}
           {headerExtras}
           {status === 'loading' && (
-            <Badge variant="outline" className="ml-auto text-[10px] gap-1 border-primary/30 text-primary">
+            <Badge variant="outline" className="ml-auto text-xs gap-1 border-primary/30 text-primary">
               <RefreshCw className="h-2.5 w-2.5 animate-spin" /> Chargement
             </Badge>
           )}
           {status === 'error' && (
-            <Badge variant="outline" className="ml-auto text-[10px] gap-1 border-destructive/40 text-destructive">
+            <Badge variant="outline" className="ml-auto text-xs gap-1 border-destructive/40 text-destructive">
               <AlertCircle className="h-2.5 w-2.5" /> Erreur
             </Badge>
           )}
           {status === 'empty' && (
-            <Badge variant="outline" className="ml-auto text-[10px] gap-1 text-muted-foreground">
+            <Badge variant="outline" className="ml-auto text-xs gap-1 text-muted-foreground">
               <Inbox className="h-2.5 w-2.5" /> Vide
             </Badge>
           )}

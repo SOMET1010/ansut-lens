@@ -271,10 +271,10 @@ export default function TitrologieAdminPage() {
 }
 
 function statutBadge(s: string) {
-  if (s === 'success') return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 text-[10px]"><CheckCircle2 className="h-3 w-3 mr-1" />OK</Badge>;
-  if (s === 'partial') return <Badge className="bg-attention-soft text-attention border-attention-border text-[10px]"><AlertCircle className="h-3 w-3 mr-1" />Partiel</Badge>;
-  if (s === 'error') return <Badge className="bg-red-100 text-red-700 border-red-300 text-[10px]"><XCircle className="h-3 w-3 mr-1" />Erreur</Badge>;
-  return <Badge variant="outline" className="text-[10px]">{s}</Badge>;
+  if (s === 'success') return <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 text-xs"><CheckCircle2 className="h-3 w-3 mr-1" />OK</Badge>;
+  if (s === 'partial') return <Badge className="bg-attention-soft text-attention border-attention-border text-xs"><AlertCircle className="h-3 w-3 mr-1" />Partiel</Badge>;
+  if (s === 'error') return <Badge className="bg-red-100 text-red-700 border-red-300 text-xs"><XCircle className="h-3 w-3 mr-1" />Erreur</Badge>;
+  return <Badge variant="outline" className="text-xs">{s}</Badge>;
 }
 
 function LogsTechniques() {
@@ -335,7 +335,7 @@ function LogsTechniques() {
                               <td className="pr-2 text-right">{s.nombre_images_traitees}</td>
                               <td className="pr-2 text-right">{s.nombre_erreurs_ocr}</td>
                               <td className="pr-2 text-muted-foreground">{new Date(s.dernier_scan).toLocaleTimeString('fr-FR')}</td>
-                              <td>{statutBadge(s.statut)}{s.error && <div className="text-[10px] text-red-600 mt-0.5">{s.error}</div>}</td>
+                              <td>{statutBadge(s.statut)}{s.error && <div className="text-xs text-red-600 mt-0.5">{s.error}</div>}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -368,15 +368,15 @@ function LogsTechniques() {
                                 <td className="py-1 pr-2 font-medium">{f.journal}</td>
                                 <td className="pr-2 text-muted-foreground">{f.source}</td>
                                 <td className="pr-2 text-right">
-                                  <Badge variant="outline" className={`text-[10px] ${f.ocr_confidence < threshold ? 'border-red-300 text-red-700' : ''}`}>
+                                  <Badge variant="outline" className={`text-xs ${f.ocr_confidence < threshold ? 'border-red-300 text-red-700' : ''}`}>
                                     {f.ocr_confidence}/100
                                   </Badge>
                                 </td>
-                                <td className="pr-2"><Badge variant="outline" className="text-[10px]">{f.raison_code}</Badge></td>
+                                <td className="pr-2"><Badge variant="outline" className="text-xs">{f.raison_code}</Badge></td>
                                 <td className="pr-2">
                                   {f.reason}
                                   {f.ocr_warnings && f.ocr_warnings.length > 0 && (
-                                    <div className="text-[10px] text-muted-foreground mt-0.5">⚠ {f.ocr_warnings.join(' · ')}</div>
+                                    <div className="text-xs text-muted-foreground mt-0.5">⚠ {f.ocr_warnings.join(' · ')}</div>
                                   )}
                                 </td>
                                 <td>

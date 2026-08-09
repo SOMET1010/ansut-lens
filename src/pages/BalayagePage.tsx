@@ -618,7 +618,7 @@ export default function BalayagePage() {
                               <TooltipTrigger asChild>
                                 <Badge
                                   variant="outline"
-                                  className={cn('text-[10px]', precisionStyles[s.precision])}
+                                  className={cn('text-xs', precisionStyles[s.precision])}
                                 >
                                   {s.precision}
                                 </Badge>

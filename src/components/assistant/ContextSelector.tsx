@@ -105,7 +105,7 @@ export function ContextSelector({
                         {nettoyerTitre(actu.titre)}
                       </p>
                       {actu.source_nom && (
-                        <p className="text-[10px] text-muted-foreground truncate">
+                        <p className="text-xs text-muted-foreground truncate">
                           {actu.source_nom}
                         </p>
                       )}
@@ -167,7 +167,7 @@ export function ContextSelector({
                       <p className="text-xs font-medium truncate leading-tight group-hover:text-primary transition-colors">
                         {dossier.titre}
                       </p>
-                      <p className="text-[10px] text-muted-foreground truncate">
+                      <p className="text-xs text-muted-foreground truncate">
                         {dossier.categorie}
                       </p>
                     </div>

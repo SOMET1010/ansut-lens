@@ -415,16 +415,16 @@ export function SocialCredentialsDialog({
                   <div className="flex items-center justify-between">
                     <Label htmlFor={s.name} className="text-sm">
                       {s.label}
-                      <code className="block text-[10px] text-muted-foreground font-normal">
+                      <code className="block text-xs text-muted-foreground font-normal">
                         {s.name}
                       </code>
                     </Label>
                     <div className="flex items-center gap-1">
-                      <Badge variant={s.required ? 'default' : 'outline'} className="text-[10px]">
+                      <Badge variant={s.required ? 'default' : 'outline'} className="text-xs">
                         {s.required ? 'Requis' : 'Optionnel'}
                       </Badge>
                       {isStored && (
-                        <Badge variant="outline" className="text-[10px] border-emerald-300 text-emerald-700">
+                        <Badge variant="outline" className="text-xs border-emerald-300 text-emerald-700">
                           enregistré
                         </Badge>
                       )}
@@ -625,7 +625,7 @@ export function SocialCredentialsDialog({
                   <div className="italic">{REASON_MESSAGES.previewEmpty}</div>
                 )}
                 {cleanedReasonPreview !== rotateReason && (
-                  <div className="text-[10px] opacity-80">
+                  <div className="text-xs opacity-80">
                     {REASON_MESSAGES.previewCleanedNote}
                   </div>
                 )}

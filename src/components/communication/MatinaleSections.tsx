@@ -30,7 +30,7 @@ function SourceCountBadge({ data, section, freshnessHours, enabled }: {
   const { data: count, isLoading } = useMatinaleSectionSourceCount(kw, freshnessHours, enabled);
   if (!enabled || kw.length === 0) return null;
   return (
-    <Badge variant="outline" className="text-[10px] gap-1">
+    <Badge variant="outline" className="text-xs gap-1">
       {isLoading ? '…' : count ?? 0} sources
     </Badge>
   );
@@ -63,7 +63,7 @@ function NiveauBadge({ niveau }: { niveau?: string }) {
     'FAIBLE': 'bg-primary/15 text-primary border-primary/30',
     'AUCUN': 'bg-muted text-muted-foreground',
   };
-  return <Badge variant="outline" className={`${map[niveau] || ''} text-[10px] px-1.5 py-0 border`}>{niveau}</Badge>;
+  return <Badge variant="outline" className={`${map[niveau] || ''} text-xs px-1.5 py-0 border`}>{niveau}</Badge>;
 }
 
 function isValidUrl(u?: string): boolean {
@@ -145,19 +145,19 @@ function TitrologieBilanBlock({
         <Newspaper className="h-4 w-4 text-primary" />
         <div className="font-bold text-primary">🗞️ Titrologie nationale du jour</div>
         {liveMapped.length > 0 && (
-          <Badge variant="outline" className="text-[10px] gap-1 bg-emerald-500/10 text-emerald-700 border-emerald-500/30">
+          <Badge variant="outline" className="text-xs gap-1 bg-emerald-500/10 text-emerald-700 border-emerald-500/30">
             <RefreshCw className={`h-3 w-3 ${isFetching ? 'animate-spin' : ''}`} />
             Live · maj {format(new Date(dataUpdatedAt), 'HH:mm:ss', { locale: fr })}
           </Badge>
         )}
-        <Badge variant="outline" className={`${RISQUE_BADGE[risque]} text-[10px] ml-auto`}>
+        <Badge variant="outline" className={`${RISQUE_BADGE[risque]} text-xs ml-auto`}>
           Risque réputationnel : {risque}
         </Badge>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
         <div>
-          <div className="font-semibold text-muted-foreground uppercase text-[10px] mb-1">Sources analysées</div>
+          <div className="font-semibold text-muted-foreground uppercase text-xs mb-1">Sources analysées</div>
           <ul className="space-y-0.5">
             {TITROLOGIE_SOURCES_LIST.map(s => (
               <li key={s} className="flex items-center gap-1.5">
@@ -168,15 +168,15 @@ function TitrologieBilanBlock({
         </div>
         <div className="grid grid-cols-3 gap-2">
           <div className="rounded bg-muted/50 p-2">
-            <div className="text-[10px] uppercase text-muted-foreground">Journaux</div>
+            <div className="text-xs uppercase text-muted-foreground">Journaux</div>
             <div className="text-xl font-bold">{journauxDetectes}</div>
           </div>
           <div className="rounded bg-emerald-500/10 p-2">
-            <div className="text-[10px] uppercase text-emerald-700">Exploitables</div>
+            <div className="text-xs uppercase text-emerald-700">Exploitables</div>
             <div className="text-xl font-bold text-emerald-700">{unesExploitables}<span className="text-xs text-muted-foreground">/{unes.length}</span></div>
           </div>
           <div className="rounded bg-attention/10 p-2">
-            <div className="text-[10px] uppercase text-attention">Lectures KO</div>
+            <div className="text-xs uppercase text-attention">Lectures KO</div>
             <div className="text-xl font-bold text-attention">{defaillances.length}</div>
           </div>
         </div>
@@ -190,7 +190,7 @@ function TitrologieBilanBlock({
           <ul className="mt-2 space-y-1.5">
             {defaillances.map((d, i) => (
               <li key={i} className="flex items-start gap-2">
-                <Badge variant="outline" className="text-[10px] shrink-0 bg-background">conf. {d.conf}/100</Badge>
+                <Badge variant="outline" className="text-xs shrink-0 bg-background">conf. {d.conf}/100</Badge>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium truncate">{libelleJournal(d.journal).texte}</div>
                   <div className="text-[11px] text-muted-foreground">{d.raison}</div>
@@ -201,7 +201,7 @@ function TitrologieBilanBlock({
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-[10px] text-muted-foreground italic">
+          <p className="mt-2 text-xs text-muted-foreground italic">
             Seuil OCR : confiance ≥ {OCR_CONFIDENCE_THRESHOLD}/100 et titre principal non vide. Détail complet dans Admin → Titrologie → Logs techniques.
           </p>
         </details>
@@ -268,7 +268,7 @@ function ConfianceBadge({ value, prefix = 'Confiance' }: { value?: number; prefi
     <Badge
       variant="outline"
       title={`${prefix} : ${v}/100`}
-      className={`${confianceClass(v)} text-[9px] px-1 py-0 border shrink-0`}
+      className={`${confianceClass(v)} text-xs px-1 py-0 border shrink-0`}
     >
       {prefix === 'Confiance' ? '✓' : prefix} {v}
     </Badge>
@@ -278,7 +278,7 @@ function ConfianceBadge({ value, prefix = 'Confiance' }: { value?: number; prefi
 function AngleLiens({ liens, fallback }: { liens?: any[]; fallback?: string | null }) {
   const list = Array.isArray(liens) ? liens.filter(l => l && l.entite && l.phrase) : [];
   if (list.length === 0) {
-    if (fallback) return <div className="ml-1 italic text-primary/80 text-[10px]">→ {fallback}</div>;
+    if (fallback) return <div className="ml-1 italic text-primary/80 text-xs">→ {fallback}</div>;
     return null;
   }
   return (
@@ -287,8 +287,8 @@ function AngleLiens({ liens, fallback }: { liens?: any[]; fallback?: string | nu
         const meta = ENTITE_META[l.entite] || { label: l.entite, cls: 'bg-muted text-muted-foreground border-border' };
         const sources: string[] = Array.isArray(l.sources) ? l.sources.filter(isValidUrl) : [];
         return (
-          <li key={idx} className="text-[10px] leading-snug flex items-start gap-1.5">
-            <Badge variant="outline" className={`${meta.cls} text-[9px] px-1 py-0 border shrink-0`}>{meta.label}</Badge>
+          <li key={idx} className="text-xs leading-snug flex items-start gap-1.5">
+            <Badge variant="outline" className={`${meta.cls} text-xs px-1 py-0 border shrink-0`}>{meta.label}</Badge>
             <div className="flex-1 min-w-0">
               <div className="text-foreground/90 flex items-start gap-1.5 flex-wrap">
                 <span>{l.phrase}</span>
@@ -301,7 +301,7 @@ function AngleLiens({ liens, fallback }: { liens?: any[]; fallback?: string | nu
                 <div className="flex flex-wrap gap-1 mt-0.5">
                   {sources.map((s, k) => (
                     <a key={k} href={s} target="_blank" rel="noopener noreferrer"
-                       className="inline-flex items-center gap-0.5 text-[9px] text-primary hover:underline">
+                       className="inline-flex items-center gap-0.5 text-xs text-primary hover:underline">
                       source {k + 1}<ExternalLink className="h-2.5 w-2.5" />
                     </a>
                   ))}
@@ -376,8 +376,8 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
       headerExtras={unes.length > 0 && (
         <div className="ml-auto flex items-center gap-1.5 flex-wrap">
           <Badge variant="secondary" className="text-xs">{unes.length} unes</Badge>
-          {counts.ROUGE > 0 && <Badge variant="outline" className={`${RISQUE_BADGE.ROUGE} text-[10px]`}>{counts.ROUGE} ROUGE</Badge>}
-          {counts.ORANGE > 0 && <Badge variant="outline" className={`${RISQUE_BADGE.ORANGE} text-[10px]`}>{counts.ORANGE} ORANGE</Badge>}
+          {counts.ROUGE > 0 && <Badge variant="outline" className={`${RISQUE_BADGE.ROUGE} text-xs`}>{counts.ROUGE} ROUGE</Badge>}
+          {counts.ORANGE > 0 && <Badge variant="outline" className={`${RISQUE_BADGE.ORANGE} text-xs`}>{counts.ORANGE} ORANGE</Badge>}
           <Button
             variant="outline" size="sm"
             className="h-7 px-2 text-[11px] gap-1"
@@ -404,13 +404,13 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
             <div className="flex items-center gap-2 flex-wrap">
               <div className="text-xs font-bold uppercase text-primary">Synthèse CODIR</div>
               {synth.risque_global && (
-                <Badge variant="outline" className={`${RISQUE_BADGE[synth.risque_global]} text-[10px]`}>
+                <Badge variant="outline" className={`${RISQUE_BADGE[synth.risque_global]} text-xs`}>
                   Risque global : {synth.risque_global}
                   {typeof synth.score_global === 'number' && ` · ${synth.score_global} pts`}
                 </Badge>
               )}
               {synth.risque_distribution && (
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {synth.risque_distribution.ROUGE}🔴 / {synth.risque_distribution.ORANGE}🟠 / {synth.risque_distribution.VERT}🟢
                 </span>
               )}
@@ -429,7 +429,7 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
                 <ul className="space-y-0.5">
                   {synth.top_risques.map((r, k) => (
                     <li key={k} className="flex items-start gap-1.5">
-                      <Badge variant="outline" className={`${RISQUE_BADGE[r.risque]} text-[9px] px-1 py-0 shrink-0`}>{r.score}</Badge>
+                      <Badge variant="outline" className={`${RISQUE_BADGE[r.risque]} text-xs px-1 py-0 shrink-0`}>{r.score}</Badge>
                       <span className="flex-1"><span className="font-medium">{libelleJournal(r.journal).texte}</span> — {r.titre}</span>
                     </li>
                   ))}
@@ -472,7 +472,7 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
               <option value="desc">Intensité décroissante</option>
               <option value="asc">Intensité croissante</option>
             </select>
-            <Badge variant="outline" className="text-[10px] ml-auto">{filteredUnes.length} / {unes.length} unes</Badge>
+            <Badge variant="outline" className="text-xs ml-auto">{filteredUnes.length} / {unes.length} unes</Badge>
           </div>
         )}
 
@@ -513,11 +513,11 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
                             {u.titre}<ExternalLink className="h-3 w-3 mt-0.5 shrink-0" />
                           </a>
                         ) : u.titre}
-                        {u.lien_ansut && <div className="text-[10px] text-muted-foreground mt-0.5 italic">↳ {u.lien_ansut}</div>}
+                        {u.lien_ansut && <div className="text-xs text-muted-foreground mt-0.5 italic">↳ {u.lien_ansut}</div>}
                         {activeAngles.length > 0 && (
                           <div className="mt-1.5 space-y-0.5">
                             {activeAngles.map(([label, a]) => (
-                              <div key={label} className="text-[10px] text-muted-foreground leading-snug">
+                              <div key={label} className="text-xs text-muted-foreground leading-snug">
                                 <span className="font-semibold text-foreground/80">{label} :</span> {a.lecture}
                                 <span className="ml-1 inline-flex align-middle"><ConfianceBadge value={a.confiance} /></span>
                                 <AngleLiens liens={a.liens} fallback={a.lien_ansut_mtnd} />
@@ -530,12 +530,12 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
                       <td className="py-1.5 pr-2 capitalize">{u.ton}</td>
                       <td className="py-1.5 pr-2">
                         <div className="flex flex-col gap-1">
-                          <Badge variant="outline" className={`${RISQUE_BADGE[u.risque_ansut]} text-[10px] px-1.5 py-0 w-fit`}>{u.risque_ansut}</Badge>
+                          <Badge variant="outline" className={`${RISQUE_BADGE[u.risque_ansut]} text-xs px-1.5 py-0 w-fit`}>{u.risque_ansut}</Badge>
                           <div className="flex flex-wrap gap-0.5">
                             {angleEntries.map(([label, a]) => (
                               <Badge key={label} variant="outline"
                                 title={`${label} — intensité ${a?.intensite ?? 0}${a?.lecture ? ` : ${a.lecture}` : ''}`}
-                                className={`${intensityClass(a?.intensite ?? 0)} text-[9px] px-1 py-0 border`}>
+                                className={`${intensityClass(a?.intensite ?? 0)} text-xs px-1 py-0 border`}>
                                 {label}
                                 {(a?.intensite ?? 0) > 0 && <span className="ml-0.5 font-bold">{a.intensite}</span>}
                               </Badge>
@@ -735,7 +735,7 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
                         <NiveauBadge niveau={it.niveau} />
                       </div>
                       <p className="text-muted-foreground mt-0.5">{it.lecture_ansut}</p>
-                      {it.source && <p className="text-[10px] text-muted-foreground/80 mt-0.5">{it.source}</p>}
+                      {it.source && <p className="text-xs text-muted-foreground/80 mt-0.5">{it.source}</p>}
                     </li>
                   ))}
                 </ul>
@@ -774,13 +774,13 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
               <div className="grid md:grid-cols-2 gap-3 text-xs">
                 {s.opportunites?.length > 0 && (
                   <div className="rounded-md bg-emerald-500/5 border border-emerald-500/20 p-2">
-                    <div className="text-[10px] font-semibold uppercase text-confirme mb-1">Opportunités</div>
+                    <div className="text-xs font-semibold uppercase text-confirme mb-1">Opportunités</div>
                     <ul className="list-disc list-inside space-y-0.5">{s.opportunites.map((o: string, k: number) => <li key={k}>{o}</li>)}</ul>
                   </div>
                 )}
                 {s.risques?.length > 0 && (
                   <div className="rounded-md bg-red-500/5 border border-red-500/20 p-2">
-                    <div className="text-[10px] font-semibold uppercase text-incident mb-1">Risques</div>
+                    <div className="text-xs font-semibold uppercase text-incident mb-1">Risques</div>
                     <ul className="list-disc list-inside space-y-0.5">{s.risques.map((r: string, k: number) => <li key={k}>{r}</li>)}</ul>
                   </div>
                 )}
@@ -789,7 +789,7 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {(['acces', 'usage', 'gouvernance', 'souverainete'] as const).map(k => (
                     <div key={k} className="rounded-md bg-background border p-2">
-                      <div className="text-[10px] uppercase text-muted-foreground capitalize">{k}</div>
+                      <div className="text-xs uppercase text-muted-foreground capitalize">{k}</div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-bold">{s.scores[k] ?? 0}/10</span>
                       </div>
@@ -853,8 +853,8 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
               <div className="flex-1 min-w-0">
                 <p>{a.action}</p>
                 <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                  {a.responsable && <Badge variant="outline" className="text-[10px]">{a.responsable}</Badge>}
-                  {a.delai && <Badge variant="secondary" className="text-[10px]"><Clock className="h-2.5 w-2.5 mr-1" />{a.delai}</Badge>}
+                  {a.responsable && <Badge variant="outline" className="text-xs">{a.responsable}</Badge>}
+                  {a.delai && <Badge variant="secondary" className="text-xs"><Clock className="h-2.5 w-2.5 mr-1" />{a.delai}</Badge>}
                 </div>
               </div>
             </li>
@@ -885,7 +885,7 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
           <div className="grid md:grid-cols-2 gap-3">
             {reput?.positif?.length > 0 && (
               <div className="rounded-md bg-emerald-500/5 border border-emerald-500/20 p-3">
-                <div className="text-[10px] font-semibold uppercase text-confirme mb-1.5 flex items-center gap-1">
+                <div className="text-xs font-semibold uppercase text-confirme mb-1.5 flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3" /> Signaux positifs
                 </div>
                 <ul className="text-xs list-disc list-inside space-y-0.5">{reput.positif.map((p: string, k: number) => <li key={k}>{p}</li>)}</ul>
@@ -893,7 +893,7 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
             )}
             {reput?.negatif?.length > 0 && (
               <div className="rounded-md bg-red-500/5 border border-red-500/20 p-3">
-                <div className="text-[10px] font-semibold uppercase text-incident mb-1.5 flex items-center gap-1">
+                <div className="text-xs font-semibold uppercase text-incident mb-1.5 flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3" /> Signaux négatifs
                 </div>
                 <ul className="text-xs list-disc list-inside space-y-0.5">{reput.negatif.map((n: string, k: number) => <li key={k}>{n}</li>)}</ul>
@@ -979,7 +979,7 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
                           ) : (
                             <span className="font-medium text-muted-foreground">{it.titre}</span>
                           )}
-                          <Badge variant="outline" className={`gap-1 text-[10px] px-1.5 py-0 ${ok ? 'border-confirme/40 text-confirme' : 'border-destructive/40 text-destructive'}`}>
+                          <Badge variant="outline" className={`gap-1 text-xs px-1.5 py-0 ${ok ? 'border-confirme/40 text-confirme' : 'border-destructive/40 text-destructive'}`}>
                             {ok ? <CheckCircle2 className="h-2.5 w-2.5" /> : <XCircle className="h-2.5 w-2.5" />}
                             {ok ? 'URL valide' : 'URL invalide'}
                           </Badge>

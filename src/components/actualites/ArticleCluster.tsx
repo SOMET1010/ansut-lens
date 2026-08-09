@@ -81,7 +81,7 @@ export function ArticleCluster({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className={cn(
-                    "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold",
+                    "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold",
                     mainArticle.sentiment > 0.2 ? "bg-[hsl(var(--signal-positive))]/15 text-[hsl(var(--signal-positive))]" :
                     mainArticle.sentiment < -0.2 ? "bg-[hsl(var(--signal-critical))]/15 text-[hsl(var(--signal-critical))]" :
                     "bg-muted text-muted-foreground"
@@ -97,7 +97,7 @@ export function ArticleCluster({
             ) : (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-attention/10 text-attention border border-attention/20">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-attention/10 text-attention border border-attention/20">
                     <span className="h-1.5 w-1.5 rounded-full bg-attention animate-pulse" aria-hidden="true" />
                     En attente
                   </span>
@@ -111,7 +111,7 @@ export function ArticleCluster({
             {estVoixAnsut(mainArticle) && (
               <Badge
                 variant="outline"
-                className="border-confirme-border text-[10px] font-semibold text-confirme"
+                className="border-confirme-border text-xs font-semibold text-confirme"
               >
                 Source officielle ANSUT
               </Badge>
@@ -154,7 +154,7 @@ export function ArticleCluster({
             {nettoyerTitre(mainArticle.titre)}
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border mt-0.5 shrink-0">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground border border-border mt-0.5 shrink-0">
                   <AlertCircle className="h-3 w-3" aria-hidden="true" />
                   Pas de lien
                 </span>

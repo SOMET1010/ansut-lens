@@ -136,7 +136,7 @@ export function FrameworkPanel({
                   <h4 className="text-xs font-bold uppercase tracking-wider text-foreground/70">
                     1. Service Universel
                   </h4>
-                  <Badge variant="secondary" className="text-[10px] h-5">
+                  <Badge variant="secondary" className="text-xs h-5">
                     {analysis.suHits.size}/{totalSU}
                   </Badge>
                 </div>
@@ -153,7 +153,7 @@ export function FrameworkPanel({
                   <h4 className="text-xs font-bold uppercase tracking-wider text-foreground/70">
                     2. IA & Communications
                   </h4>
-                  <Badge variant="secondary" className="text-[10px] h-5">
+                  <Badge variant="secondary" className="text-xs h-5">
                     {analysis.iaHits.size}/{totalIA}
                   </Badge>
                 </div>
@@ -171,7 +171,7 @@ export function FrameworkPanel({
                     <FileText className="h-3 w-3" />
                     Sections produites
                   </h4>
-                  <Badge variant="secondary" className="text-[10px] h-5">
+                  <Badge variant="secondary" className="text-xs h-5">
                     {analysis.formatHits.size}/{totalFmt}
                   </Badge>
                 </div>
@@ -206,7 +206,7 @@ export function FrameworkPanel({
                           {analysis.usedActuIds.map((id) => (
                             <Tooltip key={id}>
                               <TooltipTrigger asChild>
-                                <Badge variant="outline" className="text-[10px] h-5 max-w-[180px] truncate cursor-help">
+                                <Badge variant="outline" className="text-xs h-5 max-w-[180px] truncate cursor-help">
                                   {contextActuTitles[id] ?? id.slice(0, 8)}
                                 </Badge>
                               </TooltipTrigger>
@@ -230,7 +230,7 @@ export function FrameworkPanel({
                           {analysis.usedDossierIds.map((id) => (
                             <Tooltip key={id}>
                               <TooltipTrigger asChild>
-                                <Badge variant="outline" className="text-[10px] h-5 max-w-[180px] truncate cursor-help">
+                                <Badge variant="outline" className="text-xs h-5 max-w-[180px] truncate cursor-help">
                                   {contextDossierTitles[id] ?? id.slice(0, 8)}
                                 </Badge>
                               </TooltipTrigger>
@@ -251,7 +251,7 @@ export function FrameworkPanel({
       </ScrollArea>
 
       <div className="px-4 py-2 border-t bg-muted/20">
-        <p className="text-[10px] text-muted-foreground text-center">
+        <p className="text-xs text-muted-foreground text-center">
           Détection automatique basée sur la requête + réponse en cours
         </p>
       </div>

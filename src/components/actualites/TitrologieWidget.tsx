@@ -154,12 +154,12 @@ export function TitrologieWidget() {
             return (
               <div key={type} className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${config.color}`}>
+                  <Badge variant="outline" className={`text-xs px-2 py-0.5 ${config.color}`}>
                     {config.icon}
                     <span className="ml-1">{config.label}</span>
                   </Badge>
                   {/* Suppression du point median et calcul de l'accord reel */}
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     {items.length === 1 ? '1 titre' : `${items.length} titres`}
                   </span>
                 </div>

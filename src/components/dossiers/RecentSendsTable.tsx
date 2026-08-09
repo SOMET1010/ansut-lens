@@ -62,7 +62,7 @@ export function RecentSendsTable({ dossiers, onSelect }: RecentSendsTableProps) 
                 <TableCell>
                   <Badge 
                     variant="secondary"
-                    className={`${categorieInfo.color} text-white border-0 text-[10px]`}
+                    className={`${categorieInfo.color} text-white border-0 text-xs`}
                   >
                     {categorieInfo.icon} {categorieInfo.label}
                   </Badge>

@@ -86,7 +86,7 @@ function StepIndicator({ completed, isCurrent, icon: Icon, label }: {
               {completed ? <Check className="h-4 w-4" /> : <Icon className="h-3.5 w-3.5" />}
             </div>
             <span className={cn(
-              'text-[10px] font-medium leading-tight text-center max-w-[52px]',
+              'text-xs font-medium leading-tight text-center max-w-[52px]',
               completed ? 'text-emerald-600 dark:text-emerald-400'
                 : isCurrent ? 'text-attention'
                   : 'text-muted-foreground'

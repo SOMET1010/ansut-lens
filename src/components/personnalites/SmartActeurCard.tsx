@@ -135,12 +135,12 @@ export function SmartActeurCard({
                 </p>
               )}
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 rounded-md border border-border/70 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                <span className="inline-flex items-center gap-1 rounded-md border border-border/70 px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
                   <span className={cn('h-1.5 w-1.5 rounded-full', getCercleDot(personnalite.cercle))} />
                   {CERCLE_LABEL[personnalite.cercle]}
                 </span>
                 {personnalite.categorie && (
-                  <span className="rounded-md border border-border/70 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  <span className="rounded-md border border-border/70 px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
                     {getCategorieLabel(personnalite.categorie)}
                   </span>
                 )}
@@ -148,7 +148,7 @@ export function SmartActeurCard({
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="inline-flex items-center gap-0.5 rounded-md border border-incident-border bg-incident-soft px-1.5 py-0.5 text-[10px] font-bold text-incident">
+                        <span className="inline-flex items-center gap-0.5 rounded-md border border-incident-border bg-incident-soft px-1.5 py-0.5 text-xs font-bold text-incident">
                           <Flame className="h-2.5 w-2.5" />
                           Sensible
                         </span>
@@ -160,7 +160,7 @@ export function SmartActeurCard({
                   </TooltipProvider>
                 )}
                 {personnalite.niveau_alerte === 'eleve' && (
-                  <span className="inline-flex items-center gap-0.5 rounded-md border border-attention-border bg-attention-soft px-1.5 py-0.5 text-[10px] font-semibold text-attention">
+                  <span className="inline-flex items-center gap-0.5 rounded-md border border-attention-border bg-attention-soft px-1.5 py-0.5 text-xs font-semibold text-attention">
                     <AlertTriangle className="h-2.5 w-2.5" />
                     Vigilance
                   </span>
@@ -214,7 +214,7 @@ export function SmartActeurCard({
 
         {/* Cette semaine — des FAITS, jamais un score */}
         <div className="rounded-xl border border-border/50 bg-muted/25 p-3">
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-muted-foreground/80">
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground/80">
             Cette semaine
           </p>
           {aDeLActivite ? (
@@ -245,7 +245,7 @@ export function SmartActeurCard({
         {/* Pourquoi il est important — éditorial, humain, donc crédible */}
         {(pourquoi || personnalite.organisation) && (
           <div className="mt-3">
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground/80">
+            <p className="mb-1 text-xs font-bold uppercase tracking-wide text-muted-foreground/80">
               Pourquoi il compte
             </p>
             {pourquoi ? (

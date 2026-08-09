@@ -50,7 +50,7 @@ export function FluxCard({ flux, actualitesCount = 0, newCount = 0, onEdit, onDe
       
       {/* Badge nouveautés */}
       {flux.actif && newCount > 0 && (
-        <div className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm border-2 border-background animate-pulse z-10">
+        <div className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-xs font-bold px-2 py-0.5 rounded-full shadow-sm border-2 border-background animate-pulse z-10">
           +{newCount} nouveaux
         </div>
       )}

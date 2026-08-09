@@ -42,7 +42,7 @@ export function MobileNav() {
                 }`}
               >
                 <section.icon className="h-5 w-5 shrink-0" aria-hidden />
-                <span className="w-full truncate text-[10px] font-medium leading-tight">
+                <span className="w-full truncate text-xs font-medium leading-tight">
                   {section.label}
                 </span>
               </NavLink>

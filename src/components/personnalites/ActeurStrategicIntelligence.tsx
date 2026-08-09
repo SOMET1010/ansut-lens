@@ -69,12 +69,12 @@ export function ActeurStrategicIntelligence({ personnalite }: Props) {
       <div className="grid grid-cols-2 gap-2">
         <div className={cn('p-3 rounded-lg border flex flex-col items-center gap-1', vigilance.color)}>
           <VigilanceIcon className="h-4 w-4" />
-          <span className="text-[10px] uppercase tracking-wide font-semibold opacity-70">Niveau de vigilance</span>
+          <span className="text-xs uppercase tracking-wide font-semibold opacity-70">Niveau de vigilance</span>
           <span className="text-xs font-bold text-center">{vigilance.label}</span>
         </div>
         <div className={cn('p-3 rounded-lg border flex flex-col items-center gap-1 bg-muted/30', trendColor)}>
           <TrendIcon className="h-4 w-4" />
-          <span className="text-[10px] uppercase tracking-wide font-semibold opacity-70">Dynamique 30j</span>
+          <span className="text-xs uppercase tracking-wide font-semibold opacity-70">Dynamique 30j</span>
           <span className="text-xs font-bold">
             {dynamique.delta > 0 ? '+' : ''}{dynamique.delta}%
           </span>
@@ -87,7 +87,7 @@ export function ActeurStrategicIntelligence({ personnalite }: Props) {
           <Target className="h-3.5 w-3.5" />
           Rôle dans l’écosystème
         </h4>
-        <p className="text-[10px] text-muted-foreground mb-2">
+        <p className="text-xs text-muted-foreground mb-2">
           D’après la catégorie et le cercle enregistrés pour cet acteur.
         </p>
         <ul className="space-y-1">

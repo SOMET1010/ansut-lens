@@ -143,7 +143,7 @@ export function SujetsValorisationSection({ onGeneratePost }: Props) {
               <CardContent className="p-4 space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-medium text-sm">{nettoyerTitre(s.titre)}</p>
-                  <Badge variant="outline" className={`text-[10px] shrink-0 ${prioriteColors[s.priorite] || prioriteColors.moyenne}`}>
+                  <Badge variant="outline" className={`text-xs shrink-0 ${prioriteColors[s.priorite] || prioriteColors.moyenne}`}>
                     {s.priorite}
                   </Badge>
                 </div>

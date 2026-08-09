@@ -94,7 +94,7 @@ export function SystemHealthWidget({
         {/* Metrics Grid */}
         <div className="flex flex-wrap gap-6 lg:gap-8 lg:border-l lg:border-border lg:pl-8">
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+            <span className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-1">
               <Clock size={12} /> Durée Collecte
             </span>
             <span className={cn(
@@ -106,7 +106,7 @@ export function SystemHealthWidget({
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+            <span className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-1">
               <Database size={12} /> Statut
             </span>
             <span className={cn(
@@ -120,7 +120,7 @@ export function SystemHealthWidget({
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+            <span className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-1">
               <Newspaper size={12} /> Articles (24h)
             </span>
             <span className="text-sm font-mono font-bold text-chart-1">

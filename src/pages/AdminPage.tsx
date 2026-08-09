@@ -186,7 +186,7 @@ export default function AdminPage() {
                   <h2 id={`zone-${zone}`} className="text-base font-semibold">
                     {meta.titre}
                     {meta.ton === 'technique' && (
-                      <Badge variant="secondary" className="ml-2 align-middle text-[10px] font-normal">
+                      <Badge variant="secondary" className="ml-2 align-middle text-xs font-normal">
                         profils techniques
                       </Badge>
                     )}
@@ -227,7 +227,7 @@ export default function AdminPage() {
                                   {valeur && (
                                     <Badge
                                       variant={estAlerte(entree) ? 'destructive' : 'secondary'}
-                                      className="shrink-0 text-[10px] font-normal"
+                                      className="shrink-0 text-xs font-normal"
                                     >
                                       {valeur}
                                     </Badge>

@@ -204,11 +204,11 @@ export default function GuideComApiSociauxPage() {
                         <div>
                           <span className="font-medium">{a.label}</span>
                           {a.required ? (
-                            <Badge variant="secondary" className="ml-2 text-[10px] py-0">
+                            <Badge variant="secondary" className="ml-2 text-xs py-0">
                               Requis
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="ml-2 text-[10px] py-0">
+                            <Badge variant="outline" className="ml-2 text-xs py-0">
                               Optionnel
                             </Badge>
                           )}

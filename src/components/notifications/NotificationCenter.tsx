@@ -43,7 +43,7 @@ export function NotificationCenter() {
         <Button variant="ghost" size="icon" className="relative" aria-label="Ouvrir les notifications">
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground flex items-center justify-center">
+            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-xs font-medium text-destructive-foreground flex items-center justify-center">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
@@ -108,10 +108,10 @@ export function NotificationCenter() {
                           </p>
                         )}
                         <div className="flex items-center gap-2 mt-1">
-                          <span className={cn('text-[10px] px-1.5 py-0.5 rounded', config.bg, config.color)}>
+                          <span className={cn('text-xs px-1.5 py-0.5 rounded', config.bg, config.color)}>
                             {config.label}
                           </span>
-                          <span className="text-[10px] text-muted-foreground">
+                          <span className="text-xs text-muted-foreground">
                             <RelativeTime date={alert.created_at} />
                           </span>
                         </div>
