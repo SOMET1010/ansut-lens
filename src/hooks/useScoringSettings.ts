@@ -70,7 +70,7 @@ export function useScoringSettings() {
       const result = { ...DEFAULT_SCORING };
       for (const [k, key] of Object.entries(KEY_MAP) as Array<[keyof ScoringSettings, string]>) {
         const v = map.get(key);
-        if (typeof v === 'number') (result as any)[k] = v;
+        if (typeof v === 'number') result[k] = v;
       }
       return result;
     },
@@ -85,7 +85,7 @@ export function useUpdateScoringSettings() {
         const { error } = await supabase
           .from('config_seuils')
           .upsert(
-            { cle: key, valeur: settings[k] as any, updated_at: new Date().toISOString() },
+            { cle: key, valeur: settings[k], updated_at: new Date().toISOString() },
             { onConflict: 'cle' },
           );
         if (error) throw error;

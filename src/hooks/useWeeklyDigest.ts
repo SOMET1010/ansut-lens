@@ -22,7 +22,7 @@ export function useWeeklyDigestConfig() {
     queryKey: ['weekly-digest-config'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('weekly_digest_config' as any)
+        .from('weekly_digest_config')
         .select('*')
         .limit(1)
         .single();
@@ -37,15 +37,15 @@ export function useUpdateWeeklyDigest() {
   return useMutation({
     mutationFn: async (updates: Partial<Omit<WeeklyDigestConfig, 'id' | 'created_at' | 'updated_at'>>) => {
       const { data: current, error: fetchErr } = await supabase
-        .from('weekly_digest_config' as any)
+        .from('weekly_digest_config')
         .select('id')
         .limit(1)
         .single();
       if (fetchErr) throw fetchErr;
       const { data, error } = await supabase
-        .from('weekly_digest_config' as any)
+        .from('weekly_digest_config')
         .update(updates)
-        .eq('id', (current as any).id)
+        .eq('id', current.id)
         .select()
         .single();
       if (error) throw error;

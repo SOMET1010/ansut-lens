@@ -132,7 +132,7 @@ export function useTitrologieSettings() {
         .in('cle', [FREQ_KEY, ALERT_THRESH_ROUGE, ALERT_THRESH_ORANGE]);
       const map = new Map((data || []).map(r => [r.cle, r.valeur]));
       return {
-        cron_schedule: (map.get(FREQ_KEY) as any) || DEFAULT_SETTINGS.cron_schedule,
+        cron_schedule: (map.get(FREQ_KEY) as string) || DEFAULT_SETTINGS.cron_schedule,
         alert_threshold_rouge: Number(map.get(ALERT_THRESH_ROUGE) ?? DEFAULT_SETTINGS.alert_threshold_rouge),
         alert_threshold_orange: Number(map.get(ALERT_THRESH_ORANGE) ?? DEFAULT_SETTINGS.alert_threshold_orange),
       };
@@ -145,9 +145,9 @@ export function useUpdateTitrologieSettings() {
   return useMutation({
     mutationFn: async (s: TitrologieSettings) => {
       const rows = [
-        { cle: FREQ_KEY, valeur: s.cron_schedule as any },
-        { cle: ALERT_THRESH_ROUGE, valeur: s.alert_threshold_rouge as any },
-        { cle: ALERT_THRESH_ORANGE, valeur: s.alert_threshold_orange as any },
+        { cle: FREQ_KEY, valeur: s.cron_schedule },
+        { cle: ALERT_THRESH_ROUGE, valeur: s.alert_threshold_rouge },
+        { cle: ALERT_THRESH_ORANGE, valeur: s.alert_threshold_orange },
       ];
       for (const r of rows) {
         const { error } = await supabase.from('config_seuils').upsert(

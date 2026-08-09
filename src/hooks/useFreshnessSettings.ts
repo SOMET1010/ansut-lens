@@ -124,7 +124,7 @@ export function useUpdateFreshnessSettings() {
       for (const u of updates) {
         const { error } = await supabase
           .from('config_seuils')
-          .upsert({ cle: u.cle, valeur: u.valeur as any, updated_at: new Date().toISOString() }, { onConflict: 'cle' });
+          .upsert({ cle: u.cle, valeur: u.valeur, updated_at: new Date().toISOString() }, { onConflict: 'cle' });
         if (error) throw error;
       }
     },

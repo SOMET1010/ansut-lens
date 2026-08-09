@@ -1,6 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface NetworkStat {
+  plateforme: string;
+  publications: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  vues: number;
+  taux_engagement: number;
+  sentiment: number | null;
+}
+
 export interface AccountActivity {
   id: string;
   nom: string;
@@ -67,7 +78,7 @@ export function useAnsutAccountsActivity() {
     queryKey: ['ansut-accounts-activity-v2'],
     queryFn: async () => {
       const { data: comptes, error: comptesError } = await supabase
-        .from('vip_comptes' as any)
+        .from('vip_comptes')
         .select('id, nom, plateforme, identifiant, url_profil')
         .eq('actif', true);
       if (comptesError) throw comptesError;
@@ -253,7 +264,7 @@ function emptyResult() {
     totalPubs: 0,
     totalPubs7j: 0,
     variationGlobale: 0,
-    networks: [] as any[],
+    networks: [] as NetworkStat[],
     sentimentBreakdown: { positif: 0, neutre: 0, negatif: 0, total: 0 },
     formatCounts: { video: 0, image: 0, texte: 0 },
     horaire: Array(24).fill(0),
