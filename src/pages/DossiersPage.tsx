@@ -35,7 +35,7 @@ import {
 import { PhraseSynthese } from '@/components/common';
 import { NewsletterStudio } from '@/components/newsletter/studio';
 import { CoffreContenu } from '@/components/dossiers/CoffreContenu';
-import { FocusBanner } from '@/components/radar';
+import { FocusBanner } from '@/components/radar/FocusBanner';
 import { SectionEmptyState } from '@/components/radar/SectionEmptyState';
 import { toErrorMessage } from '@/utils/errors';
 import type { Newsletter } from '@/types/newsletter';
