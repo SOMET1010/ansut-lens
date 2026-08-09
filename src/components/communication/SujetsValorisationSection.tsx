@@ -69,7 +69,10 @@ export function SujetsValorisationSection({ onGeneratePost }: Props) {
               const parsed = JSON.parse(json);
               const delta = parsed.choices?.[0]?.delta?.content;
               if (delta) text += delta;
-            } catch {}
+            } catch {
+              // Ligne SSE partielle/malformée : ignorée volontairement,
+              // le prochain chunk complètera le flux.
+            }
           }
         }
       } else if (typeof data === 'string') {

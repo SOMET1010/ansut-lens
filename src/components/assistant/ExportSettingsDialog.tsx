@@ -68,7 +68,6 @@ export function ExportSettingsDialog({ open, onOpenChange, baseTitle, onExport, 
 
   useEffect(() => {
     if (open) setOpts((prev) => ({ ...loadExportOptions(baseTitle), format: prev.format }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, baseTitle]);
 
   const update = <K extends keyof ExportOptions>(k: K, v: ExportOptions[K]) =>

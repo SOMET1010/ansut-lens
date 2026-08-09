@@ -62,7 +62,10 @@ export function ReactionAnalyzerSection() {
               const parsed = JSON.parse(json);
               const delta = parsed.choices?.[0]?.delta?.content;
               if (delta) text += delta;
-            } catch {}
+            } catch {
+              // Ligne SSE partielle/malformée : on l'ignore volontairement,
+              // le prochain chunk complètera le flux.
+            }
           }
         }
       } else if (typeof data === 'string') {
