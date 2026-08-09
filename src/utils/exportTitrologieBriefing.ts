@@ -1,5 +1,12 @@
 import jsPDF from 'jspdf';
-import type { TitrologieData, UneJournal } from '@/types/matinale';
+import type {
+  TitrologieData,
+  UneJournal,
+  UneAngles,
+  AngleKey,
+  AngleAnalyse,
+  AngleLien,
+} from '@/types/matinale';
 
 const ANGLE_LABELS: Record<string, string> = {
   politique: 'Politique',
@@ -30,9 +37,9 @@ export interface TitrologieExportFilter {
 function applyFilter(data: TitrologieData, filter?: TitrologieExportFilter): { unes: UneJournal[]; filterLabel: string | null } {
   if (!filter) return { unes: data.unes, filterLabel: null };
   const { angleKey = '', minIntensite = 0, sortDir = 'desc' } = filter;
-  const getInt = (u: any): number => {
-    const a = u?.angles || {};
-    if (angleKey) return a[angleKey]?.intensite ?? 0;
+  const getInt = (u: UneJournal): number => {
+    const a: UneAngles = u.angles || {};
+    if (angleKey) return a[angleKey as AngleKey]?.intensite ?? 0;
     return Math.max(
       a.politique?.intensite ?? 0,
       a.social?.intensite ?? 0,
@@ -44,7 +51,7 @@ function applyFilter(data: TitrologieData, filter?: TitrologieExportFilter): { u
   const filtered = data.unes
     .filter(u => {
       if (angleKey) {
-        const a = (u as any).angles?.[angleKey];
+        const a = u.angles?.[angleKey as AngleKey];
         if (!a || (a.intensite ?? 0) < 1) return false;
       }
       return getInt(u) >= minIntensite;
@@ -105,19 +112,19 @@ export function buildTitrologieMarkdown(data: TitrologieData, filter?: Titrologi
     if (u.lien_ansut) lines.push(`- **Lien ANSUT** : ${u.lien_ansut}`);
     if (u.risque_signals?.length) lines.push(`- **Signaux risque** : ${u.risque_signals.join(', ')}`);
 
-    const angles = (u as any).angles || {};
-    const angleEntries = Object.entries(ANGLE_LABELS)
+    const angles: UneAngles = u.angles || {};
+    const angleEntries = (Object.entries(ANGLE_LABELS) as [AngleKey, string][])
       .map(([k, label]) => [label, angles[k]] as const)
-      .filter(([, a]) => a && a.intensite >= 1);
+      .filter((e): e is readonly [string, AngleAnalyse] => !!e[1] && e[1].intensite >= 1);
 
     if (angleEntries.length) {
       lines.push('');
       lines.push(`**Analyse par angle :**`);
-      angleEntries.forEach(([label, a]: any) => {
+      angleEntries.forEach(([label, a]) => {
         const conf = typeof a.confiance === 'number' ? ` _(confiance ${a.confiance}/100)_` : '';
         lines.push(`- **${label}** [intensité ${a.intensite}/3]${conf} : ${a.lecture || '—'}`);
-        const liens = Array.isArray(a.liens) ? a.liens : [];
-        liens.forEach((l: any) => {
+        const liens: AngleLien[] = a.liens ?? [];
+        liens.forEach((l) => {
           if (!l?.entite || !l?.phrase) return;
           const ent = ENTITE_LABELS[l.entite] || l.entite;
           const lc = typeof l.confiance === 'number' ? ` _(${l.confiance}/100)_` : '';
@@ -234,18 +241,18 @@ export function downloadPDF(data: TitrologieData, filter?: TitrologieExportFilte
     if (u.lien_ansut) writeWrapped(`Lien ANSUT : ${u.lien_ansut}`, { size: 9 });
     if (u.risque_signals?.length) writeWrapped(`Signaux : ${u.risque_signals.join(', ')}`, { size: 9, color: [120, 120, 120] });
 
-    const angles = (u as any).angles || {};
-    const angleEntries = Object.entries(ANGLE_LABELS)
+    const angles: UneAngles = u.angles || {};
+    const angleEntries = (Object.entries(ANGLE_LABELS) as [AngleKey, string][])
       .map(([k, label]) => [label, angles[k]] as const)
-      .filter(([, a]) => a && a.intensite >= 1);
+      .filter((e): e is readonly [string, AngleAnalyse] => !!e[1] && e[1].intensite >= 1);
 
     if (angleEntries.length) {
       writeWrapped('Analyse par angle :', { size: 10, bold: true, gap: 2 });
-      angleEntries.forEach(([label, a]: any) => {
+      angleEntries.forEach(([label, a]) => {
         const conf = typeof a.confiance === 'number' ? ` (confiance ${a.confiance}/100)` : '';
         writeWrapped(`• ${label} [intensité ${a.intensite}/3]${conf} : ${a.lecture || '—'}`, { size: 9, indent: 12 });
-        const liens = Array.isArray(a.liens) ? a.liens : [];
-        liens.forEach((l: any) => {
+        const liens: AngleLien[] = a.liens ?? [];
+        liens.forEach((l) => {
           if (!l?.entite || !l?.phrase) return;
           const ent = ENTITE_LABELS[l.entite] || l.entite;
           const lc = typeof l.confiance === 'number' ? ` (${l.confiance}/100)` : '';
@@ -266,7 +273,7 @@ export function downloadPDF(data: TitrologieData, filter?: TitrologieExportFilte
   });
 
   // Footer on each page
-  const pageCount = (doc as any).internal.getNumberOfPages();
+  const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
