@@ -175,6 +175,15 @@ export const ADMIN_SECTION: NavSection = {
 export const MOBILE_SECTIONS = NAV_SECTIONS.filter((section) => section.mobile && !section.hidden);
 
 /**
+ * Sections du produit ABSENTES de la barre basse (Communication, Insights,
+ * Publier, Surveillance…). Regroupees derriere l'entree « Plus » du mobile,
+ * pour qu'aucune section autorisee ne soit injoignable au telephone.
+ */
+export const MOBILE_SECONDARY_SECTIONS = NAV_SECTIONS.filter(
+  (section) => !section.mobile && !section.hidden,
+);
+
+/**
  * Table de correspondance chemin -> section, incluant les anciens chemins.
  * Permet au fil d'Ariane de rester juste meme sur une URL heritee.
  */
