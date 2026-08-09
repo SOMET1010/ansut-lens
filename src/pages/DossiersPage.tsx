@@ -255,7 +255,7 @@ export default function DossiersPage() {
       {hasPermission('manage_newsletters') && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Link
-            to="/admin/matinale"
+            to="/publier/matinale"
             className="group flex items-start gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
@@ -272,7 +272,7 @@ export default function DossiersPage() {
             </span>
           </Link>
           <Link
-            to="/admin/diffusion"
+            to="/publier/diffusion"
             className="group flex items-start gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">

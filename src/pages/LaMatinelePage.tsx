@@ -651,7 +651,7 @@ export default function LaMatinelePage() {
               Accès réservé à qui peut réellement produire/diffuser. */}
           {hasPermission('manage_newsletters') && (
             <Link
-              to="/admin/matinale"
+              to="/publier/matinale"
               className="inline-flex items-center gap-1.5 rounded-md border border-[var(--m-line)] px-3 py-1.5 text-[0.72rem] font-medium text-[var(--m-ink-soft)] transition-colors hover:border-[var(--m-accent)] hover:text-[var(--m-accent)]"
             >
               <PenLine className="h-3.5 w-3.5" aria-hidden />

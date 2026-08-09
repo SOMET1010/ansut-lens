@@ -23,6 +23,11 @@ const REDIRECTIONS: Array<{ from: string; to: string }> = [
   { from: '/presence-digitale', to: '/acteurs' },
   { from: '/spdi-review', to: '/acteurs' },
   { from: '/reseaux-sociaux', to: '/communication' },
+  // Production éditoriale rapatriée sous /publier/* (Lot 8) — anciennes URLs /admin/*.
+  { from: '/admin/newsletters', to: '/publier/newsletters' },
+  { from: '/admin/diffusion', to: '/publier/diffusion' },
+  { from: '/admin/matinale', to: '/publier/matinale' },
+  { from: '/admin/coffre-contenu', to: '/publier/coffre-contenu' },
 ];
 
 const ROUTES_DIRECTES = ['/ce-matin', '/veille', '/recherche', '/acteurs', '/auth'];

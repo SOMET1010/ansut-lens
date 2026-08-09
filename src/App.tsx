@@ -183,6 +183,12 @@ const App = () => (
                         <Route path="/balayage" element={<Navigate to="/recherche" replace />} />
                         <Route path="/flux" element={<Navigate to="/surveillance" replace />} />
                         <Route path="/dossiers" element={<Navigate to="/publier" replace />} />
+                        {/* Production éditoriale rapatriée sous /publier/* (Lot 8) :
+                            on garde les anciennes URLs /admin/* pour les liens partagés. */}
+                        <Route path="/admin/newsletters" element={<Navigate to="/publier/newsletters" replace />} />
+                        <Route path="/admin/diffusion" element={<Navigate to="/publier/diffusion" replace />} />
+                        <Route path="/admin/matinale" element={<Navigate to="/publier/matinale" replace />} />
+                        <Route path="/admin/coffre-contenu" element={<Navigate to="/publier/coffre-contenu" replace />} />
                         <Route
                           path="/personnalites"
                           element={<Navigate to="/acteurs?tab=cartographie" replace />}
@@ -225,6 +231,20 @@ const App = () => (
 
                           <Route element={<PermissionRoute permission="view_dossiers" />}>
                             <Route path="/publier" element={<DossiersPage />} />
+                          </Route>
+
+                          {/*
+                            Production éditoriale : gardée par la permission FINE seule
+                            (manage_newsletters), SANS access_admin. Un profil éditorial
+                            (composeur de la matinale, des newsletters) ne doit jamais se
+                            heurter à « Accès refusé ». Anciennes URLs /admin/* redirigées
+                            plus haut (correctif audit UX Lot 8).
+                          */}
+                          <Route element={<PermissionRoute permission="manage_newsletters" />}>
+                            <Route path="/publier/newsletters" element={<NewslettersPage />} />
+                            <Route path="/publier/diffusion" element={<DiffusionPage />} />
+                            <Route path="/publier/matinale" element={<MatinalePage />} />
+                            <Route path="/publier/coffre-contenu" element={<CoffreContenuPage />} />
                           </Route>
 
                           <Route element={<PermissionRoute permission="use_assistant" />}>
@@ -281,19 +301,15 @@ const App = () => (
                               />
                             </Route>
 
+                            {/* Production éditoriale (newsletters, diffusion, matinale,
+                                coffre) déplacée sous /publier/* (Lot 8). Restent ici les
+                                réglages de config sous manage_newsletters. */}
                             <Route element={<PermissionRoute permission="manage_newsletters" />}>
-                              <Route path="/admin/newsletters" element={<NewslettersPage />} />
-                              <Route path="/admin/diffusion" element={<DiffusionPage />} />
-                              <Route path="/admin/matinale" element={<MatinalePage />} />
                               <Route path="/admin/scoring" element={<ScoringPage />} />
                               <Route path="/admin/titrologie" element={<TitrologieAdminPage />} />
                               <Route
                                 path="/admin/shadow-tracker"
                                 element={<ShadowTrackerPage />}
-                              />
-                              <Route
-                                path="/admin/coffre-contenu"
-                                element={<CoffreContenuPage />}
                               />
                               <Route path="/admin/auto-veille" element={<AutoVeillePage />} />
                             </Route>
