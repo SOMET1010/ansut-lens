@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,17 +9,17 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { 
-  Loader2, 
-  Zap, 
-  Sparkles, 
-  Search, 
-  Bell, 
+import {
+  Loader2,
+  Zap,
+  Sparkles,
+  Search,
+  Bell,
   Mail,
   Cpu,
   TrendingUp,
   Scale,
-  Star
+  Star,
 } from 'lucide-react';
 import { FluxVeille, FluxFormData, useCreateFlux, useUpdateFlux } from '@/hooks/useFluxVeille';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,43 +33,26 @@ interface FluxFormDialogProps {
   initialData?: Partial<FluxFormData> | null;
 }
 
-// Quadrant options with visual styling
+// Quadrants Radar : simples catégories sélectionnables. Conformément à la charte
+// couleur, la sélection est portée par le bleu de navigation (primary) ; l'état
+// non sélectionné reste neutre. Pas de couleur décorative par quadrant.
 const quadrantOptions = [
-  { id: 'tech', label: 'Technologie', icon: Cpu, colorClass: 'text-blue-500', bgClass: 'bg-blue-500/10', borderClass: 'border-blue-500' },
-  { id: 'market', label: 'Marché', icon: TrendingUp, colorClass: 'text-green-500', bgClass: 'bg-green-500/10', borderClass: 'border-green-500' },
-  { id: 'regulation', label: 'Régulation', icon: Scale, colorClass: 'text-purple-500', bgClass: 'bg-purple-500/10', borderClass: 'border-purple-500' },
-  { id: 'reputation', label: 'Réputation', icon: Star, colorClass: 'text-attention', bgClass: 'bg-attention/10', borderClass: 'border-attention' },
+  { id: 'tech', label: 'Technologie', icon: Cpu },
+  { id: 'market', label: 'Marché', icon: TrendingUp },
+  { id: 'regulation', label: 'Régulation', icon: Scale },
+  { id: 'reputation', label: 'Réputation', icon: Star },
 ];
 
-// Volume estimation based on criteria
-function estimateVolume(keywords: string[], quadrants: string[], importance: number) {
-  const keywordScore = keywords.length * 10;
-  const quadrantScore = (4 - quadrants.length) * 15;
-  const importanceScore = 100 - importance;
-  const totalScore = keywordScore + quadrantScore + importanceScore;
-  
-  if (totalScore < 40) return { level: 1, label: 'Faible (~5/sem)', colorClass: 'bg-yellow-500' };
-  if (totalScore < 80) return { level: 2, label: 'Modéré (~15/sem)', colorClass: 'bg-green-500' };
-  return { level: 3, label: 'Élevé (~30+/sem)', colorClass: 'bg-attention' };
-}
-
 // Helper components
-function QuadrantButton({ 
-  id, 
-  label, 
-  icon: Icon, 
-  colorClass, 
-  bgClass,
-  borderClass,
-  active, 
-  onClick 
+function QuadrantButton({
+  label,
+  icon: Icon,
+  active,
+  onClick,
 }: {
   id: string;
   label: string;
   icon: React.ElementType;
-  colorClass: string;
-  bgClass: string;
-  borderClass: string;
   active: boolean;
   onClick: () => void;
 }) {
@@ -77,47 +60,21 @@ function QuadrantButton({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
-        "flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200",
-        active 
-          ? `${borderClass} ${bgClass} ${colorClass}` 
-          : "border-muted hover:border-muted-foreground/30 text-muted-foreground"
+        'flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200',
+        active
+          ? 'border-primary bg-primary/5 text-primary'
+          : 'border-muted hover:border-muted-foreground/30 text-muted-foreground',
       )}
     >
-      <Icon className={cn("h-5 w-5 mb-2", active ? colorClass : "")} />
+      <Icon className="h-5 w-5 mb-2" />
       <span className="text-xs font-medium">{label}</span>
     </button>
   );
 }
 
-function VolumeIndicator({ keywords, quadrants, importance }: { keywords: string[], quadrants: string[], importance: number }) {
-  const { level, label, colorClass } = estimateVolume(keywords, quadrants, importance);
-  
-  return (
-    <div className="flex items-center gap-2 text-xs">
-      <span className="text-muted-foreground font-medium">Volume estimé :</span>
-      <div className="flex gap-0.5">
-        {[1, 2, 3].map(i => (
-          <div 
-            key={i} 
-            className={cn(
-              "w-6 h-1.5 rounded-full transition-colors",
-              i <= level ? colorClass : "bg-muted"
-            )} 
-          />
-        ))}
-      </div>
-      <span className={cn(
-        "font-medium",
-        level === 1 ? "text-yellow-600" : level === 2 ? "text-green-600" : "text-attention"
-      )}>
-        {label}
-      </span>
-    </div>
-  );
-}
-
-function AlertOption({ 
+function AlertOption({
   icon: Icon, 
   title, 
   description, 
@@ -149,6 +106,12 @@ function AlertOption({
 export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFormDialogProps) {
   const createFlux = useCreateFlux();
   const updateFlux = useUpdateFlux();
+
+  // Identifiants stables pour associer chaque libellé à son champ (a11y).
+  const nomId = useId();
+  const requeteId = useId();
+  const quadrantsLabelId = useId();
+  const importanceId = useId();
 
   const [formData, setFormData] = useState<FluxFormData>({
     nom: '',
@@ -275,8 +238,16 @@ export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFo
       }
       onOpenChange(false);
     } catch (error) {
-      console.error(error);
+      // Les hooks (useCreateFlux/useUpdateFlux) affichent déjà un toast d'erreur.
+      // On journalise et on GARDE le dialogue ouvert pour que l'utilisateur
+      // puisse corriger sa saisie sans tout ressaisir.
+      console.error('Enregistrement de la veille échoué :', error);
     }
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSubmit();
   };
 
   const isLoading = createFlux.isPending || updateFlux.isPending;
@@ -296,17 +267,19 @@ export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFo
           </DialogDescription>
         </DialogHeader>
 
-        {/* Corps scrollable */}
+        {/* Corps scrollable — enveloppé dans un <form> pour que Entrée soumette */}
+        <form onSubmit={handleFormSubmit} className="flex flex-col flex-1 overflow-hidden">
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-          
+
           {/* Section 1: Nom du flux */}
           <section className="space-y-2">
-            <Label className="font-semibold">Nom du flux</Label>
+            <Label htmlFor={nomId} className="font-semibold">Nom du flux</Label>
             <div className="flex gap-3">
               <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                 <Zap className="h-6 w-6" />
               </div>
-              <Input 
+              <Input
+                id={nomId}
                 placeholder="Ex : Zones blanches, FTTH & 5G, Réputation ANSUT…"
                 className="h-12 text-base"
                 value={formData.nom}
@@ -319,7 +292,7 @@ export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFo
           {/* Section 2: Ciblage IA */}
           <section className="bg-muted/50 rounded-xl p-5 border space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <Label className="font-semibold flex items-center gap-2">
+              <Label htmlFor={requeteId} className="font-semibold flex items-center gap-2">
                 <Search className="h-4 w-4" />
                 Requête de surveillance
               </Label>
@@ -329,7 +302,7 @@ export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFo
                 size="sm" 
                 onClick={handleAiGenerate}
                 disabled={isGenerating || !formData.nom.trim()}
-                className="gap-2 text-purple-600 border-purple-200 hover:bg-purple-50 hover:text-purple-700"
+                className="gap-2"
               >
                 {isGenerating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -341,25 +314,23 @@ export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFo
             </div>
             
             {/* Zone de mots-clés avec style terminal */}
-            <Textarea 
+            <Textarea
+              id={requeteId}
               className="font-mono text-sm bg-background min-h-[80px]"
               placeholder="Saisissez vos mots-clés (séparés par des virgules) ou laissez l'IA les générer..."
               value={keywordsText}
               onChange={(e) => setKeywordsText(e.target.value)}
             />
-            
-            {/* Indicateur de volume */}
-            <VolumeIndicator 
-              keywords={formData.mots_cles} 
-              quadrants={formData.quadrants}
-              importance={formData.importance_min}
-            />
           </section>
 
           {/* Section 3: Quadrants visuels */}
           <section className="space-y-3">
-            <Label className="font-semibold">Quadrants Radar</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Label id={quadrantsLabelId} className="font-semibold">Quadrants Radar</Label>
+            <div
+              role="group"
+              aria-labelledby={quadrantsLabelId}
+              className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+            >
               {quadrantOptions.map(q => (
                 <QuadrantButton 
                   key={q.id} 
@@ -374,11 +345,13 @@ export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFo
           {/* Section 4: Importance */}
           <section className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="font-semibold">Seuil d'importance minimum</Label>
+              <Label htmlFor={importanceId} className="font-semibold">Seuil d'importance minimum</Label>
               <Badge variant="secondary">≥ {formData.importance_min}%</Badge>
             </div>
-            <Slider 
-              value={[formData.importance_min]} 
+            <Slider
+              id={importanceId}
+              aria-label="Seuil d'importance minimum"
+              value={[formData.importance_min]}
               onValueChange={([value]) => setFormData(prev => ({ ...prev, importance_min: value }))}
               max={100}
               step={5}
@@ -436,12 +409,12 @@ export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFo
 
         {/* Footer avec CTA fort */}
         <DialogFooter className="px-6 py-4 border-t bg-muted/30">
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={isLoading || !formData.nom.trim()} 
+          <Button
+            type="submit"
+            disabled={isLoading || !formData.nom.trim()}
             className="gap-2"
           >
             {isLoading ? (
@@ -452,6 +425,7 @@ export function FluxFormDialog({ open, onOpenChange, flux, initialData }: FluxFo
             {flux ? 'Mettre à jour' : 'Lancer la surveillance'}
           </Button>
         </DialogFooter>
+        </form>
 
       </DialogContent>
     </Dialog>
