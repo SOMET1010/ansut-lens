@@ -426,7 +426,7 @@ export default function MotsClesPage() {
                               </div>
                             </details>
                           ) : (
-                            <span className="text-xs text-muted-foreground/50">—</span>
+                            <span className="text-xs text-muted-foreground">—</span>
                           )}
                         </TableCell>
                         <TableCell>

@@ -43,7 +43,7 @@ export function PhraseSynthese({ contexte, phrase, note, isLoading }: PhraseSynt
         )}
       </div>
       {note && !isLoading && (
-        <p className="mt-1.5 text-[11px] text-muted-foreground/70">{note}</p>
+        <p className="mt-1.5 text-[11px] text-muted-foreground">{note}</p>
       )}
     </div>
   );

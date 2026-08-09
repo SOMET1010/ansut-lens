@@ -164,7 +164,7 @@ export default function AdminPage() {
         {zonesVisibles.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-              <SlidersHorizontal className="h-10 w-10 text-muted-foreground/60" aria-hidden />
+              <SlidersHorizontal className="h-10 w-10 text-muted-foreground" aria-hidden />
               <p className="text-sm text-muted-foreground">
                 {recherche
                   ? 'Essayez un autre mot, ou parcourez les groupes en effaçant la recherche.'
@@ -238,7 +238,7 @@ export default function AdminPage() {
                                 </span>
                               </span>
                               <ChevronRight
-                                className="mt-2 h-4 w-4 shrink-0 text-muted-foreground/50"
+                                className="mt-2 h-4 w-4 shrink-0 text-muted-foreground"
                                 aria-hidden
                               />
                             </Link>

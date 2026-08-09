@@ -74,7 +74,7 @@ function DimensionRow({ label, active }: { label: string; active: boolean }) {
       ) : (
         <Circle className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
       )}
-      <span className={cn(active ? 'text-foreground font-medium' : 'text-muted-foreground/70')}>
+      <span className={cn(active ? 'text-foreground font-medium' : 'text-muted-foreground')}>
         {label}
       </span>
     </div>
@@ -189,7 +189,7 @@ export function FrameworkPanel({
                   Sources citées
                 </h4>
                 {analysis.usedActuIds.length === 0 && analysis.usedDossierIds.length === 0 ? (
-                  <p className="text-[11px] text-muted-foreground/70 italic">
+                  <p className="text-[11px] text-muted-foreground italic">
                     Aucune citation détectée pour le moment.
                   </p>
                 ) : (

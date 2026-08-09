@@ -58,9 +58,9 @@ export const calculateFreshness = (dateStr: string | null): FreshnessInfo => {
     const ageDays = Math.floor(ageHours / 24);
     return { 
       ageHours, 
-      level: 'recent', 
-      color: 'text-signal-warning', 
-      label: `Il y a ${ageDays}j` 
+      level: 'recent',
+      color: 'text-attention',
+      label: `Il y a ${ageDays}j`
     };
   } else {
     const ageDays = Math.floor(ageHours / 24);

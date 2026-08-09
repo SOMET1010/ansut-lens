@@ -23,7 +23,7 @@ export function RecentSendsTable({ dossiers, onSelect }: RecentSendsTableProps) 
   if (dossiers.length === 0) {
     return (
       <Card className="p-8 text-center">
-        <FileText className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+        <FileText className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
         <p className="text-sm text-muted-foreground">
           Aucun document envoyé pour le moment.
         </p>

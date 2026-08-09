@@ -184,7 +184,7 @@ export function ImageUploader({
               <div className="text-sm text-muted-foreground">
                 <span className="text-primary font-medium">Cliquer</span> ou glisser-déposer
               </div>
-              <span className="text-xs text-muted-foreground/75">JPG, PNG (max 5 Mo)</span>
+              <span className="text-xs text-muted-foreground">JPG, PNG (max 5 Mo)</span>
             </div>
           )}
         </div>

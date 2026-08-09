@@ -79,7 +79,7 @@ export function RadarVisualization({ personnalites, onActeurClick }: RadarVisual
       </svg>
 
       {/* Labels des cercles */}
-      <div className="absolute top-2 left-2 text-[10px] text-muted-foreground/60 flex flex-col gap-1">
+      <div className="absolute top-2 left-2 text-[10px] text-muted-foreground flex flex-col gap-1">
         <div className="flex items-center gap-1">
           <div className="h-2 w-2 rounded-full bg-blue-500" />
           <span>C1</span>

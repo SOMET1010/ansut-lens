@@ -113,7 +113,7 @@ export function Breadcrumbs() {
       </Link>
       {crumbs.map((crumb, index) => (
         <span key={`${crumb.label}-${index}`} className="flex min-w-0 items-center gap-1">
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" aria-hidden />
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
           {crumb.to ? (
             <Link
               to={crumb.to}

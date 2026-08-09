@@ -176,7 +176,7 @@ export function SmartActeurCard({
                   variant="ghost"
                   size="icon"
                   aria-label="Autres actions"
-                  className="h-8 w-8 shrink-0 text-muted-foreground/50 hover:text-foreground"
+                  className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <MoreHorizontal className="h-4 w-4" />
@@ -264,7 +264,7 @@ export function SmartActeurCard({
 
       {/* Pied : accès au dossier */}
       <div className="flex items-center justify-between border-t border-border/50 px-5 py-2.5">
-        <span className="text-[11px] text-muted-foreground/70">Fiche acteur</span>
+        <span className="text-[11px] text-muted-foreground">Fiche acteur</span>
         <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary transition-transform group-hover:translate-x-0.5">
           Voir le dossier
           <ArrowRight className="h-3.5 w-3.5" aria-hidden />

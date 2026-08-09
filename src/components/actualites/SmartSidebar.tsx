@@ -112,7 +112,7 @@ export function SmartSidebar({
             <Activity className="h-3.5 w-3.5" /> Tonalité générale
             <Tooltip>
               <TooltipTrigger asChild>
-                <button type="button" className="text-muted-foreground/60 hover:text-primary transition-colors normal-case">
+                <button type="button" className="text-muted-foreground hover:text-primary transition-colors normal-case">
                   <AlertCircle className="h-3 w-3" />
                 </button>
               </TooltipTrigger>
@@ -215,7 +215,7 @@ export function SmartSidebar({
           </h3>
           
           {topConcepts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-20 text-muted-foreground/50">
+            <div className="flex flex-col items-center justify-center h-20 text-muted-foreground">
               <AlertCircle className="h-5 w-5 mb-1 opacity-50" />
               <span className="text-xs">En attente d'analyse...</span>
             </div>

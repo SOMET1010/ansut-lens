@@ -97,8 +97,8 @@ export function ArticleCluster({
             ) : (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-[hsl(var(--signal-warning))]/10 text-[hsl(var(--signal-warning))] border border-[hsl(var(--signal-warning))]/20">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--signal-warning))] animate-pulse" aria-hidden="true" />
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-attention/10 text-attention border border-attention/20">
+                    <span className="h-1.5 w-1.5 rounded-full bg-attention animate-pulse" aria-hidden="true" />
                     En attente
                   </span>
                 </TooltipTrigger>

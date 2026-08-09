@@ -32,13 +32,13 @@ export function CompactStats() {
 
       {/* Alertes actives (si > 0) */}
       {stats.alertesElevees > 0 && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800/50 rounded-lg shadow-sm">
-          <TrendingUp className="h-4 w-4 text-yellow-600" />
+        <div className="flex items-center gap-2 px-3 py-2 bg-attention/10 border border-attention/20 rounded-lg shadow-sm">
+          <TrendingUp className="h-4 w-4 text-attention" aria-hidden="true" />
           <div className="flex items-baseline gap-1">
-            <span className="text-lg font-bold text-yellow-700 dark:text-yellow-500">
+            <span className="text-lg font-bold text-attention">
               {stats.alertesElevees}
             </span>
-            <span className="text-xs text-yellow-600/80 hidden sm:inline">alertes</span>
+            <span className="text-xs text-attention hidden sm:inline">alertes</span>
           </div>
         </div>
       )}

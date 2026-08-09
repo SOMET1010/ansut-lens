@@ -142,7 +142,7 @@ export function RoleAccreditationCard({
                 {status !== 'none' ? (
                   <Check className="h-3.5 w-3.5 text-green-500" />
                 ) : (
-                  <X className="h-3.5 w-3.5 text-muted-foreground/50" />
+                  <X className="h-3.5 w-3.5 text-muted-foreground" />
                 )}
                 {label} ({enabledCount}/{totalCount})
               </span>

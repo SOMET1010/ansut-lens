@@ -48,7 +48,7 @@ const NIVEAU_CONFIG = {
   warning: {
     icon: AlertCircle,
     label: 'Avertissement',
-    className: 'bg-accent/10 text-[hsl(var(--signal-warning))] border-accent/20',
+    className: 'bg-accent/10 text-attention border-accent/20',
   },
   info: {
     icon: Info,
@@ -191,7 +191,7 @@ export default function AlertesHistoryPage() {
               </div>
             ) : alertes.length === 0 ? (
               <div className="text-center py-12">
-                <Bell className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                <Bell className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium">Aucune alerte</h3>
                 <p className="text-muted-foreground">
                   Aucune alerte ne correspond à vos critères de recherche

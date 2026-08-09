@@ -27,7 +27,7 @@ export function PourVousFeed() {
     return (
       <Card className="glass">
         <CardContent className="py-12 text-center">
-          <Sparkles className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" aria-hidden />
+          <Sparkles className="h-12 w-12 mx-auto text-muted-foreground mb-4" aria-hidden />
           <h3 className="font-semibold mb-2">Vos recommandations arrivent</h3>
           <p className="text-sm text-muted-foreground">
             Continuez à consulter les actualités et donner votre feedback — RADAR apprend de vos préférences.

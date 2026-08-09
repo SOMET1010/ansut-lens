@@ -87,7 +87,7 @@ export function FeedbackButtons({ actualiteId, compact = false }: FeedbackButton
                 variant="ghost"
                 size="icon"
                 // Remplacement des couleurs littérales par les tokens sémantiques
-                className={cn(btnSize, currentFeedback === 'important' && 'text-[hsl(var(--signal-warning))] bg-[hsl(var(--signal-warning))]/10')}
+                className={cn(btnSize, currentFeedback === 'important' && 'text-attention bg-attention/10')}
                 onClick={(e) => { e.stopPropagation(); handleFeedback('important'); }}
                 disabled={submitFeedback.isPending} aria-label="Marquer comme important">
                 <Star className={size} aria-hidden="true" />
