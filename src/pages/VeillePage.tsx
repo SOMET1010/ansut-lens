@@ -32,6 +32,7 @@ import { WatchHeader } from '@/components/actualites/WatchHeader';
 import { BigSearchBar } from '@/components/actualites/BigSearchBar';
 import { PourVousFeed } from '@/components/actualites/PourVousFeed';
 import { TitrologieWidget } from '@/components/actualites/TitrologieWidget';
+import { SectionEmptyState } from '@/components/radar/SectionEmptyState';
 
 /** Correspondance entre le libelle de periode et l'age maximal en heures. */
 const PERIODES: Record<string, number | undefined> = {
@@ -95,7 +96,7 @@ export default function VeillePage() {
     );
   }, [setSearchParams]);
 
-  const { data: actualites, isLoading, refetch } = useActualites({
+  const { data: actualites, isLoading, isError, refetch } = useActualites({
     maxAgeHours: PERIODES[periode],
   });
   const { data: articlesHier } = useYesterdayArticles();
@@ -344,6 +345,17 @@ export default function VeillePage() {
                       </Card>
                     ))}
                   </div>
+                ) : isError && clusters.length === 0 ? (
+                  // Charte : un échec de chargement n'est PAS un « aucune actualité ».
+                  // On le dit honnêtement et on propose de réessayer, sans masquer
+                  // l'erreur derrière un état vide. (Si des données restent affichables
+                  // malgré une erreur de rafraîchissement, on les garde plutôt que ce bloc.)
+                  <SectionEmptyState
+                    variant="error"
+                    title="Impossible de charger la veille"
+                    description="Les actualités n'ont pas pu être récupérées. Vérifiez votre connexion ou réessayez dans un instant."
+                    onRetry={() => refetch()}
+                  />
                 ) : clusters.length === 0 ? (
                   <Card className="border-dashed">
                     <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
