@@ -19,6 +19,7 @@
 
 import type { Sujet } from '@/lib/sujets';
 import type { RecitSujet } from '@/hooks/useRecitsSujets';
+import type { ConseilIA } from '@/hooks/useConseiller';
 import type { EchoMediatique } from '@/lib/insightsCommunication';
 import type { PublicationAnsut } from '@/hooks/useAnsutPublications';
 import type { Signal } from '@/types';
@@ -61,6 +62,12 @@ export interface SourceBriefing {
   signaux: Signal[];
   publicationsRecentes: PublicationAnsut[];
   presseRecente: { id: string; titre: string; source: string | null; url: string | null; dateMs: number | null }[];
+  /**
+   * Conseil enrichi par l'IA (Étage 4), ou `null` : sans lui, l'adaptateur
+   * conserve la formulation déterministe. L'IA n'enrichit que le TEXTE — le
+   * fondement (comptage réel) et les preuves restent déterministes.
+   */
+  conseilIA?: ConseilIA | null;
   maintenantMs: number;
   derniereCollecteMs: number | null;
 }
@@ -148,31 +155,48 @@ function versSignal(signaux: Signal[], maintenantMs: number): SignalBriefing | n
 }
 
 /**
- * Le conseiller — terrain éditorial vacant, DÉTERMINISTE et sourcé.
- *
- * On repère le sujet où l'écosystème parle (≥ seuil d'articles) et où l'ANSUT
- * n'a rien publié (0 publication). Ce n'est pas un jugement d'IA : c'est un
- * comptage réel exposé (`fondement`). La vue y ajoute le libellé invariant
- * « une opportunité, jamais une injonction ».
+ * Détection DÉTERMINISTE de l'opportunité éditoriale (« terrain vacant ») : le
+ * sujet où l'écosystème parle (≥ seuil d'articles) et où l'ANSUT n'a rien publié
+ * (0 publication). Exportée pour que l'écran envoie EXACTEMENT cette opportunité
+ * au conseiller IA (Étage 4) — une seule règle de détection, jamais dupliquée.
  */
-function versConseil(sujets: Sujet[]): { conseil: ConseilBriefing | null; nbOpportunites: number; rubrique: string | null } {
+export function detecterOpportunite(sujets: Sujet[]): { opportunite: Sujet | null; nbOpportunites: number } {
   const vacants = sujets
     .filter((s) => s.nbPublications === 0 && s.nbArticles >= SEUIL_OPPORTUNITE)
     .sort((a, b) => b.nbArticles - a.nbArticles);
-  if (vacants.length === 0) return { conseil: null, nbOpportunites: 0, rubrique: null };
-  const top = vacants[0];
+  return { opportunite: vacants[0] ?? null, nbOpportunites: vacants.length };
+}
+
+/**
+ * Le conseiller — terrain éditorial vacant, DÉTERMINISTE et sourcé.
+ *
+ * L'opportunité et son `fondement` (comptage réel) et ses preuves sont TOUJOURS
+ * déterministes. Étage 4 : si l'IA a produit un texte valide (borné aux preuves,
+ * non-injonctif — garanti côté serveur par `_shared/conseiller.ts`), on l'utilise
+ * pour la seule FORMULATION ; sinon on garde le texte déterministe. Aucun chiffre,
+ * aucune preuve ne dépend de l'IA. La vue ajoute le libellé invariant
+ * « une opportunité, jamais une injonction ».
+ */
+function versConseil(
+  sujets: Sujet[],
+  conseilIA: ConseilIA | null,
+): { conseil: ConseilBriefing | null; nbOpportunites: number; rubrique: string | null } {
+  const { opportunite: top, nbOpportunites } = detecterOpportunite(sujets);
+  if (!top) return { conseil: null, nbOpportunites: 0, rubrique: null };
   const preuves: Preuve[] = documentsProbants({
     publications: [],
     articles: top.articles,
     organisations: [],
   }).documents.slice(0, 5);
+  const texteDeterministe = `L’écosystème parle de « ${top.nomCourt} » (${top.nbArticles} contenus) ; l’ANSUT n’a pas publié sur ce thème. Une prise de parole occuperait un terrain aujourd’hui vacant.`;
+  const texteIA = conseilIA?.texte?.trim();
   return {
     conseil: {
-      texte: `L’écosystème parle de « ${top.nomCourt} » (${top.nbArticles} contenus) ; l’ANSUT n’a pas publié sur ce thème. Une prise de parole occuperait un terrain aujourd’hui vacant.`,
+      texte: texteIA || texteDeterministe,
       fondement: `${top.nbArticles} contenus écosystème · 0 publication ANSUT sur ce thème / ${top.periodeJours} j`,
       preuves,
     },
-    nbOpportunites: vacants.length,
+    nbOpportunites,
     rubrique: top.nomCourt,
   };
 }
@@ -262,7 +286,7 @@ export function assemblerBriefing(
 
   const echo = versEcho(src.echo);
   const aExaminer = versSignal(src.signaux, src.maintenantMs);
-  const { conseil, nbOpportunites, rubrique } = versConseil(src.sujets);
+  const { conseil, nbOpportunites, rubrique } = versConseil(src.sujets, src.conseilIA ?? null);
 
   const aRetenir: PointRetenir[] = [];
   if (sujetUne) {
