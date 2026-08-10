@@ -18,7 +18,7 @@ export function useInsightsCommunication(limit = 500) {
       const { data, error } = await supabase
         .from('publications_institutionnelles')
         .select(
-          'id, plateforme, contenu, type_contenu, hashtags, media_urls, date_publication, created_at, likes_count, comments_count, shares_count, vues_count',
+          'id, plateforme, contenu, url_original, type_contenu, hashtags, media_urls, date_publication, created_at, likes_count, comments_count, shares_count, vues_count',
         )
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -28,6 +28,7 @@ export function useInsightsCommunication(limit = 500) {
         id: p.id,
         plateforme: p.plateforme,
         contenu: p.contenu ?? null,
+        url_original: p.url_original ?? null,
         type_contenu: p.type_contenu ?? null,
         hashtags: p.hashtags ?? null,
         media_urls: p.media_urls ?? null,

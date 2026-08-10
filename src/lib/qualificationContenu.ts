@@ -31,6 +31,35 @@ function normaliser(s: string): string {
   return (s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
+// djb2 \u2014 miroir EXACT de la version portable (supabase/functions/_shared/
+// qualification.ts). Suffisant comme cl\u00e9 de d\u00e9doublonnage \u00e0 notre volume.
+function hashTexte(s: string): string {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  return h.toString(16);
+}
+
+/**
+ * Cl\u00e9 m\u00e9tier stable d'un contenu \u2014 miroir de `contentKey()` c\u00f4t\u00e9 edge (\u00e9tage 2).
+ *
+ * Un m\u00eame contenu pr\u00e9sent dans plusieurs tables (publications / actualit\u00e9s)
+ * partage UNE cl\u00e9 : l'URL normalis\u00e9e (host + chemin) si elle est http(s), sinon
+ * un hash du texte normalis\u00e9. Indispensable pour LIRE `editorial_qualifications`
+ * depuis le front (\u00e9tage 3) avec exactement la cl\u00e9 \u00e9crite \u00e0 l'ingestion.
+ *
+ * La parit\u00e9 avec la version portable est garantie par
+ * `qualificationParity.test.ts` \u2014 les deux DOIVENT rester identiques.
+ */
+export function cleContenu(url: string | null, texte: string | null): string {
+  if (url && /^https?:\/\//i.test(url)) {
+    try {
+      const u = new URL(url);
+      return (u.host + u.pathname).toLowerCase().replace(/\/+$/, '');
+    } catch { /* repli hash */ }
+  }
+  return 'hash:' + hashTexte(normaliser(texte ?? ''));
+}
+
 function echapper(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

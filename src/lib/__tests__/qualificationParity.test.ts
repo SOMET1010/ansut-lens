@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { categoriserCommunication, qualifier } from '@/lib/qualificationContenu';
+import { categoriserCommunication, qualifier, cleContenu } from '@/lib/qualificationContenu';
 import { piliersPourTexte } from '@/lib/missions';
 import {
   categoriser as categoriserPortable,
   piliersDeTexte as piliersPortable,
   qualifierContenu,
+  contentKey as contentKeyPortable,
 } from '../../../supabase/functions/_shared/qualification';
 
 /**
@@ -72,5 +73,22 @@ describe('parité qualifieur portable vs frontend', () => {
   it('détecte bien le pilier P3 pour l’IA/blockchain (ajout PR #21)', () => {
     const s = 'programme de formation à l’intelligence artificielle et la blockchain';
     expect(piliersPortable(s).ids).toContain('usages-competences');
+  });
+
+  // Étage 3 : le front doit reconstruire EXACTEMENT la clé écrite à l'ingestion,
+  // sinon la lecture de `editorial_qualifications` manque systématiquement sa cible.
+  it('construit la même content_key que la version portable (URL + hash)', () => {
+    const CAS: [string | null, string | null][] = [
+      ['https://www.fratmat.info/article/12345/actu', 'texte'],
+      ['https://ANSUT.ci/Actus/Fibre/', 'peu importe'],       // casse + slash final
+      ['http://exemple.ci/a?b=1#frag', 'x'],
+      ['pas-une-url', 'GITEX 2026 : l’ANSUT au rendez-vous'],  // repli hash
+      [null, 'Déploiement de la fibre optique'],               // repli hash
+      ['', ''],                                                 // repli hash sur vide
+      ['ftp://interne/doc', 'protocole non http → repli hash'],
+    ];
+    for (const [url, texte] of CAS) {
+      expect(cleContenu(url, texte), `cle: ${url} / ${texte}`).toBe(contentKeyPortable(url, texte));
+    }
   });
 });

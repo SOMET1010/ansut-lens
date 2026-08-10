@@ -33,7 +33,10 @@ import {
   type Evolution,
   type InsightsCommunication,
   type StatCompte,
+  type ResoudreQualif,
 } from '@/lib/insightsCommunication';
+import { useQualification } from '@/hooks/useQualification';
+import { cleContenu } from '@/lib/qualificationContenu';
 
 /**
  * 📊 Insights — le récit analytique de la communication de l'ANSUT.
@@ -434,9 +437,30 @@ export default function InsightsPage() {
   const { data: publications, isLoading } = useInsightsCommunication(500);
   const { data: presse } = usePresseAnsut(500);
 
+  // Étage 3 — l'écran LIT la qualification persistée (editorial_qualifications)
+  // via la content_key reconstruite, et retombe sur un recalcul honnête tant
+  // qu'une publication n'a pas encore de ligne. Comportement identique à l'ancien
+  // tant que la table n'est pas peuplée (garanti par le test de parité).
+  const clesQualif = useMemo(
+    () => (publications ?? []).map((p) => cleContenu(p.url_original, p.contenu)),
+    [publications],
+  );
+  const { data: qualif } = useQualification(clesQualif, maintenantMs);
+
+  const resoudreQualif = useMemo<ResoudreQualif | undefined>(() => {
+    if (!qualif) return undefined; // pas encore chargé → recalcul par défaut
+    return (p) =>
+      qualif.qualificationDe(cleContenu(p.url_original, p.contenu), {
+        texte: p.contenu,
+        published_at: p.date_publication,
+        collected_at: p.collecte_le,
+        source_officielle_ansut: true,
+      });
+  }, [qualif]);
+
   const ins = useMemo(
-    () => calculerInsights(publications ?? [], fenetre, maintenantMs),
-    [publications, fenetre, maintenantMs],
+    () => calculerInsights(publications ?? [], fenetre, maintenantMs, resoudreQualif),
+    [publications, fenetre, maintenantMs, resoudreQualif],
   );
 
   const echo = useMemo(
