@@ -60,7 +60,7 @@ export default function TitrologieAdminPage() {
   const submitSource = () => {
     const r = sourceSchema.safeParse(newSrc);
     if (!r.success) { return alert(r.error.issues[0]?.message || 'Champs invalides'); }
-    upsertSrc.mutate({ ...r.data, actif: true }, {
+    upsertSrc.mutate({ ...r.data, nom: newSrc.nom, url: newSrc.url, actif: true }, {
       onSuccess: () => setNewSrc({ nom: '', url: '', type: 'national', priorite: 50, notes: '' }),
     });
   };
