@@ -136,7 +136,7 @@ export function useLancerRadarProximite() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: { count?: number } | null) => {
       qc.invalidateQueries({ queryKey: ["radar-proximite"] });
       toast.success(`${data?.count || 0} projets voisins détectés`);
     },

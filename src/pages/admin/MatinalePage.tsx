@@ -73,7 +73,11 @@ export default function MatinalePage() {
   );
   const [matinaleData, setMatinaleData] = useState<import('@/types/matinale').MatinaleData | null>(null);
   const [titrologie, setTitrologie] = useState<import('@/types/matinale').TitrologieData | null>(null);
-  const [freshnessMeta, setFreshnessMeta] = useState<any>(null);
+  const [freshnessMeta, setFreshnessMeta] = useState<{
+    articles_kept: number;
+    articles_total_raw: number;
+    newest_publication: string | null;
+  } | null>(null);
   const [freshness, setFreshness] = useState<FreshnessWindow>(24);
   const [forceRefresh, setForceRefresh] = useState(false);
 
@@ -94,8 +98,8 @@ export default function MatinalePage() {
     try {
       exportMatinalePDF(matinaleData, freshness);
       toast.success('PDF exporté');
-    } catch (e: any) {
-      toast.error(`Erreur export PDF : ${e?.message || e}`);
+    } catch (e) {
+      toast.error(`Erreur export PDF : ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 

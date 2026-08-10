@@ -69,9 +69,9 @@ export function useSendWeeklyDigest() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: { sent?: number } | null) => {
       qc.invalidateQueries({ queryKey: ['weekly-digest-config'] });
-      toast.success(`Digest envoyé à ${data.sent} destinataire(s)`);
+      toast.success(`Digest envoyé à ${data?.sent ?? 0} destinataire(s)`);
     },
     onError: (e: Error) => toast.error(`Erreur: ${e.message}`),
   });

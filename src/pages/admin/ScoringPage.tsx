@@ -35,7 +35,7 @@ export default function ScoringPage() {
         max={max}
         step={step}
         value={form[k] as number}
-        onChange={e => setField(k, Number(e.target.value) as any)}
+        onChange={e => setField(k, Number(e.target.value))}
       />
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
