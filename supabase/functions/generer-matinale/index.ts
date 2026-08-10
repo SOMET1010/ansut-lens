@@ -711,11 +711,12 @@ La Direction de la Communication ANSUT doit pouvoir, en 5 minutes, répondre à 
      titre : sujet dominant aujourd'hui (court, factuel, ex: "ID4Africa 2026 à Abidjan"),
      impacts : 3 puces "ce qui ressort des conversations" (souveraineté numérique, inclusion, e-services...),
      recommandation : 2-4 **idées de prise de parole concrètes** pour ANSUT (PAS d'arbitrage technique, mais "publier post LinkedIn sur inclusion numérique", "proposer interview DG sur Service Universel", "produire infographie sur accès aux services"),
-     niveau : "ROUGE" si très chaud / opportunité forte, "ORANGE" si à surveiller, "VERT" si simple suivi
+     niveau : "ROUGE" si très chaud / opportunité forte, "ORANGE" si à surveiller, "VERT" si simple suivi,
+     sources : **1 à 3 sources RÉELLES** ayant motivé ce sujet — reprends TELLES QUELLES des URL présentes dans les articles/unes fournis, avec { titre, url, source (nom du média) }. Ne mets une URL QUE si elle figure littéralement dans le contexte fourni ; tableau vide si aucune source précise.
    }
 
 2. synthese_60s → **"SUJETS CHAUDS DU JOUR"** (3 à 6 sujets qui circulent)
-   { sujet (court), impact_ansut (1 phrase : "opportunité visibilité" / "risque réputation" / "à suivre" / "ne pas réagir"), niveau }
+   { sujet (court), impact_ansut (1 phrase : "opportunité visibilité" / "risque réputation" / "à suivre" / "ne pas réagir"), niveau, url : **URL RÉELLE** de l'article source reprise TELLE QUELLE du contexte (laisse vide si le sujet est une synthèse sans source unique — n'invente jamais), source : nom du média }
 
 3. veille_par_pilier → **"TENDANCES PAR DOMAINE"** (réorienté COM)
    - connectivite → connectivité, zones blanches, satellite : ce qui se dit publiquement
@@ -1102,6 +1103,11 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
                     impacts: { type: 'array', items: { type: 'string' }, description: '3 puces max, ANSUT-centric' },
                     recommandation: { type: 'array', items: { type: 'string' }, description: '2 à 4 actions' },
                     niveau: { type: 'string', enum: ['ROUGE', 'ORANGE', 'VERT', 'BLEU'] },
+                    sources: {
+                      type: 'array',
+                      description: "1 à 3 sources RÉELLES ayant motivé ce sujet — reprendre TELLES QUELLES des URL présentes dans les articles/unes fournis. Ne JAMAIS inventer d'URL.",
+                      items: { type: 'object', properties: { titre: { type: 'string' }, url: { type: 'string' }, source: { type: 'string' } }, required: ['url'] },
+                    },
                   },
                   required: ['titre', 'impacts', 'recommandation', 'niveau'],
                 },
@@ -1114,6 +1120,8 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
                       sujet: { type: 'string' },
                       impact_ansut: { type: 'string' },
                       niveau: { type: 'string', enum: ['ROUGE', 'ORANGE', 'VERT', 'BLEU'] },
+                      url: { type: 'string', description: "URL RÉELLE de l'article source (reprise telle quelle d'un article fourni ; vide si aucune)." },
+                      source: { type: 'string', description: 'Nom du média / journal source.' },
                     },
                     required: ['sujet', 'impact_ansut', 'niveau'],
                   },
@@ -1496,8 +1504,8 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
 
     const revue = (matinale.revue_de_presse || []) as Array<{ titre: string; source: string; date: string; url: string; rubrique: string }>;
     const act = matinale.activite_ansut;
-    const prio = matinale.priorite_executive;
-    const synthese = (matinale.synthese_60s || []) as Array<{ sujet: string; impact_ansut: string; niveau: string }>;
+    const prio = matinale.priorite_executive as { titre: string; impacts: string[]; recommandation: string[]; niveau: string; sources?: Array<{ titre?: string; url?: string; source?: string }> } | undefined;
+    const synthese = (matinale.synthese_60s || []) as Array<{ sujet: string; impact_ansut: string; niveau: string; url?: string; source?: string }>;
     const veille = matinale.veille_par_pilier as Record<string, Array<{ titre: string; lecture_ansut: string; niveau: string; url?: string; source?: string }>>;
     const lectureStrat = (matinale.lecture_strategique || []) as Array<{ sujet: string; opportunites: string[]; risques: string[]; scores: { acces: number; usage: number; gouvernance: number; souverainete: number } }>;
     const impactProjets = (matinale.impact_projets_ansut || []) as Array<{ domaine: string; impact: string; commentaire: string }>;
@@ -1509,7 +1517,6 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     const titroUnes = Array.isArray(titrologie?.unes) ? titrologie.unes : [];
     const titroSynthese = (titrologie as any)?.synthese_codir || null;
     const titroSignaux: string[] = Array.isArray((titrologie as any)?.signaux_ansut) ? (titrologie as any).signaux_ansut : [];
-    const titroRiskColor: Record<string, string> = { ROUGE: '#dc2626', ORANGE: '#ea580c', VERT: '#16a34a' };
     const titroTopUnes = titroUnes
       .slice()
       .sort((a: any, b: any) => {
@@ -1518,20 +1525,50 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
       })
       .slice(0, 8);
 
-    // Couleurs par niveau de criticité
-    const NIV_COLORS: Record<string, { bg: string; fg: string; border: string }> = {
-      ROUGE:  { bg: '#fef2f2', fg: '#991b1b', border: '#dc2626' },
-      ORANGE: { bg: '#fff7ed', fg: '#9a3412', border: '#ea580c' },
-      VERT:   { bg: '#f0fdf4', fg: '#166534', border: '#16a34a' },
-      BLEU:   { bg: '#eff6ff', fg: '#1e40af', border: '#2563eb' },
+    // ————— Système visuel éditorial (charte couleur) —————
+    // Base papier/encre ; signaux RARES (un rôle chacun) ; bleu = liens uniquement.
+    const C = {
+      paper: '#F7F5F0', card: '#FFFFFF', ink: '#1C1A17', soft: '#57534E', faint: '#8A857D',
+      rule: '#E4E0D8', ruleStrong: '#D6D0C4',
+      incident: '#B23A2E', attention: '#B26A16', confirme: '#2E7355', link: '#2A5C8A',
+      washIncident: '#FBF1EF',
     };
-    const nivBadge = (niv: string) => {
-      const c = NIV_COLORS[niv] || NIV_COLORS.BLEU;
-      return `<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;color:#fff;background:${c.border};letter-spacing:0.5px;">${niv}</span>`;
+    const SERIF = "'Iowan Old Style','Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif";
+
+    // Garde anti-hallucination : on ne rend un lien QUE si l'URL a réellement été
+    // collectée (articles / revue / titrologie). L'IA peut halluciner une URL —
+    // on ne la propage jamais telle quelle (charte crédibilité). Comparaison sur
+    // host+chemin (comme la content_key) pour tolérer slash/casse.
+    const normUrl = (u?: string | null): string => {
+      try { const x = new URL((u || '').trim()); return (x.host + x.pathname).toLowerCase().replace(/\/+$/, ''); } catch { return ''; }
     };
-    const impactBadge = (lvl: string) => {
-      const map: Record<string, string> = { 'ÉLEVÉ': '#dc2626', 'MOYEN': '#ea580c', 'FAIBLE': '#16a34a', 'AUCUN': '#9ca3af' };
-      return `<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;color:#fff;background:${map[lvl] || '#9ca3af'};">${lvl}</span>`;
+    const urlsConnues = new Set<string>();
+    for (const a of (articlesRaw || [])) { const n = normUrl((a as any)?.source_url); if (n) urlsConnues.add(n); }
+    for (const r of revue) { const n = normUrl(r.url); if (n) urlsConnues.add(n); }
+    for (const u of titroUnes) { const n = normUrl((u as any)?.url); if (n) urlsConnues.add(n); }
+    const lienValide = (u?: string | null): string | null => {
+      const raw = (u || '').trim();
+      if (!/^https?:\/\//i.test(raw)) return null;
+      return urlsConnues.has(normUrl(raw)) ? raw : null;
+    };
+
+    // Niveau : point coloré + mot (jamais de pastille pleine — signal rare).
+    const NIV_DOT: Record<string, string> = { ROUGE: C.incident, ORANGE: C.attention, VERT: C.confirme, BLEU: C.faint };
+    const NIV_LABEL: Record<string, string> = { ROUGE: 'Rouge', ORANGE: 'Orange', VERT: 'Vert', BLEU: 'Suivi' };
+    const lvlDot = (niv: string) => {
+      const d = NIV_DOT[niv] || C.faint;
+      return `<span style="white-space:nowrap;"><span style="color:${d};font-size:12px;line-height:1;">●</span> <span style="font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:${C.soft};font-weight:700;">${NIV_LABEL[niv] || niv}</span></span>`;
+    };
+    // Lien source sûr (validé) ; sinon libellé neutre non cliquable.
+    const srcLien = (url: string | null | undefined, label: string) => {
+      const v = lienValide(url);
+      return v ? `<a href="${v}" target="_blank" style="color:${C.link};text-decoration:none;">${label} ↗</a>` : `<span style="color:${C.faint};">${label}</span>`;
+    };
+    // Ligne « Sources » (sujet chaud) : uniquement les URL réellement collectées.
+    const sourcesLigne = (sources?: Array<{ titre?: string; url?: string; source?: string }>) => {
+      const valides = (sources || []).map(s => ({ s, v: lienValide(s?.url) })).filter(x => x.v);
+      if (!valides.length) return '';
+      return `<div style="margin-top:14px;"><span style="font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;color:${C.faint};margin-right:10px;">Sources</span>${valides.map(({ s, v }) => `<a href="${v}" target="_blank" style="color:${C.link};text-decoration:none;font-size:12px;margin-right:16px;white-space:nowrap;">↗ ${s!.source || s!.titre || 'source'}</a>`).join('')}</div>`;
     };
 
     const groupedRevue: Record<string, typeof revue> = {};
@@ -1539,20 +1576,20 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     const buildRubriqueBlock = (key: string) => {
       const items = groupedRevue[key];
       if (!items || items.length === 0) return '';
-      return `<div style="margin-bottom:12px;"><p style="margin:0 0 6px;font-size:11px;font-weight:bold;color:#1e3a5f;text-transform:uppercase;letter-spacing:0.5px;">${RUBRIQUE_LABELS[key]}</p>${items.map(it => `<div style="margin-bottom:6px;padding:8px 10px;background:#ffffff;border-radius:6px;border-left:3px solid #2563eb;"><p style="margin:0 0 2px;font-size:13px;color:#1e3a5f;line-height:1.4;"><strong>${it.titre}</strong></p><p style="margin:0;font-size:11px;color:#6b7280;">${it.source} (${it.date})${it.url ? ` — <a href="${it.url}" style="color:#2563eb;" target="_blank">URL →</a>` : ''}</p></div>`).join('')}</div>`;
+      return `<div style="margin-bottom:16px;"><p style="margin:0 0 8px;font-size:11px;font-weight:600;color:${C.soft};text-transform:uppercase;letter-spacing:0.06em;">${RUBRIQUE_LABELS[key]}</p>${items.map(it => `<div style="padding:9px 0;border-top:1px solid ${C.rule};"><p style="margin:0;font-size:13px;color:${C.ink};line-height:1.45;">${it.titre}</p><p style="margin:3px 0 0;font-size:11.5px;color:${C.faint};">${it.source}${it.date ? ` · ${it.date}` : ''}${it.url ? ` · ${srcLien(it.url, 'lire')}` : ''}</p></div>`).join('')}</div>`;
     };
 
-    const PILIER_LABELS: Record<string, { label: string; color: string }> = {
-      connectivite: { label: '📡 Connectivité & accès', color: '#2563eb' },
-      usages_services: { label: '💳 Usages & services qui buzzent', color: '#7c3aed' },
-      regulation_souverainete: { label: '⚖️ Identité numérique & souveraineté', color: '#0891b2' },
-      concurrence_marche: { label: '🏁 Activité concurrence (qui communique)', color: '#dc2626' },
+    const PILIER_LABELS: Record<string, string> = {
+      connectivite: '📡 Connectivité & accès',
+      usages_services: '💳 Usages & services',
+      regulation_souverainete: '⚖️ Identité numérique & souveraineté',
+      concurrence_marche: '🏁 Activité concurrence',
     };
     const buildPilierBlock = (key: string) => {
       const items = (veille?.[key] || []);
-      const cfg = PILIER_LABELS[key];
-      if (!items.length) return `<div style="margin-bottom:10px;padding:10px;background:#f9fafb;border-radius:6px;border-left:3px solid ${cfg.color};"><p style="margin:0;font-size:12px;font-weight:700;color:${cfg.color};">${cfg.label}</p><p style="margin:4px 0 0;font-size:11px;color:#9ca3af;font-style:italic;">Pas de signal sur la fenêtre.</p></div>`;
-      return `<div style="margin-bottom:14px;"><p style="margin:0 0 6px;font-size:13px;font-weight:700;color:${cfg.color};">${cfg.label}</p>${items.map(it => `<div style="margin-bottom:6px;padding:10px;background:#ffffff;border-radius:6px;border:1px solid #e5e7eb;border-left:3px solid ${cfg.color};"><table width="100%" cellpadding="0" cellspacing="0"><tr><td style="font-size:12px;color:#1e3a5f;"><strong>${it.titre}</strong></td><td style="text-align:right;width:70px;">${nivBadge(it.niveau)}</td></tr></table><p style="margin:6px 0 0;font-size:12px;color:#374151;line-height:1.5;">→ ${it.lecture_ansut}</p>${it.url ? `<p style="margin:4px 0 0;font-size:10px;color:#6b7280;"><a href="${it.url}" style="color:${cfg.color};" target="_blank">${it.source || 'source'} ↗</a></p>` : ''}</div>`).join('')}</div>`;
+      const label = PILIER_LABELS[key] || key;
+      if (!items.length) return `<div style="margin-bottom:18px;"><p style="margin:0 0 6px;font-size:12px;font-weight:600;color:${C.soft};">${label}</p><p style="margin:0;font-size:12.5px;color:${C.faint};font-style:italic;">Pas de signal sur la fenêtre.</p></div>`;
+      return `<div style="margin-bottom:18px;"><p style="margin:0 0 8px;font-size:12px;font-weight:600;color:${C.soft};">${label}</p>${items.map(it => `<div style="padding:10px 0;border-top:1px solid ${C.rule};"><table width="100%" cellpadding="0" cellspacing="0"><tr><td style="font-size:13.5px;font-weight:600;color:${C.ink};padding-right:10px;">${it.titre}</td><td style="text-align:right;width:78px;vertical-align:top;">${lvlDot(it.niveau)}</td></tr></table><p style="margin:4px 0 0;font-size:13px;color:${C.soft};line-height:1.5;">→ ${it.lecture_ansut}</p>${it.url ? `<p style="margin:4px 0 0;font-size:11.5px;">${srcLien(it.url, it.source || 'source')}</p>` : ''}</div>`).join('')}</div>`;
     };
 
     const allUrlsTraceability = revue.map(r => r.url).filter(Boolean);
@@ -1568,147 +1605,140 @@ RÈGLES ABSOLUES SUR LES PERSONNALITÉS :
     );
     const seuilBonne = Math.max(scoring.min_signaux_total + 5, scoring.min_signaux_total * 1.6);
     const qualiteScore = totalSignaux >= seuilBonne ? 'Bonne' : totalSignaux >= scoring.min_signaux_total ? 'Moyenne' : 'Faible';
-    const qualiteColor = qualiteScore === 'Bonne' ? '#10b981' : qualiteScore === 'Moyenne' ? '#f59e0b' : '#ef4444';
-    const prioColor = NIV_COLORS[prio?.niveau || 'BLEU'];
+    const prioNiv = prio?.niveau || 'BLEU';
+
+    // Titre de section réutilisable (kicker gris + titre serif + filet).
+    const sec = (kicker: string, titre: string, extra = '') =>
+      `<tr><td style="padding:24px 34px;border-top:1px solid ${C.rule};">
+        <p style="margin:0 0 3px;font-size:10.5px;letter-spacing:0.13em;text-transform:uppercase;color:${C.faint};">${kicker}</p>
+        <h2 style="font-family:${SERIF};font-weight:600;font-size:19px;margin:2px 0 14px;color:${C.ink};letter-spacing:-0.01em;">${titre}${extra}</h2>`;
+    const li = (t: string) => `<li style="font-size:13.5px;color:${C.ink};line-height:1.5;margin-bottom:4px;">${t}</li>`;
 
     const htmlEmail = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:20px 0;"><tr><td align="center">
-<table width="680" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+<body style="margin:0;padding:0;background-color:#EAE6DD;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${C.ink};">
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#EAE6DD;padding:22px 0;"><tr><td align="center">
+<table width="660" cellpadding="0" cellspacing="0" style="background-color:${C.card};border:1px solid ${C.rule};border-radius:4px;overflow:hidden;">
 
-<!-- EN-TÊTE -->
-<tr><td style="background:linear-gradient(135deg,#0f172a,#1e3a5f);padding:28px 30px;">
-  <p style="margin:0;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;">Centre de situation communication & écosystème numérique</p>
-  <h1 style="color:#ffffff;margin:6px 0 0;font-size:24px;letter-spacing:0.3px;">Matinale Communication & Veille 360 – ANSUT</h1>
-  <p style="color:#bfdbfe;margin:6px 0 0;font-size:13px;">${dateStr}</p>
-  <p style="color:#94a3b8;margin:10px 0 0;font-size:11px;">Génération ${generatedAtUtc} · Fenêtre ${freshnessHours}h · ${totalSignaux} signaux exploités</p>
+<!-- MASTHEAD -->
+<tr><td style="padding:30px 34px 22px;border-bottom:2px solid ${C.ink};">
+  <p style="margin:0 0 10px;font-size:10.5px;color:${C.faint};text-transform:uppercase;letter-spacing:0.14em;">Centre de situation — communication &amp; écosystème numérique</p>
+  <h1 style="font-family:${SERIF};color:${C.ink};margin:0;font-size:30px;font-weight:600;line-height:1.12;letter-spacing:-0.01em;">Matinale COM ANSUT</h1>
+  <p style="font-family:${SERIF};color:${C.soft};margin:8px 0 0;font-size:15px;">${dateStr}</p>
+  <p style="color:${C.faint};margin:12px 0 0;font-size:11.5px;">Génération ${generatedAtUtc} · fenêtre ${freshnessHours} h · ${totalSignaux} signaux exploités</p>
 </td></tr>
 
 <!-- 1. SUJET CHAUD DU JOUR -->
-<tr><td style="padding:24px 24px 16px;">
-  <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:#dc2626;letter-spacing:1.5px;">🔥 SUJET CHAUD DU JOUR</p>
-  <div style="padding:18px;background:${prioColor.bg};border-radius:10px;border-left:5px solid ${prioColor.border};">
+<tr><td style="padding:24px 34px;">
+  <p style="margin:0 0 10px;font-size:10.5px;letter-spacing:0.13em;text-transform:uppercase;color:${C.faint};">🔥 Sujet chaud du jour</p>
+  <div style="padding:16px 18px;background:${C.washIncident};border-left:3px solid ${NIV_DOT[prioNiv] || C.faint};border-radius:0 6px 6px 0;">
     <table width="100%" cellpadding="0" cellspacing="0"><tr>
-      <td style="font-size:16px;font-weight:700;color:${prioColor.fg};">${prio?.titre || ''}</td>
-      <td style="text-align:right;width:90px;">${nivBadge(prio?.niveau || 'BLEU')}</td>
+      <td style="font-family:${SERIF};font-size:18px;font-weight:600;color:${C.ink};line-height:1.25;">${prio?.titre || ''}</td>
+      <td style="text-align:right;width:92px;vertical-align:top;padding-left:12px;">${lvlDot(prioNiv)}</td>
     </tr></table>
-    ${(prio?.impacts || []).length ? `<p style="margin:14px 0 4px;font-size:11px;font-weight:700;color:${prioColor.fg};text-transform:uppercase;letter-spacing:0.5px;">Ce qui ressort</p><ul style="margin:0;padding-left:18px;">${prio.impacts.map((i: string) => `<li style="font-size:13px;color:#1e3a5f;line-height:1.5;margin-bottom:3px;">${i}</li>`).join('')}</ul>` : ''}
-    ${(prio?.recommandation || []).length ? `<p style="margin:12px 0 4px;font-size:11px;font-weight:700;color:${prioColor.fg};text-transform:uppercase;letter-spacing:0.5px;">Opportunité COM — prise de parole</p><ul style="margin:0;padding-left:18px;">${prio.recommandation.map((i: string) => `<li style="font-size:13px;color:#1e3a5f;line-height:1.5;margin-bottom:3px;">${i}</li>`).join('')}</ul>` : ''}
+    ${(prio?.impacts || []).length ? `<p style="margin:14px 0 5px;font-size:10.5px;font-weight:600;color:${C.faint};text-transform:uppercase;letter-spacing:0.1em;">Ce qui ressort</p><ul style="margin:0;padding-left:18px;">${prio!.impacts.map((i: string) => li(i)).join('')}</ul>` : ''}
+    ${(prio?.recommandation || []).length ? `<p style="margin:14px 0 5px;font-size:10.5px;font-weight:600;color:${C.faint};text-transform:uppercase;letter-spacing:0.1em;">Opportunité COM — prise de parole</p><ul style="margin:0;padding-left:18px;">${prio!.recommandation.map((i: string) => li(i)).join('')}</ul>` : ''}
+    ${sourcesLigne(prio?.sources)}
   </div>
 </td></tr>
 
-<!-- 2. SYNTHÈSE 60s -->
-${synthese.length ? `<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 10px;border-bottom:2px solid #6366f1;padding-bottom:6px;">📌 Sujets chauds du jour</h2>
-  <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-    <tr style="background:#f1f5f9;"><th style="padding:8px;text-align:left;font-size:11px;color:#475569;text-transform:uppercase;">Sujet</th><th style="padding:8px;text-align:left;font-size:11px;color:#475569;text-transform:uppercase;">Impact ANSUT</th><th style="padding:8px;text-align:center;font-size:11px;color:#475569;text-transform:uppercase;width:80px;">Niveau</th></tr>
-    ${synthese.map(s => `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:8px;font-size:13px;color:#1e3a5f;font-weight:600;">${s.sujet}</td><td style="padding:8px;font-size:12px;color:#374151;">${s.impact_ansut}</td><td style="padding:8px;text-align:center;">${nivBadge(s.niveau)}</td></tr>`).join('')}
+<!-- 2. SUJETS CHAUDS DU JOUR -->
+${synthese.length ? `${sec('📌 Le fil du jour', 'Sujets chauds du jour')}
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <thead><tr><th style="text-align:left;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:${C.faint};font-weight:600;padding:0 10px 8px 0;border-bottom:1px solid ${C.ruleStrong};">Sujet</th><th style="text-align:left;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:${C.faint};font-weight:600;padding:0 10px 8px 0;border-bottom:1px solid ${C.ruleStrong};">Impact ANSUT</th><th style="text-align:right;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:${C.faint};font-weight:600;padding:0 0 8px 0;border-bottom:1px solid ${C.ruleStrong};width:92px;">Niveau</th></tr></thead>
+    <tbody>${synthese.map(s => `<tr><td style="padding:11px 10px 11px 0;border-bottom:1px solid ${C.rule};font-size:13.5px;font-weight:600;color:${C.ink};vertical-align:top;width:42%;">${s.sujet}${(s.source || lienValide(s.url)) ? `<div style="margin-top:3px;font-size:11.5px;color:${C.faint};font-weight:400;">${s.source || ''}${(s.source && lienValide(s.url)) ? ' · ' : ''}${lienValide(s.url) ? srcLien(s.url, 'lire') : ''}</div>` : ''}</td><td style="padding:11px 10px 11px 0;border-bottom:1px solid ${C.rule};font-size:13px;color:${C.soft};vertical-align:top;">${s.impact_ansut}</td><td style="padding:11px 0 11px 0;border-bottom:1px solid ${C.rule};text-align:right;vertical-align:top;">${lvlDot(s.niveau)}</td></tr>`).join('')}</tbody>
   </table>
 </td></tr>` : ''}
 
-<!-- 2bis. TITROLOGIE IVOIRIENNE DU JOUR -->
-${titroTopUnes.length ? `<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 10px;border-bottom:2px solid #ea580c;padding-bottom:6px;">📰 Titrologie ivoirienne du jour <span style="font-size:11px;color:#9ca3af;font-weight:400;">(${titroUnes.length} unes analysées)</span></h2>
-  ${titroSynthese ? `<div style="margin-bottom:12px;padding:12px;background:#fff7ed;border-radius:8px;border-left:4px solid #ea580c;">
-    ${Array.isArray(titroSynthese.sujets_dominants) && titroSynthese.sujets_dominants.length ? `<p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#9a3412;text-transform:uppercase;letter-spacing:0.5px;">Sujets dominants</p><p style="margin:0 0 8px;font-size:12px;color:#1e3a5f;">${titroSynthese.sujets_dominants.join(' · ')}</p>` : ''}
-    ${Array.isArray(titroSynthese.impact_ansut) && titroSynthese.impact_ansut.length ? `<p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#9a3412;text-transform:uppercase;letter-spacing:0.5px;">Impact ANSUT</p><ul style="margin:0 0 8px;padding-left:18px;">${titroSynthese.impact_ansut.map((i: string) => `<li style="font-size:12px;color:#1e3a5f;line-height:1.5;">${i}</li>`).join('')}</ul>` : ''}
-    ${titroSynthese.opportunite_communication ? `<p style="margin:6px 0 0;font-size:12px;color:#16a34a;"><strong>🎙️ Opportunité com :</strong> ${titroSynthese.opportunite_communication}</p>` : ''}
-    ${titroSynthese.risque_a_surveiller ? `<p style="margin:4px 0 0;font-size:12px;color:#dc2626;"><strong>⚠️ Risque à surveiller :</strong> ${titroSynthese.risque_a_surveiller}</p>` : ''}
-    ${titroSynthese.action_recommandee ? `<p style="margin:6px 0 0;font-size:12px;color:#1e3a5f;"><strong>✅ Action recommandée :</strong> ${titroSynthese.action_recommandee}</p>` : ''}
+<!-- 2bis. TITROLOGIE -->
+${titroTopUnes.length ? `${sec('📰 Presse ivoirienne', 'Titrologie du jour', ` <span style="font-family:-apple-system,Arial,sans-serif;font-size:12px;font-weight:400;color:${C.faint};letter-spacing:0;">— ${titroUnes.length} unes analysées</span>`)}
+  ${titroSynthese ? `<div style="margin-bottom:14px;padding:14px;background:${C.paper};border-radius:6px;border:1px solid ${C.rule};">
+    ${Array.isArray(titroSynthese.sujets_dominants) && titroSynthese.sujets_dominants.length ? `<p style="margin:0 0 4px;font-size:10.5px;font-weight:600;color:${C.faint};text-transform:uppercase;letter-spacing:0.1em;">Sujets dominants</p><p style="margin:0 0 10px;font-size:13px;color:${C.ink};">${titroSynthese.sujets_dominants.join(' · ')}</p>` : ''}
+    ${Array.isArray(titroSynthese.impact_ansut) && titroSynthese.impact_ansut.length ? `<p style="margin:0 0 4px;font-size:10.5px;font-weight:600;color:${C.faint};text-transform:uppercase;letter-spacing:0.1em;">Impact ANSUT</p><ul style="margin:0 0 10px;padding-left:18px;">${titroSynthese.impact_ansut.map((i: string) => li(i)).join('')}</ul>` : ''}
+    ${titroSynthese.opportunite_communication ? `<p style="margin:6px 0 0;font-size:13px;color:${C.ink};"><span style="color:${C.confirme};">●</span> <strong>Opportunité com :</strong> ${titroSynthese.opportunite_communication}</p>` : ''}
+    ${titroSynthese.risque_a_surveiller ? `<p style="margin:5px 0 0;font-size:13px;color:${C.ink};"><span style="color:${C.incident};">●</span> <strong>Risque à surveiller :</strong> ${titroSynthese.risque_a_surveiller}</p>` : ''}
+    ${titroSynthese.action_recommandee ? `<p style="margin:5px 0 0;font-size:13px;color:${C.ink};"><strong>Action recommandée :</strong> ${titroSynthese.action_recommandee}</p>` : ''}
   </div>` : ''}
-  <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-    <tr style="background:#fef3c7;"><th style="padding:8px;text-align:left;font-size:11px;color:#92400e;text-transform:uppercase;width:110px;">Journal</th><th style="padding:8px;text-align:left;font-size:11px;color:#92400e;text-transform:uppercase;">Une</th><th style="padding:8px;text-align:center;font-size:11px;color:#92400e;text-transform:uppercase;width:70px;">Risque</th></tr>
-    ${titroTopUnes.map((u: any) => `<tr style="border-bottom:1px solid #fde68a;"><td style="padding:8px;font-size:12px;color:#1e3a5f;font-weight:600;vertical-align:top;">${u.journal || '—'}</td><td style="padding:8px;font-size:12px;color:#1e3a5f;line-height:1.4;">${u.url ? `<a href="${u.url}" target="_blank" style="color:#1e3a5f;text-decoration:none;"><strong>${u.titre || ''}</strong></a>` : `<strong>${u.titre || ''}</strong>`}${u.lien_ansut ? `<br/><span style="color:#6b7280;font-size:11px;">→ ${u.lien_ansut}</span>` : ''}</td><td style="padding:8px;text-align:center;"><span style="display:inline-block;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700;color:#fff;background:${titroRiskColor[u.risque_ansut] || '#9ca3af'};">${u.risque_ansut || '—'}</span></td></tr>`).join('')}
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <thead><tr><th style="text-align:left;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:${C.faint};font-weight:600;padding:0 10px 8px 0;border-bottom:1px solid ${C.ruleStrong};width:120px;">Journal</th><th style="text-align:left;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:${C.faint};font-weight:600;padding:0 10px 8px 0;border-bottom:1px solid ${C.ruleStrong};">Une</th><th style="text-align:right;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:${C.faint};font-weight:600;padding:0 0 8px 0;border-bottom:1px solid ${C.ruleStrong};width:82px;">Risque</th></tr></thead>
+    <tbody>${titroTopUnes.map((u: any) => `<tr><td style="padding:11px 10px 11px 0;border-bottom:1px solid ${C.rule};font-size:13px;font-weight:600;color:${C.ink};vertical-align:top;">${u.journal || '—'}</td><td style="padding:11px 10px 11px 0;border-bottom:1px solid ${C.rule};font-size:13.5px;color:${C.ink};line-height:1.45;vertical-align:top;">${lienValide(u.url) ? `<a href="${lienValide(u.url)}" target="_blank" style="color:${C.ink};text-decoration:none;">${u.titre || ''}</a>` : (u.titre || '')}${u.lien_ansut ? `<div style="margin-top:3px;color:${C.faint};font-size:11.5px;">→ ${u.lien_ansut}</div>` : ''}${lienValide(u.url) ? `<div style="margin-top:2px;">${srcLien(u.url, 'lire')}</div>` : ''}</td><td style="padding:11px 0 11px 0;border-bottom:1px solid ${C.rule};text-align:right;vertical-align:top;">${lvlDot(u.risque_ansut)}</td></tr>`).join('')}</tbody>
   </table>
-  ${titroSignaux.length ? `<div style="margin-top:10px;padding:10px;background:#fff7ed;border-radius:6px;"><p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#9a3412;text-transform:uppercase;">📡 Signaux faibles titrologie</p><ul style="margin:0;padding-left:18px;">${titroSignaux.map(s => `<li style="font-size:12px;color:#9a3412;line-height:1.5;">${s}</li>`).join('')}</ul></div>` : ''}
+  ${titroSignaux.length ? `<div style="margin-top:12px;"><p style="margin:0 0 6px;font-size:10.5px;font-weight:600;color:${C.faint};text-transform:uppercase;letter-spacing:0.1em;">Signaux faibles titrologie</p><ul style="margin:0;padding-left:18px;">${titroSignaux.map(s => `<li style="font-size:13px;color:${C.soft};line-height:1.5;">${s}</li>`).join('')}</ul></div>` : ''}
 </td></tr>` : ''}
 
-<!-- 3. VEILLE STRATÉGIQUE PAR PILIER -->
-<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #2563eb;padding-bottom:6px;">📊 Tendances par domaine</h2>
+<!-- 3. VEILLE PAR PILIER -->
+${sec('📊 Tendances par domaine', 'Veille par pilier ANSUT')}
   ${['connectivite','usages_services','regulation_souverainete','concurrence_marche'].map(buildPilierBlock).join('')}
 </td></tr>
 
 <!-- 4. LECTURE STRATÉGIQUE -->
-${lectureStrat.length ? `<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #8b5cf6;padding-bottom:6px;">🚀 Tendances numériques & télécoms</h2>
-  ${lectureStrat.map(l => `<div style="margin-bottom:14px;padding:14px;background:#faf5ff;border-radius:8px;border-left:4px solid #8b5cf6;">
-    <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#6b21a8;">${l.sujet}</p>
+${lectureStrat.length ? `${sec('🚀 Fond', 'Tendances numériques & télécoms')}
+  ${lectureStrat.map(l => `<div style="margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid ${C.rule};">
+    <p style="font-family:${SERIF};margin:0 0 10px;font-size:15px;font-weight:600;color:${C.ink};">${l.sujet}</p>
     <table width="100%" cellpadding="0" cellspacing="0"><tr>
-      <td style="vertical-align:top;width:50%;padding-right:8px;"><p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#16a34a;text-transform:uppercase;">Opportunités</p><ul style="margin:0;padding-left:16px;">${(l.opportunites||[]).map(o=>`<li style="font-size:12px;color:#1e3a5f;line-height:1.5;">${o}</li>`).join('')}</ul></td>
-      <td style="vertical-align:top;width:50%;padding-left:8px;border-left:1px solid #e9d5ff;"><p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#dc2626;text-transform:uppercase;">Risques</p><ul style="margin:0;padding-left:16px;">${(l.risques||[]).map(r=>`<li style="font-size:12px;color:#1e3a5f;line-height:1.5;">${r}</li>`).join('')}</ul></td>
+      <td style="vertical-align:top;width:50%;padding-right:12px;"><p style="margin:0 0 5px;font-size:10.5px;font-weight:600;color:${C.faint};text-transform:uppercase;letter-spacing:0.08em;"><span style="color:${C.confirme};">●</span> Opportunités</p><ul style="margin:0;padding-left:16px;">${(l.opportunites||[]).map(o=>`<li style="font-size:13px;color:${C.ink};line-height:1.5;margin-bottom:3px;">${o}</li>`).join('')}</ul></td>
+      <td style="vertical-align:top;width:50%;padding-left:12px;border-left:1px solid ${C.rule};"><p style="margin:0 0 5px;font-size:10.5px;font-weight:600;color:${C.faint};text-transform:uppercase;letter-spacing:0.08em;"><span style="color:${C.incident};">●</span> Risques</p><ul style="margin:0;padding-left:16px;">${(l.risques||[]).map(r=>`<li style="font-size:13px;color:${C.ink};line-height:1.5;margin-bottom:3px;">${r}</li>`).join('')}</ul></td>
     </tr></table>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;background:#fff;border-radius:6px;"><tr>
-      <td style="padding:6px;text-align:center;font-size:11px;color:#6b7280;border-right:1px solid #e5e7eb;"><strong style="display:block;color:#6b21a8;font-size:14px;">${l.scores?.acces ?? '–'}/10</strong>Accès</td>
-      <td style="padding:6px;text-align:center;font-size:11px;color:#6b7280;border-right:1px solid #e5e7eb;"><strong style="display:block;color:#6b21a8;font-size:14px;">${l.scores?.usage ?? '–'}/10</strong>Usage</td>
-      <td style="padding:6px;text-align:center;font-size:11px;color:#6b7280;border-right:1px solid #e5e7eb;"><strong style="display:block;color:#6b21a8;font-size:14px;">${l.scores?.gouvernance ?? '–'}/10</strong>Gouvernance</td>
-      <td style="padding:6px;text-align:center;font-size:11px;color:#6b7280;"><strong style="display:block;color:#6b21a8;font-size:14px;">${l.scores?.souverainete ?? '–'}/10</strong>Souveraineté</td>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;border-top:1px solid ${C.rule};"><tr>
+      <td style="padding:8px 6px 0;text-align:center;font-size:10.5px;color:${C.faint};"><strong style="display:block;font-family:${SERIF};color:${C.ink};font-size:16px;">${l.scores?.acces ?? '–'}</strong>Accès</td>
+      <td style="padding:8px 6px 0;text-align:center;font-size:10.5px;color:${C.faint};"><strong style="display:block;font-family:${SERIF};color:${C.ink};font-size:16px;">${l.scores?.usage ?? '–'}</strong>Usage</td>
+      <td style="padding:8px 6px 0;text-align:center;font-size:10.5px;color:${C.faint};"><strong style="display:block;font-family:${SERIF};color:${C.ink};font-size:16px;">${l.scores?.gouvernance ?? '–'}</strong>Gouvernance</td>
+      <td style="padding:8px 6px 0;text-align:center;font-size:10.5px;color:${C.faint};"><strong style="display:block;font-family:${SERIF};color:${C.ink};font-size:16px;">${l.scores?.souverainete ?? '–'}</strong>Souveraineté</td>
     </tr></table>
   </div>`).join('')}
 </td></tr>` : ''}
 
-<!-- 5. IMPACT PROJETS ANSUT -->
-${impactProjets.length ? `<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #f59e0b;padding-bottom:6px;">📣 Activité des acteurs (qui communique aujourd'hui)</h2>
-  <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-    <tr style="background:#fffbeb;"><th style="padding:8px;text-align:left;font-size:11px;color:#92400e;text-transform:uppercase;">Acteur</th><th style="padding:8px;text-align:center;font-size:11px;color:#92400e;text-transform:uppercase;width:100px;">Niveau d'activité</th><th style="padding:8px;text-align:left;font-size:11px;color:#92400e;text-transform:uppercase;">Sur quoi ils communiquent</th></tr>
-    ${impactProjets.map(p => `<tr style="border-bottom:1px solid #fde68a;"><td style="padding:8px;font-size:13px;font-weight:600;color:#1e3a5f;">${p.domaine}</td><td style="padding:8px;text-align:center;">${impactBadge(p.impact)}</td><td style="padding:8px;font-size:12px;color:#374151;">${p.commentaire}</td></tr>`).join('')}
+<!-- 5. ACTIVITÉ DES ACTEURS -->
+${impactProjets.length ? `${sec("📣 Écosystème", "Activité des acteurs (qui communique)")}
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <thead><tr><th style="text-align:left;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:${C.faint};font-weight:600;padding:0 10px 8px 0;border-bottom:1px solid ${C.ruleStrong};">Acteur</th><th style="text-align:left;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:${C.faint};font-weight:600;padding:0 10px 8px 0;border-bottom:1px solid ${C.ruleStrong};width:96px;">Activité</th><th style="text-align:left;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:${C.faint};font-weight:600;padding:0 0 8px 0;border-bottom:1px solid ${C.ruleStrong};">Sur quoi</th></tr></thead>
+    <tbody>${impactProjets.map(p => `<tr><td style="padding:11px 10px 11px 0;border-bottom:1px solid ${C.rule};font-size:13.5px;font-weight:600;color:${C.ink};vertical-align:top;">${p.domaine}</td><td style="padding:11px 10px 11px 0;border-bottom:1px solid ${C.rule};font-size:11px;color:${C.soft};text-transform:uppercase;letter-spacing:0.05em;font-weight:600;vertical-align:top;">${p.impact}</td><td style="padding:11px 0 11px 0;border-bottom:1px solid ${C.rule};font-size:13px;color:${C.soft};vertical-align:top;">${p.commentaire}</td></tr>`).join('')}</tbody>
   </table>
 </td></tr>` : ''}
 
-<!-- 6. ACTIONS IMMÉDIATES -->
-${actions.length ? `<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #dc2626;padding-bottom:6px;">✍️ Idées de contenus pour la COM</h2>
-  <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#fef2f2;border-radius:8px;overflow:hidden;">
-    <tr style="background:#fee2e2;"><th style="padding:10px;text-align:left;font-size:11px;color:#991b1b;text-transform:uppercase;">Contenu / Angle éditorial</th><th style="padding:10px;text-align:center;font-size:11px;color:#991b1b;text-transform:uppercase;width:140px;">Canal</th><th style="padding:10px;text-align:center;font-size:11px;color:#991b1b;text-transform:uppercase;width:110px;">Priorité</th></tr>
-    ${actions.map(a => `<tr style="border-bottom:1px solid #fecaca;"><td style="padding:10px;font-size:13px;color:#1e3a5f;">${a.action}</td><td style="padding:10px;text-align:center;font-size:12px;font-weight:700;color:#991b1b;">${a.responsable}</td><td style="padding:10px;text-align:center;font-size:12px;font-weight:700;color:#991b1b;">${a.delai}</td></tr>`).join('')}
+<!-- 6. IDÉES DE CONTENUS -->
+${actions.length ? `${sec('✍️ À produire', 'Idées de contenus pour la COM')}
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <thead><tr><th style="text-align:left;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:${C.faint};font-weight:600;padding:0 10px 8px 0;border-bottom:1px solid ${C.ruleStrong};">Contenu / angle éditorial</th><th style="text-align:left;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:${C.faint};font-weight:600;padding:0 10px 8px 0;border-bottom:1px solid ${C.ruleStrong};width:130px;">Canal</th><th style="text-align:left;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:${C.faint};font-weight:600;padding:0 0 8px 0;border-bottom:1px solid ${C.ruleStrong};width:100px;">Priorité</th></tr></thead>
+    <tbody>${actions.map(a => `<tr><td style="padding:11px 10px 11px 0;border-bottom:1px solid ${C.rule};font-size:13.5px;color:${C.ink};vertical-align:top;">${a.action}</td><td style="padding:11px 10px 11px 0;border-bottom:1px solid ${C.rule};font-size:12.5px;color:${C.soft};font-weight:600;vertical-align:top;">${a.responsable}</td><td style="padding:11px 0 11px 0;border-bottom:1px solid ${C.rule};font-size:12.5px;color:${C.soft};font-weight:600;vertical-align:top;">${a.delai}</td></tr>`).join('')}</tbody>
   </table>
 </td></tr>` : ''}
 
-<!-- 7. RÉPUTATION ANSUT -->
-<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #0891b2;padding-bottom:6px;">🛡️ Réputation & risques image</h2>
-  <div style="padding:14px;background:#ecfeff;border-radius:8px;">
-    <table width="100%" cellpadding="0" cellspacing="0"><tr>
-      <td style="vertical-align:top;width:50%;padding-right:8px;"><p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#16a34a;text-transform:uppercase;">✅ Positif</p>${(reput?.positif||[]).length ? `<ul style="margin:0;padding-left:16px;">${reput.positif.map(p=>`<li style="font-size:12px;color:#1e3a5f;line-height:1.5;">${p}</li>`).join('')}</ul>` : '<p style="margin:0;font-size:11px;color:#9ca3af;font-style:italic;">—</p>'}</td>
-      <td style="vertical-align:top;width:50%;padding-left:8px;border-left:1px solid #cffafe;"><p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#dc2626;text-transform:uppercase;">⚠️ Négatif</p>${(reput?.negatif||[]).length ? `<ul style="margin:0;padding-left:16px;">${reput.negatif.map(n=>`<li style="font-size:12px;color:#1e3a5f;line-height:1.5;">${n}</li>`).join('')}</ul>` : '<p style="margin:0;font-size:11px;color:#9ca3af;font-style:italic;">—</p>'}</td>
-    </tr></table>
-    ${reput?.confusion_role ? `<p style="margin:10px 0 0;font-size:12px;color:#9a3412;background:#fff7ed;padding:6px 10px;border-radius:6px;">🔁 Confusion de rôle détectée : <strong>${reput.confusion_role}</strong></p>` : ''}
-    <p style="margin:10px 0 0;font-size:12px;color:#1e3a5f;">Risque réputation : ${nivBadge(reput?.niveau_risque || 'VERT')}</p>
-  </div>
+<!-- 7. RÉPUTATION -->
+${sec('🛡️ Image', 'Réputation &amp; risques image')}
+  <table width="100%" cellpadding="0" cellspacing="0"><tr>
+    <td style="vertical-align:top;width:50%;padding-right:12px;"><p style="margin:0 0 5px;font-size:10.5px;font-weight:600;color:${C.faint};text-transform:uppercase;letter-spacing:0.08em;"><span style="color:${C.confirme};">●</span> Positif</p>${(reput?.positif||[]).length ? `<ul style="margin:0;padding-left:16px;">${reput.positif.map(p=>`<li style="font-size:13px;color:${C.ink};line-height:1.5;">${p}</li>`).join('')}</ul>` : `<p style="margin:0;font-size:12.5px;color:${C.faint};font-style:italic;">—</p>`}</td>
+    <td style="vertical-align:top;width:50%;padding-left:12px;border-left:1px solid ${C.rule};"><p style="margin:0 0 5px;font-size:10.5px;font-weight:600;color:${C.faint};text-transform:uppercase;letter-spacing:0.08em;"><span style="color:${C.incident};">●</span> Négatif</p>${(reput?.negatif||[]).length ? `<ul style="margin:0;padding-left:16px;">${reput.negatif.map(n=>`<li style="font-size:13px;color:${C.ink};line-height:1.5;">${n}</li>`).join('')}</ul>` : `<p style="margin:0;font-size:12.5px;color:${C.faint};font-style:italic;">—</p>`}</td>
+  </tr></table>
+  ${reput?.confusion_role ? `<p style="margin:12px 0 0;font-size:13px;color:${C.ink};">↻ Confusion de rôle détectée : <strong>${reput.confusion_role}</strong></p>` : ''}
+  <p style="margin:12px 0 0;font-size:13px;color:${C.soft};">Risque réputation : ${lvlDot(reput?.niveau_risque || 'VERT')}</p>
 </td></tr>
 
 <!-- 8. SIGNAUX FAIBLES -->
-${signaux.length ? `<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:15px;margin:0 0 12px;border-bottom:2px solid #6366f1;padding-bottom:6px;">📡 Signaux faibles & tendances émergentes</h2>
-  <div style="padding:12px;background:#eef2ff;border-radius:8px;"><ul style="margin:0;padding-left:18px;">${signaux.map(s=>`<li style="font-size:12px;color:#3730a3;line-height:1.6;margin-bottom:3px;">${s}</li>`).join('')}</ul></div>
+${signaux.length ? `${sec('📡 À surveiller', 'Signaux faibles &amp; tendances émergentes')}
+  <ul style="margin:0;padding-left:18px;">${signaux.map(s=>`<li style="font-size:13px;color:${C.ink};line-height:1.6;margin-bottom:3px;">${s}</li>`).join('')}</ul>
 </td></tr>` : ''}
 
-<!-- 9. REVUE DE PRESSE (sources) -->
-<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#475569;font-size:14px;margin:0 0 10px;border-bottom:1px dashed #cbd5e1;padding-bottom:4px;">📰 Sources consultées (revue de presse)</h2>
-  ${revue.length === 0 ? '<p style="font-size:12px;color:#9ca3af;font-style:italic;">Pas de presse vérifiée sur la fenêtre — analyse fondée sur signaux internes et tendances sectorielles.</p>' : RUBRIQUE_ORDER.map(buildRubriqueBlock).join('')}
+<!-- 9. REVUE DE PRESSE -->
+${sec('📰 Traçabilité', 'Sources consultées')}
+  ${revue.length === 0 ? `<p style="font-size:13px;color:${C.faint};font-style:italic;">Pas de presse vérifiée sur la fenêtre — analyse fondée sur signaux internes et tendances sectorielles.</p>` : RUBRIQUE_ORDER.map(buildRubriqueBlock).join('')}
 </td></tr>
 
-<!-- F. ACTIVITÉ ANSUT -->
-<tr><td style="padding:0 24px 20px;">
-  <h2 style="color:#1e3a5f;font-size:14px;margin:0 0 10px;border-bottom:1px dashed #cbd5e1;padding-bottom:4px;">📣 Visibilité ANSUT (24h)</h2>
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border-radius:6px;"><tr>
-    <td style="padding:10px;font-size:12px;color:#1e3a5f;"><strong>Publications :</strong> ${act?.publications_count ?? 0}</td>
-    <td style="padding:10px;font-size:12px;color:#1e3a5f;text-align:right;"><strong>Visibilité :</strong> <span style="color:${act?.visibilite === 'Fort' ? '#10b981' : act?.visibilite === 'Moyen' ? '#f59e0b' : '#ef4444'};font-weight:700;">${act?.visibilite || 'Faible'}</span></td>
+<!-- F. VISIBILITÉ ANSUT -->
+${sec('📣 Notre présence', 'Visibilité ANSUT (24 h)')}
+  <table width="100%" cellpadding="0" cellspacing="0"><tr>
+    <td style="font-size:13px;color:${C.ink};"><strong>Publications :</strong> ${act?.publications_count ?? 0}</td>
+    <td style="text-align:right;font-size:13px;color:${C.soft};"><strong style="color:${C.ink};">Visibilité :</strong> ${act?.visibilite || 'Faible'}</td>
   </tr></table>
 </td></tr>
 
 <!-- TRAÇABILITÉ -->
-<tr><td style="padding:0 24px 24px;">
-  <div style="padding:10px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb;">
-    <p style="margin:0;font-size:10px;color:#6b7280;"><strong>Qualité du livrable :</strong> <span style="color:${qualiteColor};font-weight:700;">${qualiteScore}</span> · ${totalSignaux} signaux exploités · ${revue.length} sources presse · ${articlesRaw?.length || 0} articles analysés</p>
-    ${allUrlsTraceability.length > 0 ? `<details style="margin-top:6px;"><summary style="font-size:10px;color:#374151;cursor:pointer;">URLs sources (${allUrlsTraceability.length})</summary><ol style="margin:6px 0 0;padding-left:16px;">${allUrlsTraceability.map(u => `<li style="font-size:9px;color:#6b7280;line-height:1.4;word-break:break-all;"><a href="${u}" style="color:#2563eb;text-decoration:none;" target="_blank">${u}</a></li>`).join('')}</ol></details>` : ''}
-  </div>
+<tr><td style="padding:18px 34px 22px;border-top:1px solid ${C.rule};">
+  <p style="margin:0;font-size:11px;color:${C.faint};">Qualité du livrable : <strong style="color:${C.soft};">${qualiteScore}</strong> · ${totalSignaux} signaux exploités · ${revue.length} sources presse · ${articlesRaw?.length || 0} articles analysés</p>
+  ${allUrlsTraceability.length > 0 ? `<details style="margin-top:8px;"><summary style="font-size:11px;color:${C.soft};cursor:pointer;">URLs sources (${allUrlsTraceability.length})</summary><ol style="margin:6px 0 0;padding-left:16px;">${allUrlsTraceability.map(u => `<li style="font-size:10px;color:${C.faint};line-height:1.4;word-break:break-all;"><a href="${u}" style="color:${C.link};text-decoration:none;" target="_blank">${u}</a></li>`).join('')}</ol></details>` : ''}
 </td></tr>
 
-<tr><td style="background-color:#0f172a;padding:14px;text-align:center;"><p style="margin:0;color:#64748b;font-size:10px;letter-spacing:0.5px;">ANSUT RADAR · Matinale Communication & Veille 360 · Document interne</p></td></tr>
+<tr><td style="background-color:${C.paper};padding:16px 34px;text-align:center;border-top:1px solid ${C.rule};"><p style="margin:0;color:${C.faint};font-size:10.5px;letter-spacing:0.04em;">ANSUT RADAR · Matinale COM · document interne</p></td></tr>
 
 </table></td></tr></table></body></html>`;
 
