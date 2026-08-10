@@ -11,6 +11,8 @@ interface SectionEmptyStateProps {
   icon?: React.ReactNode;
   onRetry?: () => void;
   retryLabel?: string;
+  /** Actions personnalisées sous la description (ex. « Générer » / « Ajouter »). */
+  actions?: React.ReactNode;
   className?: string;
   compact?: boolean;
 }
@@ -34,6 +36,7 @@ export function SectionEmptyState({
   icon,
   onRetry,
   retryLabel = 'Réessayer',
+  actions,
   className,
   compact = false,
 }: SectionEmptyStateProps) {
@@ -65,6 +68,7 @@ export function SectionEmptyState({
           {retryLabel}
         </Button>
       )}
+      {actions && <div className="mt-5 flex flex-col sm:flex-row items-center gap-3">{actions}</div>}
     </div>
   );
 }
