@@ -100,7 +100,7 @@ function TokenErrorView() {
 
       setSent(true);
       toast.success('Un nouveau lien vous a été envoyé par email');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Erreur renvoi lien:', err);
       toast.error('Impossible d\'envoyer le lien. Vérifiez votre adresse email.');
     } finally {

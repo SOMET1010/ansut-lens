@@ -61,7 +61,7 @@ function inferPilier(text: string): Pilier {
   return 'autre';
 }
 
-function inferFormat(p: any): 'video' | 'image' | 'texte' {
+function inferFormat(p: { type_contenu?: string | null; media_urls?: string[] | null }): 'video' | 'image' | 'texte' {
   const tc = (p.type_contenu || '').toLowerCase();
   if (tc.includes('video') || tc.includes('vidéo')) return 'video';
   const urls: string[] = p.media_urls || [];
@@ -110,7 +110,12 @@ export function useAnsutAccountsActivity() {
       }
 
       // Aggregate per account
-      const perAccount: Record<string, any> = {};
+      interface AccountAgg {
+        p7: number; p24: number; p48_24: number;
+        likes: number; comments: number; shares: number; vues: number;
+        sentiments: number[];
+      }
+      const perAccount: Record<string, AccountAgg> = {};
       const pilierCounts: Record<Pilier, number> = {
         connectivite: 0, inclusion: 0, innovation: 0, service_universel: 0,
         eservices: 0, institutionnel: 0, evenementiel: 0, autre: 0,
@@ -161,7 +166,7 @@ export function useAnsutAccountsActivity() {
         horaire[dp.getHours()]++;
       }
 
-      const accounts: AccountActivity[] = comptes.map((c: any) => {
+      const accounts: AccountActivity[] = comptes.map((c) => {
         const a = perAccount[c.id] || { p7: 0, p24: 0, p48_24: 0, likes: 0, comments: 0, shares: 0, vues: 0, sentiments: [] };
         const interactions = a.likes + a.comments + a.shares;
         const taux = a.vues > 0 ? (interactions / a.vues) * 100 : (a.p7 > 0 ? interactions / a.p7 : 0);
