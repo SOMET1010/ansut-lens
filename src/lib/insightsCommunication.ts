@@ -14,7 +14,7 @@
  * L'engagement n'est montré que si la plateforme fournit réellement les chiffres.
  */
 
-import { qualifier, LIBELLE_CATEGORIE, type CategorieCommunication } from '@/lib/qualificationContenu';
+import { qualifier, LIBELLE_CATEGORIE, type CategorieCommunication, type Qualification } from '@/lib/qualificationContenu';
 import { MISSIONS_STRATEGIQUES } from '@/config/missions';
 import { partenairesDansTexte } from '@/lib/syntheseAnsut';
 
@@ -23,6 +23,8 @@ export interface PubInsights {
   id: string;
   plateforme: string;
   contenu: string | null;
+  /** URL d'origine — sert à reconstruire la content_key (étage 3, lecture). */
+  url_original: string | null;
   type_contenu: string | null;
   hashtags: string[] | null;
   media_urls: string[] | null;
@@ -335,25 +337,38 @@ export function pointsARetenir(ins: InsightsCommunication, echo: EchoMediatique)
   return points;
 }
 
+/**
+ * Étage 3 : la qualification d'une publication est LUE (persistée) si un
+ * résolveur est fourni, sinon RECALCULÉE (fallback = comportement historique).
+ * Le résolveur vient de `useQualification` côté écran ; il retombe lui-même sur
+ * un recalcul honnête quand la ligne persistée manque. Comportement identique
+ * tant que la table n'est pas peuplée (garanti par le test de parité).
+ */
+export type ResoudreQualif = (pub: PubInsights, maintenantMs: number) => Qualification;
+
+const recalculer: ResoudreQualif = (p, maintenantMs) =>
+  qualifier(
+    {
+      texte: p.contenu,
+      published_at: p.date_publication,
+      collected_at: p.collecte_le,
+      source_officielle_ansut: true,
+    },
+    maintenantMs,
+  );
+
 export function calculerInsights(
   publications: PubInsights[],
   fenetreJours: number,
   maintenantMs: number,
+  resoudreQualif: ResoudreQualif = recalculer,
 ): InsightsCommunication {
   const dansFenetre: PubInsights[] = [];
   const fenetrePrecedente: PubInsights[] = [];
   let totalNonDatees = 0;
 
   for (const p of publications ?? []) {
-    const q = qualifier(
-      {
-        texte: p.contenu,
-        published_at: p.date_publication,
-        collected_at: p.collecte_le,
-        source_officielle_ansut: true,
-      },
-      maintenantMs,
-    );
+    const q = resoudreQualif(p, maintenantMs);
     if (!q.dateVerifiee || q.ageJours === null) {
       totalNonDatees++;
       continue;
@@ -406,10 +421,7 @@ export function calculerInsights(
   JOURS.forEach((j, i) => calMap.set(String(i), { cle: String(i), libelle: j, count: 0 }));
 
   for (const p of dansFenetre) {
-    const q = qualifier(
-      { texte: p.contenu, published_at: p.date_publication, collected_at: p.collecte_le, source_officielle_ansut: true },
-      maintenantMs,
-    );
+    const q = resoudreQualif(p, maintenantMs);
     // Thèmes
     for (const id of q.themes) {
       const t = themeMap.get(id);
