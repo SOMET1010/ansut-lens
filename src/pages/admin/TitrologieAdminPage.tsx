@@ -60,14 +60,14 @@ export default function TitrologieAdminPage() {
   const submitSource = () => {
     const r = sourceSchema.safeParse(newSrc);
     if (!r.success) { return alert(r.error.issues[0]?.message || 'Champs invalides'); }
-    upsertSrc.mutate({ ...r.data, actif: true } as any, {
+    upsertSrc.mutate({ ...r.data, actif: true }, {
       onSuccess: () => setNewSrc({ nom: '', url: '', type: 'national', priorite: 50, notes: '' }),
     });
   };
   const submitKeyword = () => {
     const r = keywordSchema.safeParse(newKw);
     if (!r.success) { return alert(r.error.issues[0]?.message || 'Champs invalides'); }
-    upsertKw.mutate({ ...r.data, mot_cle: r.data.mot_cle.toLowerCase(), actif: true } as any, {
+    upsertKw.mutate({ ...r.data, mot_cle: r.data.mot_cle.toLowerCase(), actif: true }, {
       onSuccess: () => setNewKw({ mot_cle: '', categorie: 'sectoriel', poids: 2, notes: '' }),
     });
   };
@@ -99,8 +99,8 @@ export default function TitrologieAdminPage() {
       // Forcer le refresh immédiat des compteurs (runs + unes du jour)
       qc.invalidateQueries({ queryKey: ['titrologie_runs'] });
       qc.invalidateQueries({ queryKey: ['titrologie_today'] });
-    } catch (e: any) {
-      toast.error(`Échec de la collecte : ${e?.message || e}`, { id: t });
+    } catch (e) {
+      toast.error(`Échec de la collecte : ${e instanceof Error ? e.message : String(e)}`, { id: t });
     } finally {
       setRelaunching(false);
     }
@@ -193,7 +193,7 @@ export default function TitrologieAdminPage() {
                           <td className="pr-2"><Badge variant="outline" className="text-xs">{s.type}</Badge></td>
                           <td className="pr-2">{s.priorite}</td>
                           <td className="pr-2">
-                            <Switch checked={s.actif} onCheckedChange={(v) => upsertSrc.mutate({ id: s.id, nom: s.nom, url: s.url, actif: v } as any)} />
+                            <Switch checked={s.actif} onCheckedChange={(v) => upsertSrc.mutate({ id: s.id, nom: s.nom, url: s.url, actif: v })} />
                           </td>
                           <td className="text-right">
                             <Button size="icon" variant="ghost" onClick={() => { if (confirm(`Supprimer ${s.nom} ?`)) delSrc.mutate(s.id); }}>
@@ -241,11 +241,11 @@ export default function TitrologieAdminPage() {
                             <Input type="number" min={0} max={10} className="w-16 h-7" defaultValue={k.poids}
                               onBlur={(e) => {
                                 const v = Number(e.target.value);
-                                if (v !== k.poids) upsertKw.mutate({ id: k.id, mot_cle: k.mot_cle, poids: v } as any);
+                                if (v !== k.poids) upsertKw.mutate({ id: k.id, mot_cle: k.mot_cle, poids: v });
                               }} />
                           </td>
                           <td className="pr-2">
-                            <Switch checked={k.actif} onCheckedChange={(v) => upsertKw.mutate({ id: k.id, mot_cle: k.mot_cle, actif: v } as any)} />
+                            <Switch checked={k.actif} onCheckedChange={(v) => upsertKw.mutate({ id: k.id, mot_cle: k.mot_cle, actif: v })} />
                           </td>
                           <td className="text-right">
                             <Button size="icon" variant="ghost" onClick={() => { if (confirm(`Supprimer "${k.mot_cle}" ?`)) delKw.mutate(k.id); }}>

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesInsert } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
 
 export interface TitrologieSource {
@@ -56,7 +57,7 @@ export function useUpsertSource() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (s: Partial<TitrologieSource> & { nom: string; url: string }) => {
-      const payload: any = { ...s };
+      const payload = { ...s } as TablesInsert<'titrologie_sources'>;
       const { error } = s.id
         ? await supabase.from('titrologie_sources').update(payload).eq('id', s.id)
         : await supabase.from('titrologie_sources').insert(payload);
@@ -98,7 +99,7 @@ export function useUpsertKeyword() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (k: Partial<TitrologieKeyword> & { mot_cle: string }) => {
-      const payload: any = { ...k };
+      const payload = { ...k } as TablesInsert<'titrologie_keywords'>;
       const { error } = k.id
         ? await supabase.from('titrologie_keywords').update(payload).eq('id', k.id)
         : await supabase.from('titrologie_keywords').insert(payload);
