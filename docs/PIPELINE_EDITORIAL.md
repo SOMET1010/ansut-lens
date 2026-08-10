@@ -198,6 +198,17 @@ produit récits, synthèses, comparaisons, recommandations.
   **Comparaison** (écosystème), **Recommandation** (conseiller : opportunité,
   risque de silence, valorisation, calendrier) — tous **traçables** aux contenus
   qualifiés.
+- **Conseiller** (implémenté par
+  [`supabase/functions/conseiller-editorial`](../supabase/functions/conseiller-editorial/index.ts)) :
+  l'opportunité éditoriale (« terrain vacant » : l'écosystème parle d'un pilier,
+  l'ANSUT n'y a pas publié) est **détectée déterministiquement** côté vue
+  (`detecterOpportunite`, comptage réel) ; l'IA n'enrichit **que la formulation**,
+  bornée aux articles de preuve. Deux gardes charte PORTABLES et testées
+  ([`_shared/conseiller.ts`](../supabase/functions/_shared/conseiller.ts)) :
+  liste blanche d'identifiants (preuve inventée retirée) et **anti-injonction**
+  (toute prescription invalide le conseil). Le fondement (chiffres) et les preuves
+  ne dépendent jamais de l'IA ; en cas d'échec/indisponibilité, le front conserve
+  le conseil **déterministe** — aucune régression.
 
 ## 8. Traçabilité — règle transverse à tous les étages
 
@@ -227,7 +238,7 @@ reproductible, traçable jusqu'aux sources, utile à une décision de communicat
 | 2 | Qualification unique | 🟡 règles centralisées, **rejouées au rendu** | **persistée à l'ingestion** |
 | 2 | Classification / Fraîcheur | 🟡 dans `qualificationContenu.ts` | persistées avec la qualification |
 | 3 | Vues | 🟡 consomment la qualification mais **recalculent** encore | vues pures (lecture des éligibilités) |
-| 4 | Conseiller IA | 🟡 `recit-sujet` (référence), `aligner-actualites` | lecture IA complète persistée |
+| 4 | Conseiller IA | 🟢 `recit-sujet` + `conseiller-editorial` (contrat strict, gardes testées) | lecture IA complète persistée |
 | — | Sujet / Briefing | 🟡 `sujets.ts` à la volée / 🔴 Briefing absent | tables persistées |
 
 ## Prochain incrément — Étage 2 persisté (sans big-bang)

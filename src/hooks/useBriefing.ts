@@ -10,7 +10,8 @@ import { useInsightsCommunication, usePresseAnsut } from '@/hooks/useInsightsCom
 import { calculerInsights, calculerEchoMediatique, type ResoudreQualif } from '@/lib/insightsCommunication';
 import { construireSujets, sujetSuffisant, type ResoudreQualifPublication } from '@/lib/sujets';
 import { estVoixAnsut } from '@/lib/missions';
-import { assemblerBriefing } from '@/lib/briefingAdapter';
+import { assemblerBriefing, detecterOpportunite } from '@/lib/briefingAdapter';
+import { useConseiller } from '@/hooks/useConseiller';
 import { useQualification } from '@/hooks/useQualification';
 import { cleContenu } from '@/lib/qualificationContenu';
 import type { Briefing } from '@/lib/briefing';
@@ -90,6 +91,13 @@ export function useBriefing(): ResultatBriefing {
     sujetPret,
   );
 
+  // Étage 4 — Conseiller IA sur contenu qualifié. L'opportunité (« terrain
+  // vacant ») est détectée de façon déterministe sur les sujets qualifiés ; l'IA
+  // n'enrichit que sa formulation, sous garde charte serveur. Échec silencieux →
+  // repli sur le conseil déterministe.
+  const opportunite = useMemo(() => detecterOpportunite(sujets).opportunite, [sujets]);
+  const { data: conseilIA } = useConseiller(opportunite, !!opportunite);
+
   const { data: signaux } = useRadarSignaux();
   const { data: derniereCollecte } = useLastCollecteTime();
 
@@ -133,10 +141,11 @@ export function useBriefing(): ResultatBriefing {
         signaux: signaux ?? [],
         publicationsRecentes: publications ?? [],
         presseRecente: presse ?? [],
+        conseilIA: conseilIA ?? null,
         maintenantMs,
         derniereCollecteMs: derniereCollecte ? new Date(derniereCollecte).getTime() : null,
       }),
-    [sujets, recits, echo, signaux, publications, presse, maintenantMs, derniereCollecte],
+    [sujets, recits, echo, signaux, publications, presse, conseilIA, maintenantMs, derniereCollecte],
   );
 
   return {
