@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Users, Sparkles, UserPlus, Plus, List, Target, AlertCircle, RefreshCw } from 'lucide-react';
+import { Users, Sparkles, UserPlus, Plus, List, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePersonnalites, usePersonnalitesStats, useUpdatePersonnalite, useDeletePersonnalite, CERCLE_LABELS, type PersonnalitesFilters, type PersonnalitesStats } from '@/hooks/usePersonnalites';
@@ -26,6 +26,8 @@ import { CercleHeader } from '@/components/personnalites/CercleHeader';
 import { ActeurDetail } from '@/components/personnalites/ActeurDetail';
 import { ActeurFormDialog } from '@/components/personnalites/ActeurFormDialog';
 import { RadarVisualization } from '@/components/personnalites/RadarVisualization';
+import { SectionEmptyState } from '@/components/radar/SectionEmptyState';
+import { SectionSkeleton } from '@/components/radar/SectionSkeleton';
 import { useMentionsRecentes } from '@/hooks/useMentionsRecentes';
 import type { Personnalite, CercleStrategique } from '@/types';
 
@@ -353,60 +355,27 @@ export default function PersonnalitesPage() {
   );
 }
 
+// États éditoriaux partagés (Empty / Error / Skeleton) : la page ne réécrit plus
+// ses propres variantes, elle consomme le kit commun — cohérence charte garantie.
 function LoadingSkeleton() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-        <div key={i} className="p-5 rounded-2xl border bg-card">
-          <div className="flex items-start gap-4">
-            <Skeleton className="h-14 w-14 rounded-full" />
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-5 w-3/4" />
-              <div className="flex gap-2">
-                <Skeleton className="h-5 w-16" />
-                <Skeleton className="h-5 w-20" />
-              </div>
-            </div>
-          </div>
-          <div className="mt-4 space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-2/3" />
-          </div>
-          <div className="mt-4 flex gap-1">
-            <Skeleton className="h-5 w-12" />
-            <Skeleton className="h-5 w-16" />
-            <Skeleton className="h-5 w-10" />
-          </div>
-          <div className="mt-4 pt-4 border-t flex justify-between items-center">
-            <div className="flex -space-x-2">
-              <Skeleton className="h-6 w-6 rounded-full" />
-              <Skeleton className="h-6 w-6 rounded-full" />
-              <Skeleton className="h-6 w-6 rounded-full" />
-            </div>
-            <Skeleton className="h-4 w-20" />
-          </div>
-        </div>
-      ))}
-    </div>
+    <SectionSkeleton
+      variant="cards"
+      count={8}
+      gridClassName="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      aria-label="Chargement des acteurs"
+    />
   );
 }
 
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center rounded-lg border border-dashed border-destructive/40 bg-destructive/5">
-      <div className="rounded-full bg-destructive/10 p-3 mb-4">
-        <AlertCircle className="h-8 w-8 text-destructive" />
-      </div>
-      <h3 className="text-lg font-semibold">Impossible de charger les acteurs</h3>
-      <p className="text-sm text-muted-foreground mt-2 max-w-md">
-        Les données des personnalités n'ont pas pu être récupérées. Vérifiez votre
-        connexion ou réessayez dans quelques instants.
-      </p>
-      <Button variant="outline" size="sm" onClick={onRetry} className="mt-6 gap-1.5">
-        <RefreshCw className="h-3.5 w-3.5" />
-        Réessayer
-      </Button>
-    </div>
+    <SectionEmptyState
+      variant="error"
+      title="Impossible de charger les acteurs"
+      description="Les données des personnalités n'ont pas pu être récupérées. Vérifiez votre connexion ou réessayez dans quelques instants."
+      onRetry={onRetry}
+    />
   );
 }
 
@@ -414,58 +383,44 @@ function EmptyState({ cercle, onAddManually }: { cercle?: CercleStrategique; onA
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
 
-  // Si c'est un cercle spécifique vide, message simple
+  // Cercle spécifique vide : message simple, compact.
   if (cercle) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Users className="h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold">Aucun acteur trouvé</h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          Aucun acteur dans le cercle {cercle} pour le moment.
-        </p>
-      </div>
+      <SectionEmptyState
+        compact
+        title="Aucun acteur trouvé"
+        description={`Aucun acteur dans le cercle ${cercle} pour le moment.`}
+        icon={<Users className="h-8 w-8" />}
+      />
     );
   }
 
-  // EmptyState global avec actions
+  // Base vide : état global avec actions (générer / ajouter) ou consigne lecteur.
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="rounded-full bg-primary/10 p-4 mb-6">
-        <Users className="h-16 w-16 text-primary" />
-      </div>
-      <h3 className="text-xl font-semibold">Aucun acteur dans la base</h3>
-      <p className="text-sm text-muted-foreground mt-2 max-w-md">
-        La base d'acteurs est vide. Commencez par générer des personnalités
-        clés du secteur numérique ivoirien.
-      </p>
-      
-      {isAdmin ? (
-        <div className="mt-6 flex flex-col sm:flex-row gap-3">
-          <Button 
-            size="lg" 
-            className="gap-2"
-            onClick={() => navigate('/admin/import-acteurs')}
-          >
-            <Sparkles className="h-5 w-5" />
-            Générer des acteurs
-          </Button>
-          <Button 
-            size="lg" 
-            variant="outline"
-            className="gap-2"
-            onClick={onAddManually}
-          >
-            <UserPlus className="h-5 w-5" />
-            Ajouter manuellement
-          </Button>
-        </div>
-      ) : (
-        <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-4 py-3 rounded-lg">
-          <UserPlus className="h-4 w-4" />
-          <span>Contactez un administrateur pour alimenter la base</span>
-        </div>
-      )}
-    </div>
+    <SectionEmptyState
+      title="Aucun acteur dans la base"
+      description="La base d'acteurs est vide. Commencez par générer des personnalités clés du secteur numérique ivoirien."
+      icon={<Users className="h-8 w-8" />}
+      actions={
+        isAdmin ? (
+          <>
+            <Button className="gap-2" onClick={() => navigate('/admin/import-acteurs')}>
+              <Sparkles className="h-4 w-4" />
+              Générer des acteurs
+            </Button>
+            <Button variant="outline" className="gap-2" onClick={onAddManually}>
+              <UserPlus className="h-4 w-4" />
+              Ajouter manuellement
+            </Button>
+          </>
+        ) : (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-4 py-3 rounded-lg">
+            <UserPlus className="h-4 w-4" />
+            <span>Contactez un administrateur pour alimenter la base</span>
+          </div>
+        )
+      }
+    />
   );
 }
 
