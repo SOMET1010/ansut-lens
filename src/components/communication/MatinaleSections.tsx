@@ -14,8 +14,10 @@ import { MatinaleSectionShell, DrillButton, type SectionStatus } from './Matinal
 import type {
   MatinaleData, PrioriteExecutive, SyntheseItem, VeilleParPilier, VeillePilierItem,
   LectureStrategiqueItem, ImpactProjetItem, ActionImmediate, ReputationAnsut, RevueItem, ActiviteAnsut,
-  TitrologieData, UneJournal, TitrologieRisque,
+  TitrologieData, UneJournal, TitrologieRisque, MatinaleSectionKey, TitrologieSyntheseCodir,
+  UneAngles, AngleKey, AngleAnalyse, AngleLien,
 } from '@/types/matinale';
+import type { LucideIcon } from 'lucide-react';
 import { Newspaper } from 'lucide-react';
 import { extractSectionKeywords, useMatinaleSectionSourceCount } from '@/hooks/useMatinaleSources';
 import { downloadPDF as downloadTitrologiePDF, downloadMarkdown as downloadTitrologieMarkdown } from '@/utils/exportTitrologieBriefing';
@@ -24,7 +26,7 @@ import { RefreshCw } from 'lucide-react';
 import { libelleJournal, ressembleAIdentifiant } from '@/lib/journalTitrologie';
 
 function SourceCountBadge({ data, section, freshnessHours, enabled }: {
-  data: MatinaleData; section: any; freshnessHours: number; enabled: boolean;
+  data: MatinaleData; section: MatinaleSectionKey; freshnessHours: number; enabled: boolean;
 }) {
   const kw = extractSectionKeywords(data, section);
   const { data: count, isLoading } = useMatinaleSectionSourceCount(kw, freshnessHours, enabled);
@@ -44,7 +46,7 @@ const RUBRIQUE_LABELS: Record<string, string> = {
 };
 const RUBRIQUE_ORDER = ['telecom_numerique', 'economie_finance', 'gouvernance_regulation', 'international'];
 
-const PILIER_META: Record<string, { label: string; icon: any; color: string }> = {
+const PILIER_META: Record<string, { label: string; icon: LucideIcon; color: string }> = {
   connectivite: { label: 'Connectivité & Infrastructures', icon: Radar, color: 'text-sky-600' },
   usages_services: { label: 'Usages & Services Numériques', icon: Layers, color: 'text-violet-600' },
   regulation_souverainete: { label: 'Régulation & Souveraineté', icon: Scale, color: 'text-emerald-600' },
@@ -84,7 +86,7 @@ const OCR_CONFIDENCE_THRESHOLD = 40;
 
 function TitrologieBilanBlock({
   unes: unesProp, synth,
-}: { unes: any[]; synth: any | undefined | null }) {
+}: { unes: UneJournal[]; synth: TitrologieSyntheseCodir | undefined | null }) {
   // Live auto-refresh: override the static prop with today's live unes when available
   const { data: liveUnes, isFetching, dataUpdatedAt } = useTitrologieToday(true);
   const liveMapped = (liveUnes || []).map((r) => ({
@@ -275,7 +277,7 @@ function ConfianceBadge({ value, prefix = 'Confiance' }: { value?: number; prefi
   );
 }
 
-function AngleLiens({ liens, fallback }: { liens?: any[]; fallback?: string | null }) {
+function AngleLiens({ liens, fallback }: { liens?: AngleLien[]; fallback?: string | null }) {
   const list = Array.isArray(liens) ? liens.filter(l => l && l.entite && l.phrase) : [];
   if (list.length === 0) {
     if (fallback) return <div className="ml-1 italic text-primary/80 text-xs">→ {fallback}</div>;
@@ -337,9 +339,9 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
   const angleKey = ANGLE_OPTIONS.find(o => o.value === angleFilter)?.key || '';
   const minVal = parseInt(minIntensite, 10) || 0;
 
-  const getIntensite = (u: any): number => {
-    const a = u?.angles || {};
-    if (angleKey) return a[angleKey]?.intensite ?? 0;
+  const getIntensite = (u: UneJournal): number => {
+    const a: UneAngles = u.angles || {};
+    if (angleKey) return a[angleKey as AngleKey]?.intensite ?? 0;
     return Math.max(
       a.politique?.intensite ?? 0,
       a.social?.intensite ?? 0,
@@ -352,7 +354,7 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
   const filteredUnes = unes
     .filter(u => {
       if (angleKey) {
-        const a = (u as any).angles?.[angleKey];
+        const a = u.angles?.[angleKey as AngleKey];
         if (!a || (a.intensite ?? 0) < 1) return false;
       }
       return getIntensite(u) >= minVal;
@@ -490,8 +492,8 @@ function TitrologieSection({ titrologie, status, error, onRetry }: { titrologie:
               </thead>
               <tbody>
                 {filteredUnes.map((u, i) => {
-                  const angles = (u as any).angles || {};
-                  const angleEntries: Array<[string, any]> = [
+                  const angles: UneAngles = u.angles || {};
+                  const angleEntries: Array<[string, AngleAnalyse | undefined]> = [
                     ['Pol', angles.politique],
                     ['Soc', angles.social],
                     ['Éco', angles.economique],
@@ -569,6 +571,8 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
   const prio: PrioriteExecutive | undefined = safe.priorite_executive;
   const synthese: SyntheseItem[] = safe.synthese_60s || [];
   const veille: Partial<VeilleParPilier> = safe.veille_par_pilier || {};
+  // Liste plate typée (veille est partielle : certaines clés peuvent manquer).
+  const veilleItems: VeillePilierItem[] = Object.values(veille).flat().filter((x): x is VeillePilierItem => !!x);
   const lectureStrat: LectureStrategiqueItem[] = safe.lecture_strategique || [];
   const impactProjets: ImpactProjetItem[] = safe.impact_projets_ansut || [];
   const actions: ActionImmediate[] = safe.actions_immediates || [];
@@ -662,13 +666,13 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
         rightActions={synthese.length > 0 ? drillBtn({
           title: 'Synthèse 60 secondes',
           description: 'Articles sources des sujets de la synthèse',
-          keywords: synthese.flatMap((s: any) => (s.sujet || '').split(/\s+/)).filter((w: string) => w.length > 4),
-          highlightedTitles: synthese.map((s: any) => s.sujet).filter(Boolean),
-          analyzedItems: synthese.map((s: any) => ({ label: s.sujet, value: s.niveau })),
+          keywords: synthese.flatMap((s) => (s.sujet || '').split(/\s+/)).filter((w) => w.length > 4),
+          highlightedTitles: synthese.map((s) => s.sujet).filter(Boolean),
+          analyzedItems: synthese.map((s) => ({ label: s.sujet, value: s.niveau })),
         }) : null}
       >
         <div className="space-y-2">
-          {synthese.map((s: any, i: number) => (
+          {synthese.map((s, i) => (
             <div key={i} className="flex items-start gap-3 p-2.5 rounded-md bg-muted/40 border border-border/50">
               <NiveauBadge niveau={s.niveau} />
               <div className="flex-1 min-w-0">
@@ -703,15 +707,15 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
         rightActions={Object.keys(veille).length > 0 ? drillBtn({
           title: 'Veille par pilier ANSUT',
           description: 'Articles sources tous piliers',
-          keywords: Object.values(veille).flat().flatMap((it: any) => (it.titre || '').split(/\s+/)).filter((w: string) => w.length > 4),
-          highlightedTitles: Object.values(veille).flat().map((it: any) => it.titre).filter(Boolean),
-          analyzedItems: Object.entries(veille).flatMap(([k, items]: any) =>
-            (items as any[]).map((it: any) => ({ label: `[${PILIER_META[k]?.label || k}] ${it.titre}`, value: it.niveau }))
+          keywords: veilleItems.flatMap((it) => (it.titre || '').split(/\s+/)).filter((w) => w.length > 4),
+          highlightedTitles: veilleItems.map((it) => it.titre).filter(Boolean),
+          analyzedItems: (Object.entries(veille) as [string, VeillePilierItem[] | undefined][]).flatMap(([k, items]) =>
+            (items ?? []).map((it) => ({ label: `[${PILIER_META[k]?.label || k}] ${it.titre}`, value: it.niveau }))
           ),
         }) : null}
       >
         <div className="grid md:grid-cols-2 gap-3">
-          {Object.entries(veille).map(([key, items]: [string, any]) => {
+          {(Object.entries(veille) as [string, VeillePilierItem[] | undefined][]).map(([key, items]) => {
             const meta = PILIER_META[key] || { label: key, icon: Layers, color: 'text-primary' };
             const Icon = meta.icon;
             if (!Array.isArray(items) || items.length === 0) return null;
@@ -722,7 +726,7 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
                   <span className="text-xs font-semibold uppercase">{meta.label}</span>
                 </div>
                 <ul className="space-y-2">
-                  {items.map((it: any, i: number) => (
+                  {items.map((it, i) => (
                     <li key={i} className="text-xs border-l-2 border-primary/40 pl-2">
                       <div className="flex items-start gap-1.5 flex-wrap">
                         {isValidUrl(it.url) ? (
@@ -757,9 +761,9 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
         emptyHint="Pas de sujet d'approfondissement sur cette fenêtre. Élargissez la période d'analyse."
         rightActions={lectureStrat.length > 0 ? drillBtn({
           title: 'Lecture stratégique',
-          keywords: lectureStrat.flatMap((s: any) => (s.sujet || '').split(/\s+/)).filter((w: string) => w.length > 4),
-          highlightedTitles: lectureStrat.map((s: any) => s.sujet).filter(Boolean),
-          analyzedItems: lectureStrat.flatMap((s: any) => [
+          keywords: lectureStrat.flatMap((s) => (s.sujet || '').split(/\s+/)).filter((w) => w.length > 4),
+          highlightedTitles: lectureStrat.map((s) => s.sujet).filter(Boolean),
+          analyzedItems: lectureStrat.flatMap((s) => [
             { label: `Sujet : ${s.sujet}` },
             ...(s.opportunites || []).map((o: string) => ({ label: `Opportunité : ${o}` })),
             ...(s.risques || []).map((r: string) => ({ label: `Risque : ${r}` })),
@@ -768,7 +772,7 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
         }) : null}
       >
         <div className="space-y-4">
-          {lectureStrat.map((s: any, i: number) => (
+          {lectureStrat.map((s, i) => (
             <div key={i} className="rounded-lg border bg-muted/20 p-3 space-y-3">
               <h4 className="font-semibold text-sm">{s.sujet}</h4>
               <div className="grid md:grid-cols-2 gap-3 text-xs">
@@ -813,13 +817,13 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
         emptyHint="Aucun impact direct détecté sur les projets ANSUT pour cette fenêtre."
         rightActions={impactProjets.length > 0 ? drillBtn({
           title: 'Impact projets ANSUT',
-          keywords: impactProjets.flatMap((p: any) => (p.domaine || '').split(/\s+/)).filter((w: string) => w.length > 3),
-          highlightedTitles: impactProjets.map((p: any) => p.domaine).filter(Boolean),
-          analyzedItems: impactProjets.map((p: any) => ({ label: `${p.domaine} — ${p.commentaire}`, value: p.impact })),
+          keywords: impactProjets.flatMap((p) => (p.domaine || '').split(/\s+/)).filter((w) => w.length > 3),
+          highlightedTitles: impactProjets.map((p) => p.domaine).filter(Boolean),
+          analyzedItems: impactProjets.map((p) => ({ label: `${p.domaine} — ${p.commentaire}`, value: p.impact })),
         }) : null}
       >
         <div className="space-y-2">
-          {impactProjets.map((p: any, i: number) => (
+          {impactProjets.map((p, i) => (
             <div key={i} className="flex items-start gap-3 p-2.5 rounded-md bg-muted/40 border border-border/50">
               <NiveauBadge niveau={p.impact} />
               <div className="flex-1 min-w-0">
@@ -842,12 +846,12 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
         emptyHint="Aucune action prioritaire générée. Le contexte du jour ne nécessite pas d'arbitrage immédiat."
         rightActions={actions.length > 0 ? drillBtn({
           title: 'Actions immédiates',
-          keywords: actions.flatMap((a: any) => (a.action || '').split(/\s+/)).filter((w: string) => w.length > 4),
-          analyzedItems: actions.map((a: any, i: number) => ({ label: `${i + 1}. ${a.action}`, value: [a.responsable, a.delai].filter(Boolean).join(' · ') })),
+          keywords: actions.flatMap((a) => (a.action || '').split(/\s+/)).filter((w) => w.length > 4),
+          analyzedItems: actions.map((a, i) => ({ label: `${i + 1}. ${a.action}`, value: [a.responsable, a.delai].filter(Boolean).join(' · ') })),
         }) : null}
       >
         <ul className="space-y-2">
-          {actions.map((a: any, i: number) => (
+          {actions.map((a, i) => (
             <li key={i} className="flex items-start gap-2 text-sm">
               <span className="text-primary font-bold shrink-0">{i + 1}.</span>
               <div className="flex-1 min-w-0">
@@ -954,20 +958,20 @@ export function MatinaleSections({ data, titrologie, freshnessHours = 24, loadin
         rightActions={revue.length > 0 ? drillBtn({
           title: 'Revue de presse',
           description: 'Sources consultées',
-          keywords: revue.flatMap((r: any) => (r.titre || '').split(/\s+/)).filter((w: string) => w.length > 4),
-          highlightedTitles: revue.map((r: any) => r.titre).filter(Boolean),
-          analyzedItems: revue.map((r: any) => ({ label: `[${r.rubrique || '—'}] ${r.titre}`, value: r.source })),
+          keywords: revue.flatMap((r) => (r.titre || '').split(/\s+/)).filter((w) => w.length > 4),
+          highlightedTitles: revue.map((r) => r.titre).filter(Boolean),
+          analyzedItems: revue.map((r) => ({ label: `[${r.rubrique || '—'}] ${r.titre}`, value: r.source })),
         }) : null}
       >
         <div className="space-y-4">
           {RUBRIQUE_ORDER.map((rub) => {
-            const items = revue.filter((r: any) => r.rubrique === rub);
+            const items = revue.filter((r) => r.rubrique === rub);
             if (!items.length) return null;
             return (
               <div key={rub}>
                 <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-2">{RUBRIQUE_LABELS[rub]}</h4>
                 <ul className="space-y-2">
-                  {items.map((it: any, i: number) => {
+                  {items.map((it, i) => {
                     const ok = isValidUrl(it.url);
                     return (
                       <li key={i} className="text-sm border-l-2 border-primary/40 pl-3">
