@@ -6,6 +6,11 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+// Bucket privé : les visuels ne sont plus exposés publiquement,
+// ils sont référencés via une URL signée longue durée.
+const NEWSLETTER_BUCKET = 'newsletter-images-privees';
+const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 * 365; // 1 an
+
 interface ImageUploaderProps {
   value?: string;
   alt?: string;
