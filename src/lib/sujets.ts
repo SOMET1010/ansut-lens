@@ -20,7 +20,7 @@ import type { PublicationAnsut } from '@/hooks/useAnsutPublications';
 import { MISSIONS_STRATEGIQUES } from '@/config/missions';
 import { piliersDeLActu } from '@/lib/missions';
 import { partenairesDansTexte } from '@/lib/syntheseAnsut';
-import { dansLaFenetre, qualifier } from '@/lib/qualificationContenu';
+import { dansLaFenetre, qualifier, type Qualification } from '@/lib/qualificationContenu';
 import { dedupParUrl } from '@/lib/dedup';
 
 const JOUR_MS = 24 * 3600 * 1000;
@@ -107,11 +107,31 @@ function construirePourquoi(s: {
  * activité sont exclus. Le tri met en tête ce qui bouge et ce qui est le plus
  * traité (ordonnancement interne, jamais affiché comme score).
  */
+/**
+ * Étage 3 : la qualification d'une publication est LUE (persistée) si un
+ * résolveur est fourni, sinon RECALCULÉE (fallback = comportement historique).
+ * Le résolveur, monté par l'écran depuis `useQualification`, retombe lui-même
+ * sur un recalcul honnête quand la ligne persistée manque.
+ */
+export type ResoudreQualifPublication = (pub: PublicationAnsut, maintenantMs: number) => Qualification;
+
+const recalculerPublication: ResoudreQualifPublication = (p, maintenantMs) =>
+  qualifier(
+    {
+      texte: p.contenu,
+      published_at: p.date_publication,
+      collected_at: p.collecte_le,
+      source_officielle_ansut: true,
+    },
+    maintenantMs,
+  );
+
 export function construireSujets(
   externes: Actualite[],
   publications: PublicationAnsut[],
   maintenantMs: number,
   periodeJours = 7,
+  resoudreQualif: ResoudreQualifPublication = recalculerPublication,
 ): Sujet[] {
   const debut = maintenantMs - periodeJours * JOUR_MS;
   const debut24 = maintenantMs - JOUR_MS;
@@ -136,18 +156,7 @@ export function construireSujets(
   // INSTITUTIONNELLES, datées réellement dans la période, peuvent servir de
   // preuve d'un thème stratégique (Fanzone/sport/GITEX ancien exclus).
   const pubsQualifiees = (publications ?? [])
-    .map((p) => ({
-      p,
-      q: qualifier(
-        {
-          texte: p.contenu,
-          published_at: p.date_publication,
-          collected_at: p.collecte_le,
-          source_officielle_ansut: true,
-        },
-        maintenantMs,
-      ),
-    }))
+    .map((p) => ({ p, q: resoudreQualif(p, maintenantMs) }))
     .filter((x) => x.q.eligibleProfilStrategique && dansLaFenetre(x.q, periodeJours));
 
   const sujets: Sujet[] = MISSIONS_STRATEGIQUES.map((m) => {

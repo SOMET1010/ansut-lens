@@ -8,9 +8,11 @@ import { useAnsutPublications } from '@/hooks/useAnsutPublications';
 import { useRecitsSujets } from '@/hooks/useRecitsSujets';
 import { useInsightsCommunication, usePresseAnsut } from '@/hooks/useInsightsCommunication';
 import { calculerInsights, calculerEchoMediatique } from '@/lib/insightsCommunication';
-import { construireSujets, sujetSuffisant } from '@/lib/sujets';
+import { construireSujets, sujetSuffisant, type ResoudreQualifPublication } from '@/lib/sujets';
 import { estVoixAnsut } from '@/lib/missions';
 import { assemblerBriefing } from '@/lib/briefingAdapter';
+import { useQualification } from '@/hooks/useQualification';
+import { cleContenu } from '@/lib/qualificationContenu';
 import type { Briefing } from '@/lib/briefing';
 
 /**
@@ -57,9 +59,28 @@ export function useBriefing(): ResultatBriefing {
     () => (sujetFeed ?? []).filter((a) => !estVoixAnsut(a)),
     [sujetFeed],
   );
+
+  // Étage 3 — les publications ANSUT sont qualifiées par LECTURE de la
+  // qualification persistée (fallback recalcul si la ligne manque).
+  const clesQualif = useMemo(
+    () => (publications ?? []).map((p) => cleContenu(p.url_original, p.contenu)),
+    [publications],
+  );
+  const { data: qualif } = useQualification(clesQualif, maintenantMs);
+  const resoudreQualif = useMemo<ResoudreQualifPublication | undefined>(() => {
+    if (!qualif) return undefined;
+    return (p) =>
+      qualif.qualificationDe(cleContenu(p.url_original, p.contenu), {
+        texte: p.contenu,
+        published_at: p.date_publication,
+        collected_at: p.collecte_le,
+        source_officielle_ansut: true,
+      });
+  }, [qualif]);
+
   const sujets = useMemo(
-    () => construireSujets(externesSujet, publications ?? [], maintenantMs, FENETRE_SUJET_JOURS),
-    [externesSujet, publications, maintenantMs],
+    () => construireSujets(externesSujet, publications ?? [], maintenantMs, FENETRE_SUJET_JOURS, resoudreQualif),
+    [externesSujet, publications, maintenantMs, resoudreQualif],
   );
 
   const sujetDuJour = sujets[0];
