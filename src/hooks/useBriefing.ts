@@ -7,7 +7,7 @@ import {
 import { useAnsutPublications } from '@/hooks/useAnsutPublications';
 import { useRecitsSujets } from '@/hooks/useRecitsSujets';
 import { useInsightsCommunication, usePresseAnsut } from '@/hooks/useInsightsCommunication';
-import { calculerInsights, calculerEchoMediatique } from '@/lib/insightsCommunication';
+import { calculerInsights, calculerEchoMediatique, type ResoudreQualif } from '@/lib/insightsCommunication';
 import { construireSujets, sujetSuffisant, type ResoudreQualifPublication } from '@/lib/sujets';
 import { estVoixAnsut } from '@/lib/missions';
 import { assemblerBriefing } from '@/lib/briefingAdapter';
@@ -96,9 +96,28 @@ export function useBriefing(): ResultatBriefing {
   // Écho médiatique — exactement le même calcul que la page Insights.
   const { data: insPubs } = useInsightsCommunication(500);
   const { data: presse } = usePresseAnsut(500);
+
+  // Étage 3 — l'écho lit la même qualification persistée (jeu de publications
+  // distinct des sujets : PubInsights), avec repli honnête si la ligne manque.
+  const clesQualifIns = useMemo(
+    () => (insPubs ?? []).map((p) => cleContenu(p.url_original, p.contenu)),
+    [insPubs],
+  );
+  const { data: qualifIns } = useQualification(clesQualifIns, maintenantMs);
+  const resoudreQualifIns = useMemo<ResoudreQualif | undefined>(() => {
+    if (!qualifIns) return undefined;
+    return (p) =>
+      qualifIns.qualificationDe(cleContenu(p.url_original, p.contenu), {
+        texte: p.contenu,
+        published_at: p.date_publication,
+        collected_at: p.collecte_le,
+        source_officielle_ansut: true,
+      });
+  }, [qualifIns]);
+
   const ins = useMemo(
-    () => calculerInsights(insPubs ?? [], FENETRE_ECHO_JOURS, maintenantMs),
-    [insPubs, maintenantMs],
+    () => calculerInsights(insPubs ?? [], FENETRE_ECHO_JOURS, maintenantMs, resoudreQualifIns),
+    [insPubs, maintenantMs, resoudreQualifIns],
   );
   const echo = useMemo(
     () => calculerEchoMediatique(presse ?? [], ins.totalDatees, FENETRE_ECHO_JOURS, maintenantMs),
