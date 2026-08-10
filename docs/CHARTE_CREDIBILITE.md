@@ -88,6 +88,13 @@ plutôt que « sentiment −0,72 »).
    non fondées.
 7. **Langage honnête.** On préfère un mot simple et vrai (« tonalité négative »)
    à un chiffre faussement précis (« −0,72 »).
+8. **Une citation IA doit remonter à une source réelle.** Quand l'IA (assistant,
+   récit, conseiller, matinale) cite un contenu, la référence n'est validée que
+   si son identifiant/URL existe réellement dans le contexte fourni. Une citation
+   qui ne résout pas est **marquée « source introuvable » et rendue inerte** (ou
+   retirée) — jamais affichée comme un lien réel, et jamais « corrigée » par une
+   source devinée (rapprochement flou). L'IA **explique**, elle **ne décide pas** :
+   les productions automatiques (conseiller, matinale) n'émettent pas d'injonction.
 
 ---
 

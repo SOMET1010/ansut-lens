@@ -2,29 +2,25 @@ import { Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { MessageContent } from './MessageContent';
+import { extraireSources } from './citationValidite';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
   content: string;
   isStreaming?: boolean;
+  /** Clés (`TYPE:id`) des citations jugées invalides par la validation edge. */
+  invalidKeys?: Set<string>;
 }
 
-// Extract source names from citations in content
-function extractSourceNames(content: string): string[] {
-  const sourceMatches = content.match(/\[\[(ACTU|DOSSIER):[^|]+\|([^\]]+)\]\]/g) || [];
-  return sourceMatches.map(m => {
-    const match = m.match(/\[\[(ACTU|DOSSIER):[^|]+\|([^\]]+)\]\]/);
-    return match ? match[2] : '';
-  }).filter(Boolean);
-}
-
-export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
+export function ChatMessage({ role, content, isStreaming, invalidKeys }: ChatMessageProps) {
   const isAssistant = role === 'assistant';
-  const sources = isAssistant ? extractSourceNames(content) : [];
-  
-  // Remove duplicates from sources
-  const uniqueSources = [...new Set(sources)];
-  
+  // Charte : une citation hallucinée n'est PAS une « source analysée ». On ne
+  // liste ici que les sources VALIDES (dédupliquées) ; les invalides restent
+  // marquées « source introuvable » dans le corps du message.
+  const uniqueSources = isAssistant
+    ? extraireSources(content, invalidKeys).filter((s) => !s.invalide).map((s) => s.titre)
+    : [];
+
   return (
     <div className={cn(
       "flex gap-4 mb-6",
@@ -53,7 +49,7 @@ export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
       )}>
         <div className="prose prose-sm text-foreground leading-relaxed">
           {isAssistant ? (
-            <MessageContent content={content} />
+            <MessageContent content={content} invalidKeys={invalidKeys} />
           ) : (
             <span className="whitespace-pre-wrap">{content}</span>
           )}

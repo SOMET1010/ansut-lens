@@ -15,6 +15,7 @@ import { useConversationsIA, type ConversationMessage, type Conversation } from 
 import { ContextSelector } from '@/components/assistant/ContextSelector';
 import { ConversationHistory } from '@/components/assistant/ConversationHistory';
 import { ChatMessage } from '@/components/assistant/ChatMessage';
+import { construireClesInvalides } from '@/components/assistant/citationValidite';
 import { ModeSelector, type AssistantMode } from '@/components/assistant/ModeSelector';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MODELES_IA_UI, MODELE_IA_DEFAUT } from '@/config/modelesIa';
@@ -188,6 +189,13 @@ export default function AssistantPage() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [generatedDocument, setGeneratedDocument] = useState<GeneratedDocument | null>(null);
   const [citationWarning, setCitationWarning] = useState<CitationWarning | null>(null);
+  // Clés des citations invalides de la dernière réponse (réinitialisées à chaque
+  // envoi) : elles dégradent les citations hallucinées du dernier message en
+  // texte inerte marqué au lieu de liens factices.
+  const invalidCitationKeys = useMemo(
+    () => construireClesInvalides(citationWarning?.invalid_citations),
+    [citationWarning],
+  );
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Per-user resizable widths (workspace right panel + history sheet)
@@ -657,6 +665,11 @@ export default function AssistantPage() {
                     role={msg.role}
                     content={msg.content}
                     isStreaming={isLoading && i === realMessages.length - 1 && msg.role === 'assistant'}
+                    invalidKeys={
+                      i === realMessages.length - 1 && msg.role === 'assistant'
+                        ? invalidCitationKeys
+                        : undefined
+                    }
                   />
                 ))}
                 {isLoading && realMessages[realMessages.length - 1]?.role === 'user' && (
