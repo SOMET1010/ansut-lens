@@ -90,10 +90,10 @@ export function ImageUploader({
       const timestamp = Date.now();
       const randomId = Math.random().toString(36).substring(7);
       const filename = `newsletter_${timestamp}_${randomId}.jpg`;
-      
-      // Upload to Supabase Storage
+
+      // Upload dans le bucket privé (exposition réduite : plus de listing public)
       const { data, error } = await supabase.storage
-        .from('newsletter-images')
+        .from(NEWSLETTER_BUCKET)
         .upload(filename, compressedBlob, {
           contentType: 'image/jpeg',
           cacheControl: '3600',
@@ -105,12 +105,19 @@ export function ImageUploader({
         return;
       }
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('newsletter-images')
-        .getPublicUrl(data.path);
+      // URL signée longue durée (1 an) : lisible dans les emails envoyés,
+      // sans rendre le bucket public.
+      const { data: signed, error: signedError } = await supabase.storage
+        .from(NEWSLETTER_BUCKET)
+        .createSignedUrl(data.path, SIGNED_URL_TTL_SECONDS);
 
-      onImageChange(publicUrl, altText);
+      if (signedError || !signed?.signedUrl) {
+        console.error('Signed URL error:', signedError);
+        toast.error('Erreur lors de la génération du lien de l\'image');
+        return;
+      }
+
+      onImageChange(signed.signedUrl, altText);
       toast.success('Image uploadée avec succès');
     } catch (error) {
       console.error('Compression/upload error:', error);
