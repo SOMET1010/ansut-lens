@@ -1,6 +1,7 @@
 import { estAppelInterne } from "../_shared/habilitation.ts";
 // Using native Deno.serve
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { signerImagesNewsletter } from "../_shared/signerImagesNewsletter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -139,12 +140,20 @@ Deno.serve(async (req) => {
     const mois = dateDebut.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
     const subject = `📰 Newsletter ANSUT RADAR #${newsletter.numero} - ${mois}`;
 
+    // Régénération des URLs signées : chaque email part avec des liens d'images valides.
+    const { html: htmlAEnvoyer, signees, echecs } = await signerImagesNewsletter(
+      adminClient,
+      newsletter.html_court,
+    );
+    console.log(`Images re-signées: ${signees}, échecs: ${echecs}`);
+
     const gwConfig = getGatewayConfig();
 
     const results = [];
     for (const dest of destinataires) {
       try {
-        const response = await sendEmailViaGateway(dest.email, subject, newsletter.html_court, gwConfig);
+        const response = await sendEmailViaGateway(dest.email, subject, htmlAEnvoyer, gwConfig);
+
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`Failed to send to ${dest.email}:`, errorText);
@@ -170,6 +179,8 @@ Deno.serve(async (req) => {
         statut: 'envoye',
         date_envoi: new Date().toISOString(),
         nb_destinataires: successCount,
+        // On conserve la version réellement envoyée (liens d'images valides).
+        ...(signees > 0 ? { html_court: htmlAEnvoyer } : {}),
         updated_at: new Date().toISOString(),
       })
       .eq('id', newsletterId);
