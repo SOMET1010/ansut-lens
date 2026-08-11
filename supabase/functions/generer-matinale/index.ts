@@ -389,7 +389,8 @@ function enrichTitrologieWithRisk(result: TitrologieResult): TitrologieResult {
         impact_ansut: [],
         opportunite_communication: null,
         risque_a_surveiller: top_risques[0] ? `${top_risques[0].journal} — ${top_risques[0].titre}` : null,
-        action_recommandee: risque_global === 'ROUGE' ? 'Préparer une réaction DG sous 24h' : risque_global === 'ORANGE' ? 'Surveiller et instruire dans la semaine' : 'Aucune action immédiate',
+        // Charte règle 8 : constat, jamais injonction (« l'IA explique, ne décide pas »).
+        action_recommandee: risque_global === 'ROUGE' ? 'Un ou plusieurs titres concernent directement l’ANSUT ou son écosystème et exposent son image.' : risque_global === 'ORANGE' ? 'Sujet indirect mais sensible pour le secteur, sans exposition directe de l’ANSUT.' : 'Aucun titre ne concerne l’ANSUT aujourd’hui.',
         risque_distribution: distribution,
         risque_global,
         score_global,
@@ -532,7 +533,7 @@ Pour CHAQUE une fournie, tu détermines :
   * ROUGE = sujet direct ANSUT/MTND/ARTCI/Service Universel ou pouvant exiger une réaction du DG
 - lien_ansut : phrase courte expliquant le lien (vide si VERT)
 
-Puis tu produis une SYNTHÈSE CODIR (3 sujets dominants, impact ANSUT, opportunité com, risque à surveiller, action recommandée) et 1-3 signaux faibles ANSUT.
+Puis tu produis une SYNTHÈSE CODIR (3 sujets dominants, impact ANSUT, opportunité com, risque à surveiller, lecture COM) et 1-3 signaux faibles ANSUT. La « lecture COM » est un CONSTAT factuel (l'ANSUT est-elle concernée aujourd'hui, et à quel titre) — JAMAIS une injonction ni un impératif : pas de « préparez », « ne préparez pas », « il faut ».
 
 INTERDICTION absolue d'inventer des titres ou journaux. Reprends UNIQUEMENT ceux du contexte.`
           },
@@ -571,7 +572,7 @@ INTERDICTION absolue d'inventer des titres ou journaux. Reprends UNIQUEMENT ceux
                     impact_ansut: { type: 'array', items: { type: 'string' }, description: '2-4 puces sur l\'impact ANSUT' },
                     opportunite_communication: { type: ['string', 'null'] },
                     risque_a_surveiller: { type: ['string', 'null'] },
-                    action_recommandee: { type: 'string', description: 'Préparer / ne pas préparer de réaction, et pourquoi' },
+                    action_recommandee: { type: 'string', description: 'Lecture COM : CONSTAT factuel de ce que la titrologie du jour signifie pour l\'ANSUT (concernée directement / indirectement / pas concernée). Jamais d\'injonction ni d\'impératif.' },
                   },
                   required: ['sujets_dominants', 'impact_ansut', 'opportunite_communication', 'risque_a_surveiller', 'action_recommandee'],
                 },
@@ -1657,7 +1658,7 @@ ${titroTopUnes.length ? `${sec('📰 Presse ivoirienne', 'Titrologie du jour', `
     ${Array.isArray(titroSynthese.impact_ansut) && titroSynthese.impact_ansut.length ? `<p style="margin:0 0 4px;font-size:10.5px;font-weight:600;color:${C.faint};text-transform:uppercase;letter-spacing:0.1em;">Impact ANSUT</p><ul style="margin:0 0 10px;padding-left:18px;">${titroSynthese.impact_ansut.map((i: string) => li(i)).join('')}</ul>` : ''}
     ${titroSynthese.opportunite_communication ? `<p style="margin:6px 0 0;font-size:13px;color:${C.ink};"><span style="color:${C.confirme};">●</span> <strong>Opportunité com :</strong> ${titroSynthese.opportunite_communication}</p>` : ''}
     ${titroSynthese.risque_a_surveiller ? `<p style="margin:5px 0 0;font-size:13px;color:${C.ink};"><span style="color:${C.incident};">●</span> <strong>Risque à surveiller :</strong> ${titroSynthese.risque_a_surveiller}</p>` : ''}
-    ${titroSynthese.action_recommandee ? `<p style="margin:5px 0 0;font-size:13px;color:${C.ink};"><strong>Action recommandée :</strong> ${titroSynthese.action_recommandee}</p>` : ''}
+    ${titroSynthese.action_recommandee ? `<p style="margin:5px 0 0;font-size:13px;color:${C.ink};"><strong>Lecture COM :</strong> ${titroSynthese.action_recommandee}</p>` : ''}
   </div>` : ''}
   <table width="100%" cellpadding="0" cellspacing="0">
     <thead><tr><th style="text-align:left;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:${C.faint};font-weight:600;padding:0 10px 8px 0;border-bottom:1px solid ${C.ruleStrong};width:120px;">Journal</th><th style="text-align:left;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:${C.faint};font-weight:600;padding:0 10px 8px 0;border-bottom:1px solid ${C.ruleStrong};">Une</th><th style="text-align:right;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:${C.faint};font-weight:600;padding:0 0 8px 0;border-bottom:1px solid ${C.ruleStrong};width:82px;">Risque</th></tr></thead>
