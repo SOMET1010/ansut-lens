@@ -179,6 +179,8 @@ Deno.serve(async (req) => {
         statut: 'envoye',
         date_envoi: new Date().toISOString(),
         nb_destinataires: successCount,
+        // On conserve la version réellement envoyée (liens d'images valides).
+        ...(signees > 0 ? { html_court: htmlAEnvoyer } : {}),
         updated_at: new Date().toISOString(),
       })
       .eq('id', newsletterId);
