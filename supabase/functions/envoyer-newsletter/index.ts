@@ -140,12 +140,20 @@ Deno.serve(async (req) => {
     const mois = dateDebut.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
     const subject = `📰 Newsletter ANSUT RADAR #${newsletter.numero} - ${mois}`;
 
+    // Régénération des URLs signées : chaque email part avec des liens d'images valides.
+    const { html: htmlAEnvoyer, signees, echecs } = await signerImagesNewsletter(
+      adminClient,
+      newsletter.html_court,
+    );
+    console.log(`Images re-signées: ${signees}, échecs: ${echecs}`);
+
     const gwConfig = getGatewayConfig();
 
     const results = [];
     for (const dest of destinataires) {
       try {
-        const response = await sendEmailViaGateway(dest.email, subject, newsletter.html_court, gwConfig);
+        const response = await sendEmailViaGateway(dest.email, subject, htmlAEnvoyer, gwConfig);
+
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`Failed to send to ${dest.email}:`, errorText);
