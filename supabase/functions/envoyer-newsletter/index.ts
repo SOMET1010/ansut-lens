@@ -1,6 +1,7 @@
 import { estAppelInterne } from "../_shared/habilitation.ts";
 // Using native Deno.serve
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { signerImagesNewsletter } from "../_shared/signerImagesNewsletter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
