@@ -2,6 +2,7 @@ import {
   BarChart3,
   Bot,
   Megaphone,
+  MessageSquare,
   Newspaper,
   PenLine,
   Radio,
@@ -120,6 +121,18 @@ export const NAV_SECTIONS: NavSection[] = [
     permission: 'use_assistant',
     group: 'redaction',
     legacyPaths: ['/reseaux-sociaux'],
+  },
+  {
+    // Réactions du public : signalement manuel de fils sociaux (posts de
+    // tiers), seule voie possible tant qu'aucune API sociale ne donne accès
+    // aux commentaires — voir docs/PROCEDURE_ACCES_SOCIAUX.md §5.
+    id: 'reactions',
+    label: 'Réactions',
+    question: 'Que dit le public sous les posts ?',
+    path: '/reactions',
+    icon: MessageSquare,
+    permission: 'view_radar',
+    group: 'redaction',
   },
   {
     id: 'insights',

@@ -128,3 +128,8 @@ verify_jwt = false
 [functions.sync-directions]
 verify_jwt = false
 
+
+[functions.evaluer-fil-social]
+# Déclenchée depuis l'interface par un utilisateur connecté ; l'habilitation
+# partagée (_shared/habilitation.ts) vérifie le JWT ou le jeton interne.
+verify_jwt = false
