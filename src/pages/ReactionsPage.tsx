@@ -348,7 +348,7 @@ export default function ReactionsPage() {
   return (
     <PageContainer>
       <PageHeader
-        title="Réactions du public"
+        titre="Réactions du public"
         description="Suivi des commentaires sous les publications qui parlent de l’ANSUT, y compris chez les médias tiers."
       />
 
