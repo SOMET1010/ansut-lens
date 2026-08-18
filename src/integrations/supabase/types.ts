@@ -360,6 +360,50 @@ export type Database = {
         }
         Relationships: []
       }
+      commentaires_fil: {
+        Row: {
+          auteur: string | null
+          auteur_influent: boolean
+          contenu: string
+          created_at: string
+          date_commentaire: string
+          fil_id: string
+          id: string
+          saisi_par: string | null
+          sentiment: number | null
+        }
+        Insert: {
+          auteur?: string | null
+          auteur_influent?: boolean
+          contenu: string
+          created_at?: string
+          date_commentaire?: string
+          fil_id: string
+          id?: string
+          saisi_par?: string | null
+          sentiment?: number | null
+        }
+        Update: {
+          auteur?: string | null
+          auteur_influent?: boolean
+          contenu?: string
+          created_at?: string
+          date_commentaire?: string
+          fil_id?: string
+          id?: string
+          saisi_par?: string | null
+          sentiment?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commentaires_fil_fil_id_fkey"
+            columns: ["fil_id"]
+            isOneToOne: false
+            referencedRelation: "fils_sociaux"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       config_seuils: {
         Row: {
           cle: string
@@ -758,6 +802,54 @@ export type Database = {
           mots_cles?: string[] | null
           nom?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      fils_sociaux: {
+        Row: {
+          alerte_generee: boolean
+          auteur_publication: string | null
+          contexte: string | null
+          created_at: string
+          derniere_evaluation: string | null
+          id: string
+          plateforme: string
+          signale_par: string | null
+          statut: string
+          titre: string | null
+          tonalite_globale: number | null
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          alerte_generee?: boolean
+          auteur_publication?: string | null
+          contexte?: string | null
+          created_at?: string
+          derniere_evaluation?: string | null
+          id?: string
+          plateforme?: string
+          signale_par?: string | null
+          statut?: string
+          titre?: string | null
+          tonalite_globale?: number | null
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          alerte_generee?: boolean
+          auteur_publication?: string | null
+          contexte?: string | null
+          created_at?: string
+          derniere_evaluation?: string | null
+          id?: string
+          plateforme?: string
+          signale_par?: string | null
+          statut?: string
+          titre?: string | null
+          tonalite_globale?: number | null
+          updated_at?: string
+          url?: string
         }
         Relationships: []
       }

@@ -53,6 +53,7 @@ const ActeursInfluencePage = lazy(() => import('@/pages/ActeursInfluencePage'));
 const FluxPage = lazy(() => import('@/pages/FluxPage'));
 const FluxDetailPage = lazy(() => import('@/pages/FluxDetailPage'));
 const CommunicationPage = lazy(() => import('@/pages/CommunicationPage'));
+const ReactionsPage = lazy(() => import('@/pages/ReactionsPage'));
 const DossiersPage = lazy(() => import('@/pages/DossiersPage'));
 const AssistantPage = lazy(() => import('@/pages/AssistantPage'));
 const AlertesHistoryPage = lazy(() => import('@/pages/AlertesHistoryPage'));
@@ -223,6 +224,7 @@ const App = () => (
                             <Route path="/pige" element={<Navigate to="/veille" replace />} />
                             <Route path="/recherche" element={<BalayagePage />} />
                             <Route path="/insights" element={<InsightsPage />} />
+                            <Route path="/reactions" element={<ReactionsPage />} />
                           </Route>
 
                           <Route element={<PermissionRoute permission="view_personnalites" />}>

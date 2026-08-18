@@ -242,7 +242,17 @@ jugée indispensable.
 | 3 | Créer l'app Meta + demander les permissions | admin Page FB | 1 j + 3–10 j Meta | Lire les commentaires de la Page ANSUT. | Commentaires Page ANSUT collectés et analysés. |
 | 4 | Réactiver l'app LinkedIn + demander la Community API | admin Page LI | 1 j + 2–4 sem. | Lire les commentaires LinkedIn de la Page ANSUT. | Commentaires LinkedIn intégrés au SPDI et aux alertes. |
 | 5 | Arbitrer l'option posts tiers (A / B / C) | Direction | décision | Seule option pour couvrir les posts de médias comme SIKA Finance. | Couverture de l'angle mort social ; pas de buzz non détecté. |
-| 6 | Implémenter le signalement manuel + règle d'alerte | RADAR | 1 itération | Valider la chaîne d'alerte sans attendre les API. | Détection immédiate des buzz signalés par la COM. |
+| 6 | ✅ **Fait** — signalement manuel + règle d'alerte | RADAR | livré | Valider la chaîne d'alerte sans attendre les API. | Écran **Réactions** (`/reactions`) : la COM colle l'URL d'un post (y compris tiers), saisit les commentaires observés, RADAR note la tonalité et émet une alerte citant les commentaires déclencheurs. |
+
+### Ce qui est déjà opérationnel côté RADAR (aucun accès externe requis)
+
+Écran **Réactions** dans « La rédaction » :
+- signalement d'un fil (URL du post, plateforme, auteur, contexte) ;
+- saisie des commentaires observés, avec marquage « compte influent » ;
+- notation automatique de la tonalité de chaque commentaire (-1 → +1) ;
+- **règle d'alerte explicable** : 3 commentaires négatifs en moins de 24 h **ou**
+  1 commentaire négatif d'un compte influent → alerte dans le centre de
+  notifications, citant les commentaires réels qui l'ont déclenchée.
 
 ---
 
